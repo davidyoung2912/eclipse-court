@@ -1,0 +1,100 @@
+import { useState } from 'react'
+import {
+  TUTORIAL_FOE_AT, TUTORIAL_KNIGHT, TUTORIAL_STEP_TO, TUTORIAL_STEPS, tutorialStart,
+} from '../../engine/data/tutorial'
+import { estimateOdds, reduce } from '../../engine/reducer'
+import { squareLuminance } from '../../engine/rules/luminance'
+import { legalMoves, pieceAt } from '../../engine/rules/moves'
+import { spellTargets } from '../../engine/rules/spells'
+import type { DuelOutcome, GameState, Pos, Spell } from '../../engine/rules/types'
+import { sfx } from '../../audio/synth'
+import { Board } from '../board/Board'
+import { Dial } from '../dial/Dial'
+import { DuelView } from '../duel/DuelView'
+import { AttackConfirm } from '../tray/AttackConfirm'
+import { SpellBar } from '../tray/SpellBar'
+
+interface Props {
+  onExit: () => void
+}
+
+type Duel = 'confirm' | 'live' | null
+
+const same = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y
+
+/** The 3-minute guided board: one move, one luminance shift, one duel, one spell. */
+export function Tutorial({ onExit }: Props) {
+  const [state, setState] = useState<GameState>(tutorialStart)
+  const [step, setStep] = useState(0)
+  const [selected, setSelected] = useState(false)
+  const [duel, setDuel] = useState<Duel>(null)
+  const [casting, setCasting] = useState<Spell | null>(null)
+  const current = TUTORIAL_STEPS[step]
+  const knight = state.pieces.find((p) => p.id === TUTORIAL_KNIGHT) ?? null
+  const foe = pieceAt(state, TUTORIAL_FOE_AT)
+  const targets = casting ? spellTargets(state, 'solari', casting) : null
+
+  /** Play the scripted Umbral reply: it simply passes, which ends the round. */
+  const next = (s: GameState) => {
+    setState(s.winner ? s : reduce(s, { type: 'pass' }))
+    setSelected(false)
+    setDuel(null)
+    setCasting(null)
+    setStep((n) => n + 1)
+  }
+
+  const moves: Pos[] =
+    targets ? targets.squares
+    : current.kind === 'move' && selected ? [TUTORIAL_STEP_TO]
+    : current.kind === 'duel' && selected && knight ? legalMoves(state, knight).filter((m) => same(m, TUTORIAL_FOE_AT))
+    : []
+
+  const onSquare = (p: Pos) => {
+    if (duel) return
+    if (current.kind === 'move') {
+      if (knight && same(p, knight.pos)) return setSelected(true)
+      if (selected && same(p, TUTORIAL_STEP_TO)) {
+        sfx.move()
+        next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: p }))
+      }
+    } else if (current.kind === 'duel' && knight) {
+      if (same(p, knight.pos)) return setSelected(true)
+      if (selected && foe && same(p, foe.pos)) setDuel('confirm')
+    } else if (current.kind === 'spell' && casting === 'blink' && targets?.squares.some((q) => same(q, p))) {
+      sfx.cast()
+      next(reduce(state, { type: 'cast', spell: 'blink', to: p }))
+    }
+  }
+
+  const finishDuel = (outcome: DuelOutcome) =>
+    next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: TUTORIAL_FOE_AT, duel: outcome }))
+
+  return (
+    <main className="app tutorial">
+      <Dial state={state} />
+      <Board state={state} selected={selected ? knight : null} moves={moves} onSquare={onSquare} />
+      {duel === 'confirm' && knight && foe && (
+        <AttackConfirm attacker={knight} defender={foe} live luminance={squareLuminance(state, foe.pos)}
+          odds={estimateOdds(knight, foe, squareLuminance(state, foe.pos))}
+          onConfirm={() => setDuel('live')} onCancel={() => setDuel(null)} />
+      )}
+      {duel === 'live' && knight && foe && (
+        <DuelView attacker={knight} defender={foe} luminance={squareLuminance(state, foe.pos)}
+          options={{ mirror: false, aimAssist: true, haptics: true }} opponentSkill={0.15}
+          seed={7} onDone={finishDuel} />
+      )}
+      <footer className="tray">
+        <section className="lesson" aria-live="polite">
+          <h2>{current.title}</h2>
+          <p>{current.text}</p>
+        </section>
+        {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
+        <div className="buttons">
+          <button onClick={onExit}>{current.kind === 'end' ? 'Back' : 'Skip'}</button>
+          {current.kind === 'light' && <button className="primary" onClick={() => setStep(step + 1)}>Got it</button>}
+          {current.kind === 'end' && <button className="primary" onClick={onExit}>Play</button>}
+        </div>
+      </footer>
+    </main>
+  )
+}

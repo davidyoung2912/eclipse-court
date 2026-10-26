@@ -54,13 +54,34 @@ body {
 .move-dot { fill: rgba(255, 240, 160, 0.9); pointer-events: none; }
 
 .piece { cursor: pointer; }
-.piece circle:first-of-type { stroke-width: 0.05; }
-.piece.solari circle:first-of-type { fill: var(--solari-gold); stroke: var(--solari-cream); }
-.piece.umbral circle:first-of-type { fill: var(--umbral-violet); stroke: #d8c8ff; }
-.piece.selected circle:first-of-type { stroke: #fff; stroke-width: 0.1; }
-.piece.attackable circle:first-of-type { stroke: #ff5a5a; stroke-width: 0.1; }
-.glyph { font: 700 0.34px system-ui; fill: #1b1740; pointer-events: none; }
-.piece.umbral .glyph { fill: #fff; }
+.piece .ring { fill: none; stroke: transparent; stroke-width: 0.06; }
+.piece.selected .ring { stroke: #fff; stroke-width: 0.1; }
+.piece.attackable .ring { stroke: #ff5a5a; stroke-width: 0.1; }
+.piece.bound .art { opacity: 0.55; }
+.art-rim { fill: #120d2a; }
+.art-lead { fill: none; stroke: #120d2a; stroke-width: 0.025; }
+.pane { stroke: #120d2a; stroke-width: 0.018; }
+.art-solari .pane-0 { fill: #f2c55c; }
+.art-solari .pane-1 { fill: #e8943a; }
+.art-solari .pane-2 { fill: #fbe39a; }
+.art-umbral .pane-0 { fill: #6a4cc0; }
+.art-umbral .pane-1 { fill: #3b2f8a; }
+.art-umbral .pane-2 { fill: #4aa6b8; }
+.art-hub { stroke: #120d2a; stroke-width: 0.02; }
+.art-solari .art-hub { fill: #fff4cf; }
+.art-umbral .art-hub { fill: #1d1745; }
+.emblem { stroke-width: 0.03; stroke-linejoin: round; stroke-linecap: round; }
+.emblem.open { fill: none; }
+.art-solari .emblem { fill: #3a2410; stroke: #3a2410; }
+.art-umbral .emblem { fill: #e4d8ff; stroke: #e4d8ff; }
+.emblem-ring { fill: none; stroke: #120d2a; stroke-width: 0.02; stroke-dasharray: 0.07 0.05; }
+.lead { fill: none; stroke: #000; stroke-width: 0.012; opacity: 0.18; pointer-events: none; }
+.glow { pointer-events: none; }
+.ripple { pointer-events: none; opacity: 0; animation: ripple 0.9s ease-out both; }
+.ripple.lit { fill: #fff3b8; }
+.ripple.dim { fill: #5a3fb0; }
+@keyframes ripple { 0% { opacity: 0; } 30% { opacity: 0.5; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ripple { animation: none; } }
 .pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
 
 .tray { margin-top: auto; padding-bottom: 8px; }
@@ -140,3 +161,7 @@ body {
 .campaign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .campaign .choice { width: 100%; }
 .result { z-index: 20; }
+
+.lesson { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(122, 92, 200, 0.18); }
+.lesson h2 { margin: 0 0 4px; font-size: 1rem; color: var(--solari-gold); }
+.lesson p { margin: 0; font-size: 0.85rem; line-height: 1.35; }

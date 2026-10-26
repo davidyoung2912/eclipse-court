@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { startPad, unlockAudio } from './audio/synth'
 import { Game } from './Game'
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
@@ -6,15 +7,34 @@ import { newGame } from './engine/reducer'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign } from './ui/menus/Campaign'
 import { MainMenu } from './ui/menus/MainMenu'
+import { Tutorial } from './ui/tutorial/Tutorial'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
 type Screen =
   | { name: 'menu' }
   | { name: 'skirmish' }
   | { name: 'campaign' }
+  | { name: 'tutorial' }
   | { name: 'game'; human: Court; difficulty: Difficulty; initial: GameState; campaignIndex: number | null }
 
 const PROGRESS_KEY = 'eclipse-court:campaign'
+const TUTORIAL_KEY = 'eclipse-court:tutorial'
+
+function tutorialSeen(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+function markTutorialSeen() {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1')
+  } catch {
+    // Without storage the tutorial is simply offered again next time.
+  }
+}
 
 function loadCleared(): number {
   try {
@@ -36,6 +56,28 @@ function saveCleared(n: number) {
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [cleared, setCleared] = useState(loadCleared)
+  const [seen, setSeen] = useState(tutorialSeen)
+
+  // Browsers only allow sound after a gesture, so the pad starts on the first touch.
+  useEffect(() => {
+    const start = () => {
+      unlockAudio()
+      startPad()
+    }
+    window.addEventListener('pointerdown', start, { once: true })
+    return () => window.removeEventListener('pointerdown', start)
+  }, [])
+
+  if (screen.name === 'tutorial')
+    return (
+      <Tutorial
+        onExit={() => {
+          markTutorialSeen()
+          setSeen(true)
+          setScreen({ name: 'menu' })
+        }}
+      />
+    )
 
   if (screen.name === 'skirmish')
     return (
@@ -81,5 +123,8 @@ export default function App() {
     )
   }
 
-  return <MainMenu onSkirmish={() => setScreen({ name: 'skirmish' })} onCampaign={() => setScreen({ name: 'campaign' })} />
+  return (
+    <MainMenu firstRun={!seen} onSkirmish={() => setScreen({ name: 'skirmish' })}
+      onCampaign={() => setScreen({ name: 'campaign' })} onTutorial={() => setScreen({ name: 'tutorial' })} />
+  )
 }

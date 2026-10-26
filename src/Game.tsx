@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { requestAction } from './ai/client'
+import { isMuted, setMuted, setPadLuminance, sfx, turnBell } from './audio/synth'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { estimateOdds, reduce } from './engine/reducer'
 import { squareLuminance } from './engine/rules/luminance'
@@ -47,7 +48,24 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const targets = casting && myTurn ? spellTargets(state, human, casting) : null
   const moves = targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : []
 
+  const [sound, setSound] = useState(() => !isMuted())
+  const lastTurn = useRef(state.turn)
+
+  // The pad follows the centre's light; each court's bell rings as its turn begins.
+  useEffect(() => {
+    setPadLuminance(squareLuminance(state, { x: 3, y: 3 }))
+    if (state.winner) {
+      if (state.winner === human) sfx.win()
+      else sfx.lose()
+    } else if (state.turn !== lastTurn.current) turnBell(state.turn)
+    lastTurn.current = state.turn
+  }, [state, human])
+
   const push = (s: GameState) => {
+    const spent = (g: GameState) => g.spells.solari.length + g.spells.umbral.length
+    if (spent(s) < spent(state)) sfx.cast()
+    else if (s.lastDuel) sfx.hit(2)
+    else sfx.move()
     setHistory((h) => [...h, s])
     setSelectedId(null)
     setCasting(null)
@@ -121,6 +139,10 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     if (pending) push(reduce(state, { type: 'move', pieceId: pending.pieceId, to: pending.to, duel: outcome }))
   }
 
+  const toggleSound = () => {
+    setMuted(sound)
+    setSound(!sound)
+  }
   const toggle = (key: keyof DuelOptions) => setOptions((o) => ({ ...o, [key]: !o[key] }))
   const attacker = pending && state.pieces.find((x) => x.id === pending.pieceId)
   const defender = pending && pieceAt(state, pending.to)
@@ -157,6 +179,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
           <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> Aim assist</label>
           <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> Haptics</label>
+          <label><input type="checkbox" checked={sound} onChange={toggleSound} /> Sound</label>
         </div>
         <p className="status">
           {state.winner

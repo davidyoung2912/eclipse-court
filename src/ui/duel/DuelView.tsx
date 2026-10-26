@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createDuelAi } from '../../ai/duelAi'
+import { sfx, startDuelDrums } from '../../audio/synth'
 import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/sim'
 import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
@@ -115,6 +116,8 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
     let shake = 0
     let endTimer = -1
     let hudTick = 0
+    const drums = startDuelDrums()
+    sfx.duelStart()
     const el = canvas.current!
     const ctx = el.getContext('2d')!
 
@@ -141,7 +144,11 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
         inputs[foeSide] = ai(state, foeSide)
         const events = stepDuel(state, inputs)
         for (const e of events) {
-          if (e.type === 'hit') {
+          if (e.type === 'swing') sfx.swing()
+          else if (e.type === 'shoot') sfx.shoot()
+          else if (e.type === 'slam') sfx.slam()
+          else if (e.type === 'hit') {
+            sfx.hit(e.damage)
             freeze = HIT_STOP
             shake = Math.min(14, 4 + e.damage * 3)
             if (optionsRef.current.haptics) navigator.vibrate?.(e.damage >= 2 ? 40 : 18)
@@ -152,6 +159,9 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
         const out = duelOutcome(state)
         const [mineHp, foeHp] = playerSide === 0 ? [out.attackerHp, out.defenderHp] : [out.defenderHp, out.attackerHp]
         setBanner(mineHp > 0 && foeHp <= 0 ? 'Victory' : mineHp <= 0 && foeHp > 0 ? 'Defeat' : mineHp <= 0 ? 'Both fall' : 'Draw')
+        if (mineHp > 0 && foeHp <= 0) sfx.win()
+        else if (mineHp <= 0) sfx.lose()
+        drums.stop()
         endTimer = END_DELAY
       }
       if (endTimer >= 0) {
@@ -161,6 +171,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
           return
         }
       }
+      drums.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
       draw(ctx, state, w, h, shake)
       hudTick += dt
@@ -171,7 +182,10 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      drums.stop()
+    }
   }, [attacker, defender, luminance, playerSide, opponentSkill, seed])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
