@@ -36,6 +36,7 @@ const AI_DELAY_MS = 450
 export function Game({ human, difficulty, initial, onExit }: Props) {
   const foe: Court = human === 'solari' ? 'umbral' : 'solari'
   const foeSkill = DIFFICULTY[difficulty].skill
+  const foeAggression = DIFFICULTY[difficulty].aggression
   const [history, setHistory] = useState<GameState[]>([initial])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
@@ -79,7 +80,8 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     const defender = pieceAt(state, p.to)
     if (!attacker || !defender) return
     const skills: [number, number] = p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
-    const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round)
+    const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
+      p.byAi ? [foeAggression, 1] : [1, foeAggression])
     push(reduce(state, { type: 'move', pieceId: p.pieceId, to: p.to, duel }))
   }
 
@@ -161,7 +163,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
       )}
       {pending?.confirmed && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)}
-          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill}
+          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
           seed={state.rng + state.round} onDone={finishDuel} />
       )}
       {state.winner && (

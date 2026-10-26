@@ -48,6 +48,8 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
   let strafeUntil = 0
   let holdTarget = 0
   let wantCharge = false
+  let holdOffUntil = 0
+  const calm = 1 - profile.aggression
 
   const notice = (state: DuelState, i: 0 | 1) => {
     const me = state.fighters[i]
@@ -104,7 +106,7 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
     let power = 0.4 // charge fraction wanted
 
     if (ranged) {
-      const gap = d - STANDOFF
+      const gap = d - (STANDOFF + calm * 1.5)
       const radial = Math.abs(gap) < 0.7 ? 0 : Math.sign(gap)
       mx = ux * radial - uy * strafe * 0.8
       my = uy * radial + ux * strafe * 0.8
@@ -136,7 +138,7 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
       } else power = 0.15 + 0.5 * rand()
       // Hit and run: a careful fighter backs off while its own attack recovers.
       const faster = st.speed > styleOf(state.fighters[1 - i].role).speed * OUTPACE
-      const closing = faster && me.cooldown > 0 && d < range + 1 ? -profile.dodge : d > stand ? 1 : 0
+      const closing = faster && me.cooldown > 0 && d < range + 1 ? -profile.dodge : d > stand ? 0.25 + 0.75 * profile.aggression : 0
       // Circle a little when in range so the opponent's swings are harder to land.
       const orbit = closing ? 0.25 : 0.7
       mx = ux * closing - uy * strafe * orbit
@@ -144,6 +146,8 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
       aimAt = Math.atan2(dy, dx)
     }
 
+    // A gentle opponent also holds back the size of its blows.
+    power *= 0.6 + 0.4 * profile.aggression
     mx += toMidX * lean
     my += toMidY * lean
     aimAt += noise() * profile.aimError
@@ -155,13 +159,17 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
     } else {
       dodgeDir = null
       const inRange = d <= range
-      if (inRange && me.cooldown <= 0) {
+      if (inRange && me.cooldown <= 0 && (wantCharge || state.t >= holdOffUntil)) {
         if (!wantCharge) {
           holdTarget = Math.max(0.05, power * st.chargeTime)
           wantCharge = true
         }
         attack = me.charge < holdTarget
-        if (!attack) wantCharge = false
+        if (!attack) {
+          wantCharge = false
+          // Pause before the next attack; the less aggressive, the longer.
+          holdOffUntil = state.t + calm * (0.6 + 2.4 * rand())
+        }
       } else wantCharge = false
     }
     return { mx, my, attack, aim: aimAt }

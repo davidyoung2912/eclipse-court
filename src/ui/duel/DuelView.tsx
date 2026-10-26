@@ -22,6 +22,8 @@ interface Props {
   playerSide?: 0 | 1
   /** Duel skill (0..1) of the AI fighter. */
   opponentSkill: number
+  /** How readily (0..1) the AI fighter presses its attack. */
+  opponentAggression?: number
   seed: number
   onDone: (outcome: DuelOutcome) => void
 }
@@ -86,7 +88,7 @@ function draw(ctx: CanvasRenderingContext2D, s: DuelState, w: number, h: number,
   }
 }
 
-export function DuelView({ attacker, defender, luminance, options, playerSide = 0, opponentSkill, seed, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
@@ -105,7 +107,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
   useEffect(() => {
     const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0 }
     const state = createDuel(attacker, defender, luminance, cfg)
-    const ai = createDuelAi(profileForSkill(opponentSkill), seed)
+    const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
     const foeSide = (1 - playerSide) as 0 | 1
     // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
     const flip = playerSide === 1
@@ -186,7 +188,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
       cancelAnimationFrame(raf)
       drums.stop()
     }
-  }, [attacker, defender, luminance, playerSide, opponentSkill, seed])
+  }, [attacker, defender, luminance, playerSide, opponentSkill, opponentAggression, seed])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return

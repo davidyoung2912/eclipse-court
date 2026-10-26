@@ -13,8 +13,9 @@ export function autoDuel(
   luminance: number,
   skills: [number, number],
   seed: number,
+  aggression: [number, number] = [1, 1],
 ): DuelOutcome {
   const state = createDuel(attacker, defender, luminance)
-  const ais = [createDuelAi(profileForSkill(skills[0]), seed), createDuelAi(profileForSkill(skills[1]), seed + 1)]
+  const ais = [createDuelAi(profileForSkill(skills[0], aggression[0]), seed), createDuelAi(profileForSkill(skills[1], aggression[1]), seed + 1)]
   return runDuel(state, (s, i) => ais[i](s, i))
 }
