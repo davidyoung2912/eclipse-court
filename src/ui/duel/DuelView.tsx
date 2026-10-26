@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createDuelAi } from '../../ai/duelAi'
 import { sfx, startDuelDrums } from '../../audio/synth'
+import { Icon } from '../menus/icons'
 import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/sim'
 import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
@@ -244,6 +245,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
           onPointerUp={() => setAttack(false)}
           onPointerCancel={() => setAttack(false)}
         >
+          <Icon name="swords" />
           Attack
         </button>
       </div>

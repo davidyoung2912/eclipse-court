@@ -13,6 +13,7 @@ import { PieceCard } from './ui/tray/PieceCard'
 import { Dial } from './ui/dial/Dial'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
+import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
 
 interface Props {
@@ -179,7 +180,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
         <div className="confirm result" role="dialog" aria-label="Game over">
           <p className="confirm-title">{result}</p>
           <div className="buttons">
-            <button className="primary" onClick={() => onExit(state.winner)}>Continue</button>
+            <button className="primary" onClick={() => onExit(state.winner)}><Icon name="next" />Continue</button>
           </div>
         </div>
       )}
@@ -204,9 +205,9 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">
-          <button disabled={history.length < 2} onClick={undo}>Undo</button>
-          <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => push(reduce(state, { type: 'pass' }))}>End turn</button>
-          <button onClick={() => onExit(null)}>Quit</button>
+          <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
+          <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => push(reduce(state, { type: 'pass' }))}><Icon name="hourglass" />End turn</button>
+          <button onClick={() => onExit(null)}><Icon name="exit" />Quit</button>
         </div>
       </footer>
     </main>

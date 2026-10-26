@@ -1,5 +1,6 @@
 import { ROLE_NAMES } from '../../engine/data/roster'
 import type { Odds } from '../../engine/reducer'
+import { Icon } from '../menus/icons'
 import type { Piece } from '../../engine/rules/types'
 
 interface Props {
@@ -30,8 +31,8 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, onCon
         Square light {luminance > 0 ? `+${luminance}` : luminance}
       </p>
       <div className="buttons">
-        <button onClick={onCancel}>Cancel</button>
-        <button className="primary" onClick={onConfirm}>{live ? 'Attack' : 'Auto-resolve'}</button>
+        <button onClick={onCancel}><Icon name="close" />Cancel</button>
+        <button className="primary" onClick={onConfirm}>{live ? <><Icon name="swords" />Attack</> : <><Icon name="bolt" />Auto-resolve</>}</button>
       </div>
     </div>
   )

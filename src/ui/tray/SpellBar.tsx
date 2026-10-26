@@ -1,5 +1,10 @@
 import { canCast, leaderOf, SPELL_INFO, SPELLS } from '../../engine/rules/spells'
 import type { GameState, Spell } from '../../engine/rules/types'
+import { Icon, type IconName } from '../menus/icons'
+
+const SPELL_ICON: Record<Spell, IconName> = {
+  blink: 'sparkle', mend: 'plus', turn: 'cycle', swap: 'swap', conjure: 'star', revive: 'rise', bind: 'chain',
+}
 
 interface Props {
   state: GameState
@@ -20,7 +25,7 @@ export function SpellBar({ state, active, onPick }: Props) {
           return (
             <button key={sp} className={`spell${active === sp ? ' active' : ''}`} disabled={!ok}
               title={SPELL_INFO[sp].text} onClick={() => onPick(active === sp ? null : sp)}>
-              {SPELL_INFO[sp].name}
+              <Icon name={SPELL_ICON[sp]} />{SPELL_INFO[sp].name}
             </button>
           )
         })}

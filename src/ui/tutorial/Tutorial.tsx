@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../menus/icons'
 import {
   TUTORIAL_FOE_AT, TUTORIAL_KNIGHT, TUTORIAL_STEP_TO, TUTORIAL_STEPS, tutorialStart,
 } from '../../engine/data/tutorial'
@@ -90,9 +91,9 @@ export function Tutorial({ onExit }: Props) {
         </section>
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
-          <button onClick={onExit}>{current.kind === 'end' ? 'Back' : 'Skip'}</button>
-          {current.kind === 'light' && <button className="primary" onClick={() => setStep(step + 1)}>Got it</button>}
-          {current.kind === 'end' && <button className="primary" onClick={onExit}>Play</button>}
+          <button onClick={onExit}>{current.kind === 'end' ? <><Icon name="back" />Back</> : <><Icon name="skip" />Skip</>}</button>
+          {current.kind === 'light' && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got it</button>}
+          {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>
       </footer>
     </main>

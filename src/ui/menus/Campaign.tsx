@@ -1,4 +1,5 @@
 import { CAMPAIGN } from '../../engine/data/campaign'
+import { Icon } from './icons'
 
 interface Props {
   /** Number of opponents beaten so far; the next one is unlocked. */
@@ -17,7 +18,7 @@ export function Campaign({ cleared, onPlay, onBack }: Props) {
           return (
             <li key={o.name}>
               <button className={`choice${i < cleared ? ' won' : ''}`} disabled={locked} onClick={() => onPlay(i)}>
-                <strong>{i + 1}. {o.name}{i < cleared ? ' ✓' : ''}</strong>
+                <strong><Icon name={locked ? 'lock' : i < cleared ? 'check' : 'swords'} />{i + 1}. {o.name}</strong>
                 <span>{o.blurb} ({o.difficulty})</span>
               </button>
             </li>
@@ -25,7 +26,7 @@ export function Campaign({ cleared, onPlay, onBack }: Props) {
         })}
       </ol>
       <div className="menu-buttons">
-        <button onClick={onBack}>Back</button>
+        <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>
   )

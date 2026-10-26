@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
+import { Icon, type IconName } from './icons'
 import type { Court } from '../../engine/rules/types'
 
 interface Props {
@@ -7,10 +8,12 @@ interface Props {
   onBack: () => void
 }
 
-const COURTS: { court: Court; name: string; text: string }[] = [
-  { court: 'solari', name: 'Solari', text: 'Straight shots and dashes. Moves first.' },
-  { court: 'umbral', name: 'Umbral', text: 'Lobbed shots and regeneration. Moves second.' },
+const COURTS: { court: Court; name: string; icon: IconName; text: string }[] = [
+  { court: 'solari', name: 'Solari', icon: 'sun', text: 'Straight shots and dashes. Moves first.' },
+  { court: 'umbral', name: 'Umbral', icon: 'moon', text: 'Lobbed shots and regeneration. Moves second.' },
 ]
+
+const LEVEL_ICON: Record<Difficulty, IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 const LEVEL_TEXT: Record<Difficulty, string> = {
   easy: 'Slow to react, poor aim, rarely dodges.',
@@ -28,7 +31,7 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
       <div className="choices">
         {COURTS.map((c) => (
           <button key={c.court} className={`choice ${c.court}${court === c.court ? ' on' : ''}`} onClick={() => setCourt(c.court)}>
-            <strong>{c.name}</strong>
+            <strong><Icon name={c.icon} />{c.name}</strong>
             <span>{c.text}</span>
           </button>
         ))}
@@ -37,14 +40,14 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
       <div className="choices">
         {DIFFICULTY_LIST.map((d) => (
           <button key={d} className={`choice${difficulty === d ? ' on' : ''}`} onClick={() => setDifficulty(d)}>
-            <strong>{d[0].toUpperCase() + d.slice(1)}</strong>
+            <strong><Icon name={LEVEL_ICON[d]} />{d[0].toUpperCase() + d.slice(1)}</strong>
             <span>{LEVEL_TEXT[d]}</span>
           </button>
         ))}
       </div>
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={() => onStart(court, difficulty)}>Start</button>
-        <button onClick={onBack}>Back</button>
+        <button className="primary" onClick={() => onStart(court, difficulty)}><Icon name="play" />Start</button>
+        <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>
   )
