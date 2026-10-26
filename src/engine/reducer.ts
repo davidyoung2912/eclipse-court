@@ -4,10 +4,17 @@ import { BEACONS, isBeacon, samePos } from './rules/board'
 import { DAY, duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, Piece } from './rules/types'
+import { matchup } from './data/matchups'
 import { ROLE_STATS } from './data/roster'
 import { applySpell, canCast, leaderOf, SPELLS } from './rules/spells'
 
 export const ECLIPSE_ROUND = 30
+/**
+ * Pieces sitting on beacons are immune to Eclipse attrition and heal there, so two sides can dig in
+ * forever. Soak tests found games running past round 200; once this many rounds have passed the
+ * game is settled on beacons held, then total HP.
+ */
+export const ROUND_LIMIT = 50
 
 export function newGame(seed = 1): GameState {
   return {
@@ -64,8 +71,18 @@ export interface Odds {
   other: number
 }
 
-/** Stand-in odds from the stub duel across evenly spaced rolls; the phase 6 matchup table replaces it. */
+const isFresh = (p: Piece) => p.hp === p.maxHp
+
+/**
+ * Odds of a duel. Two full-health pieces use the simulated matchup table; if either is wounded the
+ * table (which assumes full health) does not apply, so the stub duel across evenly spaced rolls
+ * stands in.
+ */
 export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samples = 21): Odds {
+  if (isFresh(attacker) && isFresh(defender)) {
+    const m = matchup(attacker, defender, lum)
+    return { attacker: m.attacker, defender: m.defender, other: Math.max(0, 1 - m.attacker - m.defender) }
+  }
   let a = 0
   let d = 0
   for (let i = 0; i < samples; i++) {
@@ -123,6 +140,19 @@ function endRound(state: GameState): GameState {
   }
 }
 
+function adjudicate(state: GameState): GameState['winner'] {
+  const held: Record<Court, number> = { solari: 0, umbral: 0 }
+  const hp: Record<Court, number> = { solari: 0, umbral: 0 }
+  for (const b of BEACONS) {
+    const occ = pieceAt(state, b)
+    if (occ) held[occ.court]++
+  }
+  for (const p of state.pieces) hp[p.court] += p.hp
+  if (held.solari !== held.umbral) return held.solari > held.umbral ? 'solari' : 'umbral'
+  if (hp.solari !== hp.umbral) return hp.solari > hp.umbral ? 'solari' : 'umbral'
+  return 'draw'
+}
+
 function finishTurn(state: GameState): GameState {
   const mover = state.turn
   const winner = evaluateWin(state, mover)
@@ -132,7 +162,7 @@ function finishTurn(state: GameState): GameState {
   let next: GameState = { ...state, pieces, turn: other(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
-    next = { ...next, winner: eliminationWinner(next) }
+    next = { ...next, winner: eliminationWinner(next) ?? (next.round > ROUND_LIMIT ? adjudicate(next) : null) }
   }
   return next
 }

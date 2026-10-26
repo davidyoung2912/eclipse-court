@@ -5,6 +5,7 @@ import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { canCast, leaderOf, spellTargets, SPELLS } from '../engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Piece } from '../engine/rules/types'
+import { matchup } from '../engine/data/matchups'
 import { DIFFICULTY, type Difficulty } from './profile'
 
 const WIN = 1e5
@@ -15,14 +16,30 @@ const VALUE: Record<Piece['role'], number> = {
 
 const other = (c: Court): Court => (c === 'solari' ? 'umbral' : 'solari')
 
-/**
- * Rolls that stand in for the duel's spread of outcomes, equally weighted. The phase 6 matchup
- * table replaces this with real win chances per pairing and square luminance.
- */
+/** Rolls that stand in for the duel's spread of outcomes when a wounded piece is involved. */
 const ROLLS = [0.15, 0.5, 0.85]
 
-export function duelBranches(attacker: Piece, defender: Piece, lum: number): DuelOutcome[] {
-  return ROLLS.map((r) => stubDuel(attacker, defender, lum, r))
+export interface Branch {
+  duel: DuelOutcome
+  weight: number
+}
+
+/**
+ * Possible duel results with their chances. Full-health pairings use the simulated matchup table;
+ * wounded pieces fall back to the stub duel, which does account for current HP.
+ */
+export function duelBranches(attacker: Piece, defender: Piece, lum: number): Branch[] {
+  if (attacker.hp === attacker.maxHp && defender.hp === defender.maxHp) {
+    const m = matchup(attacker, defender, lum)
+    const hold = Math.max(0, 1 - m.attacker - m.defender)
+    const keep = (frac: number, max: number) => Math.max(1, Math.round(frac * max))
+    return [
+      { duel: { attackerHp: keep(m.attackerKeeps, attacker.maxHp), defenderHp: 0 }, weight: m.attacker },
+      { duel: { attackerHp: 0, defenderHp: keep(m.defenderKeeps, defender.maxHp) }, weight: m.defender },
+      { duel: { attackerHp: attacker.hp, defenderHp: defender.hp }, weight: hold },
+    ].filter((b) => b.weight > 0)
+  }
+  return ROLLS.map((r) => ({ duel: stubDuel(attacker, defender, lum, r), weight: 1 / ROLLS.length }))
 }
 
 /** Static score of a position for `court`; positive is good. */
@@ -111,8 +128,8 @@ function valueOf(state: GameState, action: Action, court: Court, depth: number, 
       const mover = state.pieces.find((p) => p.id === action.pieceId)!
       const branches = duelBranches(mover, target, squareLuminance(state, action.to))
       let sum = 0
-      for (const duel of branches) sum += search(reduce(state, { ...action, duel }), court, depth - 1, beam)
-      return sum / branches.length
+      for (const { duel, weight } of branches) sum += weight * search(reduce(state, { ...action, duel }), court, depth - 1, beam)
+      return sum
     }
   }
   return search(reduce(state, action), court, depth - 1, beam)

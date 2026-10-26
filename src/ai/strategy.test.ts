@@ -26,13 +26,13 @@ describe('strategy', () => {
     }
   })
 
-  it('takes a free capture of a valuable piece', () => {
+  it('takes a capture the matchup table says is safe', () => {
     const s: GameState = {
       ...newGame(1),
-      pieces: [lone('a', 'solari', 'bruiser', 2, 2), lone('b', 'umbral', 'marksman', 3, 2), lone('c', 'umbral', 'footsoldier', 6, 6)],
+      pieces: [lone('a', 'solari', 'bruiser', 0, 2), lone('b', 'umbral', 'footsoldier', 1, 2), lone('c', 'umbral', 'footsoldier', 6, 6)],
     }
     const a = chooseAction(s, 'hard', 1)
-    expect(a).toEqual({ type: 'move', pieceId: 'a', to: { x: 3, y: 2 } })
+    expect(a).toEqual({ type: 'move', pieceId: 'a', to: { x: 1, y: 2 } })
   })
 
   it('scores a won position above everything else', () => {

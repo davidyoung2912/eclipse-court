@@ -1,6 +1,6 @@
 import type { Court, Piece, Role } from '../rules/types'
 
-/** Placeholder stats; real numbers come from the balance simulator. */
+/** HP follows the design doc; power only feeds the stub duel used for wounded pieces. */
 export const ROLE_STATS: Record<Role, { hp: number; power: number }> = {
   footsoldier: { hp: 4, power: 1 },
   flier: { hp: 5, power: 1 },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ECLIPSE_ROUND, estimateOdds, newGame, reduce } from './reducer'
+import { ECLIPSE_ROUND, estimateOdds, ROUND_LIMIT, newGame, reduce } from './reducer'
 import { BEACONS } from './rules/board'
 import { squareLuminance } from './rules/luminance'
 import type { Court, GameState, Piece, Pos, Role } from './rules/types'
@@ -151,6 +151,20 @@ describe('the Eclipse', () => {
     ]
     const s = pass(world(ps, { round: ECLIPSE_ROUND + 1, eclipse: true }), 2 * 3)
     expect(s.winner).toBe('umbral')
+  })
+})
+
+describe('round limit', () => {
+  it('settles a stalemate on beacons held, then on total HP', () => {
+    const ps = [
+      piece('footsoldier', 'solari', { x: 3, y: 3 }, 's', 4),
+      piece('footsoldier', 'umbral', { x: 6, y: 3 }, 'u', 4),
+      piece('footsoldier', 'umbral', { x: 5, y: 5 }, 'v', 4),
+    ]
+    expect(pass(world(ps.slice(0, 2), { round: ROUND_LIMIT, eclipse: true }), 2).winner).toBe('draw')
+    expect(pass(world(ps, { round: ROUND_LIMIT, eclipse: true }), 2).winner).toBe('umbral')
+    const ahead = pass(world([ps[0], { ...ps[1], pos: { x: 4, y: 4 } }, ps[2]], { round: ROUND_LIMIT, eclipse: true }), 2)
+    expect(ahead.winner).toBe('solari')
   })
 })
 
