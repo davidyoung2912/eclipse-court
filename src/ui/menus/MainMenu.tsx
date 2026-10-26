@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
+import { Icon } from './icons'
 import { PieceArt } from '../../art/PieceArt'
 
 interface Props {
@@ -69,12 +70,12 @@ export function MainMenu({ onSkirmish, onCampaign, onTutorial, firstRun }: Props
       <div className="divider" aria-hidden="true"><i /></div>
       <p className="tagline">Light and dark trade places. Every capture is a duel.</p>
       <div className="menu-buttons">
-        <button className={firstRun ? undefined : 'primary'} onClick={onSkirmish}>Skirmish</button>
-        <button onClick={onCampaign}>Campaign</button>
+        <button className={firstRun ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
+        <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
       </div>
       <div className="menu-buttons small">
-        <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}>How to play</button>
-        <button onClick={() => { setMuted(sound); setSound(!sound) }}>Sound: {sound ? 'on' : 'off'}</button>
+        <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to play</button>
+        <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'on' : 'off'}</button>
       </div>
     </main>
   )

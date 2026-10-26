@@ -42,9 +42,9 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
           </button>
         ))}
       </div>
-      <div className="menu-buttons">
-        <button onClick={onBack}>Back</button>
+      <div className="menu-buttons stacked">
         <button className="primary" onClick={() => onStart(court, difficulty)}>Start</button>
+        <button onClick={onBack}>Back</button>
       </div>
     </main>
   )

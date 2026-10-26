@@ -244,3 +244,7 @@ body {
 .piece-card dd { margin: 0; }
 .piece-card .dots { letter-spacing: 0.15em; color: var(--solari-gold); }
 .piece-note { margin: 4px 0 0; font-size: 0.75rem; opacity: 0.8; }
+
+.menu-buttons.stacked { flex-direction: column; }
+.main-menu .menu-buttons button { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-icon { width: 1.3em; height: 1.3em; flex-shrink: 0; }
