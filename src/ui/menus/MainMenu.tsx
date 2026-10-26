@@ -42,7 +42,7 @@ function Hero() {
       {STARS.map((s, i) => (
         <circle key={i} className="star" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${s.delay}s` }} />
       ))}
-      <g transform="translate(160 110)">
+      <g transform="translate(160 110) scale(0.9)">
         <circle r="112" fill="url(#hero-corona)" className="corona" />
         <g className="rays">
           {RAYS.map((a) => (
