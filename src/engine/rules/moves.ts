@@ -34,6 +34,7 @@ function slide(state: GameState, piece: Piece, maxSteps: number, over: boolean):
 
 /** Every square the piece may move to; a square holding an enemy means an attack. */
 export function legalMoves(state: GameState, piece: Piece): Pos[] {
+  if (piece.bound) return []
   switch (piece.role) {
     case 'footsoldier':
     case 'bruiser':

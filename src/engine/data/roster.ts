@@ -64,6 +64,7 @@ export function startingPieces(): Piece[] {
         pos: { x: court === 'solari' ? x : 6 - x, y },
         rest: 0,
         moved: false,
+        bound: false,
       }
     }),
   )

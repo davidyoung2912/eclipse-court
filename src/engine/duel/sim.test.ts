@@ -41,7 +41,7 @@ describe('duel sim', () => {
   })
 
   it('never reports negative or oversized HP across roles', () => {
-    const roles: Role[] = ['footsoldier', 'marksman', 'bruiser']
+    const roles: Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
     for (const a of roles) for (const d of roles) for (const court of ['solari', 'umbral'] as const) {
       const s = createDuel(piece(court, a), piece(court === 'solari' ? 'umbral' : 'solari', d), 1)
       const out = runDuel(s, simpleDuelAi)

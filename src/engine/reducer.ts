@@ -5,6 +5,7 @@ import { DAY, duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, Piece } from './rules/types'
 import { ROLE_STATS } from './data/roster'
+import { applySpell, canCast, leaderOf, SPELLS } from './rules/spells'
 
 export const ECLIPSE_ROUND = 30
 
@@ -17,6 +18,7 @@ export function newGame(seed = 1): GameState {
     phase: 0,
     dir: 1,
     eclipse: false,
+    spells: { solari: [...SPELLS], umbral: [...SPELLS] },
     winner: null,
     rng: seed >>> 0,
     lastDuel: null,
@@ -55,6 +57,25 @@ export function stubDuel(
   }
 }
 
+export interface Odds {
+  /** Chance (0..1) the attacker wins, the defender wins, or both fall / neither dies. */
+  attacker: number
+  defender: number
+  other: number
+}
+
+/** Stand-in odds from the stub duel across evenly spaced rolls; the phase 6 matchup table replaces it. */
+export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samples = 21): Odds {
+  let a = 0
+  let d = 0
+  for (let i = 0; i < samples; i++) {
+    const o = stubDuel(attacker, defender, lum, (i + 0.5) / samples)
+    if (o.defenderHp <= 0 && o.attackerHp > 0) a++
+    else if (o.attackerHp <= 0 && o.defenderHp > 0) d++
+  }
+  return { attacker: a / samples, defender: d / samples, other: 1 - (a + d) / samples }
+}
+
 function eliminationWinner(state: GameState): GameState['winner'] {
   const solari = state.pieces.some((p) => p.court === 'solari')
   const umbral = state.pieces.some((p) => p.court === 'umbral')
@@ -74,8 +95,11 @@ function endRound(state: GameState): GameState {
   const eclipse = state.eclipse
   const survivors: Piece[] = []
   const dead: Piece[] = []
+  const auras = state.pieces.filter((p) => p.role === 'aura')
   for (const p of state.pieces) {
     let { hp, rest } = p
+    // An Aura soothes the allies standing next to it.
+    if (auras.some((a) => a.id !== p.id && a.court === p.court && Math.max(Math.abs(a.pos.x - p.pos.x), Math.abs(a.pos.y - p.pos.y)) === 1)) hp += 1
     const onBeacon = isBeacon(p.pos)
     if (p.moved) rest = 0
     else {
@@ -103,7 +127,9 @@ function finishTurn(state: GameState): GameState {
   const mover = state.turn
   const winner = evaluateWin(state, mover)
   if (winner) return { ...state, winner }
-  let next: GameState = { ...state, turn: other(mover) }
+  // A Bind lasts until the bound court's own turn has passed.
+  const pieces = state.pieces.map((p) => (p.court === mover && p.bound ? { ...p, bound: false } : p))
+  let next: GameState = { ...state, pieces, turn: other(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
     next = { ...next, winner: eliminationWinner(next) }
@@ -111,10 +137,23 @@ function finishTurn(state: GameState): GameState {
   return next
 }
 
+/** A cast costs the Leader 1 HP and the whole turn; each spell works once per game. */
+function cast(state: GameState, a: Extract<Action, { type: 'cast' }>): GameState {
+  const court = state.turn
+  const leader = leaderOf(state, court)
+  if (!leader || !canCast(state, court, a.spell)) return state
+  const applied = applySpell(state, court, a.spell, a.pieceId, a.to)
+  if (!applied) return state
+  const pieces = applied.pieces.map((p) => (p.id === leader.id ? { ...p, hp: p.hp - 1, moved: true } : p))
+  const spells = { ...applied.spells, [court]: applied.spells[court].filter((s) => s !== a.spell) }
+  return finishTurn({ ...applied, pieces, spells, lastDuel: null })
+}
+
 /** Pure, deterministic transition. Illegal actions return the state unchanged. */
 export function reduce(state: GameState, action: Action): GameState {
   if (state.winner) return state
   if (action.type === 'pass') return finishTurn(state)
+  if (action.type === 'cast') return cast(state, action)
 
   const piece = state.pieces.find((p) => p.id === action.pieceId)
   if (!piece || piece.court !== state.turn) return state

@@ -15,10 +15,12 @@ interface Props {
   state: GameState
   selected: Piece | null
   moves: Pos[]
+  /** Pieces a chosen spell may target. */
+  targetIds?: string[]
   onSquare: (p: Pos) => void
 }
 
-export function Board({ state, selected, moves, onSquare }: Props) {
+export function Board({ state, selected, moves, targetIds = [], onSquare }: Props) {
   const isMove = (p: Pos) => moves.some((m) => m.x === p.x && m.y === p.y)
   return (
     <svg className="board" viewBox={`0 0 ${SIZE} ${SIZE}`} role="grid">
@@ -37,9 +39,9 @@ export function Board({ state, selected, moves, onSquare }: Props) {
       })}
       {state.pieces.map((pc) => {
         const { cx, cy } = toScreen(pc.pos)
-        const attack = isMove(pc.pos)
+        const attack = isMove(pc.pos) || targetIds.includes(pc.id)
         return (
-          <g key={pc.id} onClick={() => onSquare(pc.pos)} className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}`}>
+          <g key={pc.id} onClick={() => onSquare(pc.pos)} className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}`}>
             <title>{ROLE_NAMES[pc.court][pc.role]} {pc.hp}/{pc.maxHp}</title>
             <circle cx={cx} cy={cy} r={0.36} />
             <text x={cx} y={cy + 0.12} textAnchor="middle" className="glyph">{GLYPH[pc.role]}</text>

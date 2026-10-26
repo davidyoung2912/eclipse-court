@@ -4,7 +4,7 @@ import { legalMoves } from './moves'
 import type { GameState, Piece, Pos, Role } from './types'
 
 const piece = (role: Role, pos: Pos, court: Piece['court'] = 'solari', id: string = role): Piece => ({
-  id, court, role, hp: 5, maxHp: 5, pos, rest: 0, moved: false,
+  id, court, role, hp: 5, maxHp: 5, pos, rest: 0, moved: false, bound: false,
 })
 const world = (...pieces: Piece[]): GameState => ({ ...newGame(), pieces })
 const keys = (ps: Pos[]) => ps.map((p) => `${p.x},${p.y}`).sort()

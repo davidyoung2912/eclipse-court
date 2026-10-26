@@ -43,6 +43,8 @@ export interface Fighter {
   cooldown: number
   /** Remaining forced-motion time (lunge dash). */
   dash: number
+  /** Damage the current rush deals on contact; 0 once spent or when not rushing. */
+  rushDamage: number
   /** Damage multiplier for hits this fighter lands, and for hits it takes (luminance). */
   dealt: number
   taken: number

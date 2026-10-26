@@ -6,6 +6,12 @@ import {
 } from './types'
 
 interface Style {
+  /** How the attack lands: a swing, a ground slam, a shot, a self-centred pulse or a charging dash. */
+  kind: 'swing' | 'slam' | 'shot' | 'pulse' | 'rush'
+  /** Distance (beyond body radii for melee kinds) at which the AI starts attacking. */
+  reach: number
+  /** Dashes forward on every swing instead of only for the Solari court. */
+  dashAlways?: boolean
   speed: number
   radius: number
   cooldown: number
@@ -17,14 +23,17 @@ interface Style {
 }
 
 /** Placeholder tuning; the balance simulator fixes these in phase 6. Unlisted roles borrow the footsoldier. */
-const STYLE: Partial<Record<Role, Style>> = {
-  footsoldier: { speed: 3.2, radius: 0.45, cooldown: 0.45, chargeTime: 0.8, damage: 1, chargeBonus: 2 },
-  marksman: { speed: 2.8, radius: 0.45, cooldown: 0.6, chargeTime: 0.9, damage: 1, chargeBonus: 2 },
-  bruiser: { speed: 2.0, radius: 0.6, cooldown: 1.4, chargeTime: 1.0, damage: 3, chargeBonus: 1.5 },
+const STYLE: Record<Role, Style> = {
+  footsoldier: { kind: 'swing', reach: 1.1, speed: 3.2, radius: 0.45, cooldown: 0.45, chargeTime: 0.8, damage: 1, chargeBonus: 2 },
+  flier: { kind: 'swing', reach: 1.0, dashAlways: true, speed: 4.2, radius: 0.4, cooldown: 0.4, chargeTime: 0.7, damage: 1, chargeBonus: 1.8 },
+  marksman: { kind: 'shot', reach: 8, speed: 2.8, radius: 0.45, cooldown: 0.6, chargeTime: 0.9, damage: 1, chargeBonus: 2 },
+  bruiser: { kind: 'slam', reach: 1.6, speed: 2.0, radius: 0.6, cooldown: 1.4, chargeTime: 1.0, damage: 3, chargeBonus: 1.5 },
+  charger: { kind: 'rush', reach: 3.5, speed: 3.0, radius: 0.5, cooldown: 1.0, chargeTime: 0.6, damage: 2, chargeBonus: 1.6 },
+  aura: { kind: 'pulse', reach: 1.6, speed: 2.6, radius: 0.5, cooldown: 0.9, chargeTime: 0.9, damage: 1, chargeBonus: 2 },
+  leader: { kind: 'swing', reach: 1.3, speed: 3.0, radius: 0.5, cooldown: 0.55, chargeTime: 0.8, damage: 1.5, chargeBonus: 1.8 },
 }
-export const styleOf = (role: Role): Style => STYLE[role] ?? STYLE.footsoldier!
+export const styleOf = (role: Role): Style => STYLE[role]
 
-const MELEE_REACH = 1.1
 const MELEE_ARC = Math.PI / 3
 const SLAM_REACH = 1.2
 const SLAM_RADIUS = 1.6
@@ -36,6 +45,11 @@ const LOB_MAX = 7
 const UMBRAL_REGEN = 0.1
 const DASH_TIME = 0.15
 const DASH_SPEED = 6
+const RUSH_SPEED = 11
+const RUSH_BASE_TIME = 0.15
+const RUSH_CHARGE_TIME = 0.35
+const PULSE_BASE = 1.4
+const PULSE_CHARGE = 0.9
 
 export const DEFAULT_CONFIG: DuelConfig = { aimCone: (50 * Math.PI) / 180 }
 
@@ -44,7 +58,7 @@ export function createFighter(piece: Piece, pos: Vec, facing: number, lum: numbe
   return {
     court: piece.court, role: piece.role, pos, vel: { x: 0, y: 0 }, facing,
     hp: piece.hp, maxHp: piece.maxHp, radius: styleOf(piece.role).radius,
-    charge: 0, cooldown: 0, dash: 0, dealt: mods.dealt, taken: mods.taken, wasHeld: false,
+    charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt, taken: mods.taken, wasHeld: false,
   }
 }
 
@@ -101,11 +115,21 @@ function fire(state: DuelState, i: 0 | 1, power: number, events: DuelEvent[]) {
   me.cooldown = st.cooldown
   const dir = { x: Math.cos(me.facing), y: Math.sin(me.facing) }
 
-  if (me.role === 'bruiser') {
+  const foeIdx = (1 - i) as 0 | 1
+  if (st.kind === 'slam') {
     const at = { x: me.pos.x + dir.x * SLAM_REACH, y: me.pos.y + dir.y * SLAM_REACH }
     events.push({ type: 'slam', by: i, at })
-    if (dist(at, foe.pos) <= SLAM_RADIUS + foe.radius) damage(state, i, (1 - i) as 0 | 1, base, foe.pos, events)
-  } else if (me.role === 'marksman') {
+    if (dist(at, foe.pos) <= SLAM_RADIUS + foe.radius) damage(state, i, foeIdx, base, foe.pos, events)
+  } else if (st.kind === 'pulse') {
+    const radius = PULSE_BASE + PULSE_CHARGE * power
+    events.push({ type: 'slam', by: i, at: { ...me.pos } })
+    if (dist(me.pos, foe.pos) <= radius + foe.radius) damage(state, i, foeIdx, base, foe.pos, events)
+  } else if (st.kind === 'rush') {
+    events.push({ type: 'swing', by: i })
+    me.dash = RUSH_BASE_TIME + RUSH_CHARGE_TIME * power
+    me.vel = { x: dir.x * RUSH_SPEED, y: dir.y * RUSH_SPEED }
+    me.rushDamage = base
+  } else if (st.kind === 'shot') {
     events.push({ type: 'shoot', by: i })
     if (me.court === 'solari') {
       state.projectiles.push({
@@ -123,13 +147,13 @@ function fire(state: DuelState, i: 0 | 1, power: number, events: DuelEvent[]) {
     }
   } else {
     events.push({ type: 'swing', by: i })
-    if (me.court === 'solari') {
+    if (me.court === 'solari' || st.dashAlways) {
       me.dash = DASH_TIME
       me.vel = { x: dir.x * DASH_SPEED, y: dir.y * DASH_SPEED }
     }
     const inArc = angleDiff(me.facing, angleTo(me.pos, foe.pos)) <= MELEE_ARC
-    if (inArc && dist(me.pos, foe.pos) <= MELEE_REACH + me.radius + foe.radius)
-      damage(state, i, (1 - i) as 0 | 1, base, foe.pos, events)
+    if (inArc && dist(me.pos, foe.pos) <= st.reach + me.radius + foe.radius)
+      damage(state, i, foeIdx, base, foe.pos, events)
   }
 }
 
@@ -140,7 +164,16 @@ function stepFighter(state: DuelState, i: 0 | 1, input: DuelInput, events: DuelE
 
   if (me.dash > 0) {
     me.dash -= DT
-    if (me.dash <= 0) me.vel = { x: 0, y: 0 }
+    const foe = state.fighters[1 - i]
+    if (me.rushDamage > 0 && dist(me.pos, foe.pos) <= me.radius + foe.radius + 0.3) {
+      damage(state, i, (1 - i) as 0 | 1, me.rushDamage, foe.pos, events)
+      me.rushDamage = 0
+      me.dash = 0
+    }
+    if (me.dash <= 0) {
+      me.vel = { x: 0, y: 0 }
+      me.rushDamage = 0
+    }
   } else {
     const len = Math.hypot(input.mx, input.my)
     const k = len > 1 ? 1 / len : 1

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ECLIPSE_ROUND, newGame, reduce } from './reducer'
+import { ECLIPSE_ROUND, estimateOdds, newGame, reduce } from './reducer'
 import { BEACONS } from './rules/board'
 import { squareLuminance } from './rules/luminance'
 import type { Court, GameState, Piece, Pos, Role } from './rules/types'
 
 const piece = (role: Role, court: Court, pos: Pos, id: string, hp = 5): Piece => ({
-  id, court, role, hp, maxHp: 10, pos, rest: 0, moved: false,
+  id, court, role, hp, maxHp: 10, pos, rest: 0, moved: false, bound: false,
 })
 const world = (pieces: Piece[], extra: Partial<GameState> = {}): GameState => ({
   ...newGame(), pieces, ...extra,
@@ -151,5 +151,25 @@ describe('the Eclipse', () => {
     ]
     const s = pass(world(ps, { round: ECLIPSE_ROUND + 1, eclipse: true }), 2 * 3)
     expect(s.winner).toBe('umbral')
+  })
+})
+
+describe('odds and auras', () => {
+  it('odds sum to 1 and favour the stronger piece', () => {
+    const o = estimateOdds(piece('bruiser', 'solari', { x: 2, y: 2 }, 'a', 10), piece('footsoldier', 'umbral', { x: 3, y: 2 }, 'b', 4), 0)
+    expect(o.attacker + o.defender + o.other).toBeCloseTo(1)
+    expect(o.attacker).toBeGreaterThan(o.defender)
+  })
+
+  it('an Aura heals adjacent allies at round end', () => {
+    const s = world([
+      piece('aura', 'solari', { x: 1, y: 1 }, 'au', 7),
+      piece('footsoldier', 'solari', { x: 2, y: 1 }, 'f', 1),
+      piece('footsoldier', 'solari', { x: 1, y: 4 }, 'far', 1),
+      piece('leader', 'umbral', { x: 6, y: 0 }, 'ul', 7),
+    ])
+    const after = pass(s, 2)
+    expect(after.pieces.find((p) => p.id === 'f')!.hp).toBe(2)
+    expect(after.pieces.find((p) => p.id === 'far')!.hp).toBe(1)
   })
 })

@@ -91,3 +91,28 @@ body {
 }
 .attack-btn.held { background: rgba(232, 182, 74, 0.8); transform: scale(1.08); }
 .options { display: flex; gap: 12px; justify-content: center; font-size: 0.8rem; margin-bottom: 6px; }
+
+.spells { margin-bottom: 8px; }
+.spell-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.spell {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--solari-gold);
+  background: transparent; color: var(--solari-cream); font-size: 0.8rem;
+}
+.spell.active { background: var(--solari-gold); color: #1b1740; }
+.spell:disabled { opacity: 0.3; }
+.spell-hint { margin: 6px 0 0; text-align: center; font-size: 0.8rem; opacity: 0.8; }
+.piece.bound circle:first-of-type { stroke-dasharray: 0.1 0.06; }
+
+.confirm {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; max-width: 560px; margin: 0 auto;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); background: #1d1745;
+  border-top: 2px solid var(--umbral-violet); border-radius: 16px 16px 0 0;
+}
+.confirm-title { margin: 0 0 10px; font-weight: 600; text-align: center; }
+.odds { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: #000; }
+.odds span { flex-basis: 0; }
+.odds-a.solari, .odds-d.solari { background: var(--solari-gold); }
+.odds-a.umbral, .odds-d.umbral { background: var(--umbral-violet); }
+.odds-o { background: #6b6b7e; }
+.odds-text { margin: 8px 0 12px; text-align: center; font-size: 0.85rem; }
+.buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
