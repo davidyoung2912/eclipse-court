@@ -20,3 +20,54 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 8px env(safe-area-inset-bottom);
+  gap: 8px;
+}
+
+.hud { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; }
+.hud-round { display: flex; flex-direction: column; font-weight: 600; }
+.turn { font-size: 0.8rem; font-weight: 400; }
+.turn-solari { color: var(--solari-gold); }
+.turn-umbral { color: var(--umbral-violet); }
+
+.dial { display: flex; gap: 6px; align-items: center; }
+.dial span {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 0.75rem; font-weight: 700; color: #1b1740;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.dial-now { width: 38px !important; height: 38px !important; box-shadow: 0 0 10px rgba(255, 220, 140, 0.5); }
+.dial-next { opacity: 0.85; }
+
+.board { width: 100%; max-height: 100%; aspect-ratio: 1; flex: 0 1 auto; touch-action: manipulation; }
+.sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }
+.sq.fixed { opacity: 0.85; }
+.beacon { fill: none; stroke: var(--solari-gold); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
+.move-dot { fill: rgba(255, 240, 160, 0.9); pointer-events: none; }
+
+.piece { cursor: pointer; }
+.piece circle:first-of-type { stroke-width: 0.05; }
+.piece.solari circle:first-of-type { fill: var(--solari-gold); stroke: var(--solari-cream); }
+.piece.umbral circle:first-of-type { fill: var(--umbral-violet); stroke: #d8c8ff; }
+.piece.selected circle:first-of-type { stroke: #fff; stroke-width: 0.1; }
+.piece.attackable circle:first-of-type { stroke: #ff5a5a; stroke-width: 0.1; }
+.glyph { font: 700 0.34px system-ui; fill: #1b1740; pointer-events: none; }
+.piece.umbral .glyph { fill: #fff; }
+.pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
+
+.tray { margin-top: auto; padding-bottom: 8px; }
+.status { margin: 0 0 8px; text-align: center; min-height: 1.4em; }
+.buttons { display: flex; gap: 8px; }
+.buttons button {
+  flex: 1; padding: 14px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
+  background: var(--umbral-indigo); color: var(--fg); font-size: 1rem;
+}
+.buttons button:disabled { opacity: 0.4; }
