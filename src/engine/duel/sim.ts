@@ -35,21 +35,21 @@ const STYLE: Record<Role, Style> = {
 export const styleOf = (role: Role): Style => STYLE[role]
 
 const MELEE_ARC = Math.PI / 3
-const SLAM_REACH = 1.2
-const SLAM_RADIUS = 1.6
-const SHOT_SPEED = 9
-const LOB_SPEED = 5
-const LOB_SPLASH = 0.9
-const LOB_MIN = 2
-const LOB_MAX = 7
+export const SLAM_REACH = 1.2
+export const SLAM_RADIUS = 1.6
+export const SHOT_SPEED = 9
+export const LOB_SPEED = 5
+export const LOB_SPLASH = 0.9
+export const LOB_MIN = 2
+export const LOB_MAX = 7
 const UMBRAL_REGEN = 0.1
 const DASH_TIME = 0.15
 const DASH_SPEED = 6
-const RUSH_SPEED = 11
-const RUSH_BASE_TIME = 0.15
-const RUSH_CHARGE_TIME = 0.35
-const PULSE_BASE = 1.4
-const PULSE_CHARGE = 0.9
+export const RUSH_SPEED = 11
+export const RUSH_BASE_TIME = 0.15
+export const RUSH_CHARGE_TIME = 0.35
+export const PULSE_BASE = 1.4
+export const PULSE_CHARGE = 0.9
 
 export const DEFAULT_CONFIG: DuelConfig = { aimCone: (50 * Math.PI) / 180 }
 
@@ -99,6 +99,10 @@ function damage(state: DuelState, from: 0 | 1, to: 0 | 1, base: number, at: Vec,
 function aim(state: DuelState, i: 0 | 1, input: DuelInput) {
   const me = state.fighters[i]
   const foe = state.fighters[1 - i]
+  if (input.aim !== undefined) {
+    me.facing = input.aim
+    return
+  }
   const moving = Math.hypot(input.mx, input.my) > 0.1
   const heading = moving ? Math.atan2(input.my, input.mx) : me.facing
   const toFoe = angleTo(me.pos, foe.pos)

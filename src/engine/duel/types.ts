@@ -18,6 +18,8 @@ export interface DuelInput {
   mx: number
   my: number
   attack: boolean
+  /** Absolute facing in radians that bypasses aim assist; the AI sets it, touch controls never do. */
+  aim?: number
 }
 
 export const NO_INPUT: DuelInput = { mx: 0, my: 0, attack: false }

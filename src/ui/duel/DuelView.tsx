@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { simpleDuelAi } from '../../ai/duelAi'
+import { createDuelAi } from '../../ai/duelAi'
+import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/sim'
 import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
 import type { DuelOutcome, Piece } from '../../engine/rules/types'
@@ -16,6 +17,11 @@ interface Props {
   defender: Piece
   luminance: number
   options: DuelOptions
+  /** Which fighter the player steers: 0 attacks from the bottom, 1 defends and is shown at the bottom too. */
+  playerSide?: 0 | 1
+  /** Duel skill (0..1) of the AI fighter. */
+  opponentSkill: number
+  seed: number
   onDone: (outcome: DuelOutcome) => void
 }
 
@@ -79,7 +85,7 @@ function draw(ctx: CanvasRenderingContext2D, s: DuelState, w: number, h: number,
   }
 }
 
-export function DuelView({ attacker, defender, luminance, options, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, options, playerSide = 0, opponentSkill, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
@@ -98,6 +104,10 @@ export function DuelView({ attacker, defender, luminance, options, onDone }: Pro
   useEffect(() => {
     const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0 }
     const state = createDuel(attacker, defender, luminance, cfg)
+    const ai = createDuelAi(profileForSkill(opponentSkill), seed)
+    const foeSide = (1 - playerSide) as 0 | 1
+    // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
+    const flip = playerSide === 1
     let raf = 0
     let last = performance.now()
     let acc = 0
@@ -119,12 +129,17 @@ export function DuelView({ attacker, defender, luminance, options, onDone }: Pro
         el.height = Math.round(h * dpr)
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (flip) ctx.transform(-1, 0, 0, -1, w, h)
 
       if (freeze > 0) freeze -= dt
       else acc += dt
       while (acc >= DT && !state.done && freeze <= 0) {
         acc -= DT
-        const events = stepDuel(state, [input.current, simpleDuelAi(state, 1)])
+        const mine = flip ? { ...input.current, mx: -input.current.mx, my: -input.current.my } : input.current
+        const inputs: [DuelInput, DuelInput] = [NO_INPUT, NO_INPUT]
+        inputs[playerSide] = mine
+        inputs[foeSide] = ai(state, foeSide)
+        const events = stepDuel(state, inputs)
         for (const e of events) {
           if (e.type === 'hit') {
             freeze = HIT_STOP
@@ -135,7 +150,8 @@ export function DuelView({ attacker, defender, luminance, options, onDone }: Pro
       }
       if (state.done && endTimer < 0) {
         const out = duelOutcome(state)
-        setBanner(out.attackerHp > 0 && out.defenderHp <= 0 ? 'Victory' : out.attackerHp <= 0 && out.defenderHp > 0 ? 'Defeat' : out.attackerHp <= 0 ? 'Both fall' : 'Draw')
+        const [mineHp, foeHp] = playerSide === 0 ? [out.attackerHp, out.defenderHp] : [out.defenderHp, out.attackerHp]
+        setBanner(mineHp > 0 && foeHp <= 0 ? 'Victory' : mineHp <= 0 && foeHp > 0 ? 'Defeat' : mineHp <= 0 ? 'Both fall' : 'Draw')
         endTimer = END_DELAY
       }
       if (endTimer >= 0) {
@@ -156,7 +172,7 @@ export function DuelView({ attacker, defender, luminance, options, onDone }: Pro
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [attacker, defender, luminance])
+  }, [attacker, defender, luminance, playerSide, opponentSkill, seed])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return
@@ -190,7 +206,7 @@ export function DuelView({ attacker, defender, luminance, options, onDone }: Pro
   return (
     <div className="duel">
       <div className="duel-hud">
-        <span>{attacker.court === 'solari' ? 'Solari' : 'Umbral'} attacks</span>
+        <span>{attacker.court === 'solari' ? 'Solari' : 'Umbral'} attacks{playerSide === 1 ? ' — defend!' : ''}</span>
         <span>{Math.ceil(time)}s</span>
       </div>
       <canvas ref={canvas} className="duel-canvas" />

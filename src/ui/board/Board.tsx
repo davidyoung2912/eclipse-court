@@ -9,7 +9,8 @@ const GLYPH: Record<Piece['role'], string> = {
 }
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
-const toScreen = ({ x, y }: Pos) => ({ cx: y + 0.5, cy: SIZE - x - 0.5 })
+const toScreen = ({ x, y }: Pos, flip: boolean) =>
+  flip ? { cx: SIZE - y - 0.5, cy: x + 0.5 } : { cx: y + 0.5, cy: SIZE - x - 0.5 }
 
 interface Props {
   state: GameState
@@ -18,14 +19,16 @@ interface Props {
   /** Pieces a chosen spell may target. */
   targetIds?: string[]
   onSquare: (p: Pos) => void
+  /** Turn the board half a turn so the Umbral edge is at the bottom. */
+  flip?: boolean
 }
 
-export function Board({ state, selected, moves, targetIds = [], onSquare }: Props) {
+export function Board({ state, selected, moves, targetIds = [], onSquare, flip = false }: Props) {
   const isMove = (p: Pos) => moves.some((m) => m.x === p.x && m.y === p.y)
   return (
     <svg className="board" viewBox={`0 0 ${SIZE} ${SIZE}`} role="grid">
       {allSquares().map((p) => {
-        const { cx, cy } = toScreen(p)
+        const { cx, cy } = toScreen(p, flip)
         const lum = squareLuminance(state, p)
         const target = isMove(p)
         return (
@@ -38,7 +41,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare }: Prop
         )
       })}
       {state.pieces.map((pc) => {
-        const { cx, cy } = toScreen(pc.pos)
+        const { cx, cy } = toScreen(pc.pos, flip)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id)
         return (
           <g key={pc.id} onClick={() => onSquare(pc.pos)} className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}`}>

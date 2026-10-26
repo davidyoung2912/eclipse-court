@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { simpleDuelAi } from '../../ai/duelAi'
+import { createDuelAi } from '../../ai/duelAi'
+import { profileForSkill } from '../../ai/profile'
 import { startingPieces } from '../data/roster'
 import { createDuel, duelOutcome, runDuel, stepDuel } from './sim'
 import { ARENA_H, ARENA_W, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT } from './types'
@@ -11,11 +12,16 @@ const piece = (court: 'solari' | 'umbral', role: Role) => {
   return p
 }
 
+const bothAi = () => {
+  const ais = [createDuelAi(profileForSkill(0.5), 1), createDuelAi(profileForSkill(0.5), 2)]
+  return (s: Parameters<typeof runDuel>[0], i: 0 | 1) => ais[i](s, i)
+}
+
 describe('duel sim', () => {
   it('is deterministic for the same inputs', () => {
     const run = () => {
       const s = createDuel(piece('solari', 'footsoldier'), piece('umbral', 'marksman'), 1)
-      const out = runDuel(s, simpleDuelAi)
+      const out = runDuel(s, bothAi())
       return { out, hp: s.fighters.map((f) => f.hp), t: s.t }
     }
     expect(run()).toEqual(run())
@@ -44,7 +50,7 @@ describe('duel sim', () => {
     const roles: Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
     for (const a of roles) for (const d of roles) for (const court of ['solari', 'umbral'] as const) {
       const s = createDuel(piece(court, a), piece(court === 'solari' ? 'umbral' : 'solari', d), 1)
-      const out = runDuel(s, simpleDuelAi)
+      const out = runDuel(s, bothAi())
       for (const [hp, f] of [[out.attackerHp, s.fighters[0]], [out.defenderHp, s.fighters[1]]] as const) {
         expect(hp).toBeGreaterThanOrEqual(0)
         expect(hp).toBeLessThanOrEqual(f.maxHp)

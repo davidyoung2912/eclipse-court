@@ -116,3 +116,27 @@ body {
 .odds-o { background: #6b6b7e; }
 .odds-text { margin: 8px 0 12px; text-align: center; font-size: 0.85rem; }
 .buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
+
+.menu { justify-content: center; gap: 12px; overflow-y: auto; }
+.menu h1 { margin: 0; text-align: center; font-size: 2.2rem; color: var(--solari-gold); }
+.menu h2, .menu h3 { margin: 0; }
+.menu h3 { margin-top: 8px; font-size: 0.9rem; opacity: 0.8; }
+.tagline { margin: 0 0 16px; text-align: center; opacity: 0.8; }
+.menu-buttons { display: flex; gap: 8px; margin-top: 12px; }
+.menu-buttons button {
+  flex: 1; padding: 16px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
+  background: var(--umbral-indigo); color: var(--fg); font-size: 1.05rem;
+}
+.menu-buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 10px; text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: var(--fg); font-size: 0.95rem;
+}
+.choice span { font-size: 0.8rem; opacity: 0.75; }
+.choice.on { border-color: var(--solari-gold); background: rgba(232, 182, 74, 0.15); }
+.choice.won { border-color: #6fe08a; }
+.choice:disabled { opacity: 0.35; }
+.campaign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.campaign .choice { width: 100%; }
+.result { z-index: 20; }
