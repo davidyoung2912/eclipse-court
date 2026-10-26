@@ -226,30 +226,22 @@ body {
 .lesson h2 { margin: 0 0 4px; font-size: 1rem; color: var(--solari-gold); }
 .lesson p { margin: 0; font-size: 0.85rem; line-height: 1.35; }
 
-/* Selected-piece summary: fills the space between the board and the tray */
+/* Selected-piece summary: a fixed-height strip under the board, so selecting never shifts the layout */
 .piece-card {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 8px 12px; border-radius: 12px;
-  background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35); font-size: 0.82rem; line-height: 1.3;
+  flex: 0 0 auto; height: 5.6rem; overflow: hidden; padding: 6px 10px; border-radius: 10px;
+  background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35); font-size: 0.72rem; line-height: 1.35;
 }
 .piece-card.solari { border-color: rgba(232, 182, 74, 0.6); }
 .piece-card.empty { display: grid; place-items: center; text-align: center; opacity: 0.75; border-style: dashed; }
 .piece-card.empty p { margin: 0; }
-.piece-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-.piece-card header b { font-size: 1rem; }
+.piece-card p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.piece-card i { font-style: normal; opacity: 0.6; display: inline-block; min-width: 3.4em; }
+.piece-card header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; white-space: nowrap; }
+.piece-card header b { font-size: 0.9rem; }
 .piece-card.solari header b { color: var(--solari-gold); }
 .piece-card.umbral header b { color: #b9a2ff; }
-.piece-card header span { opacity: 0.75; font-size: 0.75rem; text-align: right; }
-.piece-card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; }
-.piece-card dt { opacity: 0.6; }
-.piece-card dd { margin: 0; }
-.piece-card .dots { letter-spacing: 0.15em; color: var(--solari-gold); }
-.piece-note { margin: 4px 0 0; font-size: 0.75rem; opacity: 0.8; }
-
-.menu-buttons.stacked { flex-direction: column; }
-.buttons button, .menu-buttons button, .spell { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.spell { gap: 5px; }
-.spell .btn-icon { width: 1.1em; height: 1.1em; }
-.choice strong { display: flex; align-items: center; gap: 8px; }
-.attack-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-.attack-btn .btn-icon { width: 1.6em; height: 1.6em; }
-.btn-icon { width: 1.3em; height: 1.3em; flex-shrink: 0; }
+.piece-card header span { opacity: 0.75; font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; }
+.piece-card header em { margin-left: auto; font-style: normal; font-weight: 700; }
+.piece-stats i { min-width: 0; margin-right: 4px; }
+.piece-stats .dots { letter-spacing: 0.1em; color: var(--solari-gold); margin-right: 10px; }
+.piece-stats small { font-size: 0.66rem; opacity: 0.8; }

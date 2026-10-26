@@ -23,26 +23,27 @@ export function PieceCard({ state, piece, human, hint }: Props) {
   const st = styleOf(piece.role)
   const lum = squareLuminance(state, piece.pos)
   const favoured = favouredCourt(lum)
-  const note = [
-    isBeacon(piece.pos) ? 'On a beacon: untargetable by spells, heals +1 per round' : '',
-    piece.bound ? 'Bound: cannot move this turn' : '',
-    piece.hp < piece.maxHp ? 'Wounded: heals 1 every 2 rounds it stays still' : '',
-    favoured === piece.court ? 'The light favours it here' : favoured ? 'The light works against it here' : '',
-  ].filter(Boolean)
+  const note =
+    piece.bound ? 'Bound: cannot move this turn'
+      : isBeacon(piece.pos) ? 'On a beacon: spell-proof, heals +1'
+        : piece.hp < piece.maxHp ? 'Wounded: heals 1 per 2 resting rounds'
+          : favoured === piece.court ? 'The light favours it here'
+            : favoured ? 'The light works against it here' : ''
+  const duel = [info.fight, courtFight(piece.court, piece.role)].filter(Boolean).join(' · ')
   return (
     <section className={`piece-card ${piece.court}`} aria-live="polite">
       <header>
         <b>{ROLE_NAMES[piece.court][piece.role]}</b>
         <span>{info.label} · {piece.court === 'solari' ? 'Solari' : 'Umbral'}{piece.court === human ? '' : ' (enemy)'}</span>
+        <em>HP {piece.hp}/{piece.maxHp}</em>
       </header>
-      <dl>
-        <dt>Health</dt><dd>{piece.hp} / {piece.maxHp}</dd>
-        <dt>Moves</dt><dd>{info.move}</dd>
-        <dt>Duel</dt><dd>{info.fight} {courtFight(piece.court, piece.role)}</dd>
-        <dt>Power</dt><dd className="dots">{stars(st.damage * 2)}</dd>
-        <dt>Speed</dt><dd className="dots">{stars(st.speed * 1.2)}</dd>
-      </dl>
-      {note.length > 0 && <p className="piece-note">{note.join(' · ')}</p>}
+      <p><i>Moves</i>{info.move}</p>
+      <p><i>Duel</i>{duel}</p>
+      <p className="piece-stats">
+        <i>Power</i><span className="dots">{stars(st.damage * 2)}</span>
+        <i>Speed</i><span className="dots">{stars(st.speed * 1.2)}</span>
+        {note && <small>{note}</small>}
+      </p>
     </section>
   )
 }
