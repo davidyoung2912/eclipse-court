@@ -9,11 +9,12 @@ let padFilter: BiquadFilterNode | null = null
 let padOscs: OscillatorNode[] = []
 let muted = readMuted()
 
+/** Sound is off until the player turns it on. */
 function readMuted(): boolean {
   try {
-    return localStorage.getItem(MUTE_KEY) === '1'
+    return localStorage.getItem(MUTE_KEY) !== '0'
   } catch {
-    return false
+    return true
   }
 }
 
