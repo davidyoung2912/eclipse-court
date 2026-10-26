@@ -19,7 +19,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     kind: 'light',
     title: '2. The light shifts',
-    text: 'Once both courts have moved, the day advances. The dial shows the centre ring now and the next three steps. Squares near the middle brighten and darken in a ripple, while the outer columns stay Solari-bright on the left and Umbral-dark on the right. Gold favours Solari in duels, violet favours Umbral.',
+    text: 'Once both courts have moved, the day advances. The dial shows the centre ring now and the next three steps. Squares near the middle brighten and darken in a ripple, while the outer rows never change: the Solari half at the bottom stays bright and the Umbral half at the top stays dark. Gold favours Solari in duels, violet favours Umbral.',
   },
   {
     kind: 'duel',
