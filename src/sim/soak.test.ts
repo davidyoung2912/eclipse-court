@@ -37,7 +37,7 @@ describe('matchup table', () => {
   })
 
   it('feeds the odds bar for fresh pieces', () => {
-    const o = estimateOdds(fresh('solari', 'bruiser', 'a'), fresh('umbral', 'footsoldier', 'd'), 0)
+    const o = estimateOdds(fresh('solari', 'charger', 'a'), fresh('umbral', 'footsoldier', 'd'), 0)
     expect(o.attacker).toBeGreaterThan(0.8)
     expect(o.attacker + o.defender + o.other).toBeCloseTo(1)
   })

@@ -27,7 +27,7 @@ const STYLE: Record<Role, Style> = {
   footsoldier: { kind: 'swing', reach: 1.1, speed: 3.2, radius: 0.45, cooldown: 0.4, chargeTime: 0.8, damage: 1.5, chargeBonus: 2 },
   flier: { kind: 'swing', reach: 1.0, dashAlways: true, speed: 4.2, radius: 0.4, cooldown: 0.4, chargeTime: 0.7, damage: 1.4, chargeBonus: 1.8 },
   marksman: { kind: 'shot', reach: 8, speed: 2.8, radius: 0.45, cooldown: 0.6, chargeTime: 0.9, damage: 1.4, chargeBonus: 2 },
-  bruiser: { kind: 'slam', reach: 1.6, speed: 2.0, radius: 0.6, cooldown: 1.4, chargeTime: 1.0, damage: 1.7, chargeBonus: 1.5 },
+  bruiser: { kind: 'slam', reach: 1.6, speed: 2.0, radius: 0.6, cooldown: 1.4, chargeTime: 1.0, damage: 1.6, chargeBonus: 1.5 },
   charger: { kind: 'rush', reach: 3.5, speed: 3.0, radius: 0.5, cooldown: 1.1, chargeTime: 0.6, damage: 1.9, chargeBonus: 1.6 },
   aura: { kind: 'pulse', reach: 1.6, speed: 2.6, radius: 0.5, cooldown: 0.8, chargeTime: 0.9, damage: 1.6, chargeBonus: 2 },
   leader: { kind: 'swing', reach: 1.3, speed: 3.0, radius: 0.5, cooldown: 0.55, chargeTime: 0.8, damage: 1.15, chargeBonus: 1.8 },
