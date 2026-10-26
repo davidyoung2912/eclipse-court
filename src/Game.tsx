@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { requestAction } from './ai/client'
-import { isMuted, setMuted, setPadLuminance, sfx, turnBell } from './audio/synth'
+import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { estimateOdds, reduce } from './engine/reducer'
 import { squareLuminance } from './engine/rules/luminance'
@@ -52,9 +52,8 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   const lastTurn = useRef(state.turn)
 
-  // The pad follows the centre's light; each court's bell rings as its turn begins.
+  // Each court's bell rings as its turn begins.
   useEffect(() => {
-    setPadLuminance(squareLuminance(state, { x: 3, y: 3 }))
     if (state.winner) {
       if (state.winner === human) sfx.win()
       else sfx.lose()

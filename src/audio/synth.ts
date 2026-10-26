@@ -4,9 +4,6 @@ const MUTE_KEY = 'eclipse-court:muted'
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
-let padGain: GainNode | null = null
-let padFilter: BiquadFilterNode | null = null
-let padOscs: OscillatorNode[] = []
 let muted = readMuted()
 
 /** Sound is off until the player turns it on. */
@@ -45,55 +42,6 @@ function audio(): AudioContext | null {
 export function unlockAudio() {
   const c = audio()
   if (c && c.state === 'suspended') void c.resume()
-}
-
-/** Semitone offsets of the pad chord above its root. */
-const MAJOR = [0, 4, 7, 12]
-const MINOR = [0, 3, 7, 12]
-const SUS = [0, 5, 7, 12]
-const midiToHz = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
-
-/** Pad chord frequencies for a luminance: bright is a high major chord, dark a low minor one, dusk is suspended. */
-export function padChord(lum: number): number[] {
-  const shape = lum > 0 ? MAJOR : lum < 0 ? MINOR : SUS
-  const root = 52 + lum * 2
-  return shape.map((s) => midiToHz(root + s))
-}
-
-/** Cutoff of the pad filter: light opens the sound, dark muffles it. */
-export const padCutoff = (lum: number) => 700 + lum * 350
-
-export function startPad() {
-  const c = audio()
-  if (!c || !master || padOscs.length) return
-  padGain = c.createGain()
-  padGain.gain.value = 0
-  padGain.gain.setTargetAtTime(0.05, c.currentTime, 1.5)
-  padFilter = c.createBiquadFilter()
-  padFilter.type = 'lowpass'
-  padFilter.frequency.value = padCutoff(0)
-  padFilter.connect(padGain).connect(master)
-  padOscs = padChord(0).map((f, i) => {
-    const o = c.createOscillator()
-    o.type = i % 2 ? 'triangle' : 'sawtooth'
-    o.frequency.value = f
-    o.detune.value = (i - 1.5) * 6
-    o.connect(padFilter!)
-    o.start()
-    return o
-  })
-}
-
-export function setPadLuminance(lum: number) {
-  if (!ctx || !padFilter) return
-  const t = ctx.currentTime
-  padChord(lum).forEach((f, i) => padOscs[i]?.frequency.setTargetAtTime(f, t, 0.8))
-  padFilter.frequency.setTargetAtTime(padCutoff(lum), t, 0.8)
-}
-
-/** Lower the pad under duel percussion. */
-export function duckPad(on: boolean) {
-  if (ctx && padGain) padGain.gain.setTargetAtTime(on ? 0.015 : 0.05, ctx.currentTime, 0.3)
 }
 
 function tone(freq: number, dur: number, opts: { type?: OscillatorType; gain?: number; delay?: number; to?: number } = {}) {
@@ -179,13 +127,9 @@ export function startDuelDrums(): { setIntensity: (n: number) => void; stop: () 
     if (intensity > 0) noise(0.05, { gain: 0.05, freq: 6000, delay: 0.25 })
     timer = window.setTimeout(beat, 520 - intensity * 220)
   }
-  duckPad(true)
   beat()
   return {
     setIntensity: (n) => { intensity = Math.min(1, Math.max(0, n)) },
-    stop: () => {
-      window.clearTimeout(timer)
-      duckPad(false)
-    },
+    stop: () => window.clearTimeout(timer),
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { startPad, unlockAudio } from './audio/synth'
+import { unlockAudio } from './audio/synth'
 import { Game } from './Game'
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
@@ -58,14 +58,10 @@ export default function App() {
   const [cleared, setCleared] = useState(loadCleared)
   const [seen, setSeen] = useState(tutorialSeen)
 
-  // Browsers only allow sound after a gesture, so the pad starts on the first touch.
+  // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
-    const start = () => {
-      unlockAudio()
-      startPad()
-    }
-    window.addEventListener('pointerdown', start, { once: true })
-    return () => window.removeEventListener('pointerdown', start)
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    return () => window.removeEventListener('pointerdown', unlockAudio)
   }, [])
 
   if (screen.name === 'tutorial')
