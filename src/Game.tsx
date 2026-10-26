@@ -9,6 +9,7 @@ import { legalMoves, pieceAt } from './engine/rules/moves'
 import { spellTargets } from './engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Pos, Spell } from './engine/rules/types'
 import { Board } from './ui/board/Board'
+import { PieceCard } from './ui/tray/PieceCard'
 import { Dial } from './ui/dial/Dial'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
@@ -42,10 +43,12 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
   const [duelMode, setDuelMode] = useState<DuelMode>('live')
   const [pending, setPending] = useState<Pending | null>(null)
+  const [inspectId, setInspectId] = useState<string | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
   const state = history[history.length - 1]
   const myTurn = state.turn === human
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
+  const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
   const targets = casting && myTurn ? spellTargets(state, human, casting) : null
   const moves = targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : []
 
@@ -68,6 +71,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     else sfx.move()
     setHistory((h) => [...h, s])
     setSelectedId(null)
+    setInspectId(null)
     setCasting(null)
     setPending(null)
   }
@@ -110,7 +114,12 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   }
 
   const onSquare = (p: Pos) => {
-    if (state.winner || pending || !myTurn) return
+    if (state.winner || pending) return
+    if (!myTurn) {
+      // Off-turn taps only look at pieces.
+      const occ = pieceAt(state, p)
+      return setInspectId(occ ? occ.id : null)
+    }
     if (casting && targets) {
       const occ = pieceAt(state, p)
       if (occ && targets.pieces.includes(occ.id)) return push(reduce(state, { type: 'cast', spell: casting, pieceId: occ.id }))
@@ -123,6 +132,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     }
     const occ = pieceAt(state, p)
     setSelectedId(occ && occ.court === human ? occ.id : null)
+    setInspectId(occ ? occ.id : null)
   }
 
   const undo = () => {
@@ -173,6 +183,8 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
           </div>
         </div>
       )}
+      <PieceCard state={state} human={human} piece={shown}
+        hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       <footer className="tray">
         {!state.winner && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} />}
         <div className="options">
