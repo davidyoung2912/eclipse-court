@@ -22,6 +22,7 @@ import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
 import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
+import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 
 interface Props {
@@ -50,7 +51,9 @@ type DuelMode = 'live' | 'auto'
 
 const AI_DELAY_MS = 450
 /** How long the AI's chosen piece flashes before it moves. */
-const AI_FLASH_MS = 800
+const AI_FLASH_MS = 1080
+/** How long "Your Turn" / "AI Turn" stays up between players. */
+const TURN_BANNER_MS = 1000
 
 function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   if (defenderHp <= 0) return attackerHp > 0 ? 'attacker won' : 'both fell'
@@ -72,6 +75,13 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   const [castFirst, setCastFirst] = useState<string | null>(null)
   /** A growth decision (perk or promotion) the player must make before their move is played. */
   const [asking, setAsking] = useState<{ action: Extract<Action, { type: 'move' }>; prompt: Prompt } | null>(null)
+  /** A duel that has been fought, shown in a dialog before its result is played. */
+  const [settled, setSettled] = useState<{ pending: Pending; outcome: DuelOutcome } | null>(null)
+  /** The side whose turn is being announced; play waits until it clears. */
+  const [banner, setBanner] = useState<{ court: Court } | null>(() => {
+    const last = history[history.length - 1].state
+    return last.winner ? null : { court: last.turn }
+  })
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
   const state = history[history.length - 1].state
@@ -98,6 +108,13 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     } else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
   }, [state, human])
+
+  // The turn announcement fades after a second and then lets play go on.
+  useEffect(() => {
+    if (!banner) return
+    const timer = setTimeout(() => setBanner(null), TURN_BANNER_MS)
+    return () => clearTimeout(timer)
+  }, [banner])
 
   const clearHint = () => {
     hintFor.current = null
@@ -129,6 +146,8 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
     setHistory((h) => [...h, { state: s, action }])
+    if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
+    setSettled(null)
     setSelectedId(null)
     setInspectId(null)
     setCasting(null)
@@ -147,6 +166,13 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     play(action)
   }
 
+  /** Plays the move a finished duel decided, once its result has been seen. */
+  const applyDuel = ({ pending: p, outcome }: { pending: Pending; outcome: DuelOutcome }) => {
+    const move = { type: 'move' as const, pieceId: p.pieceId, to: p.to, duel: outcome }
+    if (p.byAi) play(move)
+    else commit(move)
+  }
+
   /** Settle a capture: play it live, or let the duel AI play it out at the auto-duel skill. */
   const beginDuel = (p: Pending) => {
     if (duelMode === 'live') return setPending({ ...p, confirmed: true })
@@ -156,14 +182,13 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     const skills: [number, number] = p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
       p.byAi ? [foeAggression, 1] : [1, foeAggression])
-    const move = { type: 'move' as const, pieceId: p.pieceId, to: p.to, duel }
-    if (p.byAi) play(move)
-    else commit(move)
+    setPending({ ...p, confirmed: true })
+    setSettled({ pending: p, outcome: duel })
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
   useEffect(() => {
-    if (state.turn !== foe || state.winner || pending || failed) return
+    if (state.turn !== foe || state.winner || pending || failed || banner) return
     let cancelled = false
     let flash: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
@@ -189,9 +214,10 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     }
     // beginDuel and play only close over state/duelMode, which are covered or intentionally read fresh.
     // oxlint-disable-next-line react/exhaustive-deps
-  }, [state, pending, foe, difficulty, failed])
+  }, [state, pending, foe, difficulty, failed, banner])
 
   const pickSpell = (spell: Spell | null) => {
+    if (banner) return
     clearHint()
     setSelectedId(null)
     setCastFirst(null)
@@ -200,7 +226,7 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   }
 
   const onSquare = (p: Pos) => {
-    if (ended || pending) return
+    if (ended || pending || banner) return
     if (!myTurn) {
       // Off-turn taps only look at pieces.
       const occ = pieceAt(state, p)
@@ -240,10 +266,7 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   }
 
   const finishDuel = (outcome: DuelOutcome) => {
-    if (!pending) return
-    const move = { type: 'move' as const, pieceId: pending.pieceId, to: pending.to, duel: outcome }
-    if (pending.byAi) play(move)
-    else commit(move)
+    if (pending) setSettled({ pending, outcome })
   }
 
   const toggleSound = () => {
@@ -260,6 +283,7 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     : state.winner === 'draw' ? 'Draw' : state.winner === human ? 'Victory' : 'Defeat'
   const retry = () => {
     setHistory((h) => h.slice(0, 1))
+    setBanner({ court: history[0].state.turn })
     setSelectedId(null)
     setCasting(null)
     setCastFirst(null)
@@ -280,15 +304,23 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
           odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to))}
           onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
       )}
-      {pending?.confirmed && attacker && defender && (
+      {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)}
           options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
           seed={state.rng + state.round} onDone={finishDuel} />
+      )}
+      {settled && !asking && attacker && defender && (
+        <DuelResult attacker={attacker} defender={defender} outcome={settled.outcome} onContinue={() => applyDuel(settled)} />
       )}
       {asking && (
         <GrowthPrompt prompt={asking.prompt}
           onPerk={(perk) => commit({ ...asking.action, perk })}
           onPromote={(role) => commit({ ...asking.action, promote: role })} />
+      )}
+      {banner && !ended && (
+        <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status">
+          {banner.court === human ? 'Your Turn' : 'AI Turn'}
+        </div>
       )}
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
@@ -325,8 +357,8 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
         </p>
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
-          <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
-          <button disabled={ended || !myTurn || !!pending} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
+          <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint</button>
+          <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>
       </footer>

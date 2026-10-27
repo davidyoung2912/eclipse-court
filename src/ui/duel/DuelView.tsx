@@ -146,6 +146,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
   const [time, setTime] = useState(DUEL_SECONDS)
   const [banner, setBanner] = useState('')
   const stickPointer = useRef<number | null>(null)
+  const stickOrigin = useRef({ ox: 0, oy: 0 })
   const doneRef = useRef(onDone)
 
   useEffect(() => {
@@ -244,20 +245,23 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
     stickPointer.current = e.pointerId
     e.currentTarget.setPointerCapture(e.pointerId)
     const box = e.currentTarget.getBoundingClientRect()
-    setStick({ ox: e.clientX - box.left, oy: e.clientY - box.top, x: e.clientX - box.left, y: e.clientY - box.top })
+    const ox = e.clientX - box.left
+    const oy = e.clientY - box.top
+    stickOrigin.current = { ox, oy }
+    setStick({ ox, oy, x: ox, y: oy })
   }
+  // Everything is read from the event here, not inside a state updater: React may run an updater after the
+  // event is over, when `currentTarget` is already null (which crashed touch screens).
   const onStickMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== stickPointer.current) return
-    setStick((s) => {
-      if (!s) return s
-      const box = e.currentTarget.getBoundingClientRect()
-      const dx = e.clientX - box.left - s.ox
-      const dy = e.clientY - box.top - s.oy
-      const len = Math.hypot(dx, dy)
-      const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1
-      input.current = { ...input.current, mx: (dx * k) / STICK_RADIUS, my: (dy * k) / STICK_RADIUS }
-      return { ...s, x: s.ox + dx * k, y: s.oy + dy * k }
-    })
+    const { ox, oy } = stickOrigin.current
+    const box = e.currentTarget.getBoundingClientRect()
+    const dx = e.clientX - box.left - ox
+    const dy = e.clientY - box.top - oy
+    const len = Math.hypot(dx, dy)
+    const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1
+    input.current = { ...input.current, mx: (dx * k) / STICK_RADIUS, my: (dy * k) / STICK_RADIUS }
+    setStick({ ox, oy, x: ox + dx * k, y: oy + dy * k })
   }
   const onStickUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== stickPointer.current) return

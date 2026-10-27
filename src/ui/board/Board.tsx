@@ -48,7 +48,7 @@ function HintGhost({ piece, from, to, flip }: { piece: Piece; from: Pos; to: Pos
   return (
     <g className={`piece ${piece.court} hint-ghost${atEnd ? '' : ' snap'}`} style={{ transform: `translate(${cx}px, ${cy}px)` }}>
       <circle className="ring" r={0.4} />
-      <PieceArt role={piece.role} court={piece.court} />
+      <PieceArt role={piece.role} court={piece.court} hp={piece.hp} maxHp={piece.maxHp} />
     </g>
   )
 }
@@ -106,7 +106,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
             <title>{ROLE_NAMES[pc.court][pc.role]} {pc.hp}/{pc.maxHp}</title>
             <circle className="halo" r={0.4} />
             <circle className="ring" r={0.4} />
-            <PieceArt role={pc.role} court={pc.court} />
+            <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
             {Array.from({ length: pc.hp }, (_, i) => (
               <circle key={i} className="pip" r={0.035} cx={-((pc.hp - 1) * 0.09) / 2 + i * 0.09} cy={0.32} />
             ))}

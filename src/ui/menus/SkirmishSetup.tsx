@@ -9,6 +9,8 @@ import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spel
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { Icon, type IconName } from './icons'
+import { SkirmishArt } from './MenuArt'
+import { PieceArt } from '../../art/PieceArt'
 import { BOARD_STARS, boardUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
@@ -66,11 +68,13 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
   }[mode]
   return (
     <main className="app menu">
+      <SkirmishArt />
       <h2>Skirmish</h2>
       <h3>Your court</h3>
       <div className="choices">
         {COURTS.map((c) => (
           <button key={c.court} className={`choice ${c.court}${court === c.court ? ' on' : ''}`} onClick={() => { setCourt(c.court); setLoadout([]) }}>
+            <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role="leader" court={c.court} /></svg>
             <strong><Icon name={c.icon} />{c.name}</strong>
             <span>{c.text}</span>
           </button>

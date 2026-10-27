@@ -3,6 +3,7 @@ import { PERSONALITIES } from '../../ai/personality'
 import { CAMPAIGN } from '../../engine/data/campaign'
 import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starCount, totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
+import { CampaignArt, OpponentAvatar } from './MenuArt'
 
 interface Props {
   progress: Progress
@@ -20,6 +21,7 @@ export function Campaign({ progress, report, onPlay, onBack }: Props) {
   const [series, setSeries] = useState(false)
   return (
     <main className="app menu">
+      <CampaignArt />
       <h2>Campaign</h2>
       <p className="tagline">{totalStars(progress)} of {CAMPAIGN.length * 3} stars. {STAR_TEXT.map((s) => s.text).join('; ')}.</p>
       {report && report.length > 0 && (
@@ -35,6 +37,7 @@ export function Campaign({ progress, report, onPlay, onBack }: Props) {
           return (
             <li key={o.name}>
               <button className={`choice${i < cleared ? ' won' : ''}`} disabled={locked} onClick={() => onPlay(i, series)}>
+                <OpponentAvatar index={i} locked={locked} />
                 <strong>
                   <Icon name={locked ? 'lock' : i < cleared ? 'check' : 'swords'} />{i + 1}. {o.name}
                   <span className="stars" aria-label={`${starCount(stars[i])} of 3 stars`}>

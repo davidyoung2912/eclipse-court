@@ -25,6 +25,17 @@ const wedge = (i: number) => {
 }
 export const WEDGES = Array.from({ length: PANES }, (_, i) => wedge(i))
 
+/**
+ * Which panes to grey out for lost HP. Each pane stands for 1/8 of full HP, rounded in the piece's favour so a
+ * living piece always keeps one. Panes go grey counter-clockwise from the top (pane 5 first, then 4, 3, ...).
+ */
+export function lostPanes(hp: number, maxHp: number): Set<number> {
+  const kept = Math.min(PANES, Math.max(hp > 0 ? 1 : 0, Math.ceil((Math.max(0, hp) / maxHp) * PANES)))
+  return new Set(Array.from({ length: PANES - kept }, (_, k) => (((5 - k) % PANES) + PANES) % PANES))
+}
+
+
+export const LOST_PANE = '#5d5d72'
 
 /** Pane, emblem and hub colours per court, mirroring the board's stylesheet for contexts without it. */
 const PALETTE = {
@@ -33,10 +44,10 @@ const PALETTE = {
 } as const
 
 /** The same medallion as a standalone SVG string, for drawing on a canvas. */
-export function pieceArtSvg(role: Role, court: Court): string {
+export function pieceArtSvg(role: Role, court: Court, lost: ReadonlySet<number> = new Set()): string {
   const pal = PALETTE[court]
   const open = OPEN_EMBLEM.has(role)
-  const panes = WEDGES.map((d, i) => `<path d="${d}" fill="${pal.panes[i % 3]}" stroke="#120d2a" stroke-width="0.018"/>`).join('')
+  const panes = WEDGES.map((d, i) => `<path d="${d}" fill="${lost.has(i) ? LOST_PANE : pal.panes[i % 3]}" stroke="#120d2a" stroke-width="0.018"/>`).join('')
   const ring = role === 'aura' ? `<circle r="0.28" fill="none" stroke="#120d2a" stroke-width="0.02" stroke-dasharray="0.07 0.05"/>` : ''
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.39 -0.39 0.78 0.78" width="256" height="256">`
     + `<circle r="${R + 0.03}" fill="#120d2a"/>${panes}<circle r="${R}" fill="none" stroke="#120d2a" stroke-width="0.025"/>`

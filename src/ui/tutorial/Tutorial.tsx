@@ -14,13 +14,15 @@ import { Board } from '../board/Board'
 import { Dial } from '../dial/Dial'
 import { DuelView } from '../duel/DuelView'
 import { AttackConfirm } from '../tray/AttackConfirm'
+import { DuelResult } from '../tray/DuelResult'
+import { PieceCard } from '../tray/PieceCard'
 import { SpellBar } from '../tray/SpellBar'
 
 interface Props {
   onExit: () => void
 }
 
-type Duel = 'confirm' | 'live' | null
+type Duel = 'confirm' | 'live' | 'result' | null
 
 /** The 3-minute guided board: the rules in short steps, with a real move, duel and spell. */
 export function Tutorial({ onExit }: Props) {
@@ -29,6 +31,7 @@ export function Tutorial({ onExit }: Props) {
   const [selected, setSelected] = useState(false)
   const [duel, setDuel] = useState<Duel>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
+  const [outcome, setOutcome] = useState<DuelOutcome | null>(null)
   const current = TUTORIAL_STEPS[step]
   const knight = state.pieces.find((p) => p.id === TUTORIAL_KNIGHT) ?? null
   const foe = pieceAt(state, TUTORIAL_FOE_AT)
@@ -66,8 +69,10 @@ export function Tutorial({ onExit }: Props) {
     }
   }
 
-  const finishDuel = (outcome: DuelOutcome) =>
-    next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: TUTORIAL_FOE_AT, duel: outcome }))
+  const finishDuel = (result: DuelOutcome) => {
+    setOutcome(result)
+    setDuel('result')
+  }
 
   return (
     <main className="app tutorial">
@@ -83,6 +88,11 @@ export function Tutorial({ onExit }: Props) {
           options={{ mirror: false, aimAssist: true, haptics: true }} opponentSkill={0.15}
           seed={7} onDone={finishDuel} />
       )}
+      {duel === 'result' && knight && foe && outcome && (
+        <DuelResult attacker={knight} defender={foe} outcome={outcome}
+          onContinue={() => next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: TUTORIAL_FOE_AT, duel: outcome }))} />
+      )}
+      {selected && knight && <PieceCard state={state} human="solari" piece={knight} hint="" />}
       <footer className="tray">
         <section className="lesson" aria-live="polite">
           <h2>{current.title}</h2>
