@@ -7,6 +7,7 @@ import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
 import { estimateOdds, reduce } from './engine/reducer'
 import { otherCourt, samePos } from './engine/rules/board'
+import { duelCells } from './engine/rules/cells'
 import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
@@ -201,7 +202,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     if (!attacker || !defender) return
     const skills: [number, number] = hotSeat ? [AUTO_DUEL_SKILL, AUTO_DUEL_SKILL] : p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
-      hotSeat ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression])
+      hotSeat ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression], duelCells(state, attacker, defender))
     setPending({ ...p, confirmed: true })
     setSettled({ pending: p, outcome: duel })
   }
@@ -319,11 +320,11 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
       {pending && !pending.confirmed && attacker && defender && (
         <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
           luminance={squareLuminance(state, pending.to)}
-          odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to))}
+          odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, duelCells(state, attacker, defender))}
           onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
       )}
       {pending?.confirmed && !settled && attacker && defender && (
-        <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)}
+        <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={duelCells(state, attacker, defender)}
           options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
           seed={state.rng + state.round} onDone={finishDuel} />
       )}

@@ -2,6 +2,7 @@ import { autoDuel } from '../ai/autoDuel'
 import { DIFFICULTY, type Difficulty } from '../ai/profile'
 import { chooseAction } from '../ai/strategy'
 import { newGame, reduce } from '../engine/reducer'
+import { duelCells } from '../engine/rules/cells'
 import { squareLuminance } from '../engine/rules/luminance'
 import { pieceAt } from '../engine/rules/moves'
 import type { Court, GameState, MatchConfig } from '../engine/rules/types'
@@ -53,7 +54,7 @@ export function playFrom(start: GameState, seed: number, solari: Difficulty, umb
       const mover = state.pieces.find((p) => p.id === action.pieceId)
       if (target && mover) {
         const skills: [number, number] = [DIFFICULTY[level[mover.court]].skill, DIFFICULTY[level[target.court]].skill]
-        next = { ...action, duel: autoDuel(mover, target, squareLuminance(state, action.to), skills, seed + actions) }
+        next = { ...action, duel: autoDuel(mover, target, squareLuminance(state, action.to), skills, seed + actions, undefined, duelCells(state, mover, target)) }
         duels++
       }
     }

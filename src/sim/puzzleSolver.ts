@@ -1,5 +1,6 @@
 import { chooseAction } from '../ai/strategy'
 import { stubDuel, reduce } from '../engine/reducer'
+import { duelCells } from '../engine/rules/cells'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { canCast, spellTargets } from '../engine/rules/spells'
@@ -22,7 +23,7 @@ export function playerActions(state: GameState): Action[] {
       if (!target) { out.push({ type: 'move', pieceId: piece.id, to }); continue }
       // A fight that luck could swing either way is not something a puzzle can ask of the player.
       const lum = squareLuminance(state, to)
-      const results = DUEL_LUCK.map((roll) => stubDuel(piece, target, lum, roll))
+      const results = DUEL_LUCK.map((roll) => stubDuel(piece, target, lum, roll, duelCells(state, piece, target)))
       if (results.every((r) => r.defenderHp <= 0) || results.every((r) => r.attackerHp <= 0))
         out.push({ type: 'move', pieceId: piece.id, to, duel: results[2] })
     }
@@ -55,7 +56,7 @@ export function rivalReply(state: GameState, puzzle: Pick<Puzzle, 'difficulty'>,
   if (!defender) return reply
   const attacker = state.pieces.find((p) => p.id === reply.pieceId)!
   const lum = squareLuminance(state, reply.to)
-  const results = DUEL_LUCK.map((roll) => stubDuel(attacker, defender, lum, roll))
+  const results = DUEL_LUCK.map((roll) => stubDuel(attacker, defender, lum, roll, duelCells(state, attacker, defender)))
   return results.every((r) => r.defenderHp <= 0) || results.every((r) => r.attackerHp <= 0) ? { ...reply, duel: results[2] } : null
 }
 

@@ -2,6 +2,7 @@ import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
 import type { Action, Court, GameState, MatchConfig, MatchMode, Perk, Pos, PromotionRole, Role, Spell } from './rules/types'
 import { inBounds, SIZE } from './rules/board'
+import { CELL_EFFECTS } from './rules/cells'
 import { ALL_SPELLS } from './rules/spells'
 
 const MODES: readonly MatchMode[] = ['beacons', 'leader', 'score', 'hill']
@@ -93,6 +94,10 @@ const validLayout = (l: unknown) =>
   Array.isArray(l) && l.length <= SIZE * SIZE && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
 const inRange = (v: unknown, min: number, max: number) => isNum(v) && Number.isInteger(v) && v >= min && v <= max
 
+const validCells = (cells: unknown) =>
+  Array.isArray(cells) && cells.length <= SIZE * SIZE &&
+  cells.every((c, i) => validPos(c?.pos) && (CELL_EFFECTS as readonly unknown[]).includes(c?.effect) && cells.findIndex((o) => o.pos.x === c.pos.x && o.pos.y === c.pos.y) === i)
+
 const validLoadouts = (l: Partial<Record<Court, unknown>>) =>
   (['solari', 'umbral'] as const).every((c) => Array.isArray(l[c]) && (l[c] as unknown[]).length <= 20 && (l[c] as unknown[]).every((s) => isStr(s) && (ALL_SPELLS as readonly string[]).includes(s)))
 
@@ -120,6 +125,7 @@ export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConf
   Array.isArray(c.beacons) && c.beacons.length <= SIZE * SIZE && c.beacons.every(validPos) &&
   validLayout(c.layout) && (c.umbralLayout === undefined || validLayout(c.umbralLayout)) &&
   (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.length <= SIZE * SIZE && c.blocked.every(validPos))) &&
+  (c.cells === undefined || validCells(c.cells)) &&
   (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
   (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&

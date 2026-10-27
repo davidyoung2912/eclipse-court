@@ -1,5 +1,6 @@
 import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
+import { duelCells, type DuelCells } from '../engine/rules/cells'
 import { CENTER, chebyshev, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { modeOf, safeRadius } from '../engine/rules/events'
 import { squareLuminance } from '../engine/rules/luminance'
@@ -31,8 +32,8 @@ export interface Branch {
  * Possible duel results with their chances. Full-health pairings use the simulated matchup table;
  * wounded pieces fall back to the stub duel, which does account for current HP.
  */
-export function duelBranches(attacker: Piece, defender: Piece, lum: number): Branch[] {
-  if (attacker.hp === attacker.maxHp && defender.hp === defender.maxHp) {
+export function duelBranches(attacker: Piece, defender: Piece, lum: number, cells?: DuelCells): Branch[] {
+  if (!cells && attacker.hp === attacker.maxHp && defender.hp === defender.maxHp) {
     const m = matchup(attacker, defender, lum)
     const hold = Math.max(0, 1 - m.attacker - m.defender)
     const keep = (frac: number, max: number) => Math.max(1, Math.round(frac * max))
@@ -42,7 +43,7 @@ export function duelBranches(attacker: Piece, defender: Piece, lum: number): Bra
       { duel: { attackerHp: attacker.hp, defenderHp: defender.hp }, weight: hold },
     ].filter((b) => b.weight > 0)
   }
-  return ROLLS.map((r) => ({ duel: stubDuel(attacker, defender, lum, r), weight: 1 / ROLLS.length }))
+  return ROLLS.map((r) => ({ duel: stubDuel(attacker, defender, lum, r, cells), weight: 1 / ROLLS.length }))
 }
 
 /** Static score of a position for `court`; positive is good. */
@@ -188,7 +189,7 @@ function valueOf(state: GameState, action: Action, court: Court, depth: number, 
     const target = pieceAt(state, action.to)
     if (target) {
       const mover = state.pieces.find((p) => p.id === action.pieceId)!
-      const branches = duelBranches(mover, target, squareLuminance(state, action.to))
+      const branches = duelBranches(mover, target, squareLuminance(state, action.to), duelCells(state, mover, target))
       let sum = 0
       for (const { duel, weight } of branches)
         sum += weight * search(reduceLegal(state, { ...action, duel }), court, depth - 1, beam, w, -Infinity, Infinity)

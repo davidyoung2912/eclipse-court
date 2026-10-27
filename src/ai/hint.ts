@@ -1,6 +1,7 @@
 import { ROLE_NAMES } from '../engine/data/roster'
 import { estimateOdds } from '../engine/reducer'
 import { isBeacon } from '../engine/rules/board'
+import { duelCells } from '../engine/rules/cells'
 import { favouredCourt, squareLuminance } from '../engine/rules/luminance'
 import { leaderOf, SPELL_INFO } from '../engine/rules/spells'
 import { pieceAt } from '../engine/rules/moves'
@@ -57,7 +58,7 @@ export function describeHint(state: GameState, action: Action): Hint {
   const victim = pieceAt(state, action.to)
   const lum = squareLuminance(state, action.to)
   if (victim) {
-    const odds = estimateOdds(mover, victim, lum)
+    const odds = estimateOdds(mover, victim, lum, undefined, duelCells(state, mover, victim))
     const edge = odds.attacker >= odds.defender ? 'You are favoured' : 'A risky fight, but the position is worth it'
     return {
       action,

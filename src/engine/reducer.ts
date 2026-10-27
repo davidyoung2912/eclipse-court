@@ -2,6 +2,7 @@ import { DEFAULT_CONFIG, matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
 import { CENTER, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
+import { cellAt, cellHpChange, duelCells, NEUTRAL_CELL, type DuelCells } from './rules/cells'
 import { eventAt, HILL_TURNS, modeOf, objectiveRounds, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
 import { isStock, perkMods, promote, recordWin } from './rules/growth'
 import { duelMods, squareLuminance } from './rules/luminance'
@@ -54,16 +55,21 @@ export function stubDuel(
   defender: Piece,
   lum: number,
   roll: number,
+  cells?: DuelCells,
 ): DuelOutcome {
   const aMods = duelMods(attacker.court, lum)
   const dMods = duelMods(defender.court, lum)
   const aPerk = perkMods(attacker)
   const dPerk = perkMods(defender)
-  const aPower = ROLE_STATS[attacker.role].power * aMods.dealt * dMods.taken * aPerk.dealt * dPerk.taken
-  const dPower = ROLE_STATS[defender.role].power * dMods.dealt * aMods.taken * dPerk.dealt * aPerk.taken
+  const aCell = cells?.attacker ?? NEUTRAL_CELL
+  const dCell = cells?.defender ?? NEUTRAL_CELL
+  const aPower = ROLE_STATS[attacker.role].power * aMods.dealt * dMods.taken * aPerk.dealt * dPerk.taken * aCell.dealt * dCell.taken
+  const dPower = ROLE_STATS[defender.role].power * dMods.dealt * aMods.taken * dPerk.dealt * aPerk.taken * dCell.dealt * aCell.taken
   const luck = 0.75 + roll * 0.5
-  const tAttackerKills = defender.hp / (aPower * luck)
-  const tDefenderKills = attacker.hp / dPower
+  // An invincible fighter takes nothing, so the other side never finishes the kill.
+  const tAttackerKills = aPower > 0 ? defender.hp / (aPower * luck) : Infinity
+  const tDefenderKills = dPower > 0 ? attacker.hp / dPower : Infinity
+  if (tAttackerKills === Infinity && tDefenderKills === Infinity) return { attackerHp: attacker.hp, defenderHp: defender.hp }
   if (Math.abs(tAttackerKills - tDefenderKills) < 1e-6)
     return { attackerHp: attacker.hp, defenderHp: defender.hp }
   if (tAttackerKills < tDefenderKills)
@@ -91,15 +97,16 @@ const isFresh = (p: Piece) => p.hp === p.maxHp && isStock(p)
  * table (which assumes full health) does not apply, so the stub duel across evenly spaced rolls
  * stands in.
  */
-export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samples = 21): Odds {
-  if (isFresh(attacker) && isFresh(defender)) {
+export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samples = 21, cells?: DuelCells): Odds {
+  // The matchup table assumes plain squares, so a duel on special cells is sampled instead.
+  if (!cells && isFresh(attacker) && isFresh(defender)) {
     const m = matchup(attacker, defender, lum)
     return { attacker: m.attacker, defender: m.defender, other: Math.max(0, 1 - m.attacker - m.defender) }
   }
   let a = 0
   let d = 0
   for (let i = 0; i < samples; i++) {
-    const o = stubDuel(attacker, defender, lum, (i + 0.5) / samples)
+    const o = stubDuel(attacker, defender, lum, (i + 0.5) / samples, cells)
     if (o.defenderHp <= 0 && o.attackerHp > 0) a++
     else if (o.attackerHp <= 0 && o.defenderHp > 0) d++
   }
@@ -150,9 +157,13 @@ function endRound(state: GameState): GameState {
     }
     if (heals && onBeacon) hp += 1
     if (heals && p.perk === 'vigour') hp += 1
+    const cell = cellAt(state.config, p.pos)
+    const cellHp = cellHpChange(cell, p.maxHp)
+    if (heals && cellHp > 0) hp += cellHp
     // Umbral passive: the dark mends them while the light still cycles.
     if (heals && state.config.passives && p.court === 'umbral' && !eclipse && squareLuminance(state, p.pos) < 0) hp += 1
     hp = Math.min(hp, p.maxHp)
+    if (cellHp < 0) hp += cellHp
     if (eclipse && !onBeacon) hp -= 1
     // The showdown: whatever stands outside the safe zone is hurt, beacon or not.
     if (radius !== null && chebyshev(p.pos, CENTER) > radius) hp -= SHRINK_DAMAGE
@@ -304,7 +315,7 @@ function applyMove(state: GameState, piece: Piece, action: Extract<Action, { typ
   if (!outcome) {
     const [roll, nextRng] = rngNext(rng)
     rng = nextRng
-    outcome = stubDuel(piece, target, lum, roll)
+    outcome = stubDuel(piece, target, lum, roll, duelCells(state, piece, target))
   }
   const { attackerHp, defenderHp } = outcome
   const { config } = state

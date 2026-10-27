@@ -76,6 +76,14 @@ export type Objective =
   | { kind: 'escort'; goal: Pos; limit: number }
   | { kind: 'hold'; at: Pos; turns: number; limit: number }
 
+/** What a special cell does to the piece standing on it. */
+export type CellEffect = 'might' | 'ward' | 'recovery' | 'hazard' | 'silence' | 'invincible'
+
+export interface CellSquare {
+  pos: Pos
+  effect: CellEffect
+}
+
 /** A clock on each turn. Running out passes the turn; the bank is extra time per court, spent only after `seconds` is used. */
 export interface TurnClock {
   seconds: number
@@ -100,6 +108,8 @@ export interface MatchConfig {
   umbralLayout?: readonly Placement[]
   /** Squares nothing can stand on, move onto or be summoned to; fliers still pass over them. */
   blocked?: readonly Pos[]
+  /** Special cells that affect the piece standing on them; boards place them mirror-symmetrically. */
+  cells?: readonly CellSquare[]
   /** Which setup and board variant made this match, for display only. */
   setup?: string
   board?: string

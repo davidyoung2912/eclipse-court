@@ -9,6 +9,7 @@ import { Icon } from '../menus/icons'
 import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
 import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
+import type { DuelCells } from '../../engine/rules/cells'
 import type { DuelOutcome, Piece } from '../../engine/rules/types'
 
 export interface DuelOptions {
@@ -22,6 +23,8 @@ interface Props {
   attacker: Piece
   defender: Piece
   luminance: number
+  /** Special cells under the two fighters, if any. */
+  cells?: DuelCells
   options: DuelOptions
   /** Which fighter the player steers: 0 attacks from the bottom, 1 defends and is shown at the bottom too. */
   playerSide?: 0 | 1
@@ -137,7 +140,7 @@ function draw(ctx: CanvasRenderingContext2D, s: DuelState, w: number, h: number,
   }
 }
 
-export function DuelView({ attacker, defender, luminance, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, cells, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
@@ -156,7 +159,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
 
   useEffect(() => {
     const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0 }
-    const state = createDuel(attacker, defender, luminance, cfg)
+    const state = createDuel(attacker, defender, luminance, cfg, cells)
     const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
     const foeSide = (1 - playerSide) as 0 | 1
     // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
@@ -238,7 +241,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
       cancelAnimationFrame(raf)
       drums.stop()
     }
-  }, [attacker, defender, luminance, playerSide, opponentSkill, opponentAggression, seed])
+  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, seed])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return

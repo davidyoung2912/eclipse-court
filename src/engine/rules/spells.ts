@@ -1,4 +1,5 @@
 import { allSquares, chebyshev, inBounds, isBeacon, isBlocked, samePos } from './board'
+import { isSilenced } from './cells'
 import { pieceAt } from './moves'
 import type { Court, GameState, MatchConfig, Piece, Pos, Spell } from './types'
 
@@ -222,6 +223,7 @@ export function spellTargets(state: GameState, court: Court, spell: Spell, first
 }
 
 export function canCast(state: GameState, court: Court, spell: Spell): boolean {
+  if (isSilenced(state, court)) return false
   const t = spellTargets(state, court, spell)
   return t.none || t.pieces.length > 0 || t.squares.length > 0
 }

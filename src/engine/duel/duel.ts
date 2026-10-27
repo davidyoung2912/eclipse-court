@@ -1,3 +1,4 @@
+import type { CellMods, DuelCells } from '../rules/cells'
 import { perkMods } from '../rules/growth'
 import { duelMods } from '../rules/luminance'
 import type { DuelOutcome, Piece, Role } from '../rules/types'
@@ -54,13 +55,13 @@ export const PULSE_CHARGE = 0.9
 
 export const DEFAULT_CONFIG: DuelConfig = { aimCone: (50 * Math.PI) / 180 }
 
-export function createFighter(piece: Piece, pos: Vec, facing: number, lum: number): Fighter {
+export function createFighter(piece: Piece, pos: Vec, facing: number, lum: number, cell: CellMods = { dealt: 1, taken: 1 }): Fighter {
   const mods = duelMods(piece.court, lum)
   const perk = perkMods(piece)
   return {
     court: piece.court, role: piece.role, pos, vel: { x: 0, y: 0 }, facing,
     hp: piece.hp, maxHp: piece.maxHp, radius: styleOf(piece.role).radius,
-    charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt * perk.dealt, taken: mods.taken * perk.taken, wasHeld: false,
+    charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt * perk.dealt * cell.dealt, taken: mods.taken * perk.taken * cell.taken, wasHeld: false,
   }
 }
 
@@ -70,9 +71,10 @@ export function createDuel(
   defender: Piece,
   lum: number,
   config: DuelConfig = DEFAULT_CONFIG,
+  cells?: DuelCells,
 ): DuelState {
-  const a = createFighter(attacker, { x: ARENA_W / 2, y: ARENA_H * 0.8 }, -Math.PI / 2, lum)
-  const d = createFighter(defender, { x: ARENA_W / 2, y: ARENA_H * 0.2 }, Math.PI / 2, lum)
+  const a = createFighter(attacker, { x: ARENA_W / 2, y: ARENA_H * 0.8 }, -Math.PI / 2, lum, cells?.attacker)
+  const d = createFighter(defender, { x: ARENA_W / 2, y: ARENA_H * 0.2 }, Math.PI / 2, lum, cells?.defender)
   return { fighters: [a, d], projectiles: [], t: 0, arena: 1, done: false, config }
 }
 
