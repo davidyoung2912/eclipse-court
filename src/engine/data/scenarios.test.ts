@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { autoDuel } from '../../ai/autoDuel'
-import { PERSONALITIES } from '../../ai/personality'
+import { PERSONALITIES } from './personality'
 import { DIFFICULTY } from '../../ai/profile'
 import { chooseAction } from '../../ai/strategy'
 import { playFrom } from '../../sim/game'

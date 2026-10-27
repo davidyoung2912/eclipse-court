@@ -2,7 +2,7 @@ import { rngNext } from '../engine/rng'
 import {
   LOB_MAX, LOB_MIN, LOB_SPEED, PULSE_BASE, PULSE_CHARGE, RUSH_BASE_TIME, RUSH_CHARGE_TIME, RUSH_SPEED,
   SHOT_SPEED, SLAM_REACH, styleOf,
-} from '../engine/duel/sim'
+} from '../engine/duel/duel'
 import { ARENA_H, ARENA_W, NO_INPUT, type DuelInput, type DuelState, type Projectile, type Vec } from '../engine/duel/types'
 import type { AiProfile } from './profile'
 

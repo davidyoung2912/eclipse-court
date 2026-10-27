@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { aiLoadout } from '../ai/draft'
+import { aiLoadout } from '../engine/data/aiDraft'
 import { DIFFICULTY_LIST } from '../ai/profile'
 import { COURTS } from '../engine/rules/board'
 import type { Court, GameState, MatchConfig } from '../engine/rules/types'

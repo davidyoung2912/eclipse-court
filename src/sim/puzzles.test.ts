@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { reduce, stubDuel } from '../../reducer'
-import { squareLuminance } from '../../rules/luminance'
-import { pieceAt } from '../../rules/moves'
-import { SPELL_INFO, spellPool } from '../../rules/spells'
-import type { Action, GameState, Role } from '../../rules/types'
-import { ROLE_NAMES } from '../roster'
-import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzleById, puzzlesIn, type Puzzle } from '.'
-import { rivalReply, solve } from './solver'
+import { reduce, stubDuel } from '../engine/reducer'
+import { squareLuminance } from '../engine/rules/luminance'
+import { pieceAt } from '../engine/rules/moves'
+import { SPELL_INFO, spellPool } from '../engine/rules/spells'
+import type { Action, GameState, Role } from '../engine/rules/types'
+import { ROLE_NAMES } from '../engine/data/roster'
+import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzleById, puzzlesIn, type Puzzle } from '../engine/data/puzzles'
+import { rivalReply, solve } from './puzzleSolver'
 
 /** Plays the puzzle as the game does: the Umbral AI answers each action with the seed the game gives it. */
 function play(puzzle: Puzzle, actions: readonly Action[]): GameState {

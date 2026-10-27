@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource/nunito/600.css'
 import '@fontsource/nunito/700.css'
@@ -10,6 +10,8 @@ applySettings()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Suspense fallback={<main className="app"><p className="status">Loading…</p></main>}>
+      <App />
+    </Suspense>
   </StrictMode>,
 )

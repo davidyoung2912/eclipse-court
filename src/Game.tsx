@@ -1,9 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
-import { requestAction } from './ai/client'
-import { bankAfter, readClock, startingBank } from './clock'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
-import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { humanCourt, isHotSeat, isHuman, type Controllers } from './controllers'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
@@ -19,6 +16,11 @@ import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
 import { Dial } from './ui/dial/Dial'
+import type { PuzzleHelp } from './hooks/useHint'
+import { useAiTurn } from './hooks/useAiTurn'
+import { useHint } from './hooks/useHint'
+import { useLatest } from './hooks/useLatest'
+import { useTurnClock } from './hooks/useTurnClock'
 import { ClockRing } from './ui/dial/ClockRing'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
@@ -37,7 +39,7 @@ interface Props {
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
-  puzzleHelp?: { hints: readonly [string, string]; solution: readonly Action[] }
+  puzzleHelp?: PuzzleHelp
   /** Called after every action with the game so far, or null once it has ended. */
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord) => void
@@ -53,11 +55,11 @@ interface Pending {
 
 type DuelMode = 'live' | 'auto'
 
+const NO_SQUARES: Pos[] = []
+const NO_IDS: string[] = []
+
 const COURT_NAME: Record<Court, string> = { solari: 'Solari', umbral: 'Umbral' }
 
-const AI_DELAY_MS = 450
-/** How long the AI's chosen piece flashes before it moves. */
-const AI_FLASH_MS = 1080
 /** How long "Your Turn" / "AI Turn" stays up between players. */
 const TURN_BANNER_MS = 1000
 
@@ -89,20 +91,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     const last = history[history.length - 1].state
     return last.winner ? null : { court: last.turn }
   })
-  /** Blitz: time used so far on the turn at history length `at`, and the bank each court has left. */
-  const [turnMs, setTurnMs] = useState({ at: -1, ms: 0 })
-  const [banks, setBanks] = useState<Record<Court, number>>(() => {
-    const clock = record.initial.config.turnClock
-    const bank = clock ? startingBank(clock) : 0
-    return { solari: bank, umbral: bank }
-  })
-  const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
-  const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
-  /** Puzzles: how far through the hints the player has asked (0 none, 3 the move itself). */
-  const [hintLevel, setHintLevel] = useState(0)
   const state = history[history.length - 1].state
-  /** The position a hint was asked for, so a slow search cannot land on a later one. */
-  const hintFor = useRef<GameState | null>(null)
   const myTurn = isHuman(controllers, state.turn)
   /** The court the person at the screen acts for: the one human court, or whoever's turn it is in hot-seat. */
   const human = hotSeat ? state.turn : humanCourt(controllers)
@@ -120,14 +109,26 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   const ended = !!state.winner || failed
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
-  const targets = casting && myTurn ? spellTargets(state, human, casting, castFirst ?? undefined) : null
-  const moves = targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : []
+  const targets = useMemo(
+    () => (casting && myTurn ? spellTargets(state, human, casting, castFirst ?? undefined) : null),
+    [state, human, casting, castFirst, myTurn],
+  )
+  const moves = useMemo(
+    () => (targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : NO_SQUARES),
+    [state, targets, selected, myTurn],
+  )
+
+  const { hint, level: hintLevel, ask: askHint, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
 
   const clock = state.config.turnClock
-  const elapsed = turnMs.at === history.length ? turnMs.ms : 0
   /** The clock stops for duels, dialogs, the pass screen and the AI's turn. */
   const clockRunning = !!clock && myTurn && !ended && !pending && !banner && !asking && !settled
-  const reading = clock && readClock(clock, elapsed, banks[state.turn])
+  const turnClock = useTurnClock({
+    clock, turn: state.turn, turnId: history.length, running: clockRunning, charge: myTurn,
+    // Out of time: the turn is passed for the player, as any other pass.
+    onExpire: () => play({ type: 'pass' }),
+  })
+  const { elapsed, banks } = turnClock
 
   const [sound, setSound] = useState(() => !isMuted())
   const lastTurn = useRef(state.turn)
@@ -148,60 +149,6 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     return () => clearTimeout(timer)
   }, [banner, hotSeat, passScreen])
 
-  // The clock only counts while it runs; time is added from the real gap between ticks.
-  useEffect(() => {
-    if (!clockRunning) return
-    const at = history.length
-    let last = Date.now()
-    const timer = setInterval(() => {
-      const now = Date.now()
-      const dt = now - last
-      last = now
-      setTurnMs((t) => ({ at, ms: (t.at === at ? t.ms : 0) + dt }))
-    }, 100)
-    return () => clearInterval(timer)
-  }, [clockRunning, history.length])
-
-  // A tick for each of the last few seconds.
-  const urgentSecond = reading?.urgent && clockRunning ? reading.total : null
-  useEffect(() => {
-    if (urgentSecond !== null) sfx.tick()
-  }, [urgentSecond])
-
-  // Out of time: the turn is passed for the player, as any other pass.
-  const timedOut = clockRunning && !!reading?.expired
-  useEffect(() => {
-    if (timedOut) play({ type: 'pass' })
-    // play closes over the state this effect runs against.
-    // oxlint-disable-next-line react/exhaustive-deps
-  }, [timedOut])
-
-  const clearHint = () => {
-    hintFor.current = null
-    setHint(null)
-    setHintLevel(0)
-  }
-
-  /** A puzzle's hints: a nudge, then the idea, then the move; the next tap closes them. */
-  const askPuzzleHint = (help: NonNullable<typeof puzzleHelp>) => {
-    const level = hintLevel + 1
-    if (level > 3) return clearHint()
-    const next = help.solution[turnsTaken]
-    const move = level === 3 && next && reduce(state, next) !== state ? describeHint(state, next) : null
-    setHintLevel(level)
-    setHint(move ?? { action: { type: 'pass' }, headline: `Hint ${Math.min(level, 2)} of 3`, detail: help.hints[Math.min(level, 2) - 1] })
-  }
-
-  const askHint = () => {
-    if (puzzleHelp) return askPuzzleHint(puzzleHelp)
-    if (hint) return clearHint()
-    hintFor.current = state
-    setHint('thinking')
-    requestAction(state, HINT_DIFFICULTY, state.rng + state.round).then((action) => {
-      if (hintFor.current === state) setHint(describeHint(state, action))
-    })
-  }
-
   // Keeps the unfinished game saved so it can be resumed after leaving.
   useEffect(() => {
     const last = history[history.length - 1].state
@@ -217,7 +164,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     if (action.type === 'cast') sfx.cast()
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
-    if (clock && myTurn) setBanks((b) => ({ ...b, [state.turn]: bankAfter(clock, elapsed, b[state.turn]) }))
+    turnClock.spend()
     setHistory((h) => [...h, { state: s, action }])
     if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
     setSettled(null)
@@ -260,34 +207,13 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
-  useEffect(() => {
-    if (myTurn || state.winner || pending || failed || banner) return
-    let cancelled = false
-    let flash: ReturnType<typeof setTimeout> | undefined
-    const timer = setTimeout(() => {
-      requestAction(state, difficulty, state.rng + state.round, personality).then((action: Action) => {
-        if (cancelled) return
-        const act = () => {
-          setAiFocus(null)
-          if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
-          else play(action)
-        }
-        // Flash the piece that is about to move so the player can follow it.
-        const mover = action.type === 'move' ? action.pieceId : action.type === 'cast' ? action.pieceId : undefined
-        if (!mover) return act()
-        setAiFocus({ mover, target: action.type === 'move' ? pieceAt(state, action.to)?.id : undefined })
-        flash = setTimeout(act, AI_FLASH_MS)
-      })
-    }, AI_DELAY_MS)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-      clearTimeout(flash)
-      setAiFocus(null)
-    }
-    // beginDuel and play only close over state/duelMode, which are covered or intentionally read fresh.
-    // oxlint-disable-next-line react/exhaustive-deps
-  }, [state, pending, myTurn, difficulty, failed, banner])
+  const aiFocus = useAiTurn({
+    state, active: !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
+    onAct: (action) => {
+      if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
+      else play(action)
+    },
+  })
 
   const pickSpell = (spell: Spell | null) => {
     if (banner) return
@@ -298,7 +224,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     setCasting(spell)
   }
 
-  const onSquare = (p: Pos) => {
+  const onSquare = useLatest((p: Pos) => {
     if (ended || pending || banner) return
     if (!myTurn) {
       // Off-turn taps only look at pieces.
@@ -323,10 +249,10 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     const occ = pieceAt(state, p)
     setSelectedId(occ && occ.court === human ? occ.id : null)
     setInspectId(occ ? occ.id : null)
-  }
+  })
 
   const undo = () => {
-    setTurnMs({ at: -1, ms: 0 })
+    turnClock.reset()
     if (hotSeat) {
       // Take back the last move, whoever made it.
       const earlier = history.slice(0, -1)
@@ -358,13 +284,24 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   const defender = pending && pieceAt(state, pending.to)
   const duel = state.lastDuel
   const hinted = hint && hint !== 'thinking' ? hint : null
+  // Stable props keep the memoised board from redrawing on every clock tick.
+  const pendingMover = pending?.pieceId
+  const defenderId = defender ? defender.id : undefined
+  const boardFocus = useMemo(
+    () => (pendingMover ? { mover: pendingMover, target: defenderId } : aiFocus ?? (hinted ? { mover: hinted.mover, target: hinted.target } : undefined)),
+    [pendingMover, defenderId, aiFocus, hinted],
+  )
+  const boardHint = useMemo(
+    () => (hinted ? { from: hinted.from, to: hinted.to, square: hinted.square, pieceId: hinted.mover } : undefined),
+    [hinted],
+  )
   const result = puzzleLimit !== undefined
     ? state.winner === human ? 'Solved' : 'Not solved'
     : state.winner === 'draw' ? 'Draw'
     : hotSeat ? `${COURT_NAME[state.winner ?? 'solari']} wins`
     : state.winner === human ? 'Victory' : 'Defeat'
   const retry = () => {
-    setTurnMs({ at: -1, ms: 0 })
+    turnClock.reset()
     setHistory((h) => h.slice(0, 1))
     setBanner({ court: history[0].state.turn })
     setSelectedId(null)
@@ -377,10 +314,8 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   return (
     <main className="app timed">
       <Dial state={state} />
-      <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare}
-        focus={pending ? { mover: pending.pieceId, target: defender?.id }
-          : aiFocus ?? (hinted ? { mover: hinted.mover, target: hinted.target } : undefined)}
-        hint={hinted ? { from: hinted.from, to: hinted.to, square: hinted.square, pieceId: hinted.mover } : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+      <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
+        focus={boardFocus} hint={boardHint} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       {pending && !pending.confirmed && attacker && defender && (
         <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
           luminance={squareLuminance(state, pending.to)}

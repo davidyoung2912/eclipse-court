@@ -4,8 +4,8 @@ import { reduce } from '../engine/reducer'
 import { squareLuminance } from '../engine/rules/luminance'
 import { ROLE_NAMES } from '../engine/data/roster'
 import type { Puzzle } from '../engine/data/puzzles'
-import { rivalReply } from '../engine/data/puzzles/solver'
-import { actionCode } from '../engine/data/puzzles/solver'
+import { rivalReply } from './puzzleSolver'
+import { actionCode } from './puzzleSolver'
 
 const LETTER = { footsoldier: 'F', flier: 'W', marksman: 'M', bruiser: 'B', charger: 'C', aura: 'A', leader: 'L' } as const
 const ids = process.argv.slice(2)

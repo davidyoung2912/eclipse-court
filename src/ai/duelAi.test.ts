@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { startingPieces } from '../engine/data/roster'
-import { createDuel, runDuel } from '../engine/duel/sim'
+import { createDuel, runDuel } from '../engine/duel/duel'
 import { DUEL_SECONDS } from '../engine/duel/types'
 import type { Court, Role } from '../engine/rules/types'
 import { createDuelAi } from './duelAi'

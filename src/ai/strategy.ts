@@ -7,7 +7,7 @@ import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
-import { PERSONALITIES, type Personality, type PersonalityId } from './personality'
+import { PERSONALITIES, type Personality, type PersonalityId } from '../engine/data/personality'
 import { DIFFICULTY, type Difficulty } from './profile'
 
 const NEUTRAL = PERSONALITIES.balanced
@@ -69,9 +69,10 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
     if (held[foe] >= 4) score -= 10
   } else if (mode === 'score') score += (state.score[court] - state.score[foe]) * 3
   if (hill) {
+    const holder = pieceAt(state, hillAt)?.court
     for (const c of COURTS) {
       const sign = c === court ? 1 : -1
-      score += sign * ((pieceAt(state, hillAt)?.court === c ? 6 : 0) + state.streak[c] ** 2 * 6)
+      score += sign * ((holder === c ? 6 : 0) + state.streak[c] ** 2 * 6)
     }
   }
   if (objective?.kind === 'escort') {
@@ -152,42 +153,67 @@ function spellActions(state: GameState, court: Court): Action[] {
 }
 
 /** Cheap ordering so the beam keeps captures, beacon grabs and big pieces first. */
-function hint(state: GameState, a: Action): number {
-  if (a.type !== 'move') return -1
-  const target = pieceAt(state, a.to)
-  const mover = state.pieces.find((p) => p.id === a.pieceId)!
+function moveHint(state: GameState, mover: Piece, to: Pos): number {
+  const target = pieceAt(state, to)
   let h = 0
   if (target) h += 10 + VALUE[target.role] - 0.5 * VALUE[mover.role]
-  if (isBeacon(a.to, state.config.beacons)) h += 6
+  if (isBeacon(to, state.config.beacons)) h += 6
   if (isBeacon(mover.pos, state.config.beacons)) h -= 3
   return h
 }
 
-/** Value of taking `action` from `state`, averaging over duel outcomes if it is an attack. */
-function valueOf(state: GameState, action: Action, court: Court, depth: number, beam: number, w: Personality): number {
+function hint(state: GameState, a: Action): number {
+  if (a.type !== 'move') return -1
+  return moveHint(state, state.pieces.find((p) => p.id === a.pieceId)!, a.to)
+}
+
+/** Every move for `court` (and a pass) with its ordering hint, best first. */
+function rankedMoves(state: GameState, court: Court, beam: number): Action[] {
+  const ranked: [Action, number][] = []
+  for (const piece of state.pieces) {
+    if (piece.court !== court) continue
+    for (const to of legalMoves(state, piece)) ranked.push([{ type: 'move', pieceId: piece.id, to }, moveHint(state, piece, to)])
+  }
+  ranked.push([{ type: 'pass' }, -1])
+  return ranked.sort((x, y) => y[1] - x[1]).slice(0, beam).map((r) => r[0])
+}
+
+/**
+ * Value of taking `action` from `state`, averaging over duel outcomes if it is an attack.
+ * `alpha` and `beta` bound the search below a quiet move; an attack's average needs each outcome
+ * exact, so its replies are searched with the full window.
+ */
+function valueOf(state: GameState, action: Action, court: Court, depth: number, beam: number, w: Personality, alpha: number, beta: number): number {
   if (action.type === 'move') {
     const target = pieceAt(state, action.to)
     if (target) {
       const mover = state.pieces.find((p) => p.id === action.pieceId)!
       const branches = duelBranches(mover, target, squareLuminance(state, action.to))
       let sum = 0
-      for (const { duel, weight } of branches) sum += weight * search(reduceLegal(state, { ...action, duel }), court, depth - 1, beam, w)
+      for (const { duel, weight } of branches)
+        sum += weight * search(reduceLegal(state, { ...action, duel }), court, depth - 1, beam, w, -Infinity, Infinity)
       return sum
     }
   }
-  return search(reduceLegal(state, action), court, depth - 1, beam, w)
+  return search(reduceLegal(state, action), court, depth - 1, beam, w, alpha, beta)
 }
 
-function search(state: GameState, court: Court, depth: number, beam: number, w: Personality): number {
+/** Minimax with alpha-beta pruning; the value it returns is exact whenever it lies inside the window. */
+function search(state: GameState, court: Court, depth: number, beam: number, w: Personality, alpha: number, beta: number): number {
   if (state.winner || depth <= 0) return evaluate(state, court, w)
-  const all = moveActions(state, state.turn)
-  all.push({ type: 'pass' })
-  const picked = all.map((a) => [a, hint(state, a)] as const).sort((x, y) => y[1] - x[1]).slice(0, beam)
+  const picked = rankedMoves(state, state.turn, beam)
   const mine = state.turn === court
   let best = mine ? -Infinity : Infinity
-  for (const [a] of picked) {
-    const v = valueOf(state, a, court, depth, beam, w)
-    best = mine ? Math.max(best, v) : Math.min(best, v)
+  for (const a of picked) {
+    const v = valueOf(state, a, court, depth, beam, w, alpha, beta)
+    if (mine) {
+      best = Math.max(best, v)
+      alpha = Math.max(alpha, best)
+    } else {
+      best = Math.min(best, v)
+      beta = Math.min(beta, best)
+    }
+    if (alpha >= beta) break
   }
   return best
 }
@@ -202,18 +228,29 @@ export function chooseAction(state: GameState, difficulty: Difficulty, seed: num
   const w = PERSONALITIES[personality]
   const court = state.turn
   const candidates = [...moveActions(state, court), ...spellActions(state, court), { type: 'pass' } as Action]
+  // Noise is drawn per candidate in generation order, so the choice does not depend on search order.
   let rng = seed >>> 0
-  let best: Action = { type: 'pass' }
-  let bestScore = -Infinity
-  for (const a of candidates) {
-    let score = valueOf(state, a, court, depth, beam, w) + (a.type === 'cast' ? w.spells : 0)
+  const jitters = candidates.map((a) => {
     const [r, next] = rngNext(rng)
     rng = next
-    score += (r - 0.5) * 2 * noise + (a.type === 'pass' ? -0.5 : 0)
-    if (score > bestScore) {
+    return (r - 0.5) * 2 * noise + (a.type === 'pass' ? -0.5 : 0)
+  })
+  // Searching the promising candidates first raises the bound sooner, so the rest are cut short.
+  const order = candidates.map((a, i) => [i, hint(state, a)] as const).sort((x, y) => y[1] - x[1])
+  let best = 0
+  let bestScore = -Infinity
+  for (const [i] of order) {
+    const a = candidates[i]
+    const bonus = a.type === 'cast' ? w.spells : 0
+    // Only a score above the best so far can win, so the search may stop once this move is shown to fall short of it.
+    const floor = bestScore - bonus - jitters[i] - 1e-6
+    let score = valueOf(state, a, court, depth, beam, w, floor, Infinity) + bonus
+    score += jitters[i]
+    // Equal scores go to the earlier candidate, as when they were searched in order.
+    if (score > bestScore || (score === bestScore && i < best)) {
       bestScore = score
-      best = a
+      best = i
     }
   }
-  return best
+  return candidates[best]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aiLoadout } from '../../ai/draft'
+import { aiLoadout } from './aiDraft'
 import { checkInvariants, playGame } from '../../sim/game'
 import { newGame } from '../reducer'
 import { matchesPreset, PRESETS, skirmishConfig } from './setups'

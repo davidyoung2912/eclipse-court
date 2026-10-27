@@ -1,10 +1,10 @@
-import { chooseAction } from '../../../ai/strategy'
-import { stubDuel, reduce } from '../../reducer'
-import { squareLuminance } from '../../rules/luminance'
-import { legalMoves, pieceAt } from '../../rules/moves'
-import { canCast, spellTargets } from '../../rules/spells'
-import type { Action, GameState } from '../../rules/types'
-import type { Puzzle } from './helpers'
+import { chooseAction } from '../ai/strategy'
+import { stubDuel, reduce } from '../engine/reducer'
+import { squareLuminance } from '../engine/rules/luminance'
+import { legalMoves, pieceAt } from '../engine/rules/moves'
+import { canCast, spellTargets } from '../engine/rules/spells'
+import type { Action, GameState } from '../engine/rules/types'
+import type { Puzzle } from '../engine/data/puzzles/helpers'
 
 /** How the other side answers while the solver looks for wins. */
 export type Rival = 'pass' | 'ai'

@@ -1,6 +1,6 @@
 import { ROLE_STATS } from './roster'
 import type { Scenario } from './scenarios'
-import type { Difficulty } from '../../ai/profile'
+import type { Difficulty } from './difficulty'
 import type { Court, GameState, Piece, Pos, Role, Spell } from '../rules/types'
 
 /** [role, x, y, hp?] in board coordinates; Umbral's x is written as it stands, not mirrored. */

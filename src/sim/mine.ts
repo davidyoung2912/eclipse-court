@@ -2,7 +2,7 @@
 import { writeFileSync } from 'node:fs'
 import { reduce } from '../engine/reducer'
 import { pieceAt } from '../engine/rules/moves'
-import { actionCode, rivalReply, solve } from '../engine/data/puzzles/solver'
+import { actionCode, rivalReply, solve } from './puzzleSolver'
 import { puzzle, type PuzzleDef } from '../engine/data/puzzles/helpers'
 import type { Action, Role, Spell } from '../engine/rules/types'
 

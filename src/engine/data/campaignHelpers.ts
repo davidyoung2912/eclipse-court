@@ -1,5 +1,5 @@
-import type { PersonalityId } from '../../ai/personality'
-import type { Difficulty } from '../../ai/profile'
+import type { PersonalityId } from './personality'
+import type { Difficulty } from './difficulty'
 import type { Court, GameState, MatchConfig, Piece, Role } from '../rules/types'
 
 export interface Opponent {

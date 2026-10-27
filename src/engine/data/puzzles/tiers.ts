@@ -1,5 +1,5 @@
 import type { PuzzleTier } from './helpers'
-import type { Difficulty } from '../../../ai/profile'
+import type { Difficulty } from '../difficulty'
 
 export interface TierInfo {
   tier: PuzzleTier

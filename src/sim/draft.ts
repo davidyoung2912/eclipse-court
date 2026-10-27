@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { aiDraft } from '../ai/draft'
+import { aiDraft } from '../engine/data/aiDraft'
 import { DIFFICULTY_LIST } from '../ai/profile'
 import { BOARDS } from '../engine/data/boards'
 import { arrange, DRAFT_ROLES, countRole, randomDraft } from '../engine/data/draft'

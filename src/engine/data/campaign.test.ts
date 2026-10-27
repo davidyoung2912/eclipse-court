@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PERSONALITIES } from '../../ai/personality'
+import { PERSONALITIES } from './personality'
 import { chooseAction } from '../../ai/strategy'
 import { reduce } from '../reducer'
 import { CAMPAIGN, battlesIn, campaignGame } from './campaign'

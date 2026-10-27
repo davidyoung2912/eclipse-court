@@ -1,4 +1,4 @@
-import type { Difficulty } from '../../ai/profile'
+import type { Difficulty } from './difficulty'
 
 export interface CampaignTier {
   name: string

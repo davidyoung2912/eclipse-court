@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createDuelAi } from '../../ai/duelAi'
 import { profileForSkill } from '../../ai/profile'
 import { startingPieces } from '../data/roster'
-import { createDuel, duelOutcome, runDuel, stepDuel } from './sim'
+import { createDuel, duelOutcome, runDuel, stepDuel } from './duel'
 import { ARENA_H, ARENA_W, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT } from './types'
 import type { Role } from '../rules/types'
 

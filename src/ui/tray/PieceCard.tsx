@@ -1,6 +1,6 @@
 import { ROLE_INFO, courtFight, courtPassive } from '../../engine/data/pieceInfo'
 import { ROLE_NAMES } from '../../engine/data/roster'
-import { styleOf } from '../../engine/duel/sim'
+import { styleOf } from '../../engine/duel/duel'
 import { PERK_INFO, rankOf } from '../../engine/rules/growth'
 import { isBeacon } from '../../engine/rules/board'
 import { favouredCourt, squareLuminance } from '../../engine/rules/luminance'

@@ -1,8 +1,11 @@
-import { rngNext } from '../engine/rng'
-import { canAdd, DRAFT_ROLES, ROLE_COST } from '../engine/data/draft'
-import { LOADOUT_SIZE, spellPool } from '../engine/rules/spells'
-import type { Court, Role, Spell } from '../engine/rules/types'
-import { DIFFICULTY, type Difficulty } from './profile'
+import { rngNext } from '../rng'
+import { LOADOUT_SIZE, spellPool } from '../rules/spells'
+import type { Court, Role, Spell } from '../rules/types'
+import { canAdd, DRAFT_ROLES, ROLE_COST } from './draft'
+import type { Difficulty } from './difficulty'
+
+/** Seed-noise on each role's score; weaker difficulties draft lopsided armies. */
+const DRAFT_NOISE: Record<Difficulty, number> = { easy: 2.5, normal: 0.6, hard: 0 }
 
 /** How much a balanced army wants of each role; every extra copy of a role is worth less. */
 const WANT: Record<Role, number> = {
@@ -16,7 +19,7 @@ const WANT: Record<Role, number> = {
 export function aiDraft(seed: number, difficulty: Difficulty): Role[] {
   const roles: Role[] = []
   let rng = seed >>> 0
-  const noise = 0.1 + 0.3 * DIFFICULTY[difficulty].noise
+  const noise = 0.1 + 0.3 * DRAFT_NOISE[difficulty]
   for (;;) {
     const open = DRAFT_ROLES.filter((r) => canAdd(roles, r))
     if (!open.length) return roles

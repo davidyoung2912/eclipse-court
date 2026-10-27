@@ -1,4 +1,4 @@
-import { PERSONALITIES } from '../../ai/personality'
+import { PERSONALITIES } from '../../engine/data/personality'
 import { DAILY_COURT, type DailyMatch } from '../../engine/data/daily'
 import { dailyResult, liveStreak, type Progress } from '../../progress'
 import { challengeLink } from '../../share'

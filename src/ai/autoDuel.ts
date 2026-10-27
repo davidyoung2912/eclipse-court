@@ -1,4 +1,4 @@
-import { createDuel, runDuel } from '../engine/duel/sim'
+import { createDuel, runDuel } from '../engine/duel/duel'
 import type { DuelOutcome, Piece } from '../engine/rules/types'
 import { createDuelAi } from './duelAi'
 import { profileForSkill } from './profile'

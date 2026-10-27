@@ -234,10 +234,13 @@ function finishTurn(state: GameState): GameState {
   const winner = evaluateWin(state, mover, streak[mover])
   if (winner) return { ...state, streak, winner }
   // A Bind lasts until the bound court's own turn has passed; a Shroud until its caster's next turn.
-  const pieces = state.pieces.map((p) => {
-    if (p.court === mover && p.bound) return { ...p, bound: false }
-    return p.court !== mover && p.shrouded ? { ...p, shrouded: false } : p
-  })
+  const clears = (p: Piece) => (p.court === mover ? p.bound : p.shrouded)
+  const pieces = state.pieces.some(clears)
+    ? state.pieces.map((p) => {
+        if (p.court === mover && p.bound) return { ...p, bound: false }
+        return p.court !== mover && p.shrouded ? { ...p, shrouded: false } : p
+      })
+    : state.pieces
   let next: GameState = { ...state, pieces, streak, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)

@@ -1,5 +1,5 @@
-import type { Difficulty } from '../../ai/profile'
-import type { Summary } from '../../progress'
+import type { Difficulty } from './difficulty'
+import type { Summary } from './summary'
 import { FULL_UMBRAL, at, lineup, type Spec } from './scenarioHelpers'
 import { BEGINNER_SCENARIOS } from './scenariosBeginner'
 import { EXPERT_SCENARIOS } from './scenariosExpert'

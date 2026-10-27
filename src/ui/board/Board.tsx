@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { allSquares, CENTER, chebyshev, isBeacon, isBlocked, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
 import { safeRadius } from '../../engine/rules/events'
@@ -53,7 +53,7 @@ function HintGhost({ piece, from, to, flip }: { piece: Piece; from: Pos; to: Pos
   )
 }
 
-export function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false }: Props) {
+export const Board = memo(function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const radius = safeRadius(state)
@@ -119,4 +119,4 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
       })()}
     </svg>
   )
-}
+})

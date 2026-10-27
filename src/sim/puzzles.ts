@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { PUZZLES } from '../engine/data/puzzles'
-import { actionCode, solve, type Rival } from '../engine/data/puzzles/solver'
+import { actionCode, solve, type Rival } from './puzzleSolver'
 
 // npm run puzzles -- [--id <id>] [--rival pass|ai] [--turns N]
 const args = process.argv.slice(2)

@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, useEffect, useRef, useState } from 'react'
 import { challengeLink, parseShared, type Shared } from './share'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
 import { PasteCode } from './ui/menus/PasteCode'
 import { unlockAudio } from './audio/synth'
-import { Game } from './Game'
 import { HOT_SEAT, versusAi } from './controllers'
 import type { Difficulty } from './ai/profile'
-import { aiDraft, aiLoadout } from './ai/draft'
+import { aiDraft, aiLoadout } from './engine/data/aiDraft'
 import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
@@ -16,11 +15,12 @@ import { dailyGame, dailyMatch, DAILY_COURT, isDailyMatch } from './engine/data/
 import { dailySeed } from './engine/data/setups'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
-import { decodeRecord, encodeRecord } from './engine/serialize'
+import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
-import type { PersonalityId } from './ai/personality'
-import { addPlaytime, dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
+import type { PersonalityId } from './engine/data/personality'
+import { addPlaytime, dailyResult, loadProgress, recordPuzzle, recordRun, recordTournament, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
+import { settleGame } from './settleGame'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
 import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
@@ -29,15 +29,18 @@ import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { clearRun, loadRun, saveRun } from './run'
 import { Battle } from './ui/menus/Battle'
-import { Practice } from './ui/menus/Practice'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
-import { Replay } from './ui/menus/Replay'
 import { Stats } from './ui/menus/Stats'
 import { PlayTimer } from './ui/PlayTimer'
-import { Tutorial } from './ui/tutorial/Tutorial'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
+
+// The board, duel and tutorial code load when first needed, so the menus open sooner.
+const Game = lazy(() => import('./Game').then((m) => ({ default: m.Game })))
+const Practice = lazy(() => import('./ui/menus/Practice').then((m) => ({ default: m.Practice })))
+const Replay = lazy(() => import('./ui/menus/Replay').then((m) => ({ default: m.Replay })))
+const Tutorial = lazy(() => import('./ui/tutorial/Tutorial').then((m) => ({ default: m.Tutorial })))
 
 type Screen =
   | { name: 'menu' }
@@ -324,35 +327,8 @@ export default function App() {
     }
 
     /** Records a finished game and returns the lines to show about it. */
-    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
-      const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
-      if (!summary) return { summary: null, lines: [] as string[], progress }
-      const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished))
-      const stars = starsEarned(summary)
-      const scored = stats && daily
-        ? recordDaily(played, { date: today.date, won: summary.won, turns: summary.turns, lost: summary.lost })
-        : null
-      let next = scored?.progress ?? played
-      const lines: string[] = []
-      if (scenario !== undefined && summary.won) {
-        const x = SCENARIOS[scenario]
-        const bits = STAR_WIN | (summary.lost === 0 ? STAR_FLAWLESS : 0) | (x.bonus.met(summary) ? STAR_SWIFT : 0)
-        const result = recordScenario(next, x.id, bits)
-        next = result.progress
-        lines.push(`Stars: Win${bits & STAR_FLAWLESS ? ', no pieces lost' : ''}${bits & STAR_SWIFT ? `, ${x.bonus.text.toLowerCase()}` : ''}.`, ...result.earned.map((a) => `Achievement: ${a.name}`))
-      }
-      return {
-        summary,
-        progress: next,
-        lines: [
-          ...(scored?.scored ? [`Daily match scored: ${summary.won ? 'won' : 'lost'} in ${summary.turns} rounds.`] : daily && stats ? ['Daily match: replays are not scored.'] : []),
-          ...(scored?.earned ?? []).map((a) => `Achievement: ${a.name}`),
-          ...(stats && campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),
-          ...earned.map((a) => `Achievement: ${a.name}`),
-          ...lines,
-        ],
-      }
-    }
+    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) =>
+      settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
 
     const finishSeries = (winner: GameState['winner'], finished: GameRecord) => {
       const opponent = CAMPAIGN[campaignIndex!]

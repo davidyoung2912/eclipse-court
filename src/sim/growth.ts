@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { aiLoadout } from '../ai/draft'
+import { aiLoadout } from '../engine/data/aiDraft'
 import { DIFFICULTY_LIST } from '../ai/profile'
 import { rankOf } from '../engine/rules/growth'
 import type { MatchConfig } from '../engine/rules/types'

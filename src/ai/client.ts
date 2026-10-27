@@ -1,5 +1,5 @@
 import type { Action, GameState } from '../engine/rules/types'
-import type { PersonalityId } from './personality'
+import type { PersonalityId } from '../engine/data/personality'
 import type { Difficulty } from './profile'
 import { chooseAction } from './strategy'
 import type { SearchRequest, SearchResponse } from './worker'

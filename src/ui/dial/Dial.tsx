@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, objectiveRounds, safeRadius, SCORE_TARGET } from '../../engine/rules/events'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
 import { lumColor } from '../board/lumColor'
 
-export function Dial({ state }: { state: GameState }) {
+export const Dial = memo(function Dial({ state }: { state: GameState }) {
   const now = squareLuminance(state, { x: 3, y: 3 })
   const next = forecast(state, 3)
   const notes = hudNotes(state)
@@ -22,7 +23,7 @@ export function Dial({ state }: { state: GameState }) {
       </div>
     </header>
   )
-}
+})
 
 /** Short status lines for whatever the match adds to the classic game: its goal, an event, the closing safe zone. */
 function hudNotes(state: GameState): string[] {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PERSONALITIES } from '../../ai/personality'
+import { PERSONALITIES } from '../../engine/data/personality'
 import { CAMPAIGN, battlesIn } from '../../engine/data/campaign'
 import { CAMPAIGN_TIERS } from '../../engine/data/tiers'
 import { SCENARIOS, scenariosIn } from '../../engine/data/scenarios'

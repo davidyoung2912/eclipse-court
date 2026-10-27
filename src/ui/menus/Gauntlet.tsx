@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PERSONALITIES } from '../../ai/personality'
+import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
 import { GAUNTLET_STAGES, RELICS, REST_STAGES, roster, stageFoe, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { ROLE_NAMES } from '../../engine/data/roster'

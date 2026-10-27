@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DIFFICULTY_LIST } from '../../ai/profile'
+import { DIFFICULTY_LIST } from './difficulty'
 import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'

@@ -1,5 +1,6 @@
-export type Difficulty = 'easy' | 'normal' | 'hard'
-export const DIFFICULTY_LIST: readonly Difficulty[] = ['easy', 'normal', 'hard']
+import type { Difficulty } from '../engine/data/difficulty'
+
+export { DIFFICULTY_LIST, type Difficulty } from '../engine/data/difficulty'
 
 /** Human-like limits on a duel AI. No stat cheating: skill only changes how well it plays. */
 export interface AiProfile {

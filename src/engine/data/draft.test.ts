@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { aiDraft, aiLoadout } from '../../ai/draft'
-import { DIFFICULTY_LIST } from '../../ai/profile'
+import { aiDraft, aiLoadout } from './aiDraft'
+import { DIFFICULTY_LIST } from './difficulty'
 import { newGame } from '../reducer'
 import { isBlocked } from '../rules/board'
 import { legalMoves } from '../rules/moves'

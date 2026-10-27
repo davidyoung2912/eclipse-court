@@ -1,4 +1,4 @@
-import type { PersonalityId } from './ai/personality'
+import type { PersonalityId } from './engine/data/personality'
 import type { Difficulty } from './ai/profile'
 import { otherCourt } from './engine/rules/board'
 import type { Court } from './engine/rules/types'

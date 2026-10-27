@@ -1,4 +1,4 @@
-import type { Difficulty } from '../../../ai/profile'
+import type { Difficulty } from '../difficulty'
 import { newGame } from '../../reducer'
 import { ROLE_STATS } from '../roster'
 import type { Action, Court, GameState, MatchConfig, Piece, Pos, Role, Spell } from '../../rules/types'

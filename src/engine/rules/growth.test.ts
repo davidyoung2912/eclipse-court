@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createFighter } from '../duel/sim'
+import { createFighter } from '../duel/duel'
 import { newGame, reduce } from '../reducer'
 import { decodeRecord, encodeRecord } from '../serialize'
 import { ELITE_WINS, growthChoice, perkChoices, perkMods, rankOf, VETERAN_WINS } from './growth'

@@ -7,7 +7,7 @@ import { ROLE_INFO } from '../../engine/data/pieceInfo'
 import { getSettings } from '../../settings'
 import { Icon } from '../menus/icons'
 import { profileForSkill } from '../../ai/profile'
-import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/sim'
+import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
 import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
 import type { DuelOutcome, Piece } from '../../engine/rules/types'
 
