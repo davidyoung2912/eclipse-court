@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { requestAction } from './ai/client'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
+import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { estimateOdds, reduce } from './engine/reducer'
 import { samePos } from './engine/rules/board'
@@ -10,6 +11,7 @@ import { legalMoves, pieceAt } from './engine/rules/moves'
 import { spellTargets } from './engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Pos, Spell } from './engine/rules/types'
 import { Board } from './ui/board/Board'
+import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
 import { Dial } from './ui/dial/Dial'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
@@ -57,7 +59,10 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const [inspectId, setInspectId] = useState<string | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
+  const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
   const state = history[history.length - 1]
+  /** The position a hint was asked for, so a slow search cannot land on a later one. */
+  const hintFor = useRef<GameState | null>(null)
   const myTurn = state.turn === human
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
@@ -76,6 +81,20 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     lastTurn.current = state.turn
   }, [state, human])
 
+  const clearHint = () => {
+    hintFor.current = null
+    setHint(null)
+  }
+
+  const askHint = () => {
+    if (hint) return clearHint()
+    hintFor.current = state
+    setHint('thinking')
+    requestAction(state, HINT_DIFFICULTY, state.rng + state.round).then((action) => {
+      if (hintFor.current === state) setHint(describeHint(state, action))
+    })
+  }
+
   const push = (s: GameState) => {
     if (spellsLeft(s) < spellsLeft(state)) sfx.cast()
     else if (s.lastDuel) sfx.hit(2)
@@ -85,6 +104,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     setInspectId(null)
     setCasting(null)
     setPending(null)
+    clearHint()
   }
 
   /** Settle a capture: play it live, or let the duel AI play it out at the auto-duel skill. */
@@ -130,6 +150,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   }, [state, pending, foe, difficulty])
 
   const pickSpell = (spell: Spell | null) => {
+    clearHint()
     setSelectedId(null)
     if (spell && spellTargets(state, human, spell).none) return push(reduce(state, { type: 'cast', spell }))
     setCasting(spell)
@@ -152,6 +173,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
       if (pieceAt(state, p)) return setPending({ pieceId: selected.id, to: p, confirmed: false, byAi: false })
       return push(reduce(state, { type: 'move', pieceId: selected.id, to: p }))
     }
+    clearHint()
     const occ = pieceAt(state, p)
     setSelectedId(occ && occ.court === human ? occ.id : null)
     setInspectId(occ ? occ.id : null)
@@ -166,6 +188,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     setSelectedId(null)
     setCasting(null)
     setPending(null)
+    clearHint()
   }
 
   const finishDuel = (outcome: DuelOutcome) => {
@@ -180,13 +203,16 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const attacker = pending && state.pieces.find((x) => x.id === pending.pieceId)
   const defender = pending && pieceAt(state, pending.to)
   const duel = state.lastDuel
+  const hinted = hint && hint !== 'thinking' ? hint : null
   const result = state.winner === 'draw' ? 'Draw' : state.winner === human ? 'Victory' : 'Defeat'
 
   return (
     <main className="app">
       <Dial state={state} />
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare}
-        focus={pending ? { mover: pending.pieceId, target: defender?.id } : aiFocus ?? undefined} flip={human === 'umbral'} />
+        focus={pending ? { mover: pending.pieceId, target: defender?.id }
+          : aiFocus ?? (hinted ? { mover: hinted.mover, target: hinted.target } : undefined)}
+        hint={hinted ? { from: hinted.from, to: hinted.to, square: hinted.square, pieceId: hinted.mover } : undefined} flip={human === 'umbral'} />
       {pending && !pending.confirmed && attacker && defender && (
         <AttackConfirm attacker={attacker} defender={defender} live={duelMode === 'live'}
           luminance={squareLuminance(state, pending.to)}
@@ -206,8 +232,10 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
           </div>
         </div>
       )}
-      <PieceCard state={state} human={human} piece={shown}
-        hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
+      {hint && myTurn ? <HintCard hint={hint} /> : (
+        <PieceCard state={state} human={human} piece={shown}
+          hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
+      )}
       <footer className="tray">
         {!state.winner && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} />}
         <div className="options">
@@ -228,6 +256,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
         </p>
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
+          <button className={hint ? 'on' : ''} disabled={!!state.winner || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
           <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => push(reduce(state, { type: 'pass' }))}><Icon name="hourglass" />End turn</button>
           <button onClick={() => onExit(null)}><Icon name="exit" />Quit</button>
         </div>

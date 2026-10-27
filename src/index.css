@@ -72,6 +72,10 @@ body {
 .piece.mover .halo { stroke: #ffd45a; animation-duration: 0.45s; }
 .piece.target .ring { stroke: #ff5a5a; stroke-width: 0.1; }
 .piece.target .halo { stroke: #ff3030; animation-duration: 0.7s; }
+.piece.hint-ghost { pointer-events: none; opacity: 0.8; }
+.piece.hint-ghost.snap { transition: none; }
+.piece.hint-ghost .ring { stroke: #fff6c0; stroke-width: 0.08; }
+.hint-square { pointer-events: none; }
 @keyframes halo-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
 .piece.bound .art { opacity: 0.55; }
 .art-rim { fill: #120d2a; }
@@ -282,6 +286,14 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .piece-stats i { min-width: 0; margin-right: 4px; }
 .piece-stats .dots { letter-spacing: 0.1em; color: var(--solari-gold); margin-right: 10px; }
 .piece-stats small { font-size: 0.66rem; opacity: 0.8; }
+
+/* Hint card */
+.hint-card { border-color: rgba(255, 212, 90, 0.7); }
+.hint-card header b { color: #ffd45a; }
+.hint-card p { white-space: normal; }
+.hint-headline { font-size: 0.85rem; font-weight: 600; }
+.hint-detail { opacity: 0.85; }
+.buttons button.on { border-color: #ffd45a; --glow: 255, 212, 90; }
 
 /* Button icons */
 .btn-icon { width: 1.25em; height: 1.25em; flex-shrink: 0; }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { allSquares, isBeacon, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
 import { squareLuminance } from '../../engine/rules/luminance'
@@ -19,11 +20,38 @@ interface Props {
   onSquare: (p: Pos) => void
   /** Pieces to spotlight: an AI piece about to move, or the two sides of an attack under review. */
   focus?: { mover?: string; target?: string }
+  /** A recommended move to loop: the piece glows, a ghost of it travels from `from` to `to`, and `square` is marked. */
+  hint?: { from?: Pos; to?: Pos; square?: Pos; pieceId?: string }
   /** Turn the board half a turn so the Umbral edge is at the bottom. */
   flip?: boolean
 }
 
-export function Board({ state, selected, moves, targetIds = [], onSquare, focus, flip = false }: Props) {
+/** Pause on the start square, then the same slide a real move makes, then a pause on arrival. */
+const HINT_START_MS = 700
+const HINT_END_MS = 1100
+
+/** A translucent copy of a piece that slides from start to end and snaps back, in a loop. */
+function HintGhost({ piece, from, to, flip }: { piece: Piece; from: Pos; to: Pos; flip: boolean }) {
+  const [atEnd, setAtEnd] = useState(false)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    const step = (end: boolean) => {
+      setAtEnd(end)
+      timer = setTimeout(() => step(!end), end ? HINT_END_MS : HINT_START_MS)
+    }
+    step(false)
+    return () => clearTimeout(timer)
+  }, [from.x, from.y, to.x, to.y])
+  const { cx, cy } = toScreen(atEnd ? to : from, flip)
+  return (
+    <g className={`piece ${piece.court} hint-ghost${atEnd ? '' : ' snap'}`} style={{ transform: `translate(${cx}px, ${cy}px)` }}>
+      <circle className="ring" r={0.4} />
+      <PieceArt role={piece.role} court={piece.court} />
+    </g>
+  )
+}
+
+export function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
@@ -51,6 +79,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
             {isBeacon(p) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
             {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
+            {hint?.square && samePos(hint.square, p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow hint-square" />}
           </g>
         )
       })}
@@ -70,6 +99,10 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
           </g>
         )
       })}
+      {hint?.from && hint.to && hint.pieceId && (() => {
+        const piece = state.pieces.find((x) => x.id === hint.pieceId)
+        return piece && <HintGhost piece={piece} from={hint.from} to={hint.to} flip={flip} />
+      })()}
     </svg>
   )
 }
