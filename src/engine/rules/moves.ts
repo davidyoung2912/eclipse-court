@@ -1,4 +1,5 @@
-import { inBounds, isBlocked, samePos, SIZE } from './board'
+import { fixedCourt, inBounds, isBlocked, samePos, SIZE } from './board'
+import { squareLuminance } from './luminance'
 import type { GameState, Piece, Pos } from './types'
 
 const DIRS: readonly Pos[] = [
@@ -27,7 +28,7 @@ function slide(state: GameState, piece: Piece, maxSteps: number, over: boolean):
       }
       const occ = pieceAt(state, p)
       if (!occ) out.push(p)
-      else if (occ.court !== piece.court) {
+      else if (occ.court !== piece.court && !occ.shrouded) {
         out.push(p)
         if (!over) break
       } else if (!over) break
@@ -35,6 +36,10 @@ function slide(state: GameState, piece: Piece, maxSteps: number, over: boolean):
   }
   return out
 }
+
+/** Solari passive: a Flier on a square of the shifting board in full light reaches one square further. */
+const flierBonus = (state: GameState, piece: Piece) =>
+  state.config.passives && piece.court === 'solari' && !fixedCourt(piece.pos) && squareLuminance(state, piece.pos) >= 2 ? 1 : 0
 
 /** Every square the piece may move to; a square holding an enemy means an attack. */
 export function legalMoves(state: GameState, piece: Piece): Pos[] {
@@ -46,13 +51,14 @@ export function legalMoves(state: GameState, piece: Piece): Pos[] {
     case 'marksman':
       return slide(state, piece, 2, false)
     case 'flier':
+      return slide(state, piece, 3 + flierBonus(state, piece), true)
     case 'aura':
       return slide(state, piece, 3, true)
     case 'charger':
       return KNIGHT.map((d) => ({ x: piece.pos.x + d.x, y: piece.pos.y + d.y })).filter((p) => {
         if (!inBounds(p) || isBlocked(state.config, p)) return false
         const occ = pieceAt(state, p)
-        return !occ || occ.court !== piece.court
+        return !occ || (occ.court !== piece.court && !occ.shrouded)
       })
     case 'leader': {
       // Teleports to any empty square within 4 steps.

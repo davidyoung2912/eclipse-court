@@ -7,7 +7,7 @@ import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, MatchConfig, Piece } from './rules/types'
 import { matchup } from './data/matchups'
 import { ROLE_STATS } from './data/roster'
-import { applySpell, canCast, leaderOf, SPELLS } from './rules/spells'
+import { applySpell, canCast, leaderOf, loadoutOf, SPELL_INFO } from './rules/spells'
 
 /** The classic match's pacing; a match's own values live in `state.config`. */
 export const ECLIPSE_ROUND = DEFAULT_CONFIG.eclipseRound
@@ -30,7 +30,10 @@ export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
     phase: 0,
     dir: 1,
     eclipse: false,
-    spells: { solari: [...SPELLS], umbral: [...SPELLS] },
+    spells: { solari: [...loadoutOf(config, 'solari')], umbral: [...loadoutOf(config, 'umbral')] },
+    recharging: { solari: [], umbral: [] },
+    lastCast: { solari: null, umbral: null },
+    hold: 0,
     winner: null,
     rng: config.seed,
     lastDuel: null,
@@ -127,18 +130,30 @@ function endRound(state: GameState): GameState {
       if (rest % 2 === 0) hp += 1
     }
     if (onBeacon) hp += 1
+    // Umbral passive: the dark mends them while the light still cycles.
+    if (state.config.passives && p.court === 'umbral' && !eclipse && squareLuminance(state, p.pos) < 0) hp += 1
     hp = Math.min(hp, p.maxHp)
     if (eclipse && !onBeacon) hp -= 1
     const next = { ...p, hp, rest, moved: false }
     ;(hp > 0 ? survivors : dead).push(next)
   }
   const round = state.round + 1
+  // Spells that recharge come back to their Leaders.
+  const back = (court: Court) => state.recharging[court].filter((r) => r.ready <= round).map((r) => r.spell)
+  const spells = {
+    solari: [...state.spells.solari, ...back('solari')],
+    umbral: [...state.spells.umbral, ...back('umbral')],
+  }
+  const waiting = (court: Court) => state.recharging[court].filter((r) => r.ready > round)
   return {
     ...state,
     pieces: survivors,
     captured: [...state.captured, ...dead],
+    spells,
+    recharging: { solari: waiting('solari'), umbral: waiting('umbral') },
+    hold: Math.max(0, state.hold - 1),
     round,
-    phase: eclipse ? state.phase : (state.phase + state.dir + state.config.day.length) % state.config.day.length,
+    phase: eclipse || state.hold > 0 ? state.phase : (state.phase + state.dir + state.config.day.length) % state.config.day.length,
     eclipse: eclipse || round > state.config.eclipseRound,
   }
 }
@@ -160,8 +175,11 @@ function finishTurn(state: GameState): GameState {
   const mover = state.turn
   const winner = evaluateWin(state, mover)
   if (winner) return { ...state, winner }
-  // A Bind lasts until the bound court's own turn has passed.
-  const pieces = state.pieces.map((p) => (p.court === mover && p.bound ? { ...p, bound: false } : p))
+  // A Bind lasts until the bound court's own turn has passed; a Shroud until its caster's next turn.
+  const pieces = state.pieces.map((p) => {
+    if (p.court === mover && p.bound) return { ...p, bound: false }
+    return p.court !== mover && p.shrouded ? { ...p, shrouded: false } : p
+  })
   let next: GameState = { ...state, pieces, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
@@ -170,16 +188,22 @@ function finishTurn(state: GameState): GameState {
   return next
 }
 
-/** A cast costs the Leader 1 HP and the whole turn; each spell works once per game. */
+/** A cast costs the Leader HP and the whole turn; each spell works once per game unless the match recharges. */
 function cast(state: GameState, a: Extract<Action, { type: 'cast' }>): GameState {
   const court = state.turn
   const leader = leaderOf(state, court)
   if (!leader || !canCast(state, court, a.spell)) return state
   const applied = applySpell(state, court, a.spell, a.pieceId, a.to)
   if (!applied) return state
-  const pieces = applied.pieces.map((p) => (p.id === leader.id ? { ...p, hp: p.hp - 1, moved: true } : p))
+  const cost = SPELL_INFO[a.spell].cost
+  const pieces = applied.pieces.map((p) => (p.id === leader.id ? { ...p, hp: p.hp - cost, moved: true } : p))
   const spells = { ...applied.spells, [court]: applied.spells[court].filter((s) => s !== a.spell) }
-  return finishTurn({ ...applied, pieces, spells, lastDuel: null })
+  const { recharge } = state.config
+  const recharging = recharge
+    ? { ...applied.recharging, [court]: [...applied.recharging[court], { spell: a.spell, ready: state.round + recharge }] }
+    : applied.recharging
+  const lastCast = { ...applied.lastCast, [court]: a.spell }
+  return finishTurn({ ...applied, pieces, spells, recharging, lastCast, lastDuel: null })
 }
 
 /** Pure, deterministic transition. Illegal actions return the state unchanged. */

@@ -44,8 +44,6 @@ const AI_DELAY_MS = 450
 /** How long the AI's chosen piece flashes before it moves. */
 const AI_FLASH_MS = 800
 
-const spellsLeft = (g: GameState) => g.spells.solari.length + g.spells.umbral.length
-
 function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   if (defenderHp <= 0) return attackerHp > 0 ? 'attacker won' : 'both fell'
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
@@ -62,6 +60,8 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const [pending, setPending] = useState<Pending | null>(null)
   const [inspectId, setInspectId] = useState<string | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
+  /** The first ally chosen for Exchange, which takes two taps. */
+  const [castFirst, setCastFirst] = useState<string | null>(null)
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
   const state = history[history.length - 1].state
@@ -70,7 +70,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const myTurn = state.turn === human
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
-  const targets = casting && myTurn ? spellTargets(state, human, casting) : null
+  const targets = casting && myTurn ? spellTargets(state, human, casting, castFirst ?? undefined) : null
   const moves = targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : []
 
   const [sound, setSound] = useState(() => !isMuted())
@@ -111,13 +111,14 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const play = (action: Action) => {
     const s = reduce(state, action)
     if (s === state) return
-    if (spellsLeft(s) < spellsLeft(state)) sfx.cast()
+    if (action.type === 'cast') sfx.cast()
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
     setHistory((h) => [...h, { state: s, action }])
     setSelectedId(null)
     setInspectId(null)
     setCasting(null)
+    setCastFirst(null)
     setPending(null)
     clearHint()
   }
@@ -167,6 +168,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const pickSpell = (spell: Spell | null) => {
     clearHint()
     setSelectedId(null)
+    setCastFirst(null)
     if (spell && spellTargets(state, human, spell).none) return play({ type: 'cast', spell })
     setCasting(spell)
   }
@@ -180,8 +182,12 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     }
     if (casting && targets) {
       const occ = pieceAt(state, p)
-      if (occ && targets.pieces.includes(occ.id)) return play({ type: 'cast', spell: casting, pieceId: occ.id })
+      if (occ && targets.pieces.includes(occ.id)) {
+        if (casting !== 'exchange') return play({ type: 'cast', spell: casting, pieceId: occ.id })
+        return castFirst ? play({ type: 'cast', spell: casting, pieceId: castFirst, to: p }) : setCastFirst(occ.id)
+      }
       if (targets.squares.some((m) => samePos(m, p))) return play({ type: 'cast', spell: casting, to: p })
+      setCastFirst(null)
       return setCasting(null)
     }
     if (selected && moves.some((m) => samePos(m, p))) {
@@ -202,6 +208,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     })
     setSelectedId(null)
     setCasting(null)
+    setCastFirst(null)
     setPending(null)
     clearHint()
   }
@@ -252,7 +259,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
       <footer className="tray">
-        {!state.winner && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} />}
+        {!state.winner && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />}
         <div className="options">
           <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>

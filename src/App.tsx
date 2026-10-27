@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { unlockAudio } from './audio/synth'
 import { Game } from './Game'
 import type { Difficulty } from './ai/profile'
-import { aiDraft } from './ai/draft'
+import { aiDraft, aiLoadout } from './ai/draft'
+import { otherCourt } from './engine/rules/board'
 import { skirmishConfig } from './engine/data/setups'
 import { CAMPAIGN } from './engine/data/campaign'
 import type { GameRecord } from './engine/log'
@@ -86,7 +87,10 @@ export default function App() {
         onBack={() => setScreen({ name: 'menu' })}
         onStart={(human, difficulty, setup) => {
           const seed = Date.now()
-          const config = skirmishConfig(setup, human, seed, aiDraft(seed, difficulty))
+          const config = skirmishConfig(setup, human, seed, {
+            roles: aiDraft(seed, difficulty),
+            loadout: setup.loadout && aiLoadout(seed, otherCourt(human)),
+          })
           setScreen({ name: 'game', human, difficulty, record: { initial: newGame(config), actions: [] }, campaignIndex: null })
         }}
       />

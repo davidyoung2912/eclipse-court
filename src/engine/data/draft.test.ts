@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { aiDraft } from '../../ai/draft'
+import { aiDraft, aiLoadout } from '../../ai/draft'
 import { DIFFICULTY_LIST } from '../../ai/profile'
 import { newGame } from '../reducer'
 import { isBlocked } from '../rules/board'
 import { legalMoves } from '../rules/moves'
-import { applySpell, spellTargets } from '../rules/spells'
+import { applySpell, loadoutProblem, spellTargets } from '../rules/spells'
 import type { Role } from '../rules/types'
 import { BOARDS } from './boards'
 import { arrange, CLASSIC_ROLES, DRAFT_BUDGET, draftCost, draftProblem, MAX_DRAFTED, randomDraft } from './draft'
@@ -73,7 +73,7 @@ describe('setups', () => {
     const mine: Role[] = ['flier', 'flier', 'flier', 'charger', 'charger', 'charger', 'footsoldier']
     const theirs = CLASSIC_ROLES
     for (const human of ['solari', 'umbral'] as const) {
-      const g = newGame(skirmishConfig({ mode: 'draft', board: 'classic', roles: mine }, human, 3, theirs))
+      const g = newGame(skirmishConfig({ mode: 'draft', board: 'classic', roles: mine }, human, 3, { roles: theirs }))
       const count = (court: string) => g.pieces.filter((p) => p.court === court).length
       expect(count(human)).toBe(mine.length + 1)
       expect(count(human === 'solari' ? 'umbral' : 'solari')).toBe(theirs.length + 1)
@@ -130,10 +130,37 @@ describe('blocked squares', () => {
 
 describe('saving drafted matches', () => {
   it('round-trips a drafted army on a walled board', () => {
-    const config = skirmishConfig({ mode: 'draft', board: 'pillars', roles: randomDraft(4) }, 'umbral', 9, randomDraft(5))
+    const config = skirmishConfig({ mode: 'draft', board: 'pillars', roles: randomDraft(4) }, 'umbral', 9, { roles: randomDraft(5) })
     const initial = newGame(config)
     const decoded = decodeRecord(encodeRecord({ initial, actions: [] }))
     expect(decoded?.initial).toEqual(initial)
     expect(decoded?.initial.config.blocked).toHaveLength(4)
+  })
+})
+
+describe('skirmish spells', () => {
+  it('uses the classic seven unless a loadout is chosen', () => {
+    expect(newGame(skirmishConfig({ mode: 'classic', board: 'classic' }, 'solari', 5)).spells.solari).toHaveLength(7)
+  })
+
+  it('gives the human their loadout and the AI its own', () => {
+    const mine = ['hold', 'mend', 'blink', 'turn'] as const
+    const theirs = ['shroud', 'bind', 'swap', 'revive'] as const
+    const g = newGame(skirmishConfig({ mode: 'classic', board: 'classic', loadout: mine, recharge: 8 }, 'solari', 5, { loadout: theirs }))
+    expect(g.spells.solari).toEqual(mine)
+    expect(g.spells.umbral).toEqual(theirs)
+    expect(g.config.recharge).toBe(8)
+    const flipped = newGame(skirmishConfig({ mode: 'classic', board: 'classic', loadout: ['shroud', 'bind', 'swap', 'revive'] }, 'umbral', 5, { loadout: mine }))
+    expect(flipped.spells.solari).toEqual(mine)
+  })
+
+  it('has the AI pick four legal spells it can cast, with some support', () => {
+    for (const court of ['solari', 'umbral'] as const)
+      for (let seed = 1; seed <= 40; seed++) {
+        const picks = aiLoadout(seed, court)
+        expect(loadoutProblem(court, picks)).toBeNull()
+        expect(picks).not.toContain('exchange')
+        expect(picks.some((s) => ['mend', 'revive', 'sacrifice'].includes(s))).toBe(true)
+      }
   })
 })

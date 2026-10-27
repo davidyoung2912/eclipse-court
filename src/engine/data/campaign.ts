@@ -1,5 +1,5 @@
 import type { Difficulty } from '../../ai/profile'
-import { SPELLS } from '../rules/spells'
+import { CLASSIC_SPELLS } from '../rules/spells'
 import type { Court, GameState, Piece, Role } from '../rules/types'
 
 export interface Opponent {
@@ -38,7 +38,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     name: 'The Tongue-Tied',
     blurb: 'Their Leader knows only three spells.',
     difficulty: 'normal',
-    setup: (s, foe) => ({ ...s, spells: { ...s.spells, [foe]: SPELLS.slice(0, 3) } }),
+    setup: (s, foe) => ({ ...s, spells: { ...s.spells, [foe]: CLASSIC_SPELLS.slice(0, 3) } }),
   },
   {
     name: 'The Wall',

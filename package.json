@@ -12,7 +12,8 @@
     "icons": "node scripts/make-icons.mjs",
     "sim": "node scripts/run-sim.mjs sim",
     "soak": "node scripts/run-sim.mjs soak",
-    "draft": "node scripts/run-sim.mjs draft"
+    "draft": "node scripts/run-sim.mjs draft",
+    "courts": "node scripts/run-sim.mjs courts"
   },
   "dependencies": {
     "react": "^19.3.1",

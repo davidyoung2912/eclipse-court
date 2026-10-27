@@ -9,7 +9,9 @@ export type Role =
   | 'leader'
 
 /** x is the column in the design doc's coordinates (0 = Solari home edge, 6 = Umbral), y the row. */
-export type Spell = 'blink' | 'mend' | 'turn' | 'swap' | 'conjure' | 'revive' | 'bind'
+export type Spell =
+  | 'blink' | 'mend' | 'turn' | 'swap' | 'conjure' | 'revive' | 'bind'
+  | 'hold' | 'hasten' | 'shroud' | 'exchange' | 'mirror' | 'sacrifice'
 
 export interface Pos {
   x: number
@@ -29,6 +31,8 @@ export interface Piece {
   moved: boolean
   /** Bound by an enemy spell: cannot move until its court's turn has passed. */
   bound: boolean
+  /** Shrouded by its own court's spell: cannot be attacked or targeted until that court's next turn. */
+  shrouded?: boolean
 }
 
 /** Remaining HP of each fighter after a duel; 0 means dead. */
@@ -69,6 +73,19 @@ export interface MatchConfig {
   /** Which setup and board variant made this match, for display only. */
   setup?: string
   board?: string
+  /** The spells each Leader may cast; the classic seven when absent. */
+  loadouts?: Record<Court, readonly Spell[]>
+  /** A cast spell returns to its Leader this many rounds later; spells are one-use when absent. */
+  recharge?: number
+  /** Court passives tied to the light (Solari fliers reach further in full light, Umbral regenerate in the dark); off when absent. */
+  passives?: boolean
+}
+
+/** A spell cast earlier, waiting to return to its Leader. */
+export interface Recharge {
+  spell: Spell
+  /** The round at which it is back. */
+  ready: number
 }
 
 export interface GameState {
@@ -84,6 +101,12 @@ export interface GameState {
   eclipse: boolean
   /** One-use spells each Leader still holds. */
   spells: Record<Court, Spell[]>
+  /** Spells that will return to each Leader (only when the match recharges). */
+  recharging: Record<Court, Recharge[]>
+  /** The last spell each court cast, for Mirror. */
+  lastCast: Record<Court, Spell | null>
+  /** Rounds for which the light is held where it is. */
+  hold: number
   winner: Court | 'draw' | null
   rng: number
   lastDuel: DuelRecord | null

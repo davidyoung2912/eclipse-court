@@ -1,6 +1,7 @@
 import { rngNext } from '../engine/rng'
 import { canAdd, DRAFT_ROLES, ROLE_COST } from '../engine/data/draft'
-import type { Role } from '../engine/rules/types'
+import { LOADOUT_SIZE, spellPool } from '../engine/rules/spells'
+import type { Court, Role, Spell } from '../engine/rules/types'
 import { DIFFICULTY, type Difficulty } from './profile'
 
 /** How much a balanced army wants of each role; every extra copy of a role is worth less. */
@@ -33,4 +34,24 @@ export function aiDraft(seed: number, difficulty: Difficulty): Role[] {
     }
     roles.push(best)
   }
+}
+
+/**
+ * The AI's spells: a seeded pick from what its court may carry, skipping Exchange (the AI cannot
+ * aim it) and always keeping one heal or recovery spell so the Leader is not left without support.
+ */
+export function aiLoadout(seed: number, court: Court): Spell[] {
+  const pool = spellPool(court).filter((s) => s !== 'exchange')
+  let rng = seed >>> 0
+  const shuffled = [...pool]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const [roll, next] = rngNext(rng)
+    rng = next
+    const j = Math.floor(roll * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  const picks = shuffled.slice(0, LOADOUT_SIZE)
+  const support = ['mend', 'revive', 'sacrifice']
+  if (!picks.some((s) => support.includes(s))) picks[LOADOUT_SIZE - 1] = shuffled.find((s) => support.includes(s)) ?? picks[LOADOUT_SIZE - 1]
+  return picks
 }

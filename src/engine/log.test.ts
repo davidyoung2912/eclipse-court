@@ -92,6 +92,32 @@ describe('serialisation', () => {
     const back = decodeRecord(encodeRecord(record))!
     expect(back.actions).toEqual(record.actions)
   })
+  it('round-trips loadouts, recharge and the new spells', () => {
+    const config = {
+      seed: 8, recharge: 4, passives: false,
+      loadouts: { solari: ['hold', 'exchange', 'mirror', 'blink'], umbral: ['shroud', 'sacrifice', 'hasten', 'bind'] },
+    } as const
+    const initial = newGame({ ...config, loadouts: { solari: [...config.loadouts.solari], umbral: [...config.loadouts.umbral] } })
+    const record: GameRecord = {
+      initial,
+      actions: [
+        { type: 'cast', spell: 'hold' },
+        { type: 'cast', spell: 'shroud', pieceId: 'umbral-footsoldier-1' },
+        { type: 'cast', spell: 'exchange', pieceId: 'solari-footsoldier-1', to: { x: 1, y: 2 } },
+        { type: 'cast', spell: 'hasten' },
+      ],
+    }
+    const back = decodeRecord(encodeRecord(record))!
+    expect(back).not.toBeNull()
+    expect(back.initial.config).toEqual(initial.config)
+    expect(replay(back)).toEqual(replay(record))
+  })
+  it('refuses a config naming an unknown spell', () => {
+    const code = encodeRecord({ initial: newGame(1), actions: [] })
+    const json = JSON.parse(atob(code.replaceAll('-', '+').replaceAll('_', '/')))
+    const reencode = (o: unknown) => btoa(JSON.stringify(o)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+    expect(decodeRecord(reencode({ ...json, c: { ...json.c, loadouts: { solari: ['fireball'], umbral: [] } } }))).toBeNull()
+  })
   it('keeps campaign handicaps through the overrides', () => {
     for (const [i, opponent] of CAMPAIGN.entries()) {
       const initial = opponent.setup(newGame(100 + i), 'umbral')

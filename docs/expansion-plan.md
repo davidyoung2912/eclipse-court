@@ -134,6 +134,8 @@ Delivers recommendation 1 and part of 4.
 
 ### E3. Court identity and the spell system (≈3–4 days)
 
+**Status: done.** Spells are a data registry (`engine/rules/spells.ts`) of 13: the classic seven plus Hold the Light, Mirror (Solari signatures), Shroud, Sacrifice (Umbral signatures), Hasten and Exchange (shared; Exchange takes two taps). Loadouts (4 of the court's pool) and an 8-round recharge toggle are in Skirmish setup; the AI draws its own loadout (never Exchange). Passives (`config.passives`): Solari Fliers reach 4 in full light on the shifting board, Umbral pieces heal +1 at round end on dark squares before the Eclipse. `npm run courts` (30 games per variant, AI loadouts): Solari won 19/30 with passives and 21/30 without, so passives trim its first-move edge slightly; Umbral wins are almost all by the round limit, Solari's include eliminations and beacons. Most games still reach the round limit (median round 51), which is E4's showdown fix. Old saved links still replay: the new config fields are optional and off when absent.
+
 Delivers recommendations 2 and 3.
 
 - Spells become data with court affinity: `SpellDef { id, name, text, courts, target(), apply() , cost }`. Keep the 7 existing; add ~6 new, e.g. *Hold the Light* (freeze one ring for a round), *Eclipse Early* (advance two phases), *Shroud* (untargetable for a turn), *Exchange* (swap two allies), *Mirror* (repeat the last enemy spell), *Sacrifice* (convert a piece's HP into Leader HP).

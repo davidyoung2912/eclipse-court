@@ -1,4 +1,4 @@
-import { ROLE_INFO, courtFight } from '../../engine/data/pieceInfo'
+import { ROLE_INFO, courtFight, courtPassive } from '../../engine/data/pieceInfo'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { styleOf } from '../../engine/duel/sim'
 import { isBeacon } from '../../engine/rules/board'
@@ -25,10 +25,12 @@ export function PieceCard({ state, piece, human, hint }: Props) {
   const favoured = favouredCourt(lum)
   const note =
     piece.bound ? 'Bound: cannot move this turn'
+      : piece.shrouded ? 'Shrouded: cannot be attacked or targeted'
       : isBeacon(piece.pos, state.config.beacons) ? 'On a beacon: spell-proof, heals +1'
         : piece.hp < piece.maxHp ? 'Wounded: heals 1 per 2 resting rounds'
           : favoured === piece.court ? 'The light favours it here'
             : favoured ? 'The light works against it here' : ''
+  const gift = state.config.passives ? courtPassive(piece.court, piece.role) : ''
   const duel = [info.fight, courtFight(piece.court, piece.role)].filter(Boolean).join(' · ')
   return (
     <section className={`piece-card ${piece.court}`} aria-live="polite">
@@ -39,6 +41,7 @@ export function PieceCard({ state, piece, human, hint }: Props) {
       </header>
       <p><i>Moves</i>{info.move}</p>
       <p><i>Duel</i>{duel}</p>
+      {gift && <p><i>Gift</i>{gift}</p>}
       <p className="piece-stats">
         <i>Power</i><span className="dots">{stars(st.damage * 2)}</span>
         <i>Speed</i><span className="dots">{stars(st.speed * 1.2)}</span>

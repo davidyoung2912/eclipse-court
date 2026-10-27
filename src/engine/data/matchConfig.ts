@@ -11,6 +11,7 @@ export const DEFAULT_CONFIG: MatchConfig = {
   day: DAY,
   beacons: BEACONS,
   layout: DEFAULT_LAYOUT,
+  passives: true,
 }
 
 /** The classic match with any of its settings replaced. */

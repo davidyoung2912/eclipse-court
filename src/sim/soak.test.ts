@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MATCHUP_DATA } from '../engine/data/matchupData'
 import { matchup } from '../engine/data/matchups'
 import { estimateOdds } from '../engine/reducer'
+import { courtGames, reportOn as courtReport, winShape } from './courts'
 import { draftGames, reportOn } from './draft'
 import { checkInvariants, playGame } from './game'
 import { COURTS } from '../engine/rules/board'
@@ -64,4 +65,20 @@ describe('drafted armies', () => {
     expect(report.played).toBe(4)
     expect(report.solariWins + report.umbralWins).toBeLessThanOrEqual(4)
   }, 120_000)
+})
+
+describe('loadout games', () => {
+  it('play to a finish with loadouts, passives and recharging spells', () => {
+    for (const config of [{}, { recharge: 6 }]) {
+      const results = courtGames(3, config, 2)
+      expect(results.every((r) => r.winner !== null && r.shape !== 'unfinished')).toBe(true)
+      const report = courtReport(results)
+      expect(report.wins.solari + report.wins.umbral).toBeLessThanOrEqual(3)
+    }
+  }, 120_000)
+
+  it('names how a game was won', () => {
+    const r = playGame(1, 'easy', 'easy')
+    expect(['beacons', 'elimination', 'adjudication']).toContain(winShape(r.state))
+  }, 60_000)
 })

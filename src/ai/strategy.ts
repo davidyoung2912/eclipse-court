@@ -3,7 +3,7 @@ import { rngNext } from '../engine/rng'
 import { COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
-import { canCast, leaderOf, spellTargets, SPELLS } from '../engine/rules/spells'
+import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
 import { DIFFICULTY, type Difficulty } from './profile'
@@ -61,6 +61,7 @@ export function evaluate(state: GameState, court: Court): number {
     const sign = p.court === court ? 1 : -1
     score += sign * VALUE[p.role] * (0.4 + 0.6 * (p.hp / p.maxHp))
     if (p.bound) score -= sign * VALUE[p.role] * 0.4
+    if (p.shrouded) score += sign * VALUE[p.role] * 0.15
     // Pull towards the beacons nobody on its own side holds yet.
     if (open[p.court].length && p.role !== 'leader') {
       let near = Infinity
@@ -87,25 +88,33 @@ function moveActions(state: GameState, court: Court): Action[] {
 function spellActions(state: GameState, court: Court): Action[] {
   const out: Action[] = []
   const worst = <T>(xs: T[], key: (x: T) => number, n: number) => [...xs].sort((a, b) => key(b) - key(a)).slice(0, n)
-  for (const spell of SPELLS) {
+  for (const spell of ALL_SPELLS) {
     if (!canCast(state, court, spell)) continue
     const t = spellTargets(state, court, spell)
     const piece = (id: string) => state.pieces.find((p) => p.id === id)!
+    // Mirror aims like the spell it copies.
+    const kind = spell === 'mirror' ? state.lastCast[otherCourt(court)] : spell
+    const leader = leaderOf(state, court)
     if (t.none) out.push({ type: 'cast', spell })
-    else if (spell === 'mend')
+    else if (kind === 'mend')
       for (const p of worst(t.pieces.map(piece), (p) => p.maxHp - p.hp, 2)) out.push({ type: 'cast', spell, pieceId: p.id })
-    else if (spell === 'bind')
+    else if (kind === 'bind')
       for (const p of worst(t.pieces.map(piece), (p) => VALUE[p.role], 3)) out.push({ type: 'cast', spell, pieceId: p.id })
-    else if (spell === 'blink') {
-      const leader = leaderOf(state, court)
+    else if (kind === 'shroud')
+      for (const p of worst(t.pieces.map(piece), (p) => VALUE[p.role] * (p.hp / p.maxHp), 2)) out.push({ type: 'cast', spell, pieceId: p.id })
+    else if (kind === 'sacrifice') {
+      // Only worth a piece when the Leader is badly hurt; give up the cheapest.
+      if (leader && leader.maxHp - leader.hp >= 3)
+        for (const p of worst(t.pieces.map(piece), (p) => -VALUE[p.role], 1)) out.push({ type: 'cast', spell, pieceId: p.id })
+    } else if (kind === 'blink') {
       const spots = t.squares.filter((s) => isBeacon(s, state.config.beacons))
       for (const to of worst(spots, (s) => -(Math.abs(s.x - (leader?.pos.x ?? 0)) + Math.abs(s.y - (leader?.pos.y ?? 0))), 2))
         out.push({ type: 'cast', spell, to })
-    } else if (spell === 'conjure' || spell === 'revive') {
+    } else if (kind === 'conjure' || kind === 'revive') {
       const to = t.squares[0]
       if (to) out.push({ type: 'cast', spell, to })
     }
-    // Swap is left to human players.
+    // Swap and Exchange are left to human players.
   }
   return out
 }

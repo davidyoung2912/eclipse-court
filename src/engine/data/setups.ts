@@ -2,7 +2,7 @@ import { boardById, BOARDS } from './boards'
 import { arrange, randomDraft } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
 import { rngNext } from '../rng'
-import type { Court, MatchConfig, Role } from '../rules/types'
+import type { Court, MatchConfig, Role, Spell } from '../rules/types'
 
 export type SetupMode = 'classic' | 'draft' | 'random' | 'daily'
 
@@ -22,17 +22,34 @@ export interface SetupChoice {
   board: string
   /** The human's drafted army, for `draft`. */
   roles?: readonly Role[]
+  /** The human's chosen spells; the classic seven when absent. */
+  loadout?: readonly Spell[]
+  /** Spells return to their Leader after this many rounds; one-use when absent. */
+  recharge?: number
+}
+
+/** The AI court's choices that a skirmish needs beyond the seed. */
+export interface FoeChoice {
+  roles?: readonly Role[]
+  loadout?: readonly Spell[]
 }
 
 /**
- * The match settings for a skirmish. `foeRoles` is the army the AI drafted, used by `draft`;
- * the other modes derive everything from the seed.
+ * The match settings for a skirmish. `foe` holds the army the AI drafted (used by `draft`) and the
+ * spells it carries; the other modes derive everything from the seed.
  */
-export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foeRoles: readonly Role[] = []): MatchConfig {
+export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foe: FoeChoice = {}): MatchConfig {
+  const foeRoles = foe.roles ?? []
   const { mode } = choice
   const seeded = mode === 'daily' ? dailySeed() : seed
   const board = boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
-  const base = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, setup: mode, board: board.id }
+  const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, setup: mode, board: board.id }
+  if (choice.loadout) {
+    const mine = choice.loadout
+    const theirs = foe.loadout ?? choice.loadout
+    base.loadouts = human === 'solari' ? { solari: mine, umbral: theirs } : { solari: theirs, umbral: mine }
+  }
+  if (choice.recharge) base.recharge = choice.recharge
   if (mode === 'classic') return base
   if (mode === 'draft') {
     const mine = arrange(choice.roles ?? [])

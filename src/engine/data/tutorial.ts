@@ -55,12 +55,12 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     kind: 'info',
     title: '9. Healing',
-    text: 'Wounds mend at the end of each round: +1 HP for every two rounds a piece stands still, +1 for sitting on a beacon, and +1 next to your Seraph or Wraith. No piece heals above its maximum, so retreat and rest wounded pieces before the next fight.',
+    text: 'Wounds mend at the end of each round: +1 HP for every two rounds a piece stands still, +1 for sitting on a beacon, and +1 next to your Seraph or Wraith. Each court has a gift too: Umbral pieces heal an extra 1 on dark squares, and Solari Fliers reach one square further in full light. No piece heals above its maximum, so retreat and rest wounded pieces before the next fight.',
   },
   {
     kind: 'spell',
     title: '10. Cast a spell',
-    text: 'Your Solarch can cast each of seven spells once per game, if it has at least 2 HP. A cast costs 1 HP and your whole turn, and pieces on beacons cannot be targeted. Choose Blink, then tap any empty square to jump the Solarch there.',
+    text: 'Your Solarch can cast each of seven spells once per game, if it has at least 2 HP. A cast costs 1 HP and your whole turn, and pieces on beacons cannot be targeted. Choose Blink, then tap any empty square to jump the Solarch there. (In Skirmish you can pick a loadout of four from a larger pool, with two signature spells for each court.)',
   },
   {
     kind: 'info',

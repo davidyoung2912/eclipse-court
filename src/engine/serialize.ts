@@ -1,7 +1,7 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
-import type { Action, GameState, MatchConfig, Pos, Role, Spell } from './rules/types'
-import { SPELLS } from './rules/spells'
+import type { Action, Court, GameState, MatchConfig, Pos, Role, Spell } from './rules/types'
+import { ALL_SPELLS } from './rules/spells'
 
 const ROLES: readonly Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
 
@@ -40,7 +40,7 @@ function unpack(p: unknown): Action | null {
     if (isNum(p[4]) && isNum(p[5])) move.duel = { attackerHp: p[4], defenderHp: p[5] }
     return move
   }
-  if (p[0] === 1 && isStr(p[1]) && (SPELLS as readonly string[]).includes(p[1])) {
+  if (p[0] === 1 && isStr(p[1]) && (ALL_SPELLS as readonly string[]).includes(p[1])) {
     const cast: Action = { type: 'cast', spell: p[1] as Spell }
     if (isStr(p[2]) && p[2]) cast.pieceId = p[2]
     if (isNum(p[3]) && isNum(p[4])) cast.to = { x: p[3], y: p[4] }
@@ -80,13 +80,18 @@ const validPos = (p: Partial<Pos> | undefined) => isNum(p?.x) && isNum(p?.y)
 const validLayout = (l: unknown) =>
   Array.isArray(l) && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
 
+const validLoadouts = (l: Partial<Record<Court, unknown>>) =>
+  (['solari', 'umbral'] as const).every((c) => Array.isArray(l[c]) && (l[c] as unknown[]).every((s) => isStr(s) && (ALL_SPELLS as readonly string[]).includes(s)))
+
 const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   !!c && isNum(c.seed) && isNum(c.eclipseRound) && isNum(c.roundLimit) &&
   Array.isArray(c.day) && c.day.length > 0 && c.day.every(isNum) &&
   Array.isArray(c.beacons) && c.beacons.every((b) => isNum(b?.x) && isNum(b?.y)) &&
   validLayout(c.layout) && (c.umbralLayout === undefined || validLayout(c.umbralLayout)) &&
   (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.every(validPos))) &&
-  (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board))
+  (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
+  (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
+  (c.recharge === undefined || isNum(c.recharge)) && (c.passives === undefined || typeof c.passives === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */
 export function decodeRecord(code: string): GameRecord | null {
