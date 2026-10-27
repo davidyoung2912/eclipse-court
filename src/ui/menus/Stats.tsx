@@ -2,16 +2,19 @@ import { ACHIEVEMENTS, totalStars, type Progress } from '../../progress'
 import { CAMPAIGN } from '../../engine/data/campaign'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
+import { ResetButton } from './ResetButton'
+import { formatTime } from '../PlayTimer'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 
 interface Props {
   progress: Progress
   onReplay?: () => void
+  onReset: () => void
   onBack: () => void
 }
 
-export function Stats({ progress, onReplay, onBack }: Props) {
+export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const { stats } = progress
   const rows: [string, number | string][] = [
     ['Games played', stats.games],
@@ -20,6 +23,7 @@ export function Stats({ progress, onReplay, onBack }: Props) {
     ['Own pieces lost', stats.piecesLost],
     ['Gauntlet', `${progress.gauntlet.won} won of ${progress.gauntlet.runs} runs, furthest stage ${progress.gauntlet.best}`],
     ['Campaign', `${progress.cleared} of ${CAMPAIGN.length} beaten, ${totalStars(progress)} stars`],
+    ['Total time played', formatTime(stats.playSeconds)],
   ]
   return (
     <main className="app menu">
@@ -43,6 +47,7 @@ export function Stats({ progress, onReplay, onBack }: Props) {
       <div className="menu-buttons stacked">
         {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay Last Game</button>}
         {progress.last && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => shareLink('r', progress.last!)} />}
+        <ResetButton label="Reset Stats" warning="Clear every stat, the Gauntlet record, achievements and the last replay? Campaign, puzzle and scenario progress is kept." onReset={onReset} />
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

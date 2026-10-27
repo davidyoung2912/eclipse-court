@@ -31,6 +31,8 @@ export interface Stats {
   captures: number
   /** Own pieces lost, over every game. */
   piecesLost: number
+  /** Seconds spent in games, puzzles, the tutorial and the practice arena. */
+  playSeconds: number
 }
 
 /** What the roguelike gauntlet has shown so far. */
@@ -101,7 +103,7 @@ export const emptyProgress = (): Progress => ({
   v: PROGRESS_VERSION,
   cleared: 0,
   stars: CAMPAIGN.map(() => 0),
-  stats: { games: 0, wins: 0, losses: 0, draws: 0, captures: 0, piecesLost: 0 },
+  stats: { games: 0, wins: 0, losses: 0, draws: 0, captures: 0, piecesLost: 0, playSeconds: 0 },
   achievements: [],
   puzzles: [],
   tournaments: 0,
@@ -153,6 +155,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
 /** The progress after one finished game, and the achievements it newly earned. */
 export function recordGame(p: Progress, s: Summary, replay: string | null): { progress: Progress; earned: Achievement[] } {
   const stats: Stats = {
+    ...p.stats,
     games: p.stats.games + 1,
     wins: p.stats.wins + (s.won ? 1 : 0),
     losses: p.stats.losses + (!s.won && !s.draw ? 1 : 0),
@@ -198,6 +201,15 @@ export function recordScenario(p: Progress, id: string, bits: number) {
 }
 
 /** The progress with every puzzle unsolved again. */
+export const addPlaytime = (p: Progress, seconds: number): Progress =>
+  seconds > 0 ? { ...p, stats: { ...p.stats, playSeconds: p.stats.playSeconds + seconds } } : p
+
+/** Clears the counters, the gauntlet record, the achievements and the last replay; campaign, puzzle and scenario progress have their own resets. */
+export const resetStats = (p: Progress): Progress => {
+  const fresh = emptyProgress()
+  return { ...p, stats: fresh.stats, gauntlet: fresh.gauntlet, achievements: [], tournaments: 0, last: null }
+}
+
 export const resetPuzzles = (p: Progress): Progress => ({ ...p, puzzles: [] })
 
 /** The progress with every scenario unplayed again. */

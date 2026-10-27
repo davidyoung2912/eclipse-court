@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { challengeLink, parseShared, type Shared } from './share'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
@@ -19,7 +19,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './ai/personality'
-import { dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, resetCampaign, resetPuzzles, resetScenarios, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
+import { addPlaytime, dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
@@ -35,6 +35,7 @@ import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Replay } from './ui/menus/Replay'
 import { Stats } from './ui/menus/Stats'
+import { PlayTimer } from './ui/PlayTimer'
 import { Tutorial } from './ui/tutorial/Tutorial'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
@@ -115,6 +116,15 @@ export default function App() {
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
   const [run, setRun] = useState(loadRun)
+  const progressRef = useRef(progress)
+  progressRef.current = progress
+  /** Adds time played to the lifetime total, whichever play screen reports it. */
+  const addTime = (seconds: number) => {
+    const next = addPlaytime(progressRef.current, seconds)
+    progressRef.current = next
+    setProgress(next)
+    saveProgress(next)
+  }
   const [campaignTab, setCampaignTab] = useState<CampaignTab>('battles')
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
@@ -135,18 +145,21 @@ export default function App() {
 
   if (screen.name === 'tutorial')
     return (
-      <Tutorial
-        onExit={() => {
-          markTutorialSeen()
-          setSeen(true)
-          setScreen({ name: 'menu' })
-        }}
-      />
+      <>
+        <PlayTimer onFlush={addTime} />
+        <Tutorial
+          onExit={() => {
+            markTutorialSeen()
+            setSeen(true)
+            setScreen({ name: 'menu' })
+          }}
+        />
+      </>
     )
 
   if (screen.name === 'stats')
     return (
-      <Stats progress={progress} onBack={() => setScreen({ name: 'menu' })}
+      <Stats progress={progress} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
         onReplay={progress.last ? () => {
           const record = decodeRecord(progress.last!)
           if (record) setScreen({ name: 'replay', record })
@@ -181,7 +194,7 @@ export default function App() {
   if (screen.name === 'battle')
     return <Battle onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} />
 
-  if (screen.name === 'practice') return <Practice onBack={() => setScreen({ name: 'battle' })} />
+  if (screen.name === 'practice') return <Practice onPlaytime={addTime} onBack={() => setScreen({ name: 'battle' })} />
 
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
@@ -372,6 +385,8 @@ export default function App() {
 
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
     return (
+      <>
+      <PlayTimer onFlush={addTime} />
       <Game
         key={record.initial.rng}
         controllers={hotSeat ? HOT_SEAT
@@ -400,6 +415,7 @@ export default function App() {
           setScreen(daily ? { name: 'daily' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
+      </>
     )
   }
 

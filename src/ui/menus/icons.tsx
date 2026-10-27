@@ -9,6 +9,7 @@ const PATHS = {
   back: 'M10 6l-6 6 6 6M4 12h16',
   next: 'M14 6l6 6-6 6M20 12H4',
   undo: 'M9 6L4 11l5 5M4 11h10a5 5 0 010 10h-3',
+  clock: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3.5 2',
   hourglass: 'M7 3h10M7 21h10M8 3v4l4 5-4 5v4M16 3v4l-4 5 4 5v4',
   exit: 'M10 4H5v16h5M14 8l4 4-4 4M18 12H9',
   close: 'M6 6l12 12M18 6L6 18',

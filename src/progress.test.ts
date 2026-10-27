@@ -6,7 +6,7 @@ import {
   resetCampaign,
   resetPuzzles,
   resetScenarios,
-  ACHIEVEMENTS, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  ACHIEVEMENTS, addPlaytime, resetStats, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Progress, type Summary,
 } from './progress'
 
@@ -185,5 +185,27 @@ describe('resets', () => {
     expect(after.cleared).toBe(0)
     expect(after.stars).toEqual(emptyProgress().stars)
     expect(after.puzzles).toEqual(played.puzzles)
+  })
+})
+
+describe('play time and stats reset', () => {
+  it('adds seconds to the lifetime total and ignores empty amounts', () => {
+    const p = addPlaytime(addPlaytime(emptyProgress(), 90), 30)
+    expect(p.stats.playSeconds).toBe(120)
+    expect(addPlaytime(p, 0)).toBe(p)
+  })
+
+  it('resets stats but keeps campaign progress', () => {
+    const p = { ...addPlaytime(emptyProgress(), 50), cleared: 3, achievements: ['champion'], last: 'x' }
+    const r = resetStats(p)
+    expect(r.stats).toEqual(emptyProgress().stats)
+    expect(r.achievements).toEqual([])
+    expect(r.last).toBeNull()
+    expect(r.cleared).toBe(3)
+  })
+
+  it('migrates a v5 save without play time', () => {
+    const { playSeconds: _, ...old } = emptyProgress().stats
+    expect(migrate({ ...emptyProgress(), stats: old }).stats.playSeconds).toBe(0)
   })
 })

@@ -359,7 +359,7 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
   }
 
   return (
-    <main className="app">
+    <main className="app timed">
       <Dial state={state} />
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare}
         focus={pending ? { mover: pending.pieceId, target: defender?.id }

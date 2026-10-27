@@ -4,11 +4,13 @@ import { DRAFT_ROLES } from '../../engine/data/draft'
 import { ROLE_NAMES, ROLE_STATS } from '../../engine/data/roster'
 import { estimateOdds } from '../../engine/reducer'
 import type { Court, DuelOutcome, Piece, Role } from '../../engine/rules/types'
+import { PlayTimer } from '../PlayTimer'
 import { DuelView } from '../duel/DuelView'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 
 interface Props {
+  onPlaytime: (seconds: number) => void
   onBack: () => void
 }
 
@@ -23,7 +25,7 @@ const fighter = (court: Court, role: Role): Piece => ({
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
 /** A duel between any two roles, with the odds card: for learning how pieces fight without a game riding on it. */
-export function Practice({ onBack }: Props) {
+export function Practice({ onPlaytime, onBack }: Props) {
   const [mine, setMine] = useState<Role>('footsoldier')
   const [theirs, setTheirs] = useState<Role>('footsoldier')
   const [court, setCourt] = useState<Court>('solari')
@@ -40,9 +42,12 @@ export function Practice({ onBack }: Props) {
 
   if (fighting)
     return (
-      <DuelView attacker={attacker} defender={defender} luminance={light} options={{ mirror: false, aimAssist: true, haptics: true }}
-        opponentSkill={skill} opponentAggression={aggression} seed={seed}
-        onDone={(o) => { setOutcome(o); setFighting(false) }} />
+      <>
+        <PlayTimer onFlush={onPlaytime} />
+        <DuelView attacker={attacker} defender={defender} luminance={light} options={{ mirror: false, aimAssist: true, haptics: true }}
+          opponentSkill={skill} opponentAggression={aggression} seed={seed}
+          onDone={(o) => { setOutcome(o); setFighting(false) }} />
+      </>
     )
 
   const result = outcome && (outcome.defenderHp <= 0 ? (outcome.attackerHp > 0 ? 'You won' : 'Both fell')
