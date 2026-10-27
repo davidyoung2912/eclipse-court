@@ -26,23 +26,34 @@ export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
   const replays = replayableChapters(story)
   const medals = achievements(story)
   const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
+  const chapterButton = ({ c, i }: { c: (typeof CHAPTERS)[number]; i: number }) => {
+    const open = chapterUnlocked(i, read)
+    const done = read.has(c.id)
+    return (
+      <button key={c.id} className={`choice${done ? ' won' : ''}`} disabled={!open} onClick={() => onOpen(c.id)}>
+        <strong><Icon name={done ? 'check' : open ? 'book' : 'lock'} />{c.act === 'prologue' ? `${actLabel(c.act)} · ` : ''}{c.title}</strong>
+        <span>{open ? c.blurb : 'Read the chapter before this one to open it.'}</span>
+      </button>
+    )
+  }
+  const prologue = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === 'prologue')
   return (
     <main className="app menu">
       <PageArt icon="book" />
       <h2>Story</h2>
       <p className="tagline">How the Hour stopped, and the courts that came of it.</p>
-      <div className="choices">
-        {CHAPTERS.map((c, i) => {
-          const open = chapterUnlocked(i, read)
-          const done = read.has(c.id)
-          return (
-            <button key={c.id} className={`choice${done ? ' won' : ''}`} disabled={!open} onClick={() => onOpen(c.id)}>
-              <strong><Icon name={done ? 'check' : open ? 'book' : 'lock'} />{actLabel(c.act)} · {c.title}</strong>
-              <span>{open ? c.blurb : 'Read the chapter before this one to open it.'}</span>
-            </button>
-          )
-        })}
-      </div>
+      {prologue.length > 0 && <div className="choices">{prologue.map(chapterButton)}</div>}
+      {([1, 2, 3] as const).map((act) => {
+        const list = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === act)
+        if (list.length === 0) return null
+        const finished = list.filter(({ c }) => read.has(c.id)).length
+        return (
+          <details key={act} className="tier-fold">
+            <summary><h3>{actLabel(act)} ({finished}/{list.length})</h3></summary>
+            <div className="choices">{list.map(chapterButton)}</div>
+          </details>
+        )
+      })}
       {ending && read.has(ending.id) && (
         <div className="menu-buttons stacked">
           <button className="primary" onClick={() => onEnding?.(ending.id)}>
