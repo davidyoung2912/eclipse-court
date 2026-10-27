@@ -96,11 +96,11 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const storyRead = useSyncExternalStore(subscribeStory, storySnapshot)
   const summary = cardSummaries(progress, dailySeed(), storyRead)
   const cards: Card[] = [
+    { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
     { icon: 'swords', title: 'Battle', info: summary.battle, onClick: onBattle },
     { icon: 'banner', title: 'Campaign', info: summary.campaign, onClick: onCampaign },
     { icon: 'flame', title: 'Gauntlet', info: summary.gauntlet, onClick: onGauntlet },
     { icon: 'puzzle', title: 'Puzzles', info: summary.puzzles, onClick: onPuzzles },
-    { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
   ]
   return (
     <main className="app menu main-menu">
