@@ -1,7 +1,7 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
 import type { Action, Court, GameState, MatchConfig, MatchMode, Perk, Pos, PromotionRole, Role, Spell } from './rules/types'
-import { inBounds, SIZE } from './rules/board'
+import { BOARD_SIZES, DEFAULT_SIZE, inBounds } from './rules/board'
 import { CELL_EFFECTS } from './rules/cells'
 import { ALL_SPELLS } from './rules/spells'
 
@@ -89,14 +89,14 @@ export function encodeRecord(record: GameRecord): string {
   return toBase64Url(JSON.stringify(payload))
 }
 
-const validPos = (p: Partial<Pos> | undefined) => isNum(p?.x) && isNum(p?.y) && inBounds(p as Pos)
-const validLayout = (l: unknown) =>
-  Array.isArray(l) && l.length <= SIZE * SIZE && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
+const validPos = (p: Partial<Pos> | undefined, size: number) => isNum(p?.x) && isNum(p?.y) && inBounds(p as Pos, size)
+const validLayout = (l: unknown, size: number) =>
+  Array.isArray(l) && l.length <= size * size && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p, size))
 const inRange = (v: unknown, min: number, max: number) => isNum(v) && Number.isInteger(v) && v >= min && v <= max
 
-const validCells = (cells: unknown) =>
-  Array.isArray(cells) && cells.length <= SIZE * SIZE &&
-  cells.every((c, i) => validPos(c?.pos) && (CELL_EFFECTS as readonly unknown[]).includes(c?.effect) && cells.findIndex((o) => o.pos.x === c.pos.x && o.pos.y === c.pos.y) === i)
+const validCells = (cells: unknown, size: number) =>
+  Array.isArray(cells) && cells.length <= size * size &&
+  cells.every((c, i) => validPos(c?.pos, size) && (CELL_EFFECTS as readonly unknown[]).includes(c?.effect) && cells.findIndex((o) => o.pos.x === c.pos.x && o.pos.y === c.pos.y) === i)
 
 const validLoadouts = (l: Partial<Record<Court, unknown>>) =>
   (['solari', 'umbral'] as const).every((c) => Array.isArray(l[c]) && (l[c] as unknown[]).length <= 20 && (l[c] as unknown[]).every((s) => isStr(s) && (ALL_SPELLS as readonly string[]).includes(s)))
@@ -106,12 +106,12 @@ const MAX_ROUNDS = 200
 const MAX_DAY = 16
 const MAX_RECHARGE = 50
 
-const validObjective = (o: unknown) => {
+const validObjective = (o: unknown, size: number) => {
   const x = o as { kind?: unknown; rounds?: unknown; goal?: Partial<Pos>; at?: Partial<Pos>; turns?: unknown; limit?: unknown } | null
   if (!x || typeof x !== 'object') return false
   if (x.kind === 'survive') return inRange(x.rounds, 1, MAX_ROUNDS)
-  if (x.kind === 'escort') return validPos(x.goal) && inRange(x.limit, 1, MAX_ROUNDS)
-  return x.kind === 'hold' && validPos(x.at) && inRange(x.turns, 1, MAX_ROUNDS) && inRange(x.limit, 1, MAX_ROUNDS)
+  if (x.kind === 'escort') return validPos(x.goal, size) && inRange(x.limit, 1, MAX_ROUNDS)
+  return x.kind === 'hold' && validPos(x.at, size) && inRange(x.turns, 1, MAX_ROUNDS) && inRange(x.limit, 1, MAX_ROUNDS)
 }
 
 const validClock = (c: unknown) => {
@@ -120,16 +120,19 @@ const validClock = (c: unknown) => {
 }
 
 export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
-  !!c && isNum(c.seed) && inRange(c.eclipseRound, 1, MAX_ROUNDS) && inRange(c.roundLimit, 1, MAX_ROUNDS) &&
+  !!c && (c.size === undefined || (BOARD_SIZES as readonly unknown[]).includes(c.size)) && validConfigFor(c, c.size ?? DEFAULT_SIZE)
+
+const validConfigFor = (c: Partial<MatchConfig>, size: number): c is MatchConfig =>
+  isNum(c.seed) && inRange(c.eclipseRound, 1, MAX_ROUNDS) && inRange(c.roundLimit, 1, MAX_ROUNDS) &&
   Array.isArray(c.day) && c.day.length > 0 && c.day.length <= MAX_DAY && c.day.every((l) => inRange(l, -3, 3)) &&
-  Array.isArray(c.beacons) && c.beacons.length <= SIZE * SIZE && c.beacons.every(validPos) &&
-  validLayout(c.layout) && (c.umbralLayout === undefined || validLayout(c.umbralLayout)) &&
-  (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.length <= SIZE * SIZE && c.blocked.every(validPos))) &&
-  (c.cells === undefined || validCells(c.cells)) &&
+  Array.isArray(c.beacons) && c.beacons.length <= size * size && c.beacons.every((p) => validPos(p, size)) &&
+  validLayout(c.layout, size) && (c.umbralLayout === undefined || validLayout(c.umbralLayout, size)) &&
+  (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.length <= size * size && c.blocked.every((p) => validPos(p, size)))) &&
+  (c.cells === undefined || validCells(c.cells, size)) &&
   (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
   (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
-  (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) && (c.objective === undefined || validObjective(c.objective)) &&
+  (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) && (c.objective === undefined || validObjective(c.objective, size)) &&
   (c.turnClock === undefined || validClock(c.turnClock)) &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 

@@ -13,6 +13,9 @@ export type Spell =
   | 'blink' | 'mend' | 'turn' | 'swap' | 'conjure' | 'revive' | 'bind'
   | 'hold' | 'hasten' | 'shroud' | 'exchange' | 'mirror' | 'sacrifice'
 
+/** Board sizes a match may use. */
+export type BoardSize = 7 | 9
+
 export interface Pos {
   x: number
   y: number
@@ -95,6 +98,8 @@ export type DayEvent = 'flare' | 'gloaming' | 'fog' | 'blight'
 
 /** Everything that describes how a match is set up and paced; plain data, so it can be saved and shared. */
 export interface MatchConfig {
+  /** Squares along each side of the board; the standard 7 when absent. */
+  size?: BoardSize
   seed: number
   /** The round at which the Eclipse falls. */
   eclipseRound: number

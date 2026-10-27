@@ -1,5 +1,5 @@
 import { CELL_INFO, cellAt } from '../../engine/rules/cells'
-import { CENTER, chebyshev, isBeacon, isBlocked, isCycling } from '../../engine/rules/board'
+import { centerOf, chebyshev, isBeacon, isBlocked, isCycling, sizeOf } from '../../engine/rules/board'
 import { safeRadius } from '../../engine/rules/events'
 import { duelMods, favouredCourt, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Pos } from '../../engine/rules/types'
@@ -21,8 +21,8 @@ export function CellCard({ state, pos }: Props) {
   const terrain = [
     isBlocked(state.config, pos) ? 'A wall: nothing can enter' : '',
     isBeacon(pos, state.config.beacons) ? 'Beacon: spell-proof, heals +1' : '',
-    radius !== null && chebyshev(pos, CENTER) > radius ? 'Eclipse zone: 3 damage each round' : '',
-    isCycling(pos) ? 'The light here shifts every round' : 'The light here never changes',
+    radius !== null && chebyshev(pos, centerOf(sizeOf(state.config))) > radius ? 'Eclipse zone: 3 damage each round' : '',
+    isCycling(pos, sizeOf(state.config)) ? 'The light here shifts every round' : 'The light here never changes',
   ].filter(Boolean)
   return (
     <section className={`piece-card cell-card${favoured ? ` ${favoured}` : ''}`} aria-live="polite">

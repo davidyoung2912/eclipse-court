@@ -1,7 +1,7 @@
 import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
 import { cellAt, duelCells, invincibleOn, type DuelCells } from '../engine/rules/cells'
-import { CENTER, chebyshev, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
+import { centerOf, chebyshev, sizeOf, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { modeOf, safeRadius } from '../engine/rules/events'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
@@ -79,7 +79,7 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
   const foe = otherCourt(court)
   const mode = modeOf(state.config)
   const { objective } = state.config
-  const hillAt = objective?.kind === 'hold' ? objective.at : CENTER
+  const hillAt = objective?.kind === 'hold' ? objective.at : centerOf(sizeOf(state.config))
   const hill = mode === 'hill' || objective?.kind === 'hold'
   // What the mode rewards: beacons for Beacons and Score Race, the centre for the Hill, little for Leader Capture.
   score += (held[court] - held[foe]) * (mode === 'leader' ? 1.5 : 4) * w.beacon
@@ -107,7 +107,7 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
     const value = ((mode === 'leader' && p.role === 'leader') || (objective && p.court === 'solari' && p.role === 'leader') ? 40 : VALUE[p.role]) * (1 + ((p.wins ?? 0) >= 2 ? 0.1 : 0) + (p.perk ? 0.15 : 0))
     score += sign * value * (0.4 + 0.6 * (p.hp / p.maxHp)) * (sign > 0 ? w.guard : w.attack)
     // Outside the closing safe zone a piece is about to be hurt, and the mover cannot save them all.
-    if (radius !== null && chebyshev(p.pos, CENTER) > radius) score -= sign * VALUE[p.role] * 0.8
+    if (radius !== null && chebyshev(p.pos, centerOf(sizeOf(state.config))) > radius) score -= sign * VALUE[p.role] * 0.8
     if (p.bound) score -= sign * VALUE[p.role] * 0.4
     if (p.shrouded) score += sign * VALUE[p.role] * 0.15
     // Pull towards the beacons nobody on its own side holds yet (the centre, on the Hill).
@@ -119,7 +119,7 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
       score += sign * 0.15 * (12 - near) * w.beacon
     }
     // A Footsoldier is worth more once it can cross the board and be promoted.
-    if (state.config.promotion && p.role === 'footsoldier') score += sign * 0.3 * (p.court === 'solari' ? p.pos.x : 6 - p.pos.x)
+    if (state.config.promotion && p.role === 'footsoldier') score += sign * 0.3 * (p.court === 'solari' ? p.pos.x : sizeOf(state.config) - 1 - p.pos.x)
     const cell = cellAt(state.config, p.pos)
     if (cell) score += sign * cellScore(cell, p, isBeacon(p.pos, state.config.beacons), state.round)
     // Standing in light that favours its court.

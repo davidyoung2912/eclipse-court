@@ -1,11 +1,12 @@
 import { memo } from 'react'
 import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, objectiveRounds, safeRadius, SCORE_TARGET } from '../../engine/rules/events'
+import { centerOf, sizeOf } from '../../engine/rules/board'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
 import { lumColor } from '../board/lumColor'
 
 export const Dial = memo(function Dial({ state }: { state: GameState }) {
-  const now = squareLuminance(state, { x: 3, y: 3 })
+  const now = squareLuminance(state, centerOf(sizeOf(state.config)))
   const next = forecast(state, 3)
   const notes = hudNotes(state)
   return (

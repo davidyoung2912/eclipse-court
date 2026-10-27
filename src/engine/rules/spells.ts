@@ -1,4 +1,4 @@
-import { allSquares, chebyshev, inBounds, isBeacon, isBlocked, samePos } from './board'
+import { allSquares, chebyshev, inBounds, isBeacon, isBlocked, samePos, sizeOf } from './board'
 import { isSilenced } from './cells'
 import { pieceAt } from './moves'
 import type { Court, GameState, MatchConfig, Piece, Pos, Spell } from './types'
@@ -46,7 +46,7 @@ export const leaderOf = (state: Pick<GameState, 'pieces'>, court: Court) =>
 const isFree = (state: GameState, p: Pos) => !pieceAt(state, p) && !isBlocked(state.config, p)
 
 const adjacentEmpty = (state: GameState, from: Pos) =>
-  allSquares().filter((p) => chebyshev(p, from) === 1 && isFree(state, p))
+  allSquares(sizeOf(state.config)).filter((p) => chebyshev(p, from) === 1 && isFree(state, p))
 
 /** Beacon pieces cannot be targeted by spells, nor can shrouded ones. */
 const targetable = (state: GameState, p: Piece) => !isBeacon(p.pos, state.config.beacons) && !p.shrouded
@@ -55,8 +55,8 @@ const mapPiece = (state: GameState, id: string, f: (p: Piece) => Piece) =>
   state.pieces.map((p) => (p.id === id ? f(p) : p))
 
 const inPieces = (ids: string[], id: string | undefined): id is string => id !== undefined && ids.includes(id)
-const inSquares = (squares: Pos[], to: Pos | undefined): to is Pos =>
-  to !== undefined && inBounds(to) && squares.some((s) => samePos(s, to))
+const inSquares = (squares: Pos[], to: Pos | undefined, size: number): to is Pos =>
+  to !== undefined && inBounds(to, size) && squares.some((s) => samePos(s, to))
 
 const ids = (ps: Piece[]) => ps.map((p) => p.id)
 const allies = ({ state, court }: Cast) => state.pieces.filter((p) => p.court === court && targetable(state, p))
@@ -67,7 +67,7 @@ const copyable = (spell: Spell | null): spell is Spell => !!spell && spell !== '
 const DEFS: Record<Spell, SpellDef> = {
   blink: {
     name: 'Blink', text: 'Leader jumps to any empty square.', courts: BOTH, cost: 1,
-    targets: ({ state }) => ({ ...NO_TARGETS, squares: allSquares().filter((p) => isFree(state, p)) }),
+    targets: ({ state }) => ({ ...NO_TARGETS, squares: allSquares(sizeOf(state.config)).filter((p) => isFree(state, p)) }),
     apply: ({ state, leader }, _id, to) =>
       to ? { ...state, pieces: mapPiece(state, leader.id, (p) => ({ ...p, pos: to })) } : null,
   },
@@ -247,7 +247,7 @@ export function applySpell(
     if (pieceId !== undefined || to !== undefined) return null
   } else {
     const wantsPiece = t.pieces.length > 0
-    if (wantsPiece ? !inPieces(t.pieces, pieceId) : !inSquares(t.squares, to)) return null
+    if (wantsPiece ? !inPieces(t.pieces, pieceId) : !inSquares(t.squares, to, sizeOf(state.config))) return null
     // A spell takes a piece or a square, never both.
     if (wantsPiece ? to !== undefined : pieceId !== undefined) return null
   }

@@ -1,4 +1,4 @@
-import { samePos } from './board'
+import { mirrorOf, samePos } from './board'
 import type { CellEffect, CellSquare, Court, GameState, MatchConfig, Piece, Pos } from './types'
 
 export const CELL_EFFECTS: readonly CellEffect[] = ['might', 'ward', 'recovery', 'hazard', 'silence', 'invincible']
@@ -68,12 +68,10 @@ export const isSilenced = (state: Pick<GameState, 'config' | 'pieces'>, court: C
   return !!leader && cellAt(state.config, leader.pos) === 'silence'
 }
 
-const mirrorOf = ({ x, y }: Pos): Pos => ({ x: 6 - x, y })
-
 /** Whether the cells are a mirror image across the board, as board variants must be so neither court is favoured. */
-export function cellsSymmetric(cells: readonly CellSquare[] = []): boolean {
+export function cellsSymmetric(cells: readonly CellSquare[] = [], size?: number): boolean {
   return cells.every((c) => {
-    const twin = cells.find((o) => samePos(o.pos, mirrorOf(c.pos)))
+    const twin = cells.find((o) => samePos(o.pos, mirrorOf(c.pos, size)))
     return !!twin && twin.effect === c.effect
   })
 }

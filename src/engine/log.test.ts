@@ -5,7 +5,7 @@ import { matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { recordOf, replay, replaySteps, type GameRecord } from './log'
 import { newGame, reduce } from './reducer'
-import { decodeRecord, encodeRecord, FORMAT_VERSION } from './serialize'
+import { decodeRecord, encodeRecord, FORMAT_VERSION, toBase64Url } from './serialize'
 import type { Action, GameState } from './rules/types'
 
 /** Plays the AI against itself with the stub duel, keeping the log. */
@@ -146,5 +146,21 @@ describe('serialisation', () => {
     expect(decodeRecord(reencode({ ...json, a: [[0, 'solari-charger-1', 6, 6], ...json.a] }))).toBeNull()
     expect(decodeRecord(reencode({ ...json, a: [[9]] }))).toBeNull()
     expect(decodeRecord(reencode({ ...json, c: { seed: 1 } }))).toBeNull()
+  })
+})
+
+describe('board size in a share code', () => {
+  it('round-trips a 9x9 game and leaves 7x7 codes without a size', () => {
+    const wide = recordOf(replaySteps(newGame({ size: 9 }), [])!)
+    expect(decodeRecord(encodeRecord(wide))?.initial.config.size).toBe(9)
+    const standard = recordOf(replaySteps(newGame(), [])!)
+    expect(JSON.stringify(decodeRecord(encodeRecord(standard))?.initial.config)).not.toContain('size')
+  })
+  it('refuses unknown sizes and squares off the board', () => {
+    const code = (c: object) => toBase64Url(JSON.stringify({ v: FORMAT_VERSION, c, a: [] }))
+    const base = newGame().config
+    expect(decodeRecord(code({ ...base, size: 8 }))).toBeNull()
+    expect(decodeRecord(code({ ...base, beacons: [{ x: 7, y: 3 }] }))).toBeNull()
+    expect(decodeRecord(code({ ...base, size: 9, beacons: [{ x: 7, y: 3 }] }))).not.toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { DEFAULT_CONFIG, matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
-import { CENTER, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
+import { centerOf, chebyshev, sizeOf, isBeacon, otherCourt, samePos } from './rules/board'
 import { cellAt, cellHpChange, duelCells, NEUTRAL_CELL, type DuelCells } from './rules/cells'
 import { eventAt, HILL_TURNS, modeOf, objectiveRounds, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
 import { isStock, perkMods, promote, recordWin } from './rules/growth'
@@ -26,7 +26,7 @@ export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
   const config = matchConfig(typeof setup === 'number' ? { seed: setup } : setup)
   return {
     config,
-    pieces: startingPieces(config.layout, config.umbralLayout),
+    pieces: startingPieces(config.layout, config.umbralLayout, sizeOf(config)),
     captured: [],
     turn: 'solari',
     round: 1,
@@ -124,7 +124,7 @@ function eliminationWinner(state: GameState): GameState['winner'] {
 }
 
 /** The square whose holder builds a streak: the marked beacon of a Hold scenario, otherwise the centre. */
-const hillSquare = (config: MatchConfig) => (config.objective?.kind === 'hold' ? config.objective.at : CENTER)
+const hillSquare = (config: MatchConfig) => (config.objective?.kind === 'hold' ? config.objective.at : centerOf(sizeOf(config)))
 const holdsHill = (state: GameState, court: Court) => pieceAt(state, hillSquare(state.config))?.court === court
 
 /** Beacons held by each court. */
@@ -166,7 +166,7 @@ function endRound(state: GameState): GameState {
     if (cellHp < 0) hp += cellHp
     if (eclipse && !onBeacon) hp -= 1
     // The showdown: whatever stands outside the safe zone is hurt, beacon or not.
-    if (radius !== null && chebyshev(p.pos, CENTER) > radius) hp -= SHRINK_DAMAGE
+    if (radius !== null && chebyshev(p.pos, centerOf(sizeOf(state.config))) > radius) hp -= SHRINK_DAMAGE
     const next = { ...p, hp, rest, moved: false }
     ;(hp > 0 ? survivors : dead).push(next)
   }

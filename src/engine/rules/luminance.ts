@@ -1,5 +1,5 @@
 import { eventAt } from './events'
-import { fixedCourt, ringOf } from './board'
+import { fixedCourt, ringOf, sizeOf } from './board'
 import type { Court, GameState, Pos } from './types'
 
 /** One 8-round day, from deep dark (-2) to full light (+2). */
@@ -28,10 +28,11 @@ export function squareLuminance(
   state: Pick<GameState, 'phase' | 'dir' | 'eclipse' | 'config'> & { round?: number },
   p: Pos,
 ): number {
-  const fixed = fixedCourt(p)
+  const size = sizeOf(state.config)
+  const fixed = fixedCourt(p, size)
   if (fixed) return fixed === 'solari' ? 2 : -2
   if (state.eclipse) return 0
-  const lum = ringLuminance(state.phase, state.dir, ringOf(p), state.config.day)
+  const lum = ringLuminance(state.phase, state.dir, ringOf(p, size), state.config.day)
   const event = state.config.events && state.round ? eventAt(state.config, state.round) : null
   if (event === 'flare') return Math.min(2, lum + 1)
   if (event === 'gloaming') return Math.max(-2, lum - 1)

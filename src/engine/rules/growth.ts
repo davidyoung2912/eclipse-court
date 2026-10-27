@@ -1,4 +1,5 @@
 import { ROLE_STATS } from '../data/roster'
+import { DEFAULT_SIZE, sizeOf } from './board'
 import { pieceAt } from './moves'
 import type { Action, GameState, MatchConfig, Perk, Piece, PromotionRole, Role } from './types'
 
@@ -43,7 +44,7 @@ export const rankOf = (p: Piece): 'recruit' | 'veteran' | 'elite' =>
   (p.wins ?? 0) >= ELITE_WINS ? 'elite' : (p.wins ?? 0) >= VETERAN_WINS ? 'veteran' : 'recruit'
 
 /** The column a Footsoldier of this court must reach to be promoted. */
-export const promotionColumn = (court: Piece['court']) => (court === 'solari' ? 6 : 0)
+export const promotionColumn = (court: Piece['court'], size: number = DEFAULT_SIZE) => (court === 'solari' ? size - 1 : 0)
 
 /** A duel win: Veterans gain a point of max HP (and heal it), Elites take the offered perk or, failing that, the first. */
 export function recordWin(config: MatchConfig, piece: Piece, pick?: Perk): Piece {
@@ -60,7 +61,7 @@ export function recordWin(config: MatchConfig, piece: Piece, pick?: Perk): Piece
 
 /** A Footsoldier that has crossed the board becomes a Charger or Marksman, keeping its wounds, record and perk. */
 export function promote(config: MatchConfig, piece: Piece, to: PromotionRole = 'charger'): Piece {
-  if (!config.promotion || piece.role !== 'footsoldier' || piece.pos.x !== promotionColumn(piece.court)) return piece
+  if (!config.promotion || piece.role !== 'footsoldier' || piece.pos.x !== promotionColumn(piece.court, sizeOf(config))) return piece
   const bonus = piece.maxHp - ROLE_STATS.footsoldier.hp
   const maxHp = ROLE_STATS[to].hp + bonus
   return { ...piece, role: to, maxHp, hp: maxHp - (piece.maxHp - piece.hp) }
@@ -86,6 +87,6 @@ export function growthChoice(state: GameState, action: Extract<Action, { type: '
   if (config.growth && wins && (piece.wins ?? 0) + 1 === ELITE_WINS) choice.perks = perkChoices(piece.role)
   // A piece that takes the target square stands there; one that merely wins the duel stays put.
   const lands = !target || (wins && !!out)
-  if (config.promotion && piece.role === 'footsoldier' && survives && lands && action.to.x === promotionColumn(piece.court)) choice.promote = true
+  if (config.promotion && piece.role === 'footsoldier' && survives && lands && action.to.x === promotionColumn(piece.court, sizeOf(config))) choice.promote = true
   return choice
 }

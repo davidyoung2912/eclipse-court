@@ -1,3 +1,4 @@
+import { cyclingRadius, sizeOf } from './board'
 import type { DayEvent, GameState, MatchConfig, MatchMode, Objective } from './types'
 
 export const EVENT_INFO: Record<DayEvent, { name: string; text: string }> = {
@@ -71,5 +72,5 @@ export const SHRINK_DAMAGE = 3
 export function safeRadius(state: Pick<GameState, 'config' | 'round' | 'eclipse'>): number | null {
   if (!state.config.showdown || !state.eclipse) return null
   const elapsed = state.round - state.config.eclipseRound
-  return Math.max(0, 3 - Math.floor(elapsed / 2))
+  return Math.max(0, cyclingRadius(sizeOf(state.config)) - Math.floor(elapsed / 2))
 }

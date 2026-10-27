@@ -1,3 +1,4 @@
+import { DEFAULT_SIZE } from '../rules/board'
 import type { Court, Piece, Placement, Role } from '../rules/types'
 
 /** HP follows the design doc; power only feeds the stub duel used for wounded pieces. */
@@ -51,6 +52,7 @@ export const DEFAULT_LAYOUT: readonly Placement[] = [
 export function startingPieces(
   layout: readonly Placement[] = DEFAULT_LAYOUT,
   umbralLayout: readonly Placement[] = layout,
+  size: number = DEFAULT_SIZE,
 ): Piece[] {
   const counts: Record<string, number> = {}
   return (['solari', 'umbral'] as Court[]).flatMap((court) =>
@@ -64,7 +66,7 @@ export function startingPieces(
         role,
         hp,
         maxHp: hp,
-        pos: { x: court === 'solari' ? x : 6 - x, y },
+        pos: { x: court === 'solari' ? x : size - 1 - x, y },
         rest: 0,
         moved: false,
         bound: false,
