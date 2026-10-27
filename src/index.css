@@ -226,11 +226,11 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .hero { width: 100%; max-height: 26vh; flex-shrink: 1; overflow: visible; }
 .star { fill: #fbf1d4; opacity: 0.2; animation: twinkle 3.6s ease-in-out infinite; }
 .corona, .rays { transform-box: fill-box; transform-origin: center; }
-.corona { animation: breathe 5s ease-in-out infinite; }
-.rays { animation: spin 90s linear infinite; }
+.corona { animation: breathe 4.35s ease-in-out infinite; }
+.rays { animation: spin 78.3s linear infinite; }
 .ray { fill: #ffd77a; opacity: 0.55; }
 .ray.short { opacity: 0.3; }
-.moon { animation: drift 9s ease-in-out infinite alternate; }
+.moon { animation: drift 7.83s ease-in-out infinite alternate; }
 .main-menu h1 {
   font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 2.1rem; letter-spacing: 0.32em;
   text-transform: uppercase; margin: 0; padding-left: 0.32em; line-height: 1.1;

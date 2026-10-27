@@ -97,8 +97,8 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
       )}
       <div className="menu-buttons stacked">
         {tab === 'scenarios'
-          ? scenarioStars(progress) > 0 && <ResetButton label="Reset Scenarios" warning="Clear every scenario star so you can retry them all?" onReset={() => onReset('scenarios')} />
-          : (cleared > 0 || totalStars(progress) > 0) && <ResetButton label="Reset Campaign" warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
+          ? <ResetButton label="Reset Scenarios" disabled={scenarioStars(progress) === 0} warning="Clear every scenario star so you can retry them all?" onReset={() => onReset('scenarios')} />
+          : <ResetButton label="Reset Campaign" disabled={cleared === 0 && totalStars(progress) === 0} warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

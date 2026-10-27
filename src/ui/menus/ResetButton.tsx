@@ -6,12 +6,14 @@ interface Props {
   /** Shown once the first tap has armed the button. */
   warning: string
   onReset: () => void
+  /** Nothing to reset yet: the button stays visible but cannot be used. */
+  disabled?: boolean
 }
 
 /** A button that needs a second tap to go through, so progress is not wiped by accident. */
-export function ResetButton({ label, warning, onReset }: Props) {
+export function ResetButton({ label, warning, onReset, disabled }: Props) {
   const [armed, setArmed] = useState(false)
-  if (!armed) return <button onClick={() => setArmed(true)}><Icon name="undo" />{label}</button>
+  if (!armed) return <button disabled={disabled} onClick={() => setArmed(true)}><Icon name="undo" />{label}</button>
   return (
     <>
       <p className="tagline" role="alert">{warning}</p>

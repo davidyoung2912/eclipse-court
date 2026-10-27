@@ -35,7 +35,7 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
         ))}
       </ol>
       <div className="menu-buttons stacked">
-        {solved > 0 && <ResetButton label="Reset Puzzles" warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />}
+        <ResetButton label="Reset Puzzles" disabled={solved === 0} warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>
