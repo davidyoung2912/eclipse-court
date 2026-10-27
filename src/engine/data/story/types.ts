@@ -76,3 +76,14 @@ export interface Chapter {
   battle?: StoryBattle
   ending?: EndingChoice
 }
+
+/** A short scene between two characters, read from the Story screen once the chapter it follows has been read. */
+export interface Bond {
+  /** Stable key under which reading is remembered, stored as `bond:<id>`. */
+  id: string
+  title: string
+  between: readonly [CharacterId, CharacterId]
+  /** The chapter that must be read first. */
+  after: string
+  beats: readonly Beat[]
+}

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
-import { characterState, chapterUnlocked, endingChapter, metCharacters, storySnapshot, subscribeStory } from '../../story'
+import { achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, replayableChapters, storySnapshot, subscribeStory } from '../../story'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -10,14 +10,21 @@ interface Props {
   onOpen: (id: string) => void
   /** Opens the choice that ends the story, once its chapter is read. */
   onEnding?: (chapterId: string) => void
+  /** Opens a bond scene between two characters. */
+  onBond?: (id: string) => void
+  /** Plays a read chapter again as a scene, with no battle. */
+  onReplay?: (id: string) => void
   onBack: () => void
 }
 
 /** The chapters of the tale of the two courts, opened in order. */
-export function Story({ onOpen, onEnding, onBack }: Props) {
+export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const read = story.read
   const ending = endingChapter()
+  const bonds = availableBonds(story)
+  const replays = replayableChapters(story)
+  const medals = achievements(story)
   const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
   return (
     <main className="app menu">
@@ -60,6 +67,34 @@ export function Story({ onOpen, onEnding, onBack }: Props) {
           })}
         </section>
       )}
+      {bonds.length > 0 && (
+        <section className="story-cast" aria-label="Bonds">
+          <h3>Bonds</h3>
+          {bonds.map((b) => (
+            <button key={b.id} className={`choice${bondRead(story, b.id) ? ' won' : ''}`} onClick={() => onBond?.(b.id)}>
+              <strong><Icon name={bondRead(story, b.id) ? 'check' : 'book'} />{b.title}</strong>
+              <span>{CHARACTERS[b.between[0]].name} and {CHARACTERS[b.between[1]].name}</span>
+            </button>
+          ))}
+        </section>
+      )}
+      {replays.length > 0 && (
+        <section className="story-cast" aria-label="Gallery">
+          <h3>Gallery</h3>
+          {replays.map((c) => (
+            <button key={c.id} onClick={() => onReplay?.(c.id)}><Icon name="book" />Replay: {c.title}</button>
+          ))}
+        </section>
+      )}
+      <section className="story-cast" aria-label="Achievements">
+        <h3>Achievements · {medals.filter((m) => m.earned).length} of {medals.length}</h3>
+        {medals.map((m) => (
+          <div key={m.id} className={`story-member${m.earned ? '' : ' fallen'}`}>
+            <span><strong>{m.title}</strong><small>{m.text}</small></span>
+            <em>{m.earned ? 'earned' : 'locked'}</em>
+          </div>
+        ))}
+      </section>
       <div className="menu-buttons stacked">
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>

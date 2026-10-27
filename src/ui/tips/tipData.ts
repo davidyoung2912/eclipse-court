@@ -22,7 +22,7 @@ const DATA = {
   ],
   story: [
     { id: 'story-intro', icon: 'book', title: 'The tale of the two courts',
-      text: 'Story chapters tell how Veyra came to have two courts and an Eclipse Queen. Each chapter is read one line at a time: tap, press Enter or use the arrow keys to move on, and Skip jumps to the end. Chapters open in order, and reading one marks it done. Story keeps its own record, so it never affects your campaign stars.' },
+      text: 'Story chapters tell how Veyra came to have two courts and an Eclipse Queen. Each chapter is read one line at a time: tap, press Enter or use the arrow keys to move on, and Skip jumps to the end. Chapters open in order, and reading one marks it done. Bonds are quiet scenes between two characters that open as you read, the Gallery replays any chapter you have read, and Achievements track your progress. Story keeps its own record, so it never affects your campaign stars.' },
   ],
   battle: [
     { id: 'battle-modes', icon: 'swords', title: 'One-off matches',

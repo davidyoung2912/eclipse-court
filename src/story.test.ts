@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CHAPTERS } from './engine/data/story'
-import { chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
+import { BONDS, CHAPTERS } from './engine/data/story'
+import { achievements, availableBonds, bondRead, markBondRead, replayBeats, replayableChapters, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -78,5 +78,45 @@ describe('story progress', () => {
     expect(cleanVictory(storySnapshot(), final.id)).toBe(false)
     resetStory()
     expect(storySnapshot().ending).toBeNull()
+  })
+
+  it('opens a bond once its chapter is read and remembers reading it without counting it as a chapter', () => {
+    expect(availableBonds(storySnapshot())).toEqual([])
+    const bond = BONDS[0]
+    markChapterRead(bond.after)
+    expect(availableBonds(storySnapshot()).map((b) => b.id)).toContain(bond.id)
+    expect(bondRead(storySnapshot(), bond.id)).toBe(false)
+    markBondRead(bond.id)
+    expect(bondRead(storySnapshot(), bond.id)).toBe(true)
+    expect(chapterRead(bond.id)).toBe(false)
+  })
+
+  it('replays only read chapters, with the victory scene and the chosen epilogue, and changes nothing', () => {
+    expect(replayableChapters(storySnapshot())).toEqual([])
+    const battle = CHAPTERS.find((c) => c.battle && !c.ending)!
+    recordStoryWin(battle.id, {})
+    const before = storySnapshot()
+    const beats = replayBeats(battle.id, before)
+    expect(beats.length).toBeGreaterThanOrEqual(battle.beats.length)
+    expect(storySnapshot()).toBe(before)
+    const final = endingChapter()!
+    recordStoryWin(final.id, {})
+    const without = replayBeats(final.id, storySnapshot()).length
+    recordEnding('free')
+    expect(replayBeats(final.id, storySnapshot()).length).toBeGreaterThan(without)
+    expect(replayBeats('nope', storySnapshot())).toEqual([])
+  })
+
+  it('earns achievements from the saved story alone', () => {
+    const earned = () => achievements(storySnapshot()).filter((a) => a.earned).map((a) => a.id)
+    expect(earned()).toEqual([])
+    markChapterRead('prologue')
+    expect(earned()).toEqual(['stilling'])
+    CHAPTERS.forEach((c) => markChapterRead(c.id))
+    BONDS.forEach((b) => markBondRead(b.id))
+    recordEnding('solarch')
+    expect(earned()).toEqual(expect.arrayContaining(['whole-tale', 'clean', 'resolved', 'close-company']))
+    recordStoryLoss(endingChapter()!.id)
+    expect(earned()).not.toContain('clean')
   })
 })

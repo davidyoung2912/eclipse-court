@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actLabel, afterVictory, battleCourt, CHAPTERS, CHARACTERS, chapterById, scenarioOf, storyBattleGame } from '.'
+import { BONDS, actLabel, afterVictory, battleCourt, CHAPTERS, CHARACTERS, chapterById, scenarioOf, storyBattleGame } from '.'
 
 describe('story data', () => {
   it('gives every chapter a unique id, title, blurb and some beats', () => {
@@ -132,5 +132,19 @@ describe('story data', () => {
         if ('character' in b.when) expect(CHARACTERS[b.when.character]).toBeDefined()
         else expect(chapterById(b.when.lostBefore)?.battle).toBeDefined()
       }
+  })
+
+  it('gives every bond two distinct cast members, a real chapter to follow and a unique id', () => {
+    expect(new Set(BONDS.map((b) => b.id)).size).toBe(BONDS.length)
+    for (const b of BONDS) {
+      expect(b.between[0]).not.toBe(b.between[1])
+      for (const id of b.between) expect(CHARACTERS[id]).toBeDefined()
+      expect(chapterById(b.after)).toBeDefined()
+      expect(b.beats.length).toBeGreaterThan(0)
+      for (const beat of b.beats) {
+        expect(beat.text.trim().length).toBeGreaterThan(0)
+        if (beat.kind === 'say') expect(b.between).toContain(beat.who)
+      }
+    }
   })
 })

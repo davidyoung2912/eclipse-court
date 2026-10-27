@@ -1,6 +1,6 @@
 # Story mode: a lore-driven campaign with persistent characters
 
-**Status: S1 to S5 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: S1 to S6 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The setting, factions and ending are in `docs/lore.md`. Story mode tells that story across both courts, with a small cast of named characters who carry from chapter to chapter, so that wins and losses cost something the player can feel.
 
@@ -19,7 +19,7 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - **S3 (done): Act I vertical slice (Solari).** About five chapters with three or four recurring characters (Wren, Tam, Voss and the scout), ending with Tam's death. Playtest whether anyone cares before writing more.
 - **S4 (done): Act II (Umbral).** The same war from the Vesper Halls, with Tam serving as a Gloom Ghoul; Ilse and the Duskmother.
 - **S5 (done): Act III and the four endings.** The player chooses who keeps the Hour; the Eclipse Queen is the last battle (reusing her boss rules); each ending has its own epilogue.
-- **S6: polish.** Bond and support conversations between battles, a chapter replay gallery, achievements, and a light rename pass if names change.
+- **S6 (done): polish.** Bond and support conversations between battles, a chapter replay gallery, achievements, and a light rename pass if names change.
 
 ## S1 file map
 - `src/engine/data/story/types.ts`: `CharacterId`, `Character`, `Beat` (`narrate` or `say`), `Chapter`.
@@ -54,3 +54,9 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - `scenarioOf` now falls back to `CAMPAIGN` for Solari battles, so Act III reuses `troll-court`, `iron-court` and the `eclipse-queen` boss rules. The player is Solari; Wren, Tam (back among the Solari by choice) and Voss are bound, Ilse and Sable only speak.
 - Act III in `chapters.ts`: `sunwell-ledger` (Voss reads the council's secret), `iron-oath` (the courts march on the Sanctum), `the-sanctum` (Ysmere; the Eclipse Queen fight, then the choice).
 - `StoryState.ending` is saved; `recordEnding` lets the player choose again. App screens `ending` (`ui/story/StoryEnding.tsx`) and `epilogue`; the Story list shows a button for the choice once the final chapter is read.
+
+## S6 file map
+- `bonds.ts` (`Bond` in `types.ts`): five two-person scenes (`wren-tam`, `wren-voss`, `ilse-sable`, `tam-ilse`, `tam-voss`), each open once its `after` chapter is read. Read state is stored in the same set as `bond:<id>`.
+- `src/story.ts`: `availableBonds`, `markBondRead`, `bondRead`, `replayableChapters`, `replayBeats` (chapter beats, victory scene, chosen epilogue; changes nothing) and `achievements` (eight, derived from saved state, nothing new stored).
+- `Story.tsx` gains Bonds, Gallery and Achievements sections; `App.tsx` gains `bond` and `gallery` screens.
+- No rename pass was needed.

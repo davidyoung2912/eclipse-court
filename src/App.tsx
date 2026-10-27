@@ -32,9 +32,9 @@ import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
-import { afterVictory, battleCourt, chapterById, scenarioOf, storyBattleGame, type EndingId } from './engine/data/story'
+import { afterVictory, battleCourt, bondById, chapterById, scenarioOf, storyBattleGame, type EndingId } from './engine/data/story'
 import { StoryEnding } from './ui/story/StoryEnding'
-import { markChapterRead, recordEnding, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
+import { markBondRead, markChapterRead, recordEnding, replayBeats, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
@@ -56,6 +56,9 @@ type Screen =
   | { name: 'chapter'; id: string }
   /** The scene after a chapter's battle. */
   | { name: 'aftermath'; id: string; won: boolean }
+  /** A bond scene between two characters, and a read chapter played again as a scene. */
+  | { name: 'bond'; id: string }
+  | { name: 'gallery'; id: string }
   /** The choice that ends the story, and the epilogue read once it is made. */
   | { name: 'ending'; id: string }
   | { name: 'epilogue'; id: string; ending: EndingId }
@@ -205,7 +208,25 @@ export default function App() {
     )
 
   if (screen.name === 'story')
-    return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onEnding={(id) => setScreen({ name: 'ending', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onEnding={(id) => setScreen({ name: 'ending', id })}
+      onBond={(id) => setScreen({ name: 'bond', id })} onReplay={(id) => setScreen({ name: 'gallery', id })} onBack={() => setScreen({ name: 'menu' })} />
+
+  if (screen.name === 'bond') {
+    const bond = bondById(screen.id)
+    const after = bond && chapterById(bond.after)
+    if (!bond || !after) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryReader key={bond.id} chapter={{ ...after, title: bond.title }} beats={visibleBeats(bond.beats, storySnapshot())}
+        onBack={() => setScreen({ name: 'story' })} onDone={() => { markBondRead(bond.id); setScreen({ name: 'story' }) }} />
+    )
+  }
+
+  if (screen.name === 'gallery') {
+    const chapter = chapterById(screen.id)
+    const beats = chapter ? replayBeats(chapter.id, storySnapshot()) : []
+    if (!chapter || beats.length === 0) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return <StoryReader key={`replay-${chapter.id}`} chapter={chapter} beats={beats} onBack={() => setScreen({ name: 'story' })} onDone={() => setScreen({ name: 'story' })} />
+  }
 
   if (screen.name === 'chapter') {
     const chapter = chapterById(screen.id)

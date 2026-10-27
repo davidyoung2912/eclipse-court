@@ -1,4 +1,4 @@
-import { CHAPTERS, CHARACTERS, type Beat, type CharacterId, type CharacterState, type EndingId } from './engine/data/story'
+import { BONDS, CHAPTERS, CHARACTERS, type Beat, type Bond, type CharacterId, type CharacterState, type EndingId } from './engine/data/story'
 
 /** Which story chapters have been read and what became of the named characters; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:story'
@@ -141,4 +141,52 @@ export const cleanVictory = (s: Pick<StoryState, 'losses'>, chapterId: string) =
 export const storySummary = (readIds: ReadonlySet<string>) => {
   const count = CHAPTERS.filter((c) => readIds.has(c.id)).length
   return count === 0 ? 'The tale of the two courts' : `${count} of ${CHAPTERS.length} chapters read`
+}
+
+/** Bonds are remembered in the read set under their own prefix, so they never collide with a chapter id. */
+const bondKey = (id: string) => `bond:${id}`
+
+export const bondRead = (s: Pick<StoryState, 'read'>, id: string) => s.read.has(bondKey(id))
+
+export function markBondRead(id: string) {
+  if (state.read.has(bondKey(id))) return
+  commit({ ...state, read: new Set(state.read).add(bondKey(id)) })
+}
+
+/** Bonds whose chapter has been read, in the order they were written. */
+export const availableBonds = (s: Pick<StoryState, 'read'>): Bond[] => BONDS.filter((b) => s.read.has(b.after))
+
+/** Chapters the player can read again as a scene, without a battle or any change to the story. */
+export const replayableChapters = (s: Pick<StoryState, 'read'>) => CHAPTERS.filter((c) => s.read.has(c.id))
+
+/** The scenes of a chapter for replay: its own beats, then the victory scene, then the chosen epilogue. */
+export function replayBeats(chapterId: string, s: StoryState): Beat[] {
+  const chapter = CHAPTERS.find((c) => c.id === chapterId)
+  if (!chapter) return []
+  const epilogue = chapter.ending?.options.find((o) => o.id === s.ending)?.beats ?? []
+  return visibleBeats([...chapter.beats, ...(chapter.battle?.won ?? []), ...epilogue], s)
+}
+
+export interface Achievement {
+  id: string
+  title: string
+  text: string
+  earned: boolean
+}
+
+/** Worked out from the saved story each time, so nothing extra is stored. */
+export function achievements(s: StoryState): Achievement[] {
+  const final = endingChapter()
+  const done = (id: string) => s.read.has(id)
+  const defs: [string, string, string, boolean][] = [
+    ['stilling', 'The Stilling', 'Read the Prologue.', done('prologue')],
+    ['sky', 'The Sky Darkens', 'Finish Act I.', done('darkening-sky')],
+    ['raised', 'Called Back', 'Finish Act II.', done('long-dusk')],
+    ['whole-tale', 'The Whole Tale', 'Read every chapter.', CHAPTERS.every((c) => s.read.has(c.id))],
+    ['clean', 'Clean Hands', 'Win the final battle without losing it first.', !!final && done(final.id) && cleanVictory(s, final.id)],
+    ['resolved', 'Who Keeps the Hour', 'Choose an ending.', s.ending !== null],
+    ['close-company', 'Close Company', 'Read every bond scene.', BONDS.every((b) => bondRead(s, b.id))],
+    ['stubborn', 'Stubborn', 'Lose a chapter\'s battle three times, and still return.', CHAPTERS.some((c) => (s.losses[c.id] ?? 0) >= 3 && done(c.id))],
+  ]
+  return defs.map(([id, title, text, earned]) => ({ id, title, text, earned }))
 }
