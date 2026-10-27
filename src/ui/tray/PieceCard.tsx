@@ -25,7 +25,7 @@ export function PieceCard({ state, piece, human, hint }: Props) {
   const favoured = favouredCourt(lum)
   const note =
     piece.bound ? 'Bound: cannot move this turn'
-      : isBeacon(piece.pos) ? 'On a beacon: spell-proof, heals +1'
+      : isBeacon(piece.pos, state.config.beacons) ? 'On a beacon: spell-proof, heals +1'
         : piece.hp < piece.maxHp ? 'Wounded: heals 1 per 2 resting rounds'
           : favoured === piece.court ? 'The light favours it here'
             : favoured ? 'The light works against it here' : ''

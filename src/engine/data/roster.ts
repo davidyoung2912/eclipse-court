@@ -1,4 +1,4 @@
-import type { Court, Piece, Role } from '../rules/types'
+import type { Court, Piece, Placement, Role } from '../rules/types'
 
 /** HP follows the design doc; power only feeds the stub duel used for wounded pieces. */
 export const ROLE_STATS: Record<Role, { hp: number; power: number }> = {
@@ -33,7 +33,7 @@ export const ROLE_NAMES: Record<Court, Record<Role, string>> = {
 }
 
 /** Solari layout in board coordinates (x = column from the Solari edge); Umbral mirrors it. */
-const SETUP: { role: Role; x: number; y: number }[] = [
+export const DEFAULT_LAYOUT: readonly Placement[] = [
   { role: 'flier', x: 0, y: 0 },
   { role: 'marksman', x: 0, y: 1 },
   { role: 'aura', x: 0, y: 2 },
@@ -48,10 +48,10 @@ const SETUP: { role: Role; x: number; y: number }[] = [
   { role: 'footsoldier', x: 1, y: 5 },
 ]
 
-export function startingPieces(): Piece[] {
+export function startingPieces(layout: readonly Placement[] = DEFAULT_LAYOUT): Piece[] {
   const counts: Record<string, number> = {}
   return (['solari', 'umbral'] as Court[]).flatMap((court) =>
-    SETUP.map(({ role, x, y }) => {
+    layout.map(({ role, x, y }) => {
       const key = `${court}-${role}`
       counts[key] = (counts[key] ?? 0) + 1
       const { hp } = ROLE_STATS[role]

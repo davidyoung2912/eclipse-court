@@ -4,6 +4,7 @@ import { requestAction } from './ai/client'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
+import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { estimateOdds, reduce } from './engine/reducer'
 import { samePos } from './engine/rules/board'
 import { squareLuminance } from './engine/rules/luminance'
@@ -22,7 +23,10 @@ import { SpellBar } from './ui/tray/SpellBar'
 interface Props {
   human: Court
   difficulty: Difficulty
-  initial: GameState
+  /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
+  record: GameRecord
+  /** Called after every action with the game so far, or null once it has ended. */
+  onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner']) => void
 }
 
@@ -47,11 +51,11 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ human, difficulty, initial, onExit }: Props) {
+export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const foe: Court = human === 'solari' ? 'umbral' : 'solari'
   const foeSkill = DIFFICULTY[difficulty].skill
   const foeAggression = DIFFICULTY[difficulty].aggression
-  const [history, setHistory] = useState<GameState[]>([initial])
+  const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
   const [duelMode, setDuelMode] = useState<DuelMode>('live')
@@ -60,7 +64,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const [casting, setCasting] = useState<Spell | null>(null)
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
-  const state = history[history.length - 1]
+  const state = history[history.length - 1].state
   /** The position a hint was asked for, so a slow search cannot land on a later one. */
   const hintFor = useRef<GameState | null>(null)
   const myTurn = state.turn === human
@@ -95,11 +99,22 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     })
   }
 
-  const push = (s: GameState) => {
+  // Keeps the unfinished game saved so it can be resumed after leaving.
+  useEffect(() => {
+    const last = history[history.length - 1].state
+    onSave(last.winner || history.length < 2 ? null : recordOf(history))
+    // onSave is read fresh; only a change to the game itself should save.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [history])
+
+  /** Plays an action: the one place the game moves forward, so the history doubles as the game's log. */
+  const play = (action: Action) => {
+    const s = reduce(state, action)
+    if (s === state) return
     if (spellsLeft(s) < spellsLeft(state)) sfx.cast()
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
-    setHistory((h) => [...h, s])
+    setHistory((h) => [...h, { state: s, action }])
     setSelectedId(null)
     setInspectId(null)
     setCasting(null)
@@ -116,7 +131,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     const skills: [number, number] = p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
       p.byAi ? [foeAggression, 1] : [1, foeAggression])
-    push(reduce(state, { type: 'move', pieceId: p.pieceId, to: p.to, duel }))
+    play({ type: 'move', pieceId: p.pieceId, to: p.to, duel })
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
@@ -130,7 +145,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
         const act = () => {
           setAiFocus(null)
           if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
-          else push(reduce(state, action))
+          else play(action)
         }
         // Flash the piece that is about to move so the player can follow it.
         const mover = action.type === 'move' ? action.pieceId : action.type === 'cast' ? action.pieceId : undefined
@@ -145,14 +160,14 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
       clearTimeout(flash)
       setAiFocus(null)
     }
-    // beginDuel and push only close over state/duelMode, which are covered or intentionally read fresh.
+    // beginDuel and play only close over state/duelMode, which are covered or intentionally read fresh.
     // oxlint-disable-next-line react/exhaustive-deps
   }, [state, pending, foe, difficulty])
 
   const pickSpell = (spell: Spell | null) => {
     clearHint()
     setSelectedId(null)
-    if (spell && spellTargets(state, human, spell).none) return push(reduce(state, { type: 'cast', spell }))
+    if (spell && spellTargets(state, human, spell).none) return play({ type: 'cast', spell })
     setCasting(spell)
   }
 
@@ -165,13 +180,13 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     }
     if (casting && targets) {
       const occ = pieceAt(state, p)
-      if (occ && targets.pieces.includes(occ.id)) return push(reduce(state, { type: 'cast', spell: casting, pieceId: occ.id }))
-      if (targets.squares.some((m) => samePos(m, p))) return push(reduce(state, { type: 'cast', spell: casting, to: p }))
+      if (occ && targets.pieces.includes(occ.id)) return play({ type: 'cast', spell: casting, pieceId: occ.id })
+      if (targets.squares.some((m) => samePos(m, p))) return play({ type: 'cast', spell: casting, to: p })
       return setCasting(null)
     }
     if (selected && moves.some((m) => samePos(m, p))) {
       if (pieceAt(state, p)) return setPending({ pieceId: selected.id, to: p, confirmed: false, byAi: false })
-      return push(reduce(state, { type: 'move', pieceId: selected.id, to: p }))
+      return play({ type: 'move', pieceId: selected.id, to: p })
     }
     clearHint()
     const occ = pieceAt(state, p)
@@ -182,7 +197,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const undo = () => {
     setHistory((h) => {
       let i = h.length - 2
-      while (i > 0 && h[i].turn !== human) i--
+      while (i > 0 && h[i].state.turn !== human) i--
       return h.slice(0, i + 1)
     })
     setSelectedId(null)
@@ -192,7 +207,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   }
 
   const finishDuel = (outcome: DuelOutcome) => {
-    if (pending) push(reduce(state, { type: 'move', pieceId: pending.pieceId, to: pending.to, duel: outcome }))
+    if (pending) play({ type: 'move', pieceId: pending.pieceId, to: pending.to, duel: outcome })
   }
 
   const toggleSound = () => {
@@ -257,7 +272,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
           <button className={hint ? 'on' : ''} disabled={!!state.winner || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
-          <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => push(reduce(state, { type: 'pass' }))}><Icon name="hourglass" />End turn</button>
+          <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
           <button onClick={() => onExit(null)}><Icon name="exit" />Quit</button>
         </div>
       </footer>

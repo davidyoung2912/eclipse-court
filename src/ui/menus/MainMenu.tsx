@@ -7,6 +7,8 @@ interface Props {
   onSkirmish: () => void
   onCampaign: () => void
   onTutorial: () => void
+  /** Present when an unfinished game was left behind. */
+  onResume?: () => void
   /** True until the player has finished or skipped the tutorial once. */
   firstRun: boolean
 }
@@ -61,7 +63,7 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onTutorial, firstRun }: Props) {
+export function MainMenu({ onSkirmish, onCampaign, onTutorial, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   return (
     <main className="app menu main-menu">
@@ -70,7 +72,8 @@ export function MainMenu({ onSkirmish, onCampaign, onTutorial, firstRun }: Props
       <div className="divider" aria-hidden="true"><i /></div>
       <p className="tagline">Light and dark trade places. Every capture is a duel.</p>
       <div className="menu-buttons">
-        <button className={firstRun ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
+        {onResume && <button className="primary" onClick={onResume}><Icon name="play" />Resume game</button>}
+        <button className={firstRun || onResume ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
       </div>
       <div className="menu-buttons small">

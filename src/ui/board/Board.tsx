@@ -76,7 +76,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
               <rect key={rippleKey} x={cx - 0.5} y={cy - 0.5} width={1} height={1} className={`ripple ${lum >= 0 ? 'lit' : 'dim'}`}
                 style={{ animationDelay: `${ringOf(p) * 70}ms` }} />
             )}
-            {isBeacon(p) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
+            {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
             {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
             {hint?.square && samePos(hint.square, p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow hint-square" />}

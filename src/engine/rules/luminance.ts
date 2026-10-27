@@ -10,24 +10,24 @@ const mod = (n: number, m: number) => ((n % m) + m) % m
  * Luminance of a cycling ring at a phase. Each ring lags the inner one by a step,
  * so light ripples outward whichever way the cycle runs.
  */
-export function ringLuminance(phase: number, dir: 1 | -1, ring: number): number {
-  return DAY[mod(phase - dir * ring, DAY.length)]
+export function ringLuminance(phase: number, dir: 1 | -1, ring: number, day: readonly number[] = DAY): number {
+  return day[mod(phase - dir * ring, day.length)]
 }
 
 export function squareLuminance(
-  state: Pick<GameState, 'phase' | 'dir' | 'eclipse'>,
+  state: Pick<GameState, 'phase' | 'dir' | 'eclipse' | 'config'>,
   p: Pos,
 ): number {
   const fixed = fixedCourt(p)
   if (fixed) return fixed === 'solari' ? 2 : -2
   if (state.eclipse) return 0
-  return ringLuminance(state.phase, state.dir, ringOf(p))
+  return ringLuminance(state.phase, state.dir, ringOf(p), state.config.day)
 }
 
 /** Center-ring luminance for the next `count` steps, as shown on the dial. */
 export function forecast(state: GameState, count = 3): number[] {
   if (state.eclipse) return Array(count).fill(0)
-  return Array.from({ length: count }, (_, i) => ringLuminance(state.phase + state.dir * (i + 1), state.dir, 0))
+  return Array.from({ length: count }, (_, i) => ringLuminance(state.phase + state.dir * (i + 1), state.dir, 0, state.config.day))
 }
 
 /** Which court a luminance favours; null at dusk. */

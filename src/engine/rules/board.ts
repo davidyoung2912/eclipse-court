@@ -28,7 +28,7 @@ export const chebyshev = (a: Pos, b: Pos) => Math.max(Math.abs(a.x - b.x), Math.
 
 export const inBounds = ({ x, y }: Pos) => x >= 0 && x < SIZE && y >= 0 && y < SIZE
 
-export const isBeacon = (p: Pos) => BEACONS.some((b) => samePos(b, p))
+export const isBeacon = (p: Pos, beacons: readonly Pos[] = BEACONS) => beacons.some((b) => samePos(b, p))
 
 /** Steps from the center (Manhattan distance). */
 export const ringOf = ({ x, y }: Pos) => Math.abs(x - CENTER.x) + Math.abs(y - CENTER.y)

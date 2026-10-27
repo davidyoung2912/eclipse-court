@@ -1,24 +1,29 @@
+import { DEFAULT_CONFIG, matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
-import { BEACONS, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
-import { DAY, duelMods, squareLuminance } from './rules/luminance'
+import { chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
+import { duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
-import type { Action, Court, DuelOutcome, GameState, Piece } from './rules/types'
+import type { Action, Court, DuelOutcome, GameState, MatchConfig, Piece } from './rules/types'
 import { matchup } from './data/matchups'
 import { ROLE_STATS } from './data/roster'
 import { applySpell, canCast, leaderOf, SPELLS } from './rules/spells'
 
-export const ECLIPSE_ROUND = 30
+/** The classic match's pacing; a match's own values live in `state.config`. */
+export const ECLIPSE_ROUND = DEFAULT_CONFIG.eclipseRound
 /**
  * Pieces sitting on beacons are immune to Eclipse attrition and heal there, so two sides can dig in
  * forever. Soak tests found games running past round 200; once this many rounds have passed the
  * game is settled on beacons held, then total HP.
  */
-export const ROUND_LIMIT = 50
+export const ROUND_LIMIT = DEFAULT_CONFIG.roundLimit
 
-export function newGame(seed = 1): GameState {
+/** A fresh match: a seed for the classic setup, or a full set of settings. */
+export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
+  const config = matchConfig(typeof setup === 'number' ? { seed: setup } : setup)
   return {
-    pieces: startingPieces(),
+    config,
+    pieces: startingPieces(config.layout),
     captured: [],
     turn: 'solari',
     round: 1,
@@ -27,7 +32,7 @@ export function newGame(seed = 1): GameState {
     eclipse: false,
     spells: { solari: [...SPELLS], umbral: [...SPELLS] },
     winner: null,
-    rng: seed >>> 0,
+    rng: config.seed,
     lastDuel: null,
   }
 }
@@ -101,7 +106,7 @@ function eliminationWinner(state: GameState): GameState['winner'] {
 function evaluateWin(state: GameState, mover: Court): GameState['winner'] {
   const eliminated = eliminationWinner(state)
   if (eliminated) return eliminated
-  const holdsAll = BEACONS.every((b) => pieceAt(state, b)?.court === mover)
+  const holdsAll = state.config.beacons.every((b) => pieceAt(state, b)?.court === mover)
   return holdsAll ? mover : null
 }
 
@@ -115,7 +120,7 @@ function endRound(state: GameState): GameState {
     let { hp, rest } = p
     // An Aura soothes the allies standing next to it.
     if (auras.some((a) => a.id !== p.id && a.court === p.court && chebyshev(a.pos, p.pos) === 1)) hp += 1
-    const onBeacon = isBeacon(p.pos)
+    const onBeacon = isBeacon(p.pos, state.config.beacons)
     if (p.moved) rest = 0
     else {
       rest += 1
@@ -133,15 +138,15 @@ function endRound(state: GameState): GameState {
     pieces: survivors,
     captured: [...state.captured, ...dead],
     round,
-    phase: eclipse ? state.phase : (state.phase + state.dir + DAY.length) % DAY.length,
-    eclipse: eclipse || round > ECLIPSE_ROUND,
+    phase: eclipse ? state.phase : (state.phase + state.dir + state.config.day.length) % state.config.day.length,
+    eclipse: eclipse || round > state.config.eclipseRound,
   }
 }
 
 function adjudicate(state: GameState): GameState['winner'] {
   const held: Record<Court, number> = { solari: 0, umbral: 0 }
   const hp: Record<Court, number> = { solari: 0, umbral: 0 }
-  for (const b of BEACONS) {
+  for (const b of state.config.beacons) {
     const occ = pieceAt(state, b)
     if (occ) held[occ.court]++
   }
@@ -160,7 +165,7 @@ function finishTurn(state: GameState): GameState {
   let next: GameState = { ...state, pieces, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
-    next = { ...next, winner: eliminationWinner(next) ?? (next.round > ROUND_LIMIT ? adjudicate(next) : null) }
+    next = { ...next, winner: eliminationWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
   }
   return next
 }

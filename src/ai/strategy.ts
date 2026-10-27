@@ -1,6 +1,6 @@
 import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
-import { BEACONS, COURTS, isBeacon, otherCourt, samePos } from '../engine/rules/board'
+import { COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { canCast, leaderOf, spellTargets, SPELLS } from '../engine/rules/spells'
@@ -48,7 +48,7 @@ export function evaluate(state: GameState, court: Court): number {
   const held: Record<Court, number> = { solari: 0, umbral: 0 }
   // Beacons each court does not yet hold, found once rather than per piece.
   const open: Record<Court, Pos[]> = { solari: [], umbral: [] }
-  for (const b of BEACONS) {
+  for (const b of state.config.beacons) {
     const holder = pieceAt(state, b)?.court
     if (holder) held[holder]++
     for (const c of COURTS) if (holder !== c) open[c].push(b)
@@ -98,7 +98,7 @@ function spellActions(state: GameState, court: Court): Action[] {
       for (const p of worst(t.pieces.map(piece), (p) => VALUE[p.role], 3)) out.push({ type: 'cast', spell, pieceId: p.id })
     else if (spell === 'blink') {
       const leader = leaderOf(state, court)
-      const spots = t.squares.filter((s) => isBeacon(s))
+      const spots = t.squares.filter((s) => isBeacon(s, state.config.beacons))
       for (const to of worst(spots, (s) => -(Math.abs(s.x - (leader?.pos.x ?? 0)) + Math.abs(s.y - (leader?.pos.y ?? 0))), 2))
         out.push({ type: 'cast', spell, to })
     } else if (spell === 'conjure' || spell === 'revive') {
@@ -117,8 +117,8 @@ function hint(state: GameState, a: Action): number {
   const mover = state.pieces.find((p) => p.id === a.pieceId)!
   let h = 0
   if (target) h += 10 + VALUE[target.role] - 0.5 * VALUE[mover.role]
-  if (isBeacon(a.to)) h += 6
-  if (BEACONS.some((b) => samePos(b, mover.pos))) h -= 3
+  if (isBeacon(a.to, state.config.beacons)) h += 6
+  if (isBeacon(mover.pos, state.config.beacons)) h -= 3
   return h
 }
 

@@ -1,6 +1,5 @@
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
-import { ECLIPSE_ROUND } from '../../engine/reducer'
 import { lumColor } from '../board/lumColor'
 
 export function Dial({ state }: { state: GameState }) {
@@ -9,7 +8,7 @@ export function Dial({ state }: { state: GameState }) {
   return (
     <header className="hud">
       <div className="hud-round">
-        {state.eclipse ? 'Eclipse' : `Round ${Math.min(state.round, ECLIPSE_ROUND)} / ${ECLIPSE_ROUND}`}
+        {state.eclipse ? 'Eclipse' : `Round ${Math.min(state.round, state.config.eclipseRound)} / ${state.config.eclipseRound}`}
         <span className={`turn turn-${state.turn}`}>{state.turn === 'solari' ? 'Solari' : 'Umbral'} to move</span>
       </div>
       <div className="dial" aria-label="Luminance dial">

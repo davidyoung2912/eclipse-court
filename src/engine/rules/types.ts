@@ -44,7 +44,28 @@ export interface DuelRecord extends DuelOutcome {
   luminance: number
 }
 
+/** One piece of the Solari opening layout; Umbral mirrors it across the board. */
+export interface Placement {
+  role: Role
+  x: number
+  y: number
+}
+
+/** Everything that describes how a match is set up and paced; plain data, so it can be saved and shared. */
+export interface MatchConfig {
+  seed: number
+  /** The round at which the Eclipse falls. */
+  eclipseRound: number
+  /** Once this many rounds have passed the game is settled on beacons held, then total HP. */
+  roundLimit: number
+  /** Luminance of the centre ring through one day, one entry per round. */
+  day: readonly number[]
+  beacons: readonly Pos[]
+  layout: readonly Placement[]
+}
+
 export interface GameState {
+  config: MatchConfig
   pieces: Piece[]
   captured: Piece[]
   turn: Court

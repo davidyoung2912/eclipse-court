@@ -34,7 +34,7 @@ const adjacentEmpty = (state: GameState, from: Pos) =>
   )
 
 /** Beacon pieces cannot be targeted by spells. */
-const targetable = (p: Piece) => !isBeacon(p.pos)
+const targetable = (state: GameState, p: Piece) => !isBeacon(p.pos, state.config.beacons)
 
 export function spellTargets(state: GameState, court: Court, spell: Spell): SpellTargets {
   const none: SpellTargets = { pieces: [], squares: [], none: false }
@@ -47,7 +47,7 @@ export function spellTargets(state: GameState, court: Court, spell: Spell): Spel
       return {
         ...none,
         pieces: state.pieces
-          .filter((p) => p.court === court && p.hp < p.maxHp && targetable(p))
+          .filter((p) => p.court === court && p.hp < p.maxHp && targetable(state, p))
           .map((p) => p.id),
       }
     case 'turn':
@@ -55,7 +55,7 @@ export function spellTargets(state: GameState, court: Court, spell: Spell): Spel
     case 'swap':
       return {
         ...none,
-        pieces: state.pieces.filter((p) => p.id !== leader.id && targetable(p)).map((p) => p.id),
+        pieces: state.pieces.filter((p) => p.id !== leader.id && targetable(state, p)).map((p) => p.id),
       }
     case 'conjure':
       return { ...none, squares: adjacentEmpty(state, leader.pos) }
@@ -67,7 +67,7 @@ export function spellTargets(state: GameState, court: Court, spell: Spell): Spel
       return {
         ...none,
         pieces: state.pieces
-          .filter((p) => p.court !== court && targetable(p) && p.role !== 'leader')
+          .filter((p) => p.court !== court && targetable(state, p) && p.role !== 'leader')
           .map((p) => p.id),
       }
   }

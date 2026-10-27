@@ -67,7 +67,7 @@ export function describeHint(state: GameState, action: Action): Hint {
       target: victim.id,
     }
   }
-  const why = isBeacon(action.to)
+  const why = isBeacon(action.to, state.config.beacons)
     ? 'It takes a beacon: spell-proof, heals +1, and beacons win the game.'
     : favouredCourt(lum) === court
       ? 'The light favours your court on that square.'

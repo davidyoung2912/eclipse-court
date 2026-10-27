@@ -3,8 +3,10 @@ import { unlockAudio } from './audio/synth'
 import { Game } from './Game'
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
+import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
-import type { Court, GameState } from './engine/rules/types'
+import { clearSaved, loadSaved, saveGame } from './saved'
+import type { Court } from './engine/rules/types'
 import { Campaign } from './ui/menus/Campaign'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Tutorial } from './ui/tutorial/Tutorial'
@@ -15,7 +17,7 @@ type Screen =
   | { name: 'skirmish' }
   | { name: 'campaign' }
   | { name: 'tutorial' }
-  | { name: 'game'; human: Court; difficulty: Difficulty; initial: GameState; campaignIndex: number | null }
+  | { name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null }
 
 const PROGRESS_KEY = 'eclipse-court:campaign'
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -57,6 +59,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [cleared, setCleared] = useState(loadCleared)
   const [seen, setSeen] = useState(tutorialSeen)
+  const [saved, setSaved] = useState(loadSaved)
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
@@ -80,7 +83,7 @@ export default function App() {
       <SkirmishSetup
         onBack={() => setScreen({ name: 'menu' })}
         onStart={(human, difficulty) =>
-          setScreen({ name: 'game', human, difficulty, initial: newGame(Date.now()), campaignIndex: null })}
+          setScreen({ name: 'game', human, difficulty, record: { initial: newGame(Date.now()), actions: [] }, campaignIndex: null })}
       />
     )
 
@@ -93,21 +96,27 @@ export default function App() {
           const opponent = CAMPAIGN[i]
           setScreen({
             name: 'game', human: 'solari', difficulty: opponent.difficulty,
-            initial: opponent.setup(newGame(Date.now()), 'umbral'), campaignIndex: i,
+            record: { initial: opponent.setup(newGame(Date.now()), 'umbral'), actions: [] }, campaignIndex: i,
           })
         }}
       />
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, initial, campaignIndex } = screen
+    const { human, difficulty, record, campaignIndex } = screen
     return (
       <Game
-        key={initial.rng}
+        key={record.initial.rng}
         human={human}
         difficulty={difficulty}
-        initial={initial}
+        record={record}
+        onSave={(progress) => {
+          if (progress) saveGame({ human, difficulty, campaignIndex, record: progress })
+          else clearSaved()
+        }}
         onExit={(winner) => {
+          clearSaved()
+          setSaved(null)
           if (campaignIndex === null) return setScreen({ name: 'menu' })
           if (winner === human && campaignIndex >= cleared) {
             setCleared(campaignIndex + 1)
@@ -120,7 +129,8 @@ export default function App() {
   }
 
   return (
-    <MainMenu firstRun={!seen} onSkirmish={() => setScreen({ name: 'skirmish' })}
+    <MainMenu firstRun={!seen}
+      onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
       onCampaign={() => setScreen({ name: 'campaign' })} onTutorial={() => setScreen({ name: 'tutorial' })} />
   )
 }
