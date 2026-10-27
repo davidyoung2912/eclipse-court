@@ -3,7 +3,7 @@
 Goal: make the game more varied, replayable and worth owning, without adding a backend service.
 This document records the review of the current rules, the recommendations, the browser-only multiplayer design, and a phased execution plan.
 
-Status: proposal for review. No code has changed. Phases below are numbered E1–E8 so they do not collide with the original build phases 0–6. As in `CLAUDE.md`, each phase ends with a commit and a stop; verification is `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build` only (no browser testing).
+Status: proposal for review. No code has changed. **The two-player phases (E6, E7a, E7b) are deferred**: they are marked DISABLED below and will be taken up after the single-player phases (E1–E5, E8) are done. Section 3 stays as the design reference for that later work. Phases below are numbered E1–E8 so they do not collide with the original build phases 0–6. As in `CLAUDE.md`, each phase ends with a commit and a stop; verification is `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build` only (no browser testing).
 
 ---
 
@@ -53,7 +53,7 @@ Weakness: every game starts identically, the two courts differ only inside duels
 ### 2.4 Top five if only five things ship
 
 1. Army draft plus random setups.
-2. Local hotseat plus browser-only online play.
+2. *(Deferred)* Local hotseat plus browser-only online play.
 3. Distinct court identities and a choose-your-spells loadout.
 4. A campaign with real AI personalities, rewards and star ratings.
 5. Daily puzzle and daily seed.
@@ -159,13 +159,13 @@ Delivers recommendations 5 and 6 and the pacing fix.
 - UI: piece card shows record and perk; a promotion chooser.
 - Tests: perk application, promotion legality, reducer determinism.
 
-### E6. Hotseat and local play (≈1–2 days)
+### E6. Hotseat and local play (≈1–2 days) — DISABLED, deferred until after E1–E5 and E8
 
 - Local two-player mode: handoff screen between turns (hides the board for private spell choices, optional). Duel options: split-screen controls on one device, or auto-resolve. Optional pie rule (second player may swap sides after the first move).
 - Hint/odds visibility toggle.
 - Tests: turn handoff state machine, no AI worker invoked for a human court.
 
-### E7. Online play: play-by-link, then live WebRTC (≈4–6 days)
+### E7. Online play: play-by-link, then live WebRTC (≈4–6 days) — DISABLED, deferred until after E1–E5 and E8
 
 Split into two commits; stop after each.
 
@@ -214,12 +214,12 @@ Delivers campaign and meta recommendations.
 | E3 Courts and spells | E1, E2 (loadout UI) | Distinct court play, new spells tested |
 | E4 Modes, events, showdown | E1 | Soak report: no stalls, median length |
 | E5 Piece growth | E2 | Perks and promotion balanced in sim |
-| E6 Hotseat | E1 | Two humans on one device |
-| E7a Play-by-link | E1, E6 | Full async game between two browsers |
-| E7b Live WebRTC | E7a | Live game; documented fallback |
+| E6 Hotseat — DISABLED (deferred) | E1 | Two humans on one device |
+| E7a Play-by-link — DISABLED (deferred) | E1, E6 | Full async game between two browsers |
+| E7b Live WebRTC — DISABLED (deferred) | E7a | Live game; documented fallback |
 | E8 Campaign and meta | E2–E5 | Campaign 2.0, stats, puzzles, daily |
 
-If time is short, ship E1 → E2 → E6 → E7a → E3 first: that delivers variety, two-player and online with the least risk. E7b and E8 are the most open-ended.
+Current order: E1 → E2 → E3 → E4 → E5 → E8. The two-player phases (E6, E7a, E7b) are disabled for now and will be revisited afterwards; E1 still builds the config, action-log and serialisation foundations they will need, so nothing is lost by waiting. E8 is the most open-ended of the active phases.
 
 ## 6. Open decisions for review
 
