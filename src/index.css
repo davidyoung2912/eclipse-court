@@ -1,4 +1,5 @@
 :root {
+  --display: 'Fredoka', ui-rounded, 'Varela Round', 'Trebuchet MS', system-ui, sans-serif;
   --solari-gold: #e8b64a;
   --solari-cream: #fbf1d4;
   --umbral-indigo: #2b2468;
@@ -145,7 +146,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 }
 .duel-head { position: relative; text-align: center; padding: 0 44px; }
 .duel-head h2 {
-  margin: 0 0 4px; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.35rem;
+  margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 1.35rem;
   letter-spacing: 0.06em; color: var(--solari-cream);
 }
 .duel-head h2 span { font-size: 0.8em; opacity: 0.6; font-style: italic; }
@@ -232,8 +233,8 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .ray.short { opacity: 0.3; }
 .moon { animation: drift 7.83s ease-in-out infinite alternate; }
 .main-menu h1 {
-  font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 2.1rem; letter-spacing: 0.32em;
-  text-transform: uppercase; margin: 0; padding-left: 0.32em; line-height: 1.1;
+  font-family: var(--display); font-weight: 600; font-size: 2.1rem; letter-spacing: 0.2em;
+  text-transform: uppercase; margin: 0; padding-left: 0.2em; line-height: 1.1;
   background: linear-gradient(90deg, var(--solari-gold), var(--solari-cream) 45%, #b9a2ff 60%, var(--umbral-violet));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 14px rgba(232, 182, 74, 0.35));
@@ -418,7 +419,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 /* Menu pages: a framed scene on top, ornamented headings, gilded cards */
 .menu-art { width: 100%; flex: 0 0 auto; border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.5); box-shadow: 0 0 18px rgba(122, 92, 200, 0.45); }
 .menu h2 {
-  text-align: center; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.7rem; letter-spacing: 0.22em;
+  text-align: center; font-family: var(--display); font-weight: 600; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;
   background: linear-gradient(90deg, var(--solari-gold), var(--solari-cream) 45%, #b9a2ff 60%, var(--umbral-violet));
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -451,7 +452,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   box-shadow: 0 0 30px rgba(232, 182, 74, 0.45), 0 12px 40px rgba(0, 0, 0, 0.6); animation: pop-in 0.25s ease-out;
 }
 .modal-kicker { margin: 0; font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.7; }
-.modal h2 { margin: 4px 0 6px; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.5rem; color: var(--solari-cream); }
+.modal h2 { margin: 4px 0 6px; font-family: var(--display); font-weight: 600; font-size: 1.5rem; color: var(--solari-cream); }
 .result-line { margin: 0 0 12px; font-size: 0.95rem; }
 .result-line b { color: var(--solari-gold); font-size: 1.15em; }
 .result-fighters { display: flex; justify-content: center; gap: 16px; margin-bottom: 14px; }
@@ -473,7 +474,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 
 .turn-banner {
   position: fixed; left: 50%; top: 50%; z-index: 25; pointer-events: none; padding: 16px 40px; border-radius: 16px;
-  transform: translate(-50%, -50%); font-family: Georgia, 'Times New Roman', serif; font-size: 2rem; letter-spacing: 0.1em;
+  transform: translate(-50%, -50%); font-family: var(--display); font-size: 2rem; letter-spacing: 0.1em;
   text-transform: uppercase; white-space: nowrap; border: 2px solid var(--solari-gold); animation: banner 1s ease-in-out forwards;
   background: rgba(20, 16, 43, 0.92); color: var(--solari-cream); box-shadow: 0 0 36px rgba(232, 182, 74, 0.5);
 }
@@ -487,7 +488,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .pass-screen {
   position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 12px; border: 0; border-radius: 0; cursor: pointer; background: rgba(20, 16, 43, 0.97); color: var(--solari-cream);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--display);
 }
 .pass-screen strong { font-size: 2rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--solari-gold); }
 .pass-screen.umbral strong { color: #d9ccff; }
