@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import { BOARDS, boardById } from '../../engine/data/boards'
 import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
-import { matchesPreset, presetById, PRESETS, SETUP_INFO, type Preset, type SetupChoice, type SetupMode } from '../../engine/data/setups'
+import { matchesPreset, presetById, PRESETS, RULESETS, rulesetById, SETUP_INFO, type Preset, type RuleGroup, type RulesetId, type PresetRules, type SetupChoice, type SetupMode } from '../../engine/data/setups'
 import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
@@ -74,6 +74,9 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
   const [growth, setGrowth] = useState(false)
   const [promotion, setPromotion] = useState(false)
   const [presetId, setPresetId] = useState<string | null>(null)
+  const [rulesId, setRulesId] = useState<RulesetId>('standard')
+  const tier = rulesetById(rulesId) ?? RULESETS[1]
+  const open = (group: RuleGroup) => !tier.locks.includes(group)
   const board = boardById(boardId)
   const ready = (mode !== 'draft' || draftProblem(roles) === null) && (spellMode === 'classic' || loadoutProblem(court, loadout) === null)
   const choice = (): SetupChoice => ({
@@ -81,11 +84,11 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
     loadout: spellMode === 'loadout' ? loadout : undefined,
     recharge: recharge ? RECHARGE_ROUNDS : undefined,
     winMode, events, showdown, cycle, reverse, growth, promotion,
+    ...(tier.rules.passives === false ? { passives: false } : {}),
+    ...(tier.rules.spells ? { spells: tier.rules.spells } : {}),
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
   })
-  const applyPreset = (preset: Preset) => {
-    const r = preset.rules
-    setPresetId(preset.id)
+  const applyRules = (r: PresetRules) => {
     setWinMode(r.winMode ?? 'beacons')
     setEvents(!!r.events)
     setShowdown(!!r.showdown)
@@ -96,6 +99,19 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
     setRecharge(!!r.recharge)
     setClockSeconds(r.clock?.seconds ?? 0)
     setExtraTime(!!r.clock?.bank)
+  }
+  const applyPreset = (preset: Preset) => {
+    setPresetId(preset.id)
+    applyRules(preset.rules)
+  }
+  /** A tier starts every option from its own defaults, so nothing hidden is left switched on. */
+  const applyTier = (id: RulesetId) => {
+    setRulesId(id)
+    setPresetId(null)
+    applyRules(rulesetById(id)?.rules ?? {})
+    setSpellMode('classic')
+    setLoadout([])
+    if (id === 'classic') setMode('classic')
   }
   const chosenPreset = presetId ? presetById(presetId) : undefined
   const customised = !!chosenPreset && !matchesPreset(choice(), chosenPreset)
@@ -139,8 +155,18 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
           </button>
         ))}
       </div>}
-      <h3>Presets{customised && <small> · customised</small>}</h3>
+      <h3>Rules</h3>
       <div className="choices row">
+        {RULESETS.map((t) => (
+          <button key={t.id} className={`choice${rulesId === t.id ? ' on' : ''}`} onClick={() => applyTier(t.id)}>
+            <strong><Icon name={t.icon} />{t.name}</strong>
+            <span>{t.text}</span>
+          </button>
+        ))}
+      </div>
+      <h3>Presets{customised && <small> · customised</small>}</h3>
+      {!tier.presets && <div className="setup-card">Presets need Advanced rules.</div>}
+      {tier.presets && <div className="choices row">
         {PRESETS.map((pr) => {
           const open = presetUnlocked(progress, pr)
           return (
@@ -150,19 +176,19 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
             </button>
           )
         })}
-      </div>
-      <h3>Army</h3>
-      <div className="choices row">
+      </div>}
+      {open('army') && <h3>Army</h3>}
+      {open('army') && <div className="choices row">
         {(Object.keys(SETUP_INFO) as SetupMode[]).map((m) => (
           <button key={m} className={`choice${mode === m ? ' on' : ''}`} disabled={hotSeat && m === 'draft'} onClick={() => setMode(m)}>
             <strong>{SETUP_INFO[m].name}</strong>
             <span>{SETUP_INFO[m].text}</span>
           </button>
         ))}
-      </div>
-      {mode === 'draft' && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
-      <h3>Spells</h3>
-      <div className="choices row">
+      </div>}
+      {mode === 'draft' && open('army') && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
+      {open('spells') && <h3>Spells</h3>}
+      {open('spells') && <div className="choices row">
         <button className={`choice${spellMode === 'classic' ? ' on' : ''}`} onClick={() => setSpellMode('classic')}>
           <strong>Classic</strong>
           <span>The seven classic spells.</span>
@@ -172,42 +198,42 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
           <strong>Loadout</strong>
           <span>{hotSeat ? 'Not available with two players.' : `Pick ${LOADOUT_SIZE} from the shared pool and your court's signatures.`}</span>
         </button>
-      </div>
-      {spellMode === 'loadout' && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} stars={totalStars(progress)} />}
-      <label className="recharge"><input type="checkbox" checked={recharge} onChange={() => setRecharge((r) => !r)} /> Spells recharge after {RECHARGE_ROUNDS} rounds</label>
-      <h3>Win condition</h3>
-      <div className="choices row">
+      </div>}
+      {spellMode === 'loadout' && open('spells') && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} stars={totalStars(progress)} />}
+      {open('recharge') && <label className="recharge"><input type="checkbox" checked={recharge} onChange={() => setRecharge((r) => !r)} /> Spells recharge after {RECHARGE_ROUNDS} rounds</label>}
+      {open('win') && <h3>Win condition</h3>}
+      {open('win') && <div className="choices row">
         {(Object.keys(MODE_INFO) as MatchMode[]).map((m) => (
           <button key={m} className={`choice${winMode === m ? ' on' : ''}`} onClick={() => setWinMode(m)}>
             <strong>{MODE_INFO[m].name}</strong>
             <span>{MODE_INFO[m].text}</span>
           </button>
         ))}
-      </div>
-      <h3>Light</h3>
-      <div className="choices row">
+      </div>}
+      {open('cycle') && <h3>Light</h3>}
+      {open('cycle') && <div className="choices row">
         {CYCLES.map((c) => (
           <button key={c.id} className={`choice${cycle === c.id ? ' on' : ''}`} onClick={() => setCycle(c.id)}>
             <strong>{c.name}</strong>
             <span>{c.text}</span>
           </button>
         ))}
-      </div>
-      <label className="recharge"><input type="checkbox" checked={reverse} onChange={() => setReverse((r) => !r)} /> The light starts running the other way</label>
-      <label className="recharge"><input type="checkbox" checked={events} onChange={() => setEvents((e) => !e)} /> Day events (Solar Flare, Gloaming, Fog, Blight)</label>
-      <label className="recharge"><input type="checkbox" checked={showdown} onChange={() => setShowdown((d) => !d)} /> Eclipse showdown: the outer squares turn deadly, closing in on the centre</label>
-      <label className="recharge"><input type="checkbox" checked={growth} onChange={() => setGrowth((g) => !g)} /> Veterancy: 2 duel wins add 1 max HP, 4 earn a perk</label>
-      <label className="recharge"><input type="checkbox" checked={promotion} onChange={() => setPromotion((p) => !p)} /> Promotion: a Footsoldier reaching the far column becomes a Charger or Marksman</label>
-      <h3>Turn clock</h3>
-      <div className="choices row">
+      </div>}
+      {open('reverse') && <label className="recharge"><input type="checkbox" checked={reverse} onChange={() => setReverse((r) => !r)} /> The light starts running the other way</label>}
+      {open('events') && <label className="recharge"><input type="checkbox" checked={events} onChange={() => setEvents((e) => !e)} /> Day events (Solar Flare, Gloaming, Fog, Blight)</label>}
+      {open('showdown') && <label className="recharge"><input type="checkbox" checked={showdown} onChange={() => setShowdown((d) => !d)} /> Eclipse showdown: the outer squares turn deadly, closing in on the centre</label>}
+      {open('growth') && <label className="recharge"><input type="checkbox" checked={growth} onChange={() => setGrowth((g) => !g)} /> Veterancy: 2 duel wins add 1 max HP, 4 earn a perk</label>}
+      {open('promotion') && <label className="recharge"><input type="checkbox" checked={promotion} onChange={() => setPromotion((p) => !p)} /> Promotion: a Footsoldier reaching the far column becomes a Charger or Marksman</label>}
+      {open('clock') && <h3>Turn clock</h3>}
+      {open('clock') && <div className="choices row">
         {CLOCKS.map((c) => (
           <button key={c.seconds} className={`choice${clockSeconds === c.seconds ? ' on' : ''}`} onClick={() => setClockSeconds(c.seconds)}>
             <strong>{c.name}</strong>
             <span>{c.text}</span>
           </button>
         ))}
-      </div>
-      {clockSeconds > 0 && <label className="recharge"><input type="checkbox" checked={extraTime} onChange={() => setExtraTime((v) => !v)} /> Extra time: {BANK_SECONDS} seconds per court, spent only after a turn runs out</label>}
+      </div>}
+      {clockSeconds > 0 && open('clock') && <label className="recharge"><input type="checkbox" checked={extraTime} onChange={() => setExtraTime((v) => !v)} /> Extra time: {BANK_SECONDS} seconds per court, spent only after a turn runs out</label>}
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (
