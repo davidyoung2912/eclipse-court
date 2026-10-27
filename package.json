@@ -15,7 +15,8 @@
     "draft": "node scripts/run-sim.mjs draft",
     "courts": "node scripts/run-sim.mjs courts",
     "modes": "node scripts/run-sim.mjs modes",
-    "growth": "node scripts/run-sim.mjs growth"
+    "growth": "node scripts/run-sim.mjs growth",
+    "puzzles": "node scripts/run-sim.mjs puzzles"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.3.0",

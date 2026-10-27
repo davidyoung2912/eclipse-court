@@ -19,6 +19,8 @@ export interface Puzzle {
   build: () => GameState
   /** One way to win, as the player's actions; a capture carries the duel result it needs. */
   solution: readonly Action[]
+  /** True when the Umbral replies decide the puzzle, so a rival that simply passes could be beaten faster than the real one. */
+  rivalMatters?: boolean
   /** Two nudges for the Hint button: what to look at, then the idea in words. A third tap shows the move itself. */
   hints: readonly [string, string]
 }
@@ -42,3 +44,56 @@ export function position(
 
 export const at = (x: number, y: number): Pos => ({ x, y })
 export const move = (pieceId: string, x: number, y: number): Action => ({ type: 'move', pieceId, to: at(x, y) })
+
+export const cast = (spell: Spell, target: { piece?: string; to?: Pos } = {}): Action => ({ type: 'cast', spell, pieceId: target.piece, to: target.to })
+
+const ROLE_WORDS: Record<string, Role> = {
+  foot: 'footsoldier', flier: 'flier', mark: 'marksman', brute: 'bruiser', stag: 'charger', aura: 'aura', lead: 'leader',
+}
+
+/**
+ * Pieces from a short spec such as `'lead 0,3; foot 1,1 hp2; stag 4,2'`: a role word, a square and an optional `hpN`.
+ * Ids are numbered per role in the order listed, like `solari-footsoldier-2`.
+ */
+export function army(court: Court, spec: string): Piece[] {
+  const counts: Record<string, number> = {}
+  return spec.split(';').map((s) => s.trim()).filter(Boolean).map((entry) => {
+    const [word, square, hp] = entry.split(/\s+/)
+    const role = ROLE_WORDS[word]
+    if (!role) throw new Error(`unknown role "${word}"`)
+    const [x, y] = square.split(',').map(Number)
+    counts[role] = (counts[role] ?? 0) + 1
+    return piece(court, role, counts[role], x, y, hp ? Number(hp.slice(2)) : undefined)
+  })
+}
+
+export interface PuzzleDef extends Omit<Puzzle, 'build' | 'difficulty'> {
+  seed: number
+  beacons: readonly Pos[]
+  solari: string
+  umbral: string
+  spells?: readonly Spell[]
+  rules?: Partial<MatchConfig>
+  /** Fallen Solari pieces waiting for Revive, as an army spec (the last one listed is the first to return). */
+  fallen?: string
+  /** What Umbral cast last, for Mirror to copy. */
+  lastUmbral?: Spell
+}
+
+/** Defines a puzzle from short specs; its Umbral difficulty follows the tier. */
+export function puzzle(def: PuzzleDef): Puzzle {
+  const { seed, beacons, solari: s, umbral: u, spells = [], rules, fallen, lastUmbral, ...rest } = def
+  const difficulty: Difficulty = rest.tier === 'beginner' ? 'easy' : rest.tier === 'normal' ? 'normal' : 'hard'
+  return {
+    ...rest,
+    difficulty,
+    build: () => {
+      const state = position(seed, beacons, [...army('solari', s), ...army('umbral', u)], spells, rules)
+      return {
+        ...state,
+        captured: fallen ? army('solari', fallen).map((p) => ({ ...p, hp: 0 })) : [],
+        lastCast: { solari: null, umbral: lastUmbral ?? null },
+      }
+    },
+  }
+}
