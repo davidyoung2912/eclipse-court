@@ -22,7 +22,7 @@ interface Props {
 
 type Duel = 'confirm' | 'live' | null
 
-/** The 3-minute guided board: one move, one luminance shift, one duel, one spell. */
+/** The 3-minute guided board: the rules in short steps, with a real move, duel and spell. */
 export function Tutorial({ onExit }: Props) {
   const [state, setState] = useState<GameState>(tutorialStart)
   const [step, setStep] = useState(0)
@@ -91,7 +91,7 @@ export function Tutorial({ onExit }: Props) {
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
           <button onClick={onExit}>{current.kind === 'end' ? <><Icon name="back" />Back</> : <><Icon name="skip" />Skip</>}</button>
-          {(current.kind === 'light' || current.kind === 'hp') && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got it</button>}
+          {current.kind === 'info' && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got it</button>}
           {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>
       </footer>

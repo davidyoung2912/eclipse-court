@@ -2,7 +2,8 @@ import { newGame } from '../reducer'
 import { ROLE_STATS } from './roster'
 import type { GameState, Piece, Pos, Role } from '../rules/types'
 
-export type TutorialKind = 'move' | 'light' | 'duel' | 'hp' | 'spell' | 'end'
+/** `info` steps only read, then continue with "Got it"; the others wait for the player to act on the board. */
+export type TutorialKind = 'move' | 'info' | 'duel' | 'spell' | 'end'
 
 export interface TutorialStep {
   kind: TutorialKind
@@ -14,32 +15,62 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     kind: 'move',
     title: '1. Move',
-    text: 'Tap your gold Lumen Knight, then the glowing square ahead of it. Knights step one square in any direction.',
+    text: 'Each turn you take one action: move one piece, cast a spell, or press End turn. Tap your gold Lumen Knight, then the glowing square ahead of it. Knights step one square in any direction.',
   },
   {
-    kind: 'light',
-    title: '2. The light shifts',
-    text: 'Once both courts have moved, the day advances. The dial shows the centre ring now and the next three steps. Squares near the middle brighten and darken in a ripple, while the outer rows never change: the Solari half at the bottom stays bright and the Umbral half at the top stays dark. Gold favours Solari in duels, violet favours Umbral.',
+    kind: 'info',
+    title: '2. Your pieces',
+    text: 'Every piece type moves and fights differently. Tap any piece to read its card: how it moves, how it fights in a duel and its HP. Sunhawks and Seraphs fly up to 3 squares, Stags jump like chess knights and the Solarch teleports up to 4.',
+  },
+  {
+    kind: 'info',
+    title: '3. The light shifts',
+    text: 'Once both courts have moved, the day advances. The dial shows the centre ring now and the next three steps, from +2 (full light) to -2 (deep dark). Squares near the middle brighten and darken in a ripple outward from the centre.',
+  },
+  {
+    kind: 'info',
+    title: '4. Reading the colours',
+    text: 'A square\'s colour tells you who the light favours. Pale cream is Solari ground, deep indigo is Umbral ground, and the in-between shade is dusk, which favours nobody. The outer rows never change: the Solari half at the bottom is always bright, the Umbral half at the top always dark.',
+  },
+  {
+    kind: 'info',
+    title: '5. Light in combat',
+    text: 'In a duel, the court the square favours deals 15% more damage and takes 10% less for each step of brightness, up to +30% and -20% at full light or dark. The other court gets no bonus. So attack on your own ground, or wait for the light to turn. The odds card already counts it.',
+  },
+  {
+    kind: 'info',
+    title: '6. How a duel plays',
+    text: 'Moving onto an enemy starts a 20 second duel in real time. Drag on the left to move, hold the right button to attack and release to strike: holding longer hits harder but slows you. The green bar over each fighter is its HP. After 12 seconds the arena shrinks to force a finish. Umbral fighters slowly regenerate.',
   },
   {
     kind: 'duel',
-    title: '3. Duel',
-    text: 'Every capture is a 20 second duel. Tap your Knight, then the enemy beside it, and confirm. Drag on the left to move, hold the right button to attack. The odds bar shows who is favoured before you commit.',
+    title: '7. Your first duel',
+    text: 'Tap your Knight, then the enemy beside it. Your attacker glows gold and the target red while you read the odds: your win chance, a draw, and the defender\'s, plus the square\'s light. Cancel to think again, or Attack to fight.',
   },
   {
-    kind: 'hp',
-    title: '4. Hit points',
-    text: 'The dots under each piece are its HP. Blows in a duel drain it, and HP carries over afterwards, so your Knight stays wounded. A piece at 0 is captured and the winner takes its square. If time runs out, both keep what is left and the defender holds. Pieces heal at the end of each round: +1 for every two rounds spent standing still, +1 on a beacon, +1 beside your Seraph or Wraith.',
+    kind: 'info',
+    title: '8. Hit points',
+    text: 'The dots under each piece are its HP. A duel ends when one fighter reaches 0 HP (it is captured and the winner takes its square) or time runs out: then the fighter with the larger share of HP left wins. A tie leaves both standing and the defender holds. Survivors keep their wounds.',
+  },
+  {
+    kind: 'info',
+    title: '9. Healing',
+    text: 'Wounds mend at the end of each round: +1 HP for every two rounds a piece stands still, +1 for sitting on a beacon, and +1 next to your Seraph or Wraith. No piece heals above its maximum, so retreat and rest wounded pieces before the next fight.',
   },
   {
     kind: 'spell',
-    title: '5. Cast a spell',
-    text: 'Your Solarch can cast each of seven spells once per game. A cast costs 1 HP and your whole turn. Choose Blink, then tap any empty square to jump the Solarch there.',
+    title: '10. Cast a spell',
+    text: 'Your Solarch can cast each of seven spells once per game, if it has at least 2 HP. A cast costs 1 HP and your whole turn, and pieces on beacons cannot be targeted. Choose Blink, then tap any empty square to jump the Solarch there.',
+  },
+  {
+    kind: 'info',
+    title: '11. How to win',
+    text: 'Hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy piece. Beacons also heal whoever stands on them, so they are worth fighting for.',
   },
   {
     kind: 'end',
-    title: 'Ready',
-    text: 'Hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy, to win. At round 30 the Eclipse falls: light freezes, spells fall silent and anyone off a beacon bleeds. Good luck.',
+    title: 'The Eclipse',
+    text: 'At round 30 the Eclipse falls: the shifting light freezes at dusk, spells fall silent and any piece off a beacon loses 1 HP every round. If nobody has won by round 50, the court holding more beacons (then more total HP) wins. Good luck.',
   },
 ]
 
