@@ -35,6 +35,8 @@ interface Pending {
 type DuelMode = 'live' | 'auto'
 
 const AI_DELAY_MS = 450
+/** How long the AI's chosen piece flashes before it moves. */
+const AI_FLASH_MS = 800
 
 const spellsLeft = (g: GameState) => g.spells.solari.length + g.spells.umbral.length
 
@@ -54,6 +56,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   const [pending, setPending] = useState<Pending | null>(null)
   const [inspectId, setInspectId] = useState<string | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
+  const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const state = history[history.length - 1]
   const myTurn = state.turn === human
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
@@ -100,16 +103,27 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   useEffect(() => {
     if (state.turn !== foe || state.winner || pending) return
     let cancelled = false
+    let flash: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
       requestAction(state, difficulty, state.rng + state.round).then((action: Action) => {
         if (cancelled) return
-        if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
-        else push(reduce(state, action))
+        const act = () => {
+          setAiFocus(null)
+          if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
+          else push(reduce(state, action))
+        }
+        // Flash the piece that is about to move so the player can follow it.
+        const mover = action.type === 'move' ? action.pieceId : action.type === 'cast' ? action.pieceId : undefined
+        if (!mover) return act()
+        setAiFocus({ mover, target: action.type === 'move' ? pieceAt(state, action.to)?.id : undefined })
+        flash = setTimeout(act, AI_FLASH_MS)
       })
     }, AI_DELAY_MS)
     return () => {
       cancelled = true
       clearTimeout(timer)
+      clearTimeout(flash)
+      setAiFocus(null)
     }
     // beginDuel and push only close over state/duelMode, which are covered or intentionally read fresh.
     // oxlint-disable-next-line react/exhaustive-deps
@@ -171,7 +185,8 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   return (
     <main className="app">
       <Dial state={state} />
-      <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare} flip={human === 'umbral'} />
+      <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare}
+        focus={pending ? { mover: pending.pieceId, target: defender?.id } : aiFocus ?? undefined} flip={human === 'umbral'} />
       {pending && !pending.confirmed && attacker && defender && (
         <AttackConfirm attacker={attacker} defender={defender} live={duelMode === 'live'}
           luminance={squareLuminance(state, pending.to)}

@@ -17,11 +17,13 @@ interface Props {
   /** Pieces a chosen spell may target. */
   targetIds?: string[]
   onSquare: (p: Pos) => void
+  /** Pieces to spotlight: an AI piece about to move, or the two sides of an attack under review. */
+  focus?: { mover?: string; target?: string }
   /** Turn the board half a turn so the Umbral edge is at the bottom. */
   flip?: boolean
 }
 
-export function Board({ state, selected, moves, targetIds = [], onSquare, flip = false }: Props) {
+export function Board({ state, selected, moves, targetIds = [], onSquare, focus, flip = false }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
@@ -47,6 +49,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, flip =
                 style={{ animationDelay: `${ringOf(p) * 70}ms` }} />
             )}
             {isBeacon(p) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
+            {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
           </g>
         )
@@ -55,9 +58,10 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, flip =
         const { cx, cy } = toScreen(pc.pos, flip)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id)
         return (
-          <g key={pc.id} onClick={() => onSquare(pc.pos)} transform={`translate(${cx} ${cy})`}
-            className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}`}>
+          <g key={pc.id} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
+            className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
             <title>{ROLE_NAMES[pc.court][pc.role]} {pc.hp}/{pc.maxHp}</title>
+            <circle className="halo" r={0.4} />
             <circle className="ring" r={0.4} />
             <PieceArt role={pc.role} court={pc.court} />
             {Array.from({ length: pc.hp }, (_, i) => (

@@ -5,6 +5,8 @@
   --umbral-violet: #7a5cc8;
   --bg: #14102b;
   --fg: #f4eefc;
+  /* Constant breathing room under every screen's last control. */
+  --bottom-gap: 20px;
 }
 
 * { box-sizing: border-box; }
@@ -27,7 +29,7 @@ body {
   height: 100%;
   max-width: 560px;
   margin: 0 auto;
-  padding: env(safe-area-inset-top) 8px env(safe-area-inset-bottom);
+  padding: env(safe-area-inset-top) 8px calc(env(safe-area-inset-bottom) + var(--bottom-gap));
   gap: 8px;
 }
 
@@ -51,12 +53,26 @@ body {
 .sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }
 .sq.fixed { opacity: 0.85; }
 .beacon { fill: none; stroke: var(--solari-gold); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
-.move-dot { fill: rgba(255, 240, 160, 0.9); pointer-events: none; }
+.move-dot { fill: #fffbe0; stroke: #e8b64a; stroke-width: 0.03; pointer-events: none; }
+.move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
+@keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
 
-.piece { cursor: pointer; }
+.piece { cursor: pointer; transition: transform 0.4s cubic-bezier(0.45, 0, 0.25, 1); }
 .piece .ring { fill: none; stroke: transparent; stroke-width: 0.06; }
+.piece .halo { fill: none; stroke: transparent; stroke-width: 0.1; pointer-events: none; }
 .piece.selected .ring { stroke: #fff; stroke-width: 0.1; }
 .piece.attackable .ring { stroke: #ff5a5a; stroke-width: 0.1; }
+.piece.selected .halo, .piece.attackable .halo, .piece.mover .halo, .piece.target .halo {
+  filter: url(#halo-blur); stroke-width: 0.18; animation: halo-pulse 1.1s ease-in-out infinite;
+}
+.piece.selected .halo { stroke: #fff6c0; }
+.piece.attackable .halo { stroke: #ff4a4a; }
+/* AI about to move, or the attacker under review: bright gold. The piece under attack: hot red. */
+.piece.mover .ring { stroke: var(--solari-gold); stroke-width: 0.1; }
+.piece.mover .halo { stroke: #ffd45a; animation-duration: 0.45s; }
+.piece.target .ring { stroke: #ff5a5a; stroke-width: 0.1; }
+.piece.target .halo { stroke: #ff3030; animation-duration: 0.7s; }
+@keyframes halo-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
 .piece.bound .art { opacity: 0.55; }
 .art-rim { fill: #120d2a; }
 .art-lead { fill: none; stroke: #120d2a; stroke-width: 0.025; }
@@ -81,10 +97,10 @@ body {
 .ripple.lit { fill: #fff3b8; }
 .ripple.dim { fill: #5a3fb0; }
 @keyframes ripple { 0% { opacity: 0; } 30% { opacity: 0.5; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ripple { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ripple, .move-glow, .piece .halo { animation: none !important; } .piece { transition: none; } }
 .pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
 
-.tray { margin-top: auto; padding-bottom: 8px; }
+.tray { margin-top: auto; }
 .status { margin: 0 0 8px; text-align: center; min-height: 1.4em; }
 .buttons { display: flex; gap: 8px; }
 .buttons button {
@@ -92,6 +108,25 @@ body {
   background: var(--umbral-indigo); color: var(--fg); font-size: 1rem;
 }
 .buttons button:disabled { opacity: 0.4; }
+
+/* Button glow: a soft violet halo on everything, gold and pulsing on the primary action */
+.buttons button, .menu-buttons button, .spell, .choice {
+  --glow: 154, 124, 240;
+  box-shadow: 0 0 10px rgba(var(--glow), 0.45), inset 0 0 8px rgba(var(--glow), 0.2);
+  transition: box-shadow 0.15s, transform 0.12s;
+}
+.buttons button.primary, .menu-buttons button.primary, .spell, .choice.on { --glow: 255, 205, 90; }
+.buttons button.primary, .menu-buttons button.primary { animation: btn-pulse 2.2s ease-in-out infinite; }
+.choice.won { --glow: 111, 224, 138; }
+.buttons button:not(:disabled):hover, .menu-buttons button:hover, .spell:not(:disabled):hover, .choice:not(:disabled):hover {
+  box-shadow: 0 0 20px rgba(var(--glow), 0.85), inset 0 0 10px rgba(var(--glow), 0.35);
+}
+.buttons button:not(:disabled):active, .menu-buttons button:active, .spell:not(:disabled):active { transform: scale(0.97); }
+button:disabled { box-shadow: none !important; animation: none !important; }
+@keyframes btn-pulse {
+  50% { box-shadow: 0 0 26px rgba(var(--glow), 0.95), inset 0 0 12px rgba(var(--glow), 0.45); }
+}
+@media (prefers-reduced-motion: reduce) { .buttons button.primary, .menu-buttons button.primary { animation: none; } }
 
 .duel { position: fixed; inset: 0; background: var(--bg); z-index: 10; display: flex; flex-direction: column; }
 .duel-hud { display: flex; justify-content: space-between; padding: calc(env(safe-area-inset-top) + 8px) 16px 8px; font-weight: 600; }
@@ -125,17 +160,19 @@ body {
 .piece.bound circle:first-of-type { stroke-dasharray: 0.1 0.06; }
 
 .confirm {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; max-width: 560px; margin: 0 auto;
-  padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); background: #1d1745;
-  border-top: 2px solid var(--umbral-violet); border-radius: 16px 16px 0 0;
+  position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + var(--bottom-gap)); z-index: 5;
+  width: calc(100% - 32px); max-width: 440px; margin: 0 auto;
+  padding: 10px 12px; background: #1d1745;
+  border: 2px solid var(--umbral-violet); border-radius: 14px; box-shadow: 0 0 18px rgba(122, 92, 200, 0.6);
 }
-.confirm-title { margin: 0 0 10px; font-weight: 600; text-align: center; }
-.odds { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: #000; }
+.confirm-title { margin: 0 0 6px; font-weight: 600; font-size: 0.85rem; text-align: center; }
+.confirm .buttons button { padding: 9px 8px; font-size: 0.9rem; }
+.odds { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #000; }
 .odds span { flex-basis: 0; }
 .odds-a.solari, .odds-d.solari { background: var(--solari-gold); }
 .odds-a.umbral, .odds-d.umbral { background: var(--umbral-violet); }
 .odds-o { background: #6b6b7e; }
-.odds-text { margin: 8px 0 12px; text-align: center; font-size: 0.85rem; }
+.odds-text { margin: 5px 0 8px; text-align: center; font-size: 0.75rem; line-height: 1.3; }
 .buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 
 .menu { justify-content: center; gap: 12px; overflow-y: auto; }
@@ -179,7 +216,7 @@ body {
 .main-menu .menu-buttons button {
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6);
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.85), rgba(43, 36, 104, 0.85));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 14px rgba(154, 124, 240, 0.55), 0 4px 14px rgba(0, 0, 0, 0.35);
   letter-spacing: 0.06em; transition: transform 0.12s, box-shadow 0.12s;
 }
 .main-menu .menu-buttons button:active { transform: scale(0.97); }
@@ -188,7 +225,7 @@ body {
   box-shadow: 0 0 22px rgba(232, 182, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   animation: glow 3s ease-in-out infinite;
 }
-.main-menu .menu-buttons.small { margin-top: auto; padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+.main-menu .menu-buttons.small { margin-top: auto; }
 .main-menu .menu-buttons.small button { padding: 11px 8px; font-size: 0.9rem; }
 
 @keyframes twinkle { 50% { opacity: 0.95; } }
