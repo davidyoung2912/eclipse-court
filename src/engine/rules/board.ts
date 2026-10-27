@@ -19,6 +19,13 @@ export const BEACONS: readonly Pos[] = [
 
 export const samePos = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y
 
+export const COURTS: readonly Court[] = ['solari', 'umbral']
+
+export const otherCourt = (c: Court): Court => (c === 'solari' ? 'umbral' : 'solari')
+
+/** King-move distance: 1 means the squares touch, diagonals included. */
+export const chebyshev = (a: Pos, b: Pos) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+
 export const inBounds = ({ x, y }: Pos) => x >= 0 && x < SIZE && y >= 0 && y < SIZE
 
 export const isBeacon = (p: Pos) => BEACONS.some((b) => samePos(b, p))

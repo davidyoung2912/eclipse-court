@@ -1,6 +1,6 @@
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
-import { BEACONS, isBeacon, samePos } from './rules/board'
+import { BEACONS, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
 import { DAY, duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, Piece } from './rules/types'
@@ -31,8 +31,6 @@ export function newGame(seed = 1): GameState {
     lastDuel: null,
   }
 }
-
-const other = (c: Court): Court => (c === 'solari' ? 'umbral' : 'solari')
 
 /**
  * Stand-in duel: a race to kill, scaled by luminance and a little seeded luck.
@@ -116,7 +114,7 @@ function endRound(state: GameState): GameState {
   for (const p of state.pieces) {
     let { hp, rest } = p
     // An Aura soothes the allies standing next to it.
-    if (auras.some((a) => a.id !== p.id && a.court === p.court && Math.max(Math.abs(a.pos.x - p.pos.x), Math.abs(a.pos.y - p.pos.y)) === 1)) hp += 1
+    if (auras.some((a) => a.id !== p.id && a.court === p.court && chebyshev(a.pos, p.pos) === 1)) hp += 1
     const onBeacon = isBeacon(p.pos)
     if (p.moved) rest = 0
     else {
@@ -159,7 +157,7 @@ function finishTurn(state: GameState): GameState {
   if (winner) return { ...state, winner }
   // A Bind lasts until the bound court's own turn has passed.
   const pieces = state.pieces.map((p) => (p.court === mover && p.bound ? { ...p, bound: false } : p))
-  let next: GameState = { ...state, pieces, turn: other(mover) }
+  let next: GameState = { ...state, pieces, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
     next = { ...next, winner: eliminationWinner(next) ?? (next.round > ROUND_LIMIT ? adjudicate(next) : null) }
@@ -188,7 +186,20 @@ export function reduce(state: GameState, action: Action): GameState {
   const piece = state.pieces.find((p) => p.id === action.pieceId)
   if (!piece || piece.court !== state.turn) return state
   if (!legalMoves(state, piece).some((m) => samePos(m, action.to))) return state
+  return applyMove(state, piece, action)
+}
 
+/**
+ * `reduce` for a move already known to be legal, such as one the AI search just generated from
+ * `legalMoves`; skips the legality check. Anything else goes through `reduce`.
+ */
+export function reduceLegal(state: GameState, action: Action): GameState {
+  if (state.winner || action.type !== 'move') return reduce(state, action)
+  const piece = state.pieces.find((p) => p.id === action.pieceId)
+  return piece ? applyMove(state, piece, action) : state
+}
+
+function applyMove(state: GameState, piece: Piece, action: Extract<Action, { type: 'move' }>): GameState {
   const target = pieceAt(state, action.to)
   if (!target) {
     const pieces = state.pieces.map((p) =>

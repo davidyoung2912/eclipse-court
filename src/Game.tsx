@@ -4,6 +4,7 @@ import { requestAction } from './ai/client'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { estimateOdds, reduce } from './engine/reducer'
+import { samePos } from './engine/rules/board'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
 import { spellTargets } from './engine/rules/spells'
@@ -34,6 +35,13 @@ interface Pending {
 type DuelMode = 'live' | 'auto'
 
 const AI_DELAY_MS = 450
+
+const spellsLeft = (g: GameState) => g.spells.solari.length + g.spells.umbral.length
+
+function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
+  if (defenderHp <= 0) return attackerHp > 0 ? 'attacker won' : 'both fell'
+  return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
+}
 
 export function Game({ human, difficulty, initial, onExit }: Props) {
   const foe: Court = human === 'solari' ? 'umbral' : 'solari'
@@ -66,8 +74,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
   }, [state, human])
 
   const push = (s: GameState) => {
-    const spent = (g: GameState) => g.spells.solari.length + g.spells.umbral.length
-    if (spent(s) < spent(state)) sfx.cast()
+    if (spellsLeft(s) < spellsLeft(state)) sfx.cast()
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
     setHistory((h) => [...h, s])
@@ -124,10 +131,10 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
     if (casting && targets) {
       const occ = pieceAt(state, p)
       if (occ && targets.pieces.includes(occ.id)) return push(reduce(state, { type: 'cast', spell: casting, pieceId: occ.id }))
-      if (targets.squares.some((m) => m.x === p.x && m.y === p.y)) return push(reduce(state, { type: 'cast', spell: casting, to: p }))
+      if (targets.squares.some((m) => samePos(m, p))) return push(reduce(state, { type: 'cast', spell: casting, to: p }))
       return setCasting(null)
     }
-    if (selected && moves.some((m) => m.x === p.x && m.y === p.y)) {
+    if (selected && moves.some((m) => samePos(m, p))) {
       if (pieceAt(state, p)) return setPending({ pieceId: selected.id, to: p, confirmed: false, byAi: false })
       return push(reduce(state, { type: 'move', pieceId: selected.id, to: p }))
     }
@@ -201,7 +208,7 @@ export function Game({ human, difficulty, initial, onExit }: Props) {
             : !myTurn
               ? 'Opponent is thinking…'
               : duel
-                ? `Last duel: ${duel.attackerHp > 0 && duel.defenderHp <= 0 ? 'attacker won' : duel.attackerHp <= 0 && duel.defenderHp > 0 ? 'defender won' : duel.attackerHp <= 0 ? 'both fell' : 'draw, defender holds'}`
+                ? `Last duel: ${describeDuel(duel)}`
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">

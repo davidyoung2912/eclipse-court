@@ -1,5 +1,5 @@
 import { ROLE_NAMES } from '../../engine/data/roster'
-import { allSquares, isBeacon, isCycling, ringOf, SIZE } from '../../engine/rules/board'
+import { allSquares, isBeacon, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
 import { squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece, Pos } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function Board({ state, selected, moves, targetIds = [], onSquare, flip = false }: Props) {
-  const isMove = (p: Pos) => moves.some((m) => m.x === p.x && m.y === p.y)
+  const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (

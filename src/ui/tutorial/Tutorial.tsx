@@ -4,6 +4,7 @@ import {
   TUTORIAL_FOE_AT, TUTORIAL_KNIGHT, TUTORIAL_STEP_TO, TUTORIAL_STEPS, tutorialStart,
 } from '../../engine/data/tutorial'
 import { estimateOdds, reduce } from '../../engine/reducer'
+import { samePos } from '../../engine/rules/board'
 import { squareLuminance } from '../../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../../engine/rules/moves'
 import { spellTargets } from '../../engine/rules/spells'
@@ -20,8 +21,6 @@ interface Props {
 }
 
 type Duel = 'confirm' | 'live' | null
-
-const same = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y
 
 /** The 3-minute guided board: one move, one luminance shift, one duel, one spell. */
 export function Tutorial({ onExit }: Props) {
@@ -47,21 +46,21 @@ export function Tutorial({ onExit }: Props) {
   const moves: Pos[] =
     targets ? targets.squares
     : current.kind === 'move' && selected ? [TUTORIAL_STEP_TO]
-    : current.kind === 'duel' && selected && knight ? legalMoves(state, knight).filter((m) => same(m, TUTORIAL_FOE_AT))
+    : current.kind === 'duel' && selected && knight ? legalMoves(state, knight).filter((m) => samePos(m, TUTORIAL_FOE_AT))
     : []
 
   const onSquare = (p: Pos) => {
     if (duel) return
     if (current.kind === 'move') {
-      if (knight && same(p, knight.pos)) return setSelected(true)
-      if (selected && same(p, TUTORIAL_STEP_TO)) {
+      if (knight && samePos(p, knight.pos)) return setSelected(true)
+      if (selected && samePos(p, TUTORIAL_STEP_TO)) {
         sfx.move()
         next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: p }))
       }
     } else if (current.kind === 'duel' && knight) {
-      if (same(p, knight.pos)) return setSelected(true)
-      if (selected && foe && same(p, foe.pos)) setDuel('confirm')
-    } else if (current.kind === 'spell' && casting === 'blink' && targets?.squares.some((q) => same(q, p))) {
+      if (samePos(p, knight.pos)) return setSelected(true)
+      if (selected && foe && samePos(p, foe.pos)) setDuel('confirm')
+    } else if (current.kind === 'spell' && casting === 'blink' && targets?.squares.some((q) => samePos(q, p))) {
       sfx.cast()
       next(reduce(state, { type: 'cast', spell: 'blink', to: p }))
     }

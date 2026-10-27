@@ -1,10 +1,10 @@
 import { ROLE_STATS } from '../engine/data/roster'
+import { COURTS, otherCourt } from '../engine/rules/board'
 import type { Court, Piece, Role } from '../engine/rules/types'
 import { autoDuel } from '../ai/autoDuel'
 import type { Matchup, MatchupTable } from '../engine/data/matchups'
 
 export const ROLES: readonly Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
-export const COURTS: readonly Court[] = ['solari', 'umbral']
 export const LUMS = [-2, -1, 0, 1, 2] as const
 
 /** Half-width of the skill range sampled around the target skill. */
@@ -17,7 +17,6 @@ const hash = (n: number) => {
   return ((x ^ (x >>> 13)) >>> 0) / 4294967296
 }
 
-const other = (c: Court): Court => (c === 'solari' ? 'umbral' : 'solari')
 
 export function fresh(court: Court, role: Role, id: string): Piece {
   const { hp } = ROLE_STATS[role]
@@ -27,7 +26,7 @@ export function fresh(court: Court, role: Role, id: string): Piece {
 /** Plays `samples` AI-vs-AI duels for one pairing at one square luminance. */
 export function measure(court: Court, attacker: Role, defender: Role, lum: number, samples: number, skill: number): Matchup {
   const a = fresh(court, attacker, 'a')
-  const d = fresh(other(court), defender, 'd')
+  const d = fresh(otherCourt(court), defender, 'd')
   let aWins = 0
   let dWins = 0
   let aKeep = 0
@@ -73,7 +72,7 @@ export function roleStrength(table: MatchupTable, role: Role): number {
   for (const court of COURTS)
     for (const opp of ROLES) {
       sum += table[court][role][opp][2].attacker
-      sum += table[other(court)][opp][role][2].defender
+      sum += table[otherCourt(court)][opp][role][2].defender
       n += 2
     }
   return sum / n

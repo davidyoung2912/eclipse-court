@@ -1,4 +1,4 @@
-import { inBounds, isBeacon, samePos, allSquares } from './board'
+import { allSquares, chebyshev, inBounds, isBeacon, samePos } from './board'
 import { pieceAt } from './moves'
 import type { Court, GameState, Piece, Pos, Spell } from './types'
 
@@ -30,7 +30,7 @@ export interface SpellTargets {
 
 const adjacentEmpty = (state: GameState, from: Pos) =>
   allSquares().filter(
-    (p) => Math.max(Math.abs(p.x - from.x), Math.abs(p.y - from.y)) === 1 && !pieceAt(state, p),
+    (p) => chebyshev(p, from) === 1 && !pieceAt(state, p),
   )
 
 /** Beacon pieces cannot be targeted by spells. */

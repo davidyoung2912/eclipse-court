@@ -1,10 +1,10 @@
-import { reduce, stubDuel } from '../engine/reducer'
+import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
-import { BEACONS, isBeacon, samePos } from '../engine/rules/board'
+import { BEACONS, COURTS, isBeacon, otherCourt, samePos } from '../engine/rules/board'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { canCast, leaderOf, spellTargets, SPELLS } from '../engine/rules/spells'
-import type { Action, Court, DuelOutcome, GameState, Piece } from '../engine/rules/types'
+import type { Action, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
 import { DIFFICULTY, type Difficulty } from './profile'
 
@@ -14,7 +14,6 @@ const VALUE: Record<Piece['role'], number> = {
   footsoldier: 3, flier: 5, marksman: 5, bruiser: 8, charger: 6, aura: 5, leader: 12,
 }
 
-const other = (c: Court): Court => (c === 'solari' ? 'umbral' : 'solari')
 
 /** Rolls that stand in for the duel's spread of outcomes when a wounded piece is involved. */
 const ROLLS = [0.15, 0.5, 0.85]
@@ -47,22 +46,25 @@ export function evaluate(state: GameState, court: Court): number {
   if (state.winner) return state.winner === 'draw' ? 0 : state.winner === court ? WIN - state.round : -WIN + state.round
   let score = 0
   const held: Record<Court, number> = { solari: 0, umbral: 0 }
+  // Beacons each court does not yet hold, found once rather than per piece.
+  const open: Record<Court, Pos[]> = { solari: [], umbral: [] }
   for (const b of BEACONS) {
-    const occ = pieceAt(state, b)
-    if (occ) held[occ.court]++
+    const holder = pieceAt(state, b)?.court
+    if (holder) held[holder]++
+    for (const c of COURTS) if (holder !== c) open[c].push(b)
   }
-  score += (held[court] - held[other(court)]) * 4
+  score += (held[court] - held[otherCourt(court)]) * 4
   if (held[court] >= 4) score += 10
-  if (held[other(court)] >= 4) score -= 10
+  if (held[otherCourt(court)] >= 4) score -= 10
 
   for (const p of state.pieces) {
     const sign = p.court === court ? 1 : -1
     score += sign * VALUE[p.role] * (0.4 + 0.6 * (p.hp / p.maxHp))
     if (p.bound) score -= sign * VALUE[p.role] * 0.4
     // Pull towards the beacons nobody on its own side holds yet.
-    const open = BEACONS.filter((b) => pieceAt(state, b)?.court !== p.court)
-    if (open.length && p.role !== 'leader') {
-      const near = Math.min(...open.map((b) => Math.abs(b.x - p.pos.x) + Math.abs(b.y - p.pos.y)))
+    if (open[p.court].length && p.role !== 'leader') {
+      let near = Infinity
+      for (const b of open[p.court]) near = Math.min(near, Math.abs(b.x - p.pos.x) + Math.abs(b.y - p.pos.y))
       score += sign * 0.15 * (12 - near)
     }
     // Standing in light that favours its court.
@@ -128,11 +130,11 @@ function valueOf(state: GameState, action: Action, court: Court, depth: number, 
       const mover = state.pieces.find((p) => p.id === action.pieceId)!
       const branches = duelBranches(mover, target, squareLuminance(state, action.to))
       let sum = 0
-      for (const { duel, weight } of branches) sum += weight * search(reduce(state, { ...action, duel }), court, depth - 1, beam)
+      for (const { duel, weight } of branches) sum += weight * search(reduceLegal(state, { ...action, duel }), court, depth - 1, beam)
       return sum
     }
   }
-  return search(reduce(state, action), court, depth - 1, beam)
+  return search(reduceLegal(state, action), court, depth - 1, beam)
 }
 
 function search(state: GameState, court: Court, depth: number, beam: number): number {

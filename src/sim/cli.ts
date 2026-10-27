@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { writeFileSync } from 'node:fs'
-import { buildTable, COURTS, LUMS, roleStrength, ROLES } from './matchups'
+import { COURTS } from '../engine/rules/board'
+import { buildTable, LUMS, roleStrength, ROLES } from './matchups'
 
 const args = process.argv.slice(2)
 const flag = (name: string, fallback: number) => {

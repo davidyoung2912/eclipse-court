@@ -3,7 +3,8 @@ import { MATCHUP_DATA } from '../engine/data/matchupData'
 import { matchup } from '../engine/data/matchups'
 import { estimateOdds } from '../engine/reducer'
 import { checkInvariants, playGame } from './game'
-import { COURTS, fresh, LUMS, ROLES, roleStrength } from './matchups'
+import { COURTS } from '../engine/rules/board'
+import { fresh, LUMS, ROLES, roleStrength } from './matchups'
 import type { MatchupTable } from '../engine/data/matchups'
 
 describe('matchup table', () => {
