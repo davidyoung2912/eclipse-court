@@ -1,6 +1,6 @@
 # Story mode: a lore-driven campaign with persistent characters
 
-**Status: S1 and S2 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: S1, S2 and S3 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The setting, factions and ending are in `docs/lore.md`. Story mode tells that story across both courts, with a small cast of named characters who carry from chapter to chapter, so that wins and losses cost something the player can feel.
 
@@ -16,7 +16,7 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 ## Phases
 - **S1 (done): story format and reader.** Types (`Character`, `Beat`, `Chapter`), the cast, the Prologue ("The Stilling", a mythic retelling of the lore's backstory), a chapter list screen reached from a Story card on the main menu, a dialogue reader (tap or key to advance, back, skip, progress), chapters unlocking in order, saved read state, a tip card, and tests for data validity and the read-state store. The engine is untouched and no battle is attached yet.
 - **S2 (done): battles in chapters and characters in play.** A `battle` beat that launches a match built from the existing campaign or scenario builders, then returns to the story with the result. Named characters are bound to specific pieces in a chapter's fight; the cast screen shows each one's state (ready, wounded, fallen) and a small trait. Win, lose and lost-character outcomes are saved and picked up by later dialogue. Lose-and-retry never soft-locks.
-- **S3: Act I vertical slice (Solari).** About five chapters with three or four recurring characters (Wren, Tam, Voss and the scout), ending with Tam's death. Playtest whether anyone cares before writing more.
+- **S3 (done): Act I vertical slice (Solari).** About five chapters with three or four recurring characters (Wren, Tam, Voss and the scout), ending with Tam's death. Playtest whether anyone cares before writing more.
 - **S4: Act II (Umbral).** The same war from the Vesper Halls, with Tam serving as a Gloom Ghoul; Ilse and the Duskmother.
 - **S5: Act III and the four endings.** The player chooses who keeps the Hour; the Eclipse Queen is the last battle (reusing her boss rules); each ending has its own epilogue.
 - **S6: polish.** Bond and support conversations between battles, a chapter replay gallery, achievements, and a light rename pass if names change.
@@ -37,4 +37,8 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - `src/story.ts`: state is now `{read, characters, losses}` (the old array of read ids still loads); `recordStoryWin`, `recordStoryLoss`, `visibleBeats`, `metCharacters`.
 - `App.tsx`: chapter beats, then the game (`story` field, not resumable, no campaign stats), then an `aftermath` scene. Quitting mid-fight changes nothing. A loss never changes states, so retrying cannot soft-lock.
 - `Story.tsx`: a Company list with each met character's trait and state. Traits are flavour only.
-- Chapter 1, "The Meridian Road" (scenario `long-road`, Wren and Voss bound), is a stand-in S3 may rewrite; its id must stay stable.
+
+## S3 file map
+- `StoryBattle.doomed`: characters who fall in a win however the fight went (`afterVictory` in `battle.ts`), for a death the chapter is written around.
+- Act I in `chapters.ts`: `meridian-road` (long-road; Wren, Voss; Tam introduced), `night-watch` (long-night; Tam; Sable named), `sunless-hill` (all three; the shade is burnt), `ruined-gate` (Wren, Voss; the exiled night-touched), `darkening-sky` (all three; Tam `doomed`, the sunwells flare on the shade he stands in).
+- Tam is night-touched, the sunwells burn the shade, and the player's win lights them. Sable appears only in dialogue until Act II. Tests check Act I length, Tam's doom, and that conditions point at real characters and chapters.

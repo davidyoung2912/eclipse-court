@@ -60,4 +60,29 @@ describe('story data', () => {
     expect(afterVictory(battle, final, {})).toEqual({ wren: 'wounded', voss: 'fallen' })
     expect(afterVictory(battle, game, { wren: 'wounded', voss: 'fallen' })).toEqual({ wren: 'ready', voss: 'fallen' })
   })
+
+  it('takes a doomed character in a win however the fight went', () => {
+    const battle = { ...CHAPTERS.find((c) => c.battle)!.battle!, doomed: ['wren'] as const }
+    const game = storyBattleGame(battle, {}, 1)!
+    expect(afterVictory(battle, game, {})).toEqual({ wren: 'fallen', voss: 'ready' })
+  })
+
+  it('ends Act I with Tam\'s death and never binds a doomed character in a later chapter', () => {
+    const act1 = CHAPTERS.filter((c) => c.act === 1)
+    expect(act1.length).toBeGreaterThanOrEqual(5)
+    expect(act1[act1.length - 1].battle?.doomed).toEqual(['tam'])
+    CHAPTERS.forEach((c, i) => {
+      for (const who of c.battle?.doomed ?? [])
+        for (const later of CHAPTERS.slice(i + 1)) expect(later.battle?.bind[who]).toBeUndefined()
+    })
+  })
+
+  it('answers every condition with a character in the cast and a chapter that exists', () => {
+    for (const c of CHAPTERS)
+      for (const b of [...c.beats, ...(c.battle?.won ?? []), ...(c.battle?.lost ?? [])]) {
+        if (!b.when) continue
+        if ('character' in b.when) expect(CHARACTERS[b.when.character]).toBeDefined()
+        else expect(chapterById(b.when.lostBefore)?.battle).toBeDefined()
+      }
+  })
 })

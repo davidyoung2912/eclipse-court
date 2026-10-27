@@ -29,13 +29,13 @@ export function storyBattleGame(battle: StoryBattle, states: States, seed: numbe
   }
 }
 
-/** How each bound character stands after a won fight: a taken piece wounds them, or kills them if they are mortal. Other characters keep their state. */
+/** How each bound character stands after a won fight: a taken piece wounds them, or kills them if they are mortal, and the doomed die either way. Other characters keep their state. */
 export function afterVictory(battle: StoryBattle, final: GameState, before: States): States {
   const next: States = { ...before }
   for (const who of boundCharacters(battle)) {
     if (before[who] === 'fallen') continue
     const alive = final.pieces.some((p) => p.id === battle.bind[who])
-    next[who] = alive ? 'ready' : battle.mortal?.includes(who) ? 'fallen' : 'wounded'
+    next[who] = battle.doomed?.includes(who) ? 'fallen' : alive ? 'ready' : battle.mortal?.includes(who) ? 'fallen' : 'wounded'
   }
   return next
 }

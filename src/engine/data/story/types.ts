@@ -36,6 +36,8 @@ export interface StoryBattle {
   bind: Partial<Record<CharacterId, string>>
   /** Characters who die for good if their piece is taken in a win; anyone else is only wounded. */
   mortal?: readonly CharacterId[]
+  /** Characters the story takes in a win however the fight went; for a death the chapter is written around. */
+  doomed?: readonly CharacterId[]
   won: readonly Beat[]
   lost: readonly Beat[]
 }
