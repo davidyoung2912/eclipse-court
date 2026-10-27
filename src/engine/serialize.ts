@@ -109,6 +109,11 @@ const validObjective = (o: unknown) => {
   return x.kind === 'hold' && validPos(x.at) && inRange(x.turns, 1, MAX_ROUNDS) && inRange(x.limit, 1, MAX_ROUNDS)
 }
 
+const validClock = (c: unknown) => {
+  const x = c as { seconds?: unknown; bank?: unknown } | null
+  return !!x && typeof x === 'object' && inRange(x.seconds, 3, 600) && (x.bank === undefined || inRange(x.bank, 0, 600))
+}
+
 export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   !!c && isNum(c.seed) && inRange(c.eclipseRound, 1, MAX_ROUNDS) && inRange(c.roundLimit, 1, MAX_ROUNDS) &&
   Array.isArray(c.day) && c.day.length > 0 && c.day.length <= MAX_DAY && c.day.every((l) => inRange(l, -3, 3)) &&
@@ -119,6 +124,7 @@ export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConf
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
   (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
   (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) && (c.objective === undefined || validObjective(c.objective)) &&
+  (c.turnClock === undefined || validClock(c.turnClock)) &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */

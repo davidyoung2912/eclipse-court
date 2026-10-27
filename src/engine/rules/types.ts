@@ -76,6 +76,12 @@ export type Objective =
   | { kind: 'escort'; goal: Pos; limit: number }
   | { kind: 'hold'; at: Pos; turns: number; limit: number }
 
+/** A clock on each turn. Running out passes the turn; the bank is extra time per court, spent only after `seconds` is used. */
+export interface TurnClock {
+  seconds: number
+  bank?: number
+}
+
 /** A day event: one of these bends the rules for a couple of rounds. */
 export type DayEvent = 'flare' | 'gloaming' | 'fog' | 'blight'
 
@@ -113,6 +119,8 @@ export interface MatchConfig {
   showdown?: boolean
   /** The light starts out running the other way round. */
   reverse?: boolean
+  /** Each human turn is timed (Blitz). The clock runs in the interface; a timeout is recorded as an ordinary pass. */
+  turnClock?: TurnClock
   /** Duel wins make Veterans (+1 max HP) and then Elites (a chosen perk). */
   growth?: boolean
   /** Footsoldiers reaching the enemy home column become Chargers or Marksmen. */

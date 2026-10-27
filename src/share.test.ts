@@ -4,6 +4,7 @@ import { matchConfig } from './engine/data/matchConfig'
 import { recordOf, replaySteps } from './engine/log'
 import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord, toBase64Url } from './engine/serialize'
+import { skirmishConfig } from './engine/data/setups'
 import { parseShared } from './share'
 
 const challenge = { config: matchConfig({ seed: 77, mode: 'hill', events: true }), side: 'umbral' } as const
@@ -29,6 +30,27 @@ describe('challenge codes', () => {
     expect(decodeChallenge(huge({ day: Array(1000).fill(1) }))).toBeNull()
     expect(decodeChallenge(huge({ layout: [{ role: 'leader', x: 99, y: 0 }] }))).toBeNull()
     expect(decodeChallenge(huge({ recharge: 1e9 }))).toBeNull()
+  })
+
+  it('carry a turn clock and refuse silly ones', () => {
+    const config = skirmishConfig({ mode: 'classic', board: 'classic', winMode: 'hill', clock: { seconds: 15, bank: 30 } }, 'solari', 3)
+    expect(config.turnClock).toEqual({ seconds: 15, bank: 30 })
+    expect(skirmishConfig({ mode: 'classic', board: 'classic' }, 'solari', 3).turnClock).toBeUndefined()
+    const timed = { config, side: 'solari' } as const
+    expect(decodeChallenge(encodeChallenge(timed))).toEqual(timed)
+    const clocked = (turnClock: object) => toBase64Url(JSON.stringify({ v: 1, c: { ...challenge.config, turnClock }, s: 'solari' }))
+    expect(decodeChallenge(clocked({ seconds: 0 }))).toBeNull()
+    expect(decodeChallenge(clocked({ seconds: 1e9 }))).toBeNull()
+    expect(decodeChallenge(clocked({ seconds: 10, bank: -5 }))).toBeNull()
+    expect(decodeChallenge(clocked({ seconds: 10, bank: 20 }))).not.toBeNull()
+  })
+
+  it('replay a timeout as an ordinary pass', () => {
+    const initial = newGame(matchConfig({ seed: 9, turnClock: { seconds: 10 } }))
+    const timedOut = { initial, actions: [{ type: 'pass' as const }, { type: 'pass' as const }] }
+    const back = decodeRecord(encodeRecord(timedOut))
+    expect(back?.actions).toEqual(timedOut.actions)
+    expect(back?.initial.round).toBe(1)
   })
 
   it('also protect replay codes', () => {

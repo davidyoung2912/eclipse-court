@@ -3,7 +3,7 @@ import { arrange, randomDraft } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
 import { rngNext } from '../rng'
 import { DAYS, type CycleId } from '../rules/luminance'
-import type { Court, MatchConfig, MatchMode, Role, Spell } from '../rules/types'
+import type { Court, MatchConfig, MatchMode, Role, Spell, TurnClock } from '../rules/types'
 
 export type SetupMode = 'classic' | 'draft' | 'random' | 'daily'
 
@@ -40,6 +40,8 @@ export interface SetupChoice {
   cycle?: CycleId
   /** The light starts out running the other way. */
   reverse?: boolean
+  /** Each turn is timed; untimed when absent. */
+  clock?: TurnClock
   /** Duel wins make Veterans and Elites. */
   growth?: boolean
   /** Footsoldiers that cross the board are promoted. */
@@ -73,6 +75,7 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.showdown) base.showdown = true
   if (choice.cycle && choice.cycle !== 'standard') base.day = DAYS[choice.cycle]
   if (choice.reverse) base.reverse = true
+  if (choice.clock) base.turnClock = choice.clock
   if (choice.growth) base.growth = true
   if (choice.promotion) base.promotion = true
   if (mode === 'classic') return base

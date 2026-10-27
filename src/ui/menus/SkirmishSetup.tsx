@@ -6,6 +6,7 @@ import { SETUP_INFO, type SetupChoice, type SetupMode } from '../../engine/data/
 import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
+import { BANK_SECONDS } from '../../clock'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { ShareButton } from '../ShareButton'
@@ -38,6 +39,13 @@ const CYCLES: { id: CycleId; name: string; text: string }[] = [
   { id: 'long', name: 'Long', text: 'A 10-round day.' },
 ]
 
+/** Seconds per turn for Blitz; 0 means untimed. */
+const CLOCKS: { seconds: number; name: string; text: string }[] = [
+  { seconds: 0, name: 'Untimed', text: 'Take as long as you like.' },
+  { seconds: 30, name: 'Rapid', text: '30 seconds a turn.' },
+  { seconds: 15, name: 'Blitz', text: '15 seconds a turn.' },
+]
+
 const LEVEL_ICON: Record<Difficulty, IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 const LEVEL_TEXT: Record<Difficulty, string> = {
@@ -61,6 +69,8 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
   const [showdown, setShowdown] = useState(true)
   const [cycle, setCycle] = useState<CycleId>('standard')
   const [reverse, setReverse] = useState(false)
+  const [clockSeconds, setClockSeconds] = useState(0)
+  const [extraTime, setExtraTime] = useState(false)
   const [growth, setGrowth] = useState(false)
   const [promotion, setPromotion] = useState(false)
   const board = boardById(boardId)
@@ -70,6 +80,7 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
     loadout: spellMode === 'loadout' ? loadout : undefined,
     recharge: recharge ? RECHARGE_ROUNDS : undefined,
     winMode, events, showdown, cycle, reverse, growth, promotion,
+    clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
   })
   const summary = {
     classic: 'The standard 12-piece army for both courts.',
@@ -158,6 +169,19 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
       <label className="recharge"><input type="checkbox" checked={showdown} onChange={() => setShowdown((d) => !d)} /> Eclipse showdown: the outer squares turn deadly, closing in on the centre</label>
       <label className="recharge"><input type="checkbox" checked={growth} onChange={() => setGrowth((g) => !g)} /> Veterancy: 2 duel wins add 1 max HP, 4 earn a perk</label>
       <label className="recharge"><input type="checkbox" checked={promotion} onChange={() => setPromotion((p) => !p)} /> Promotion: a Footsoldier reaching the far column becomes a Charger or Marksman</label>
+      <h3>Turn clock</h3>
+      <div className="choices row">
+        {CLOCKS.map((c) => (
+          <button key={c.seconds} className={`choice${clockSeconds === c.seconds ? ' on' : ''}`} onClick={() => setClockSeconds(c.seconds)}>
+            <strong>{c.name}</strong>
+            <span>{c.text}</span>
+          </button>
+        ))}
+      </div>
+      {clockSeconds > 0 && <label className="recharge"><input type="checkbox" checked={extraTime} onChange={() => setExtraTime((v) => !v)} /> Extra time: {BANK_SECONDS} seconds per court, spent only after a turn runs out</label>}
+      <div className="menu-buttons">
+        <button onClick={() => { setWinMode('hill'); setClockSeconds(15); setExtraTime(false) }}><Icon name="flame" />Blitz Hill preset</button>
+      </div>
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (

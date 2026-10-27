@@ -480,3 +480,18 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 .tabs button { min-width: 7rem; }
 .tabs button.on { border-color: var(--solari-gold); color: var(--solari-gold); }
+
+/* Blitz: the turn clock */
+.clock-ring { position: relative; width: 52px; height: 52px; margin: 0 auto 6px; display: grid; place-items: center; }
+.clock-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.clock-ring span { font-weight: 700; font-size: 1.05rem; }
+.clock-ring small { position: absolute; bottom: -9px; font-size: 0.6rem; opacity: 0.8; }
+.clock-track { fill: rgba(0, 0, 0, 0.25); stroke: rgba(255, 255, 255, 0.15); stroke-width: 3; }
+.clock-arc { fill: none; stroke: var(--solari-gold); stroke-width: 3; stroke-linecap: round; }
+.clock-ring.umbral .clock-arc { stroke: var(--umbral-violet); }
+.clock-ring.paused { opacity: 0.55; }
+.clock-ring.urgent .clock-arc { stroke: #e0525a; }
+.clock-ring.urgent span { color: #ff8088; }
+.clock-ring.urgent { animation: clock-pulse 1s ease-in-out infinite; }
+@keyframes clock-pulse { 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .clock-ring.urgent { animation: none; } }

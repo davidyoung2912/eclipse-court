@@ -72,6 +72,7 @@ export function describeConfig({ config }: Challenge): string[] {
   if (config.reverse) out.push('Light runs the other way')
   if (config.events) out.push('Day events')
   if (config.showdown) out.push('Eclipse showdown')
+  if (config.turnClock) out.push(`Blitz: ${config.turnClock.seconds} s a turn${config.turnClock.bank ? `, ${config.turnClock.bank} s extra` : ''}`)
   if (config.growth) out.push('Veterancy')
   if (config.promotion) out.push('Promotion')
   if (config.recharge) out.push(`Spells recharge after ${config.recharge} rounds`)
