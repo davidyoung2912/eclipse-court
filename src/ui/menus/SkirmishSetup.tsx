@@ -25,6 +25,8 @@ interface Props {
   initialTier?: RulesetId
   /** `hotSeat` means a second person takes the other court; the difficulty is then unused. */
   onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => void
+  /** Hosts an online game: the court is the host's own and the match is the one set up. */
+  onHost?: (human: Court, setup: SetupChoice) => void
   /** The link to a challenge for the settings chosen, with a fresh seed. */
   challengeLink: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => string
   onBack: () => void
@@ -59,10 +61,13 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
   hard: 'Quick, accurate, and plans three moves ahead.',
 }
 
-export function SkirmishSetup({ progress, initialTier = 'standard', onStart, challengeLink, onBack }: Props) {
+export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onHost, challengeLink, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
-  const [hotSeat, setHotSeat] = useState(false)
+  const [twoPlayers, setTwoPlayers] = useState(false)
+  const [online, setOnline] = useState(!!onHost)
+  /** Hot seat and online both pit two people, so neither can draft an army or pick a loadout; the AI is not used. */
+  const hotSeat = twoPlayers || online
   const [mode, setMode] = useState<SetupMode>('classic')
   const [boardId, setBoardId] = useState('classic')
   const [grand, setGrand] = useState(false)
@@ -163,9 +168,10 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
     summary: summaries[id], changed: changed.has(id), open: openSections[id],
     onToggle: (o: boolean) => setOpenSections((cur) => ({ ...cur, [id]: o })),
   })
-  const players: SegOption<'one' | 'two'>[] = [
+  const players: SegOption<'one' | 'two' | 'online'>[] = [
     { value: 'one', label: 'One Player', icon: 'swords', hint: 'Play against the AI.' },
     { value: 'two', label: 'Two Players', icon: 'banner', hint: 'Share this device, taking turns. Duels are settled automatically.' },
+    ...(onHost ? [{ value: 'online' as const, label: 'Online', icon: 'chain' as const, hint: 'Host a game for a friend on another device. Duels are settled automatically.' }] : []),
   ]
   const opponents: SegOption<Difficulty>[] = DIFFICULTY_LIST.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1), icon: LEVEL_ICON[d], hint: LEVEL_TEXT[d] }))
   const tiers: SegOption<RulesetId>[] = RULESETS.map((t) => ({ value: t.id, label: t.name, icon: t.icon, hint: t.text }))
@@ -203,15 +209,16 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
       <SkirmishArt />
       <h2>Skirmish</h2>
       <div className="setup-card">
-        <strong>{tier.name} rules · {grand ? 'Grand' : SETUP_INFO[mode].name} army on {boardLabel} · {hotSeat ? 'Two players' : `${difficulty[0].toUpperCase() + difficulty.slice(1)} AI`}.</strong> {summary}
+        <strong>{tier.name} rules · {grand ? 'Grand' : SETUP_INFO[mode].name} army on {boardLabel} · {online ? 'Online' : hotSeat ? 'Two players' : `${difficulty[0].toUpperCase() + difficulty.slice(1)} AI`}.</strong> {summary}
       </div>
       <h3>Players</h3>
-      <Segmented label="Players" options={players} value={hotSeat ? 'two' : 'one'} onChange={(v) => {
-        setHotSeat(v === 'two')
+      <Segmented label="Players" options={players} value={online ? 'online' : twoPlayers ? 'two' : 'one'} onChange={(v) => {
+        setTwoPlayers(v === 'two')
+        setOnline(v === 'online')
         if (v === 'two') { setSpellMode('classic'); if (mode === 'draft') setMode('classic') }
       }} />
-      {!hotSeat && <h3>Your court</h3>}
-      {!hotSeat && <div className="choices row">
+      {!twoPlayers && <h3>Your court</h3>}
+      {!twoPlayers && <div className="choices row">
         {COURTS.map((c) => (
           <button key={c.court} className={`choice ${c.court}${court === c.court ? ' on' : ''}`} onClick={() => { setCourt(c.court); setLoadout([]) }}>
             <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role="leader" court={c.court} /></svg>
@@ -274,8 +281,8 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
         {problem && <button className="setup-problem" onClick={() => reveal(problem.section)}>{problem.text}</button>}
         <div className="menu-buttons">
           <button onClick={onBack}><Icon name="back" />Back</button>
-          {ready && <ShareButton title="Eclipse Court challenge" label="Share" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
-          <button className="primary" disabled={!ready} onClick={() => onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />Start</button>
+          {ready && !online && <ShareButton title="Eclipse Court challenge" label="Share" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
+          <button className="primary" disabled={!ready} onClick={() => online ? onHost?.(court, choice()) : onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />{online ? 'Host' : 'Start'}</button>
         </div>
       </div>
       <TipCard page="skirmish" />

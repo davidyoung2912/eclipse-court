@@ -6,11 +6,12 @@ interface Props {
   onSkirmish: () => void
   onPractice: () => void
   onPaste: () => void
+  onOnline: () => void
   onBack: () => void
 }
 
 /** The ways to fight a one-off match: against the AI or a friend, in a sandbox, or from a shared code. */
-export function Battle({ onSkirmish, onPractice, onPaste, onBack }: Props) {
+export function Battle({ onSkirmish, onPractice, onPaste, onOnline, onBack }: Props) {
   return (
     <main className="app menu">
       <PageArt icon="swords" />
@@ -20,6 +21,10 @@ export function Battle({ onSkirmish, onPractice, onPaste, onBack }: Props) {
         <button className="choice" onClick={onSkirmish}>
           <strong><Icon name="swords" />Skirmish</strong>
           <span>Set up a match against the AI or a friend: board, rules, presets and Blitz.</span>
+        </button>
+        <button className="choice" onClick={onOnline}>
+          <strong><Icon name="chain" />Play Online</strong>
+          <span>Host or join a live match with a friend on another device.</span>
         </button>
         <button className="choice" onClick={onPractice}>
           <strong><Icon name="target" />Practice</strong>

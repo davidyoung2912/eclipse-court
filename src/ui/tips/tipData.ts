@@ -112,6 +112,12 @@ const DATA = {
     { id: 'paste-intro', icon: 'chain', title: 'Open a shared code',
       text: 'If a link will not open, copy the whole link or just the code after the # sign into the box and press Open. A challenge opens a match to play and a replay opens a game to watch. An error message means the code was cut off or is from a different version of the game.' },
   ],
+  online: [
+    { id: 'online-intro', icon: 'chain', title: 'Playing a friend online',
+      text: 'Online games connect two browsers directly, with no game server. One player hosts: set up the match, then send the join link or code to your friend. Your friend opens it and sends back an answer code, which you paste to connect. Only moves are sent, and both sides check every move against the rules.' },
+    { id: 'online-privacy', icon: 'shield', title: 'Privacy and limits',
+      text: 'A direct connection shows each player\'s network address to the other and to the public STUN servers that help find a route. Some networks block direct connections, and there is no relay, so a pair of players may need to try another network. Duels are settled automatically online, and undo and hints are off.' },
+  ],
   game: [
     { id: 'game-board', icon: 'grid', title: 'Reading the board',
       text: 'The top dial shows the current light and the next few steps of the cycle. On the board, bright squares favour the Solari court and dark ones favour the Umbral, and the light ripples outward from the centre each round. Dashed gold circles are beacons, and walls block movement. Pieces show their hit points as pips underneath.' },

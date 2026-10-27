@@ -39,6 +39,8 @@ import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
 import { PlayTimer } from './ui/PlayTimer'
+import { Online } from './ui/menus/Online'
+import { Lobby } from './ui/menus/Lobby'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
 // The board, duel and tutorial code load when first needed, so the menus open sooner.
@@ -50,7 +52,7 @@ const Tutorial = lazy(() => import('./ui/tutorial/Tutorial').then((m) => ({ defa
 type Screen =
   | { name: 'menu' }
   | { name: 'battle' }
-  | { name: 'skirmish' }
+  | { name: 'skirmish'; /** Opened to host an online game. */ online?: boolean }
   | { name: 'campaign' }
   | { name: 'story' }
   | { name: 'chapter'; id: string }
@@ -72,6 +74,9 @@ type Screen =
   | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
+  /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
+  | { name: 'online' }
+  | { name: 'lobby'; challenge?: ChallengeCode; offer?: string }
   | {
     name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
     /** Two people share the device; `human` and `difficulty` are then unused. */
@@ -133,8 +138,9 @@ const sharedScreen = (shared: Shared): Screen =>
 /** Reads a `#c=` or `#r=` link out of the address, then removes it so a reload does not reopen it. */
 function takeLinkScreen(): Screen | null {
   const { hash, pathname, search } = window.location
-  if (!/^#[cr]=/.test(hash)) return null
+  if (!/^#[crj]=/.test(hash)) return null
   history.replaceState(null, '', pathname + search)
+  if (hash.startsWith('#j=')) return { name: 'lobby', offer: hash.slice(3) }
   const shared = parseShared(hash)
   return shared && sharedScreen(shared)
 }
@@ -302,7 +308,13 @@ export default function App() {
   }
 
   if (screen.name === 'battle')
-    return <Battle onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} />
+    return <Battle onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onOnline={() => setScreen({ name: 'online' })} />
+
+  if (screen.name === 'online')
+    return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
+
+  if (screen.name === 'lobby')
+    return <Lobby key={screen.offer ?? 'host'} challenge={screen.challenge} offer={screen.offer} onBack={() => setScreen({ name: 'online' })} />
 
   if (screen.name === 'practice') return <Practice onPlaytime={addTime} onBack={() => setScreen({ name: 'battle' })} />
 
@@ -325,7 +337,10 @@ export default function App() {
       <SkirmishSetup
         progress={progress}
         initialTier={classicNext() ? 'classic' : 'standard'}
-        onBack={() => setScreen({ name: 'battle' })}
+        onBack={() => setScreen(screen.online ? { name: 'online' } : { name: 'battle' })}
+        onHost={screen.online ? (human, setup) => setScreen({
+          name: 'lobby', challenge: { config: skirmishRecord(setup, human, 'normal', true, Date.now()).initial.config, side: otherCourt(human) },
+        }) : undefined}
         challengeLink={(human, difficulty, setup, hotSeat) =>
           challengeLink({ config: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()).initial.config, side: otherCourt(human) })}
         onStart={(human, difficulty, setup, hotSeat) => {
