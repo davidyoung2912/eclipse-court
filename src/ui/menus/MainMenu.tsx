@@ -4,6 +4,7 @@ import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
 import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
+import { TipCard } from '../tips/TipCard'
 import { cardSummaries, primaryAction } from './menuModel'
 
 interface Props {
@@ -125,6 +126,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onGauntle
           <Icon name={sound ? 'speakerOn' : 'speakerOff'} /><span>Sound {sound ? 'On' : 'Off'}</span>
         </button>
       </nav>
+      <TipCard page="menu" />
     </main>
   )
 }

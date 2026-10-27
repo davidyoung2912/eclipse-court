@@ -16,6 +16,8 @@ import type { Action, Court, DuelOutcome, GameState, Pos, Spell } from './engine
 import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
+import { TipCard } from './ui/tips/TipCard'
+import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
@@ -82,6 +84,8 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   const [flipBoard, setFlipBoard] = useState(true)
   const [pending, setPending] = useState<Pending | null>(null)
   const [inspectId, setInspectId] = useState<string | null>(null)
+  /** An empty square being inspected; its card shows the light and any cell effect there. */
+  const [inspectSq, setInspectSq] = useState<Pos | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
   /** The first ally chosen for Exchange, which takes two taps. */
   const [castFirst, setCastFirst] = useState<string | null>(null)
@@ -173,6 +177,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     setSettled(null)
     setSelectedId(null)
     setInspectId(null)
+    setInspectSq(null)
     setCasting(null)
     setCastFirst(null)
     setPending(null)
@@ -232,6 +237,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     if (!myTurn) {
       // Off-turn taps only look at pieces.
       const occ = pieceAt(state, p)
+      setInspectSq(occ ? null : p)
       return setInspectId(occ ? occ.id : null)
     }
     if (casting && targets) {
@@ -252,6 +258,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     const occ = pieceAt(state, p)
     setSelectedId(occ && occ.court === human ? occ.id : null)
     setInspectId(occ ? occ.id : null)
+    setInspectSq(occ ? null : p)
   })
 
   const undo = () => {
@@ -361,7 +368,8 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
           </div>
         </div>
       )}
-      {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? 'From the puzzle setter' : undefined} /> : (
+      {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? 'From the puzzle setter' : undefined} />
+        : !shown && inspectSq ? <CellCard state={state} pos={inspectSq} /> : (
         <PieceCard state={state} human={human} piece={shown}
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
@@ -400,6 +408,8 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>
       </footer>
+      <TipCard float hidden={!!banner || !!pending || !!settled || !!asking || ended}
+        page={['game', !!state.config.cells?.length && 'game-cells', hotSeat && 'game-hotseat', puzzleLimit !== undefined && 'game-puzzle', !!clock && 'game-clock']} />
     </main>
   )
 }

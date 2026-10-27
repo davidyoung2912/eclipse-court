@@ -7,6 +7,7 @@ import type { Court } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   challenge: ChallengeCode
@@ -45,6 +46,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
         <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a Friend on This Device</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="challenge" />
     </main>
   )
 }

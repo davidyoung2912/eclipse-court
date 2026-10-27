@@ -3,6 +3,7 @@ import type { Progress } from '../../progress'
 import { Icon } from './icons'
 import { ResetButton } from './ResetButton'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   progress: Progress
@@ -51,6 +52,7 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
         <ResetButton label="Reset Puzzles" disabled={solved === 0} warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="puzzles" />
     </main>
   )
 }

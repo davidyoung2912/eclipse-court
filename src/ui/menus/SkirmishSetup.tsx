@@ -13,6 +13,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon, type IconName } from './icons'
 import { changedSections, type SectionId } from './menuModel'
 import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
+import { TipCard } from '../tips/TipCard'
 import { SkirmishArt } from './MenuArt'
 import { PieceArt } from '../../art/PieceArt'
 import { BOARD_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
@@ -262,6 +263,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
           <button className="primary" disabled={!ready} onClick={() => onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />Start</button>
         </div>
       </div>
+      <TipCard page="skirmish" />
     </main>
   )
 }

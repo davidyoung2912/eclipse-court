@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { parseShared, type Shared } from '../../share'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   onOpen: (shared: Shared) => void
@@ -28,6 +29,7 @@ export function PasteCode({ onOpen, onBack }: Props) {
         }}><Icon name="play" />Open</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="paste" />
     </main>
   )
 }

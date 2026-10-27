@@ -6,6 +6,7 @@ import { ResetButton } from './ResetButton'
 import { formatTime } from '../PlayTimer'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   progress: Progress
@@ -50,6 +51,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
         <ResetButton label="Reset Stats" warning="Clear every stat, the Gauntlet record, achievements and the last replay? Campaign, puzzle and scenario progress is kept." onReset={onReset} />
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="stats" />
     </main>
   )
 }

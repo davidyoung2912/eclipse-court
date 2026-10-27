@@ -3,9 +3,10 @@ import { CAMPAIGN, battlesIn } from '../../engine/data/campaign'
 import { CAMPAIGN_TIERS } from '../../engine/data/tiers'
 import { SCENARIOS, scenariosIn } from '../../engine/data/scenarios'
 import { objectiveGoal } from '../../engine/rules/events'
-import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, battleUnlocked, clearedCount, scenarioStars, starCount, totalStars, type Progress } from '../../progress'
+import { STAR_TEXT, STAR_WIN, battleUnlocked, clearedCount, scenarioStars, totalStars, type Progress } from '../../progress'
 import { Icon, type IconName } from './icons'
 import { ResetButton } from './ResetButton'
+import { TipCard } from '../tips/TipCard'
 import { CampaignArt, OpponentAvatar } from './MenuArt'
 
 interface Props {
@@ -26,7 +27,6 @@ interface Props {
 
 export type Tab = 'battles' | 'scenarios'
 
-const STARS = [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT]
 const LEVEL = { easy: 1, normal: 2, hard: 3 } as const
 
 /** The kind of item (icon and words) with its difficulty as lit stars on the same line. */
@@ -79,9 +79,6 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                     <button className={`choice${bits & STAR_WIN ? ' won' : ''}`} onClick={() => onPlayScenario(SCENARIOS.indexOf(x))}>
                       <strong>
                         <Icon name={bits & STAR_WIN ? 'check' : 'swords'} />{n + 1}. {x.name}
-                        <span className="stars" aria-label={`${starCount(bits)} of 3 stars`}>
-                          {STARS.map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
-                        </span>
                       </strong>
                       <Kind icon="target" text={`Scenario: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
                       <span>{x.blurb}</span>
@@ -117,9 +114,6 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                       <OpponentAvatar index={i} locked={locked} />
                       <strong>
                         <Icon name={locked ? 'lock' : bits & STAR_WIN ? 'check' : 'swords'} />{n + 1}. {o.name}
-                        <span className="stars" aria-label={`${starCount(bits)} of 3 stars`}>
-                          {STARS.map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
-                        </span>
                       </strong>
                       <Kind icon="swords" text="Battle" difficulty={o.difficulty} />
                       <span>{o.blurb}</span>
@@ -140,6 +134,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
           : <ResetButton label="Reset Campaign" disabled={cleared === 0 && totalStars(progress) === 0} warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page={tab === 'scenarios' ? 'campaign-scenarios' : 'campaign-battles'} />
     </main>
   )
 }

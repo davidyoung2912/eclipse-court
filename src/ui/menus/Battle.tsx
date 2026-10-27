@@ -1,5 +1,6 @@
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   onSkirmish: () => void
@@ -32,6 +33,7 @@ export function Battle({ onSkirmish, onPractice, onPaste, onBack }: Props) {
       <div className="menu-buttons stacked">
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="battle" />
     </main>
   )
 }

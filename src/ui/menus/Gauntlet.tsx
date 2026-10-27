@@ -11,6 +11,7 @@ import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   progress: Progress
@@ -87,6 +88,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
           <button className="primary" disabled={!!draftProblem(roles)} onClick={() => onStart(court, roles)}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
+        <TipCard page="gauntlet" />
       </main>
     )
 
@@ -113,6 +115,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
           <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
           {back}
         </div>
+        <TipCard page="gauntlet-run" />
       </main>
     )
 
@@ -137,6 +140,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
         {back}
       </div>
+      <TipCard page="gauntlet-run" />
     </main>
   )
 }

@@ -3,6 +3,8 @@ import { getSettings, THEMES, themeUnlocked, updateSettings } from '../../settin
 import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
+import { resetTips } from '../../tips'
 
 interface Props {
   progress: Progress
@@ -37,9 +39,14 @@ export function Settings({ progress, onBack }: Props) {
       <h3>Accessibility</h3>
       <label className="recharge"><input type="checkbox" checked={settings.marks} onChange={() => change({ marks: !settings.marks })} /> Mark the light on every square with + and − (colour is never the only clue)</label>
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
+      <h3>Guidance</h3>
+      <div className="menu-buttons">
+        <button onClick={resetTips}><Icon name="bulb" />Show Tips Again</button>
+      </div>
       <div className="menu-buttons">
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="settings" />
     </main>
   )
 }

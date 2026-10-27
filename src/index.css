@@ -599,3 +599,40 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .campaign .kind .stars { margin-left: 4px; }
 .campaign .kind .stars i { opacity: 0.25; }
 .campaign .kind .stars i.got { opacity: 1; }
+
+/* No scrollbars: pages still scroll by touch or wheel, but the bars never take width on a phone */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
+/* One-time tip cards */
+.tip-card {
+  display: flex; gap: 12px; align-items: flex-start; flex-shrink: 0; width: 100%;
+  position: sticky; bottom: 4px; margin-top: auto; z-index: 15;
+  padding: 12px 12px 10px; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(58, 44, 130, 0.97), rgba(29, 23, 69, 0.97));
+  border: 1px solid rgba(232, 182, 74, 0.65);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(232, 182, 74, 0.18);
+  animation: tip-in 0.35s ease-out both;
+}
+.tip-card.float {
+  position: fixed; left: 8px; right: 8px; width: auto; max-width: 544px; margin: 0 auto;
+  bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 40;
+}
+.tip-icon {
+  flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--solari-gold)); color: #1b1740;
+  box-shadow: 0 0 12px rgba(232, 182, 74, 0.5);
+}
+.tip-icon .btn-icon { width: 24px; height: 24px; }
+.tip-body { flex: 1; min-width: 0; }
+.tip-body h4 { margin: 0 0 4px; font-family: var(--display); font-size: 1rem; color: var(--solari-gold); }
+.tip-body p { margin: 0; font-size: 0.82rem; line-height: 1.42; }
+.tip-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.tip-foot small { margin-right: auto; opacity: 0.6; font-size: 0.7rem; }
+.tip-foot button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 700;
+  background: var(--solari-gold); color: #1b1740; border: 1px solid var(--solari-cream);
+}
+@keyframes tip-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+[data-motion='reduced'] .tip-card { animation: none; }
+@media (prefers-reduced-motion: reduce) { .tip-card { animation: none; } }

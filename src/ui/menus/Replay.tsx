@@ -5,6 +5,7 @@ import type { Court } from '../../engine/rules/types'
 import { Board } from '../board/Board'
 import { Dial } from '../dial/Dial'
 import { Icon } from './icons'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   record: GameRecord
@@ -50,6 +51,7 @@ export function Replay({ record, onBack }: Props) {
         <button disabled={at >= last} onClick={() => { setPlaying(false); setAt((i) => i + 1) }}><Icon name="next" />Next</button>
         <button onClick={onBack}><Icon name="exit" />Close</button>
       </div>
+      <TipCard page="replay" float />
     </main>
   )
 }

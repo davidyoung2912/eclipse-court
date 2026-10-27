@@ -5,6 +5,7 @@ import { challengeLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   match: DailyMatch
@@ -54,6 +55,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
         )}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
+      <TipCard page="daily" />
     </main>
   )
 }
