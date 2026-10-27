@@ -4,7 +4,7 @@ import { chooseAction } from '../ai/strategy'
 import { newGame, reduce } from '../engine/reducer'
 import { squareLuminance } from '../engine/rules/luminance'
 import { pieceAt } from '../engine/rules/moves'
-import type { Court, GameState } from '../engine/rules/types'
+import type { Court, GameState, MatchConfig } from '../engine/rules/types'
 
 export interface GameResult {
   state: GameState
@@ -34,9 +34,9 @@ export function checkInvariants(state: GameState): string[] {
  * Plays one AI-vs-AI game to the end. Captures are settled by real duels between duel AIs at each
  * side's difficulty skill. Gives up (winner stays null) after `maxActions`.
  */
-export function playGame(seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400): GameResult {
+export function playGame(seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400, config: Partial<MatchConfig> = {}): GameResult {
   const level: Record<Court, Difficulty> = { solari, umbral }
-  let state = newGame(seed)
+  let state = newGame({ ...config, seed })
   let actions = 0
   let duels = 0
   const problems: string[] = []

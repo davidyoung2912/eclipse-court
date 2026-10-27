@@ -23,7 +23,7 @@ export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
   const config = matchConfig(typeof setup === 'number' ? { seed: setup } : setup)
   return {
     config,
-    pieces: startingPieces(config.layout),
+    pieces: startingPieces(config.layout, config.umbralLayout),
     captured: [],
     turn: 'solari',
     round: 1,

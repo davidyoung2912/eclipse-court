@@ -1,4 +1,4 @@
-import { inBounds, samePos, SIZE } from './board'
+import { inBounds, isBlocked, samePos, SIZE } from './board'
 import type { GameState, Piece, Pos } from './types'
 
 const DIRS: readonly Pos[] = [
@@ -21,6 +21,10 @@ function slide(state: GameState, piece: Piece, maxSteps: number, over: boolean):
     for (let k = 1; k <= maxSteps; k++) {
       const p = { x: piece.pos.x + d.x * k, y: piece.pos.y + d.y * k }
       if (!inBounds(p)) break
+      if (isBlocked(state.config, p)) {
+        if (over) continue
+        break
+      }
       const occ = pieceAt(state, p)
       if (!occ) out.push(p)
       else if (occ.court !== piece.court) {
@@ -46,7 +50,7 @@ export function legalMoves(state: GameState, piece: Piece): Pos[] {
       return slide(state, piece, 3, true)
     case 'charger':
       return KNIGHT.map((d) => ({ x: piece.pos.x + d.x, y: piece.pos.y + d.y })).filter((p) => {
-        if (!inBounds(p)) return false
+        if (!inBounds(p) || isBlocked(state.config, p)) return false
         const occ = pieceAt(state, p)
         return !occ || occ.court !== piece.court
       })
@@ -57,7 +61,7 @@ export function legalMoves(state: GameState, piece: Piece): Pos[] {
         for (let x = 0; x < SIZE; x++) {
           const p = { x, y }
           const dist = Math.abs(x - piece.pos.x) + Math.abs(y - piece.pos.y)
-          if (dist >= 1 && dist <= 4 && !pieceAt(state, p)) out.push(p)
+          if (dist >= 1 && dist <= 4 && !pieceAt(state, p) && !isBlocked(state.config, p)) out.push(p)
         }
       return out
     }

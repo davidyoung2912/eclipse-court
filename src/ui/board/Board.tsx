@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ROLE_NAMES } from '../../engine/data/roster'
-import { allSquares, isBeacon, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
+import { allSquares, isBeacon, isBlocked, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
 import { squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece, Pos } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
@@ -72,6 +72,12 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
                 opacity={Math.abs(lum) / 2} className="glow" />
             )}
             <use href="#lead" x={cx} y={cy} />
+            {isBlocked(state.config, p) && (
+              <g className="wall">
+                <rect x={cx - 0.44} y={cy - 0.44} width={0.88} height={0.88} rx={0.1} />
+                <path d={`M${cx - 0.3},${cy - 0.1}H${cx + 0.3}M${cx - 0.3},${cy + 0.15}H${cx + 0.3}M${cx},${cy - 0.1}V${cy + 0.15}`} />
+              </g>
+            )}
             {cycling && (
               <rect key={rippleKey} x={cx - 0.5} y={cy - 0.5} width={1} height={1} className={`ripple ${lum >= 0 ? 'lit' : 'dim'}`}
                 style={{ animationDelay: `${ringOf(p) * 70}ms` }} />

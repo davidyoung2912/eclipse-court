@@ -335,3 +335,20 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .choice strong { display: flex; align-items: center; gap: 8px; }
 .attack-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .attack-btn .btn-icon { width: 1.6em; height: 1.6em; }
+
+.wall rect { fill: #2a2347; stroke: #5b4f8f; stroke-width: 0.04; }
+.wall path { fill: none; stroke: #5b4f8f; stroke-width: 0.03; }
+
+.draft { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: rgba(122, 92, 200, 0.14); }
+.draft-head { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.draft-head .over { color: #ff8a8a; }
+.draft-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.draft-row .name { flex: 1; }
+.draft-row .cost { opacity: 0.7; font-size: 0.8rem; }
+.draft-row button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: var(--fg); font-size: 1.1rem; }
+.draft-row button:disabled { opacity: 0.3; }
+.draft-row .count { width: 1.4em; text-align: center; font-weight: 700; }
+.setup-card { padding: 10px 12px; border-radius: 10px; background: rgba(232, 182, 74, 0.1); font-size: 0.85rem; line-height: 1.4; }
+.setup-card strong { color: var(--solari-gold); }
+.choices.row { flex-direction: row; flex-wrap: wrap; }
+.choices.row .choice { flex: 1 1 40%; }

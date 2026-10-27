@@ -48,10 +48,13 @@ export const DEFAULT_LAYOUT: readonly Placement[] = [
   { role: 'footsoldier', x: 1, y: 5 },
 ]
 
-export function startingPieces(layout: readonly Placement[] = DEFAULT_LAYOUT): Piece[] {
+export function startingPieces(
+  layout: readonly Placement[] = DEFAULT_LAYOUT,
+  umbralLayout: readonly Placement[] = layout,
+): Piece[] {
   const counts: Record<string, number> = {}
   return (['solari', 'umbral'] as Court[]).flatMap((court) =>
-    layout.map(({ role, x, y }) => {
+    (court === 'solari' ? layout : umbralLayout).map(({ role, x, y }) => {
       const key = `${court}-${role}`
       counts[key] = (counts[key] ?? 0) + 1
       const { hp } = ROLE_STATS[role]

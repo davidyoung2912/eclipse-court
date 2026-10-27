@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MATCHUP_DATA } from '../engine/data/matchupData'
 import { matchup } from '../engine/data/matchups'
 import { estimateOdds } from '../engine/reducer'
+import { draftGames, reportOn } from './draft'
 import { checkInvariants, playGame } from './game'
 import { COURTS } from '../engine/rules/board'
 import { fresh, LUMS, ROLES, roleStrength } from './matchups'
@@ -52,5 +53,15 @@ describe('AI-vs-AI soak', () => {
       expect(r.state.winner).not.toBeNull()
       expect(checkInvariants(r.state)).toEqual([])
     }
+  }, 120_000)
+})
+
+describe('drafted armies', () => {
+  it('play to a finish on every board without breaking the board', () => {
+    const results = draftGames(4, 3)
+    expect(results.every((r) => r.winner !== null)).toBe(true)
+    const report = reportOn(results, 1)
+    expect(report.played).toBe(4)
+    expect(report.solariWins + report.umbralWins).toBeLessThanOrEqual(4)
   }, 120_000)
 })

@@ -62,6 +62,13 @@ export interface MatchConfig {
   day: readonly number[]
   beacons: readonly Pos[]
   layout: readonly Placement[]
+  /** The Umbral opening layout where it differs from the mirror of `layout` (a drafted army). */
+  umbralLayout?: readonly Placement[]
+  /** Squares nothing can stand on, move onto or be summoned to; fliers still pass over them. */
+  blocked?: readonly Pos[]
+  /** Which setup and board variant made this match, for display only. */
+  setup?: string
+  board?: string
 }
 
 export interface GameState {

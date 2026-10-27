@@ -119,6 +119,8 @@ Purpose: everything later depends on a match being described by data and replaya
 
 ### E2. Army draft and setup variety (≈2–3 days)
 
+**Status: done.** Costs: Footsoldier 2, Flier/Marksman/Aura 4, Charger 5, Bruiser 6, Leader free; budget 40 (the classic army costs 39). Boards: Classic, Pillars, Flanks, Ruins. Sim (`npm run draft`, 500 games): no composition above 54%; more Fliers wins 60% of games, a mild signal to revisit (Flier cost 5 with budget 42 is the first lever). Manual drag placement was left as the stretch item.
+
 Delivers recommendation 1 and part of 4.
 
 - Piece costs table (seed from `VALUE` in `ai/strategy.ts`, then tune with the simulator). Draft budget (e.g. 40) with limits: exactly one Leader, max per role.

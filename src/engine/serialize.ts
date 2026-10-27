@@ -1,7 +1,9 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
-import type { Action, GameState, MatchConfig, Spell } from './rules/types'
+import type { Action, GameState, MatchConfig, Pos, Role, Spell } from './rules/types'
 import { SPELLS } from './rules/spells'
+
+const ROLES: readonly Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
 
 /** Bumped whenever the encoding changes, so old saves and links are recognised and refused cleanly. */
 export const FORMAT_VERSION = 1
@@ -74,11 +76,17 @@ export function encodeRecord(record: GameRecord): string {
   return toBase64Url(JSON.stringify(payload))
 }
 
+const validPos = (p: Partial<Pos> | undefined) => isNum(p?.x) && isNum(p?.y)
+const validLayout = (l: unknown) =>
+  Array.isArray(l) && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
+
 const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   !!c && isNum(c.seed) && isNum(c.eclipseRound) && isNum(c.roundLimit) &&
   Array.isArray(c.day) && c.day.length > 0 && c.day.every(isNum) &&
   Array.isArray(c.beacons) && c.beacons.every((b) => isNum(b?.x) && isNum(b?.y)) &&
-  Array.isArray(c.layout) && c.layout.every((l) => isStr(l?.role) && isNum(l?.x) && isNum(l?.y))
+  validLayout(c.layout) && (c.umbralLayout === undefined || validLayout(c.umbralLayout)) &&
+  (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.every(validPos))) &&
+  (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board))
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */
 export function decodeRecord(code: string): GameRecord | null {

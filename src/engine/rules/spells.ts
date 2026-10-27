@@ -1,4 +1,4 @@
-import { allSquares, chebyshev, inBounds, isBeacon, samePos } from './board'
+import { allSquares, chebyshev, inBounds, isBeacon, isBlocked, samePos } from './board'
 import { pieceAt } from './moves'
 import type { Court, GameState, Piece, Pos, Spell } from './types'
 
@@ -28,10 +28,10 @@ export interface SpellTargets {
   none: boolean
 }
 
+const isFree = (state: GameState, p: Pos) => !pieceAt(state, p) && !isBlocked(state.config, p)
+
 const adjacentEmpty = (state: GameState, from: Pos) =>
-  allSquares().filter(
-    (p) => chebyshev(p, from) === 1 && !pieceAt(state, p),
-  )
+  allSquares().filter((p) => chebyshev(p, from) === 1 && isFree(state, p))
 
 /** Beacon pieces cannot be targeted by spells. */
 const targetable = (state: GameState, p: Piece) => !isBeacon(p.pos, state.config.beacons)
@@ -42,7 +42,7 @@ export function spellTargets(state: GameState, court: Court, spell: Spell): Spel
   if (!leader || leader.hp < 2 || state.eclipse || !state.spells[court].includes(spell)) return none
   switch (spell) {
     case 'blink':
-      return { ...none, squares: allSquares().filter((p) => !pieceAt(state, p)) }
+      return { ...none, squares: allSquares().filter((p) => isFree(state, p)) }
     case 'mend':
       return {
         ...none,
