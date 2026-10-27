@@ -271,7 +271,7 @@ export function summarise(
 }
 
 /** Boards open up as stars are earned in the campaign; the classic board is always open. */
-export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, flanks: 4, ruins: 6 }
+export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, flanks: 4, ruins: 6, shrine: 8, crossroads: 10, sanctum: 12 }
 
 export const boardUnlocked = (p: Progress, boardId: string) => totalStars(p) >= (BOARD_STARS[boardId] ?? 0)
 

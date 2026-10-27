@@ -161,7 +161,7 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   const { mode } = choice
   const seeded = mode === 'daily' ? dailySeed(date) : seed
   const board = boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
-  const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, setup: mode, board: board.id }
+  const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, cells: board.cells, setup: mode, board: board.id }
   if (choice.spells) base.loadouts = { solari: choice.spells, umbral: choice.spells }
   else if (choice.loadout) {
     const mine = choice.loadout

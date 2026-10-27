@@ -101,7 +101,7 @@ export const CAMPAIGN_FOE: Court = 'umbral'
 export function campaignGame(opponent: Opponent, seed: number, setup = 'campaign'): GameState {
   const board = boardById(opponent.board)
   const config: MatchConfig = {
-    ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: opponent.rules?.beacons ?? board.beacons, blocked: board.blocked, board: board.id, setup,
+    ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: opponent.rules?.beacons ?? board.beacons, blocked: board.blocked, cells: board.cells, board: board.id, setup,
   }
   if (opponent.army) config.umbralLayout = arrange(opponent.army)
   const state = newGame(config)

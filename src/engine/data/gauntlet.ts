@@ -202,7 +202,7 @@ export function stageGame(run: Run): GameState {
   const theirs = arrange(foe.army)
   const rules = { ...foe.rules, ...relicRules(run.relics) }
   const config: MatchConfig = {
-    ...DEFAULT_CONFIG, ...rules, seed, beacons: board.beacons, blocked: board.blocked, board: board.id, setup: 'gauntlet', growth: true,
+    ...DEFAULT_CONFIG, ...rules, seed, beacons: board.beacons, blocked: board.blocked, cells: board.cells, board: board.id, setup: 'gauntlet', growth: true,
     layout: run.court === 'solari' ? mine : theirs,
     umbralLayout: run.court === 'solari' ? theirs : mine,
     loadouts: { [run.court]: run.loadout, [foeCourt]: aiLoadout(seed, foeCourt) } as Record<Court, Spell[]>,

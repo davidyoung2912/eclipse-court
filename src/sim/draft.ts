@@ -23,7 +23,7 @@ export function draftGames(games: number, seed = 1): DraftGame[] {
     const umbral = pick(2)
     const board = BOARDS[g % BOARDS.length]
     const r = playGame(s, 'normal', 'normal', 400, {
-      layout: arrange(solari), umbralLayout: arrange(umbral), beacons: board.beacons, blocked: board.blocked,
+      layout: arrange(solari), umbralLayout: arrange(umbral), beacons: board.beacons, blocked: board.blocked, cells: board.cells,
     })
     out.push({ solari, umbral, winner: r.state.winner })
   }
