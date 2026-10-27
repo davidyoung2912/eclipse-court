@@ -1,8 +1,8 @@
 import type { Scenario } from './scenarios'
-import type { Pos } from '../rules/types'
-import { at, lineup, type Spec } from './scenarioHelpers'
+import { at, builder, lose, taken, within, type Spec } from './scenarioHelpers'
 
 const F = 'footsoldier'
+const build = builder('easy')
 
 /** Solari's usual Beginner force: a Leader with escorts and a lead of two or three pieces. */
 const GUARD: readonly Spec[] = [['leader', 0, 3], ['bruiser', 1, 3], ['aura', 0, 2], ['marksman', 0, 4], [F, 1, 2], [F, 1, 4]]
@@ -19,21 +19,6 @@ const FOES: Record<string, readonly Spec[]> = {
   heavy: [['leader', 6, 3], ['bruiser', 5, 3], ['bruiser', 5, 4], [F, 5, 2], ['aura', 6, 4]],
   mixed: [['leader', 6, 3], ['bruiser', 5, 3], ['marksman', 6, 2], ['flier', 6, 5], [F, 5, 2], [F, 5, 4]],
 }
-
-type Spec1 = Omit<Scenario, 'difficulty' | 'setup' | 'bonus'> & { bonus: readonly [string, Scenario['bonus']['met']]; solari: readonly Spec[]; umbral: readonly Spec[]; spells?: Parameters<typeof lineup>[2] }
-
-/** An escort goal is kept free: whatever the foe has parked on it starts in the corner instead. */
-const clear = (foes: readonly Spec[], goal: Pos | null): readonly Spec[] =>
-  foes.map((f): Spec => (goal && f[1] === goal.x && f[2] === goal.y ? [f[0], 6, 6, f[3]] : f))
-
-const build = ({ bonus, solari, umbral, spells, ...rest }: Spec1): Scenario => ({
-  ...rest, difficulty: 'easy', bonus: { text: bonus[0], met: bonus[1] },
-  setup: lineup(solari, clear(umbral, rest.objective.kind === 'escort' ? rest.objective.goal : null), spells),
-})
-
-const taken = (n: number) => [`Take ${n} enemy piece${n === 1 ? '' : 's'}`, (s: { taken: number }) => s.taken >= n] as const
-const within = (n: number) => [`Win within ${n} rounds`, (s: { turns: number }) => s.turns <= n] as const
-const lose = (n: number) => [n === 0 ? 'Win without losing a piece' : `Lose no more than ${n} piece${n === 1 ? '' : 's'}`, (s: { lost: number }) => s.lost <= n] as const
 
 /** The Beginner scenarios: the easy AI, a clear Solari edge, and short goals. */
 export const BEGINNER_SCENARIOS: readonly Scenario[] = [

@@ -30,6 +30,14 @@ describe('scenarios', () => {
     for (const s of easy) expect(s.bonus.text, s.id).not.toBe('')
   })
 
+  it('has a Normal tier of 25 with all five personalities and every objective', () => {
+    const normal = scenariosIn('normal')
+    expect(normal).toHaveLength(25)
+    expect(new Set(normal.map((s) => s.personality)).size).toBe(5)
+    expect(new Set(normal.map((s) => s.objective.kind)).size).toBe(3)
+    for (const s of normal) expect(s.bonus.text, s.id).not.toBe('')
+  })
+
   it('opens each with Solari to move, a Leader each and no overlapping or walled-in pieces', () => {
     for (const [i, s] of SCENARIOS.entries()) {
       const g = scenarioGame(s, 10 + i)
