@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
@@ -6,12 +6,14 @@ import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { TipCard } from '../tips/TipCard'
 import { cardSummaries, primaryAction } from './menuModel'
+import { storySnapshot, storySummary, subscribeStory } from '../../story'
 
 interface Props {
   progress: Progress
   onSkirmish: () => void
   onBattle: () => void
   onCampaign: () => void
+  onStory: () => void
   onGauntlet: () => void
   onTutorial: () => void
   onStats: () => void
@@ -82,18 +84,22 @@ interface Card {
   title: string
   line: string
   onClick: () => void
+  /** Spans both columns. */
+  wide?: boolean
 }
 
-export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
   const summary = cardSummaries(progress, dailySeed())
+  const storyRead = useSyncExternalStore(subscribeStory, storySnapshot)
   const cards: Card[] = [
     { icon: 'swords', title: 'Battle', line: 'Skirmish · Practice · Codes', onClick: onBattle },
     { icon: 'banner', title: 'Campaign', line: summary.campaign, onClick: onCampaign },
     { icon: 'flame', title: 'Gauntlet', line: summary.gauntlet, onClick: onGauntlet },
     { icon: 'puzzle', title: 'Puzzles', line: summary.puzzles, onClick: onPuzzles },
+    { icon: 'book', title: 'Story', line: storySummary(storyRead), onClick: onStory, wide: true },
   ]
   return (
     <main className="app menu main-menu">
@@ -112,7 +118,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onGauntle
       </section>
       <div className="mode-cards">
         {cards.map((c) => (
-          <button key={c.title} className="mode-card" onClick={c.onClick}>
+          <button key={c.title} className={`mode-card${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
             <strong><Icon name={c.icon} />{c.title}</strong>
             <span>{c.line}</span>
           </button>

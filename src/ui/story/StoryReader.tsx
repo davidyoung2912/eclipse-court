@@ -1,0 +1,66 @@
+import { useEffect, useState } from 'react'
+import { PieceArt } from '../../art/PieceArt'
+import { CHARACTERS, actLabel, type Chapter } from '../../engine/data/story'
+import { Icon } from '../menus/icons'
+
+interface Props {
+  chapter: Chapter
+  /** Called once the last beat is passed, or the chapter is skipped. */
+  onDone: () => void
+  /** Leaves without marking the chapter read. */
+  onBack: () => void
+}
+
+/** One chapter, a beat at a time: tap, Enter or the arrow keys move through it. */
+export function StoryReader({ chapter, onDone, onBack }: Props) {
+  const [index, setIndex] = useState(0)
+  const last = index === chapter.beats.length - 1
+  const beat = chapter.beats[index]
+  const speaker = beat.kind === 'say' ? CHARACTERS[beat.who] : null
+
+  const forward = () => (last ? onDone() : setIndex(index + 1))
+  const backward = () => setIndex(Math.max(0, index - 1))
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        forward()
+      } else if (e.key === 'ArrowLeft') backward()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  return (
+    <main className={`app menu story-reader${speaker?.portrait ? ` court-${speaker.portrait.court}` : ''}`}>
+      <p className="story-act">{actLabel(chapter.act)} · {chapter.title}</p>
+      <div className="story-stage" onClick={forward} role="button" tabIndex={-1} aria-label="Next">
+        {speaker ? (
+          <>
+            <div className="story-portrait" aria-hidden="true">
+              {speaker.portrait ? (
+                <svg viewBox="0 0 100 100"><g transform="translate(50 50) scale(92)"><PieceArt role={speaker.portrait.role} court={speaker.portrait.court} /></g></svg>
+              ) : <span className="story-eclipse" />}
+            </div>
+            <h3 className="story-name">{speaker.name}<small>{speaker.title}</small></h3>
+            <p className="story-line story-say">&ldquo;{beat.text}&rdquo;</p>
+          </>
+        ) : (
+          <p className="story-line story-narrate">{beat.text}</p>
+        )}
+      </div>
+      <div className="story-progress" role="progressbar" aria-valuemin={1} aria-valuemax={chapter.beats.length} aria-valuenow={index + 1}>
+        <i style={{ width: `${((index + 1) / chapter.beats.length) * 100}%` }} />
+      </div>
+      <div className="menu-buttons">
+        <button onClick={backward} disabled={index === 0}><Icon name="back" />Previous</button>
+        <button className="primary" onClick={forward}>{last ? <><Icon name="check" />Finish</> : <><Icon name="next" />Next</>}</button>
+      </div>
+      <div className="menu-buttons">
+        <button onClick={onDone}><Icon name="skip" />Skip</button>
+        <button onClick={onBack}><Icon name="exit" />Leave</button>
+      </div>
+    </main>
+  )
+}

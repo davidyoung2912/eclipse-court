@@ -30,6 +30,10 @@ import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type 
 import { clearRun, loadRun, saveRun } from './run'
 import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
+import { Story } from './ui/menus/Story'
+import { StoryReader } from './ui/story/StoryReader'
+import { chapterById } from './engine/data/story'
+import { markChapterRead } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
@@ -47,6 +51,8 @@ type Screen =
   | { name: 'battle' }
   | { name: 'skirmish' }
   | { name: 'campaign' }
+  | { name: 'story' }
+  | { name: 'chapter'; id: string }
   | { name: 'daily' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
@@ -189,6 +195,18 @@ export default function App() {
           if (record) setScreen({ name: 'replay', record })
         } : undefined} />
     )
+
+  if (screen.name === 'story')
+    return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+
+  if (screen.name === 'chapter') {
+    const chapter = chapterById(screen.id)
+    if (!chapter) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryReader key={chapter.id} chapter={chapter} onBack={() => setScreen({ name: 'story' })}
+        onDone={() => { markChapterRead(chapter.id); setScreen({ name: 'story' }) }} />
+    )
+  }
 
   if (screen.name === 'puzzles')
     return (
@@ -423,7 +441,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen} progress={progress} onBattle={() => setScreen({ name: 'battle' })}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setCampaignTab('battles'); setScreen({ name: 'campaign' }) }} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setCampaignTab('battles'); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }}
       dailyDone={{ match: !!dailyResult(progress, dailySeed()), puzzle: progress.puzzles.includes(PUZZLES[dailyPuzzleIndex()].id) }}
       onDailyPuzzle={() => {

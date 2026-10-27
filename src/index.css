@@ -294,6 +294,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 }
 .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; text-align: left; font-size: 1rem; }
+.mode-card.wide { grid-column: 1 / -1; }
 .mode-card strong { display: flex; align-items: center; gap: 8px; letter-spacing: 0.06em; }
 .mode-card span { font-size: 0.78rem; opacity: 0.8; line-height: 1.25; }
 .utility { display: flex; gap: 6px; margin-top: auto; }
@@ -636,3 +637,24 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 @keyframes tip-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 [data-motion='reduced'] .tip-card { animation: none; }
 @media (prefers-reduced-motion: reduce) { .tip-card { animation: none; } }
+
+.story-reader { gap: 10px; }
+.story-act { margin: 8px 0 0; text-align: center; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.story-stage {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 18px 16px; border-radius: 14px; border: 1px solid var(--umbral-violet); cursor: pointer;
+  background: linear-gradient(180deg, rgba(43, 36, 104, 0.55), rgba(13, 10, 34, 0.75));
+}
+.story-reader.court-solari .story-stage { border-color: var(--solari-gold); background: linear-gradient(180deg, rgba(232, 182, 74, 0.22), rgba(13, 10, 34, 0.75)); }
+.story-portrait { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6)); }
+.story-portrait svg { width: 100%; height: 100%; }
+.story-eclipse {
+  width: 72px; height: 72px; border-radius: 50%; background: #0d0a22;
+  box-shadow: 0 0 0 3px rgba(255, 215, 122, 0.85), 0 0 24px 6px rgba(232, 148, 58, 0.55);
+}
+.story-name { margin: 0; text-align: center; letter-spacing: 0.04em; }
+.story-name small { display: block; font-weight: 400; font-size: 0.78rem; opacity: 0.75; }
+.story-line { margin: 0; max-width: 34ch; text-align: center; font-size: 1.1rem; line-height: 1.5; }
+.story-narrate { font-style: italic; opacity: 0.92; }
+.story-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.story-progress i { display: block; height: 100%; background: var(--solari-gold); transition: width 0.2s; }

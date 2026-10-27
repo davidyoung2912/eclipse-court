@@ -20,6 +20,10 @@ const DATA = {
     { id: 'menu-utility', icon: 'book', title: 'The bottom row',
       text: 'Stats shows your record and achievements. Settings changes themes and accessibility options. How to Play replays the guided lesson at any time, and Sound switches audio on or off. Tip cards like this one appear once on every page, and you can bring them all back from Settings.' },
   ],
+  story: [
+    { id: 'story-intro', icon: 'book', title: 'The tale of the two courts',
+      text: 'Story chapters tell how Veyra came to have two courts and an Eclipse Queen. Each chapter is read one line at a time: tap, press Enter or use the arrow keys to move on, and Skip jumps to the end. Chapters open in order, and reading one marks it done. Story keeps its own record, so it never affects your campaign stars.' },
+  ],
   battle: [
     { id: 'battle-modes', icon: 'swords', title: 'One-off matches',
       text: 'Nothing here touches your campaign. Skirmish lets you design a match against the AI or a friend sharing your device. Practice drops you into a single duel so you can learn how each piece fights. Paste Code opens a challenge or replay that someone sent you. Pick whichever suits your mood; you can always come back.' },
