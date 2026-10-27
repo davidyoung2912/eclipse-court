@@ -6,6 +6,7 @@ import { squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece, Pos } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { BoardDefs } from '../../art/Tile'
+import { getSettings } from '../../settings'
 import { lumColor } from './lumColor'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
@@ -56,6 +57,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const radius = safeRadius(state)
+  const marks = getSettings().marks
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (
     <svg className="board" viewBox={`0 0 ${SIZE} ${SIZE}`} role="grid">
@@ -74,6 +76,9 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
                 opacity={Math.abs(lum) / 2} className="glow" />
             )}
             <use href="#lead" x={cx} y={cy} />
+            {marks && lum !== 0 && (
+              <text x={cx - 0.32} y={cy - 0.3} className={`lum-mark ${lum > 0 ? 'lit' : 'dim'}`}>{(lum > 0 ? '+' : '−').repeat(Math.abs(lum))}</text>
+            )}
             {isBlocked(state.config, p) && (
               <g className="wall">
                 <rect x={cx - 0.44} y={cy - 0.44} width={0.88} height={0.88} rx={0.1} />

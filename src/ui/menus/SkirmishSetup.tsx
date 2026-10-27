@@ -9,7 +9,7 @@ import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spel
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { Icon, type IconName } from './icons'
-import { BOARD_STARS, boardUnlocked, type Progress } from '../../progress'
+import { BOARD_STARS, boardUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
@@ -94,7 +94,7 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
           </button>
         ))}
       </div>
-      {mode === 'draft' && <DraftPicker court={court} roles={roles} onChange={setRoles} />}
+      {mode === 'draft' && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
       <h3>Spells</h3>
       <div className="choices row">
         <button className={`choice${spellMode === 'classic' ? ' on' : ''}`} onClick={() => setSpellMode('classic')}>
@@ -107,7 +107,7 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
           <span>Pick {LOADOUT_SIZE} from the shared pool and your court's signatures.</span>
         </button>
       </div>
-      {spellMode === 'loadout' && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} />}
+      {spellMode === 'loadout' && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} stars={totalStars(progress)} />}
       <label className="recharge"><input type="checkbox" checked={recharge} onChange={() => setRecharge((r) => !r)} /> Spells recharge after {RECHARGE_ROUNDS} rounds</label>
       <h3>Win condition</h3>
       <div className="choices row">

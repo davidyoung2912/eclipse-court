@@ -4,6 +4,7 @@ import { sfx, startDuelDrums } from '../../audio/synth'
 import { pieceArtSvg } from '../../art/pieceGeometry'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
+import { getSettings } from '../../settings'
 import { Icon } from '../menus/icons'
 import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/sim'
@@ -200,7 +201,7 @@ export function DuelView({ attacker, defender, luminance, options, playerSide = 
           else if (e.type === 'hit') {
             sfx.hit(e.damage)
             freeze = HIT_STOP
-            shake = Math.min(14, 4 + e.damage * 3)
+            shake = getSettings().reduceMotion ? 0 : Math.min(14, 4 + e.damage * 3)
             if (optionsRef.current.haptics) navigator.vibrate?.(e.damage >= 2 ? 40 : 18)
           } else if (e.type === 'suddenDeath') setBanner('Sudden death!')
         }

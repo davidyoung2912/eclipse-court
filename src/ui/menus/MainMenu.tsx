@@ -8,6 +8,9 @@ interface Props {
   onCampaign: () => void
   onTutorial: () => void
   onStats: () => void
+  onPuzzles: () => void
+  onPractice: () => void
+  onSettings: () => void
   /** Present when an unfinished game was left behind. */
   onResume?: () => void
   /** True until the player has finished or skipped the tutorial once. */
@@ -64,7 +67,7 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onResume, firstRun }: Props) {
+export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzles, onPractice, onSettings, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   return (
     <main className="app menu main-menu">
@@ -76,7 +79,12 @@ export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onResume
         {onResume && <button className="primary" onClick={onResume}><Icon name="play" />Resume game</button>}
         <button className={firstRun || onResume ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
-        <button onClick={onStats}><Icon name="trophy" />Stats and achievements</button>
+        <button onClick={onPuzzles}><Icon name="puzzle" />Puzzles</button>
+      </div>
+      <div className="menu-buttons small">
+        <button onClick={onPractice}><Icon name="target" />Practice</button>
+        <button onClick={onStats}><Icon name="trophy" />Stats</button>
+        <button onClick={onSettings}><Icon name="gear" />Settings</button>
       </div>
       <div className="menu-buttons small">
         <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to play</button>

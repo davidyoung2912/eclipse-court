@@ -1,5 +1,6 @@
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
+import { PUZZLES } from './engine/data/puzzles'
 import { replaySteps, type GameRecord } from './engine/log'
 import type { Court } from './engine/rules/types'
 
@@ -38,6 +39,10 @@ export interface Progress {
   stars: number[]
   stats: Stats
   achievements: string[]
+  /** Ids of the puzzles solved. */
+  puzzles: string[]
+  /** Best-of-three series won. */
+  tournaments: number
   /** The finished game most recently played, as a record code for the replay viewer. */
   last: string | null
 }
@@ -54,6 +59,8 @@ export interface Summary {
   difficulty: Difficulty
   campaignIndex: number | null
   daily: boolean
+  /** The game was the day's puzzle, solved. */
+  dailyPuzzle?: boolean
 }
 
 export const emptyProgress = (): Progress => ({
@@ -62,6 +69,8 @@ export const emptyProgress = (): Progress => ({
   stars: CAMPAIGN.map(() => 0),
   stats: { games: 0, wins: 0, losses: 0, draws: 0, captures: 0, piecesLost: 0 },
   achievements: [],
+  puzzles: [],
+  tournaments: 0,
   last: null,
 })
 
@@ -92,6 +101,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'half', name: 'Halfway There', text: 'Beat four campaign opponents.', earned: (p) => p.cleared >= 4 },
   { id: 'queen', name: 'Eclipse Ender', text: 'Beat the Eclipse Queen.', earned: (p) => p.cleared >= CAMPAIGN.length },
   { id: 'veteran', name: 'Seasoned', text: 'Play 25 games.', earned: (p) => p.stats.games >= 25 },
+  { id: 'puzzler', name: 'Puzzler', text: 'Solve three puzzles.', earned: (p) => p.puzzles.length >= 3 },
+  { id: 'puzzle-master', name: 'Puzzle Master', text: 'Solve every puzzle.', earned: (p) => PUZZLES.every((z) => p.puzzles.includes(z.id)) },
+  { id: 'daily-puzzle', name: 'Puzzle of the Day', text: "Solve the day's puzzle.", earned: (_, s) => !!s.dailyPuzzle },
+  { id: 'champion', name: 'Champion', text: 'Win a best-of-three tournament.', earned: (p) => p.tournaments >= 1 },
 ]
 
 /** The progress after one finished game, and the achievements it newly earned. */
@@ -112,9 +125,28 @@ export function recordGame(p: Progress, s: Summary, replay: string | null): { pr
     cleared = Math.max(cleared, i + 1)
   }
   const next: Progress = { ...p, cleared, stars, stats, last: replay ?? p.last }
-  const earned = ACHIEVEMENTS.filter((a) => !p.achievements.includes(a.id) && a.earned(next, s))
-  next.achievements = [...p.achievements, ...earned.map((a) => a.id)]
-  return { progress: next, earned }
+  return award(next, s, p)
+}
+
+/** What no game happened looks like, for achievements earned outside a game. */
+const NO_GAME: Summary = {
+  won: false, draw: false, lost: 0, taken: 0, swift: false, spellsCast: 0, difficulty: 'normal', campaignIndex: null, daily: false,
+}
+
+function award(next: Progress, s: Summary, before: Progress): { progress: Progress; earned: Achievement[] } {
+  const earned = ACHIEVEMENTS.filter((a) => !before.achievements.includes(a.id) && a.earned(next, s))
+  return { progress: { ...next, achievements: [...before.achievements, ...earned.map((a) => a.id)] }, earned }
+}
+
+/** The progress after a puzzle is solved; `daily` marks the day's puzzle. */
+export function recordPuzzle(p: Progress, id: string, daily: boolean) {
+  const puzzles = p.puzzles.includes(id) ? p.puzzles : [...p.puzzles, id]
+  return award({ ...p, puzzles }, { ...NO_GAME, dailyPuzzle: daily }, p)
+}
+
+/** The progress after a best-of-three series ends; only a win counts as a title. */
+export function recordTournament(p: Progress, won: boolean) {
+  return award({ ...p, tournaments: p.tournaments + (won ? 1 : 0) }, NO_GAME, p)
 }
 
 /** How a finished game went for `human`, found by replaying it. Null if the record is not a legal game. */
@@ -162,6 +194,8 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     stars: fresh.stars.map((_, i) => (isInt(o.stars?.[i]) ? o.stars![i] & 7 : 0)),
     stats,
     achievements: Array.isArray(o.achievements) ? o.achievements.filter((a) => ACHIEVEMENTS.some((x) => x.id === a)) : [],
+    puzzles: Array.isArray(o.puzzles) ? o.puzzles.filter((id) => PUZZLES.some((z) => z.id === id)) : [],
+    tournaments: isInt(o.tournaments) ? o.tournaments : 0,
     last: typeof o.last === 'string' ? o.last : null,
   }
 }

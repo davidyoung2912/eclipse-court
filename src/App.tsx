@@ -6,14 +6,18 @@ import { aiDraft, aiLoadout } from './ai/draft'
 import { otherCourt } from './engine/rules/board'
 import { skirmishConfig } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
+import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 import type { PersonalityId } from './ai/personality'
-import { loadProgress, recordGame, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
+import { loadProgress, recordGame, recordPuzzle, recordTournament, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
-import type { Court } from './engine/rules/types'
+import type { Court, GameState } from './engine/rules/types'
 import { Campaign } from './ui/menus/Campaign'
+import { Practice } from './ui/menus/Practice'
+import { Puzzles } from './ui/menus/Puzzles'
+import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Replay } from './ui/menus/Replay'
 import { Stats } from './ui/menus/Stats'
@@ -26,8 +30,17 @@ type Screen =
   | { name: 'campaign' }
   | { name: 'tutorial' }
   | { name: 'stats' }
+  | { name: 'puzzles' }
+  | { name: 'practice' }
+  | { name: 'settings' }
   | { name: 'replay'; record: GameRecord }
-  | { name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null }
+  | {
+    name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
+    /** Set when the game is a puzzle: its index, whether it is the day's, and the turns allowed. */
+    puzzle?: { index: number; daily: boolean }
+    /** Set in a best-of-three: the opponent and the games won and lost so far. */
+    series?: { wins: number; losses: number }
+  }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
 
@@ -81,6 +94,22 @@ export default function App() {
         } : undefined} />
     )
 
+  if (screen.name === 'puzzles')
+    return (
+      <Puzzles progress={progress} report={report} onBack={() => setScreen({ name: 'menu' })}
+        onPlay={(index, daily) => {
+          setReport([])
+          setScreen({
+            name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty,
+            record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily },
+          })
+        }} />
+    )
+
+  if (screen.name === 'practice') return <Practice onBack={() => setScreen({ name: 'menu' })} />
+
+  if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
+
   if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen({ name: 'stats' })} />
 
   if (screen.name === 'skirmish')
@@ -105,19 +134,74 @@ export default function App() {
         progress={progress}
         report={report}
         onBack={() => setScreen({ name: 'menu' })}
-        onPlay={(i) => {
+        onPlay={(i, series) => {
           setReport([])
           const opponent = CAMPAIGN[i]
           setScreen({
             name: 'game', human: 'solari', difficulty: opponent.difficulty,
             record: { initial: campaignGame(opponent, Date.now()), actions: [] }, campaignIndex: i,
+            series: series ? { wins: 0, losses: 0 } : undefined,
           })
         }}
       />
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series } = screen
+    /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
+    const transient = !!puzzle || !!series
+
+    const finishPuzzle = (winner: GameState['winner']) => {
+      const solved = winner === human
+      if (solved) {
+        const { progress: next, earned } = recordPuzzle(progress, PUZZLES[puzzle!.index].id, puzzle!.daily && puzzle!.index === dailyPuzzleIndex())
+        setProgress(next)
+        saveProgress(next)
+        setReport(earned.map((a) => `Achievement: ${a.name}`))
+      } else setReport([])
+      setScreen({ name: 'puzzles' })
+    }
+
+    /** Records a finished game and returns the lines to show about it. */
+    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
+      const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
+      if (!summary) return { summary: null, lines: [] as string[], progress }
+      const { progress: next, earned } = recordGame(progress, summary, encodeRecord(finished))
+      const stars = starsEarned(summary)
+      return {
+        summary,
+        progress: next,
+        lines: [
+          ...(stats && campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),
+          ...earned.map((a) => `Achievement: ${a.name}`),
+        ],
+      }
+    }
+
+    const finishSeries = (winner: GameState['winner'], finished: GameRecord) => {
+      const opponent = CAMPAIGN[campaignIndex!]
+      const done = finishGame(winner, finished, false)
+      let { wins, losses } = series!
+      if (done.summary?.won) wins++
+      else if (done.summary && !done.summary.draw) losses++
+      let next = done.progress
+      const lines = [...report, ...(done.summary ? [`Game ${wins + losses + (done.summary.draw ? 1 : 0)}: ${done.summary.won ? 'won' : done.summary.draw ? 'drawn' : 'lost'}.`] : []), ...done.lines]
+      const over = wins === 2 || losses === 2
+      if (over) {
+        const result = recordTournament(next, wins === 2)
+        next = result.progress
+        lines.push(`${opponent.name}: tournament ${wins === 2 ? 'won' : 'lost'} ${wins}–${losses}.`, ...result.earned.map((a) => `Achievement: ${a.name}`))
+      } else if (!done.summary) lines.push('Tournament abandoned.')
+      setProgress(next)
+      saveProgress(next)
+      setReport(lines)
+      if (over || !done.summary) return setScreen({ name: 'campaign' })
+      setScreen({
+        name: 'game', human, difficulty, campaignIndex, series: { wins, losses },
+        record: { initial: campaignGame(opponent, Date.now()), actions: [] },
+      })
+    }
+
     return (
       <Game
         key={record.initial.rng}
@@ -125,24 +209,21 @@ export default function App() {
         difficulty={difficulty}
         personality={campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId)}
         record={record}
+        puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         onSave={(progress) => {
+          if (transient) return
           if (progress) saveGame({ human, difficulty, campaignIndex, record: progress })
           else clearSaved()
         }}
         onExit={(winner, finished) => {
+          if (puzzle) return finishPuzzle(winner)
+          if (series) return finishSeries(winner, finished)
           clearSaved()
           setSaved(null)
-          const summary = winner ? summarise(finished, human, difficulty, campaignIndex) : null
-          if (summary) {
-            const { progress: next, earned } = recordGame(progress, summary, encodeRecord(finished))
-            setProgress(next)
-            saveProgress(next)
-            const stars = starsEarned(summary)
-            setReport([
-              ...(campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),
-              ...earned.map((a) => `Achievement: ${a.name}`),
-            ])
-          } else setReport([])
+          const done = finishGame(winner, finished, true)
+          setProgress(done.progress)
+          if (done.summary) saveProgress(done.progress)
+          setReport(done.lines)
           setScreen(campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
@@ -152,6 +233,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })} />
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onPractice={() => setScreen({ name: 'practice' })} onSettings={() => setScreen({ name: 'settings' })} />
   )
 }

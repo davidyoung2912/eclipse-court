@@ -83,12 +83,12 @@ body {
 .art-rim { fill: #120d2a; }
 .art-lead { fill: none; stroke: #120d2a; stroke-width: 0.025; }
 .pane { stroke: #120d2a; stroke-width: 0.018; }
-.art-solari .pane-0 { fill: #f2c55c; }
-.art-solari .pane-1 { fill: #e8943a; }
-.art-solari .pane-2 { fill: #fbe39a; }
-.art-umbral .pane-0 { fill: #6a4cc0; }
-.art-umbral .pane-1 { fill: #3b2f8a; }
-.art-umbral .pane-2 { fill: #4aa6b8; }
+.art-solari .pane-0 { fill: var(--pane-s0, #f2c55c); }
+.art-solari .pane-1 { fill: var(--pane-s1, #e8943a); }
+.art-solari .pane-2 { fill: var(--pane-s2, #fbe39a); }
+.art-umbral .pane-0 { fill: var(--pane-u0, #6a4cc0); }
+.art-umbral .pane-1 { fill: var(--pane-u1, #3b2f8a); }
+.art-umbral .pane-2 { fill: var(--pane-u2, #4aa6b8); }
 .art-hub { stroke: #120d2a; stroke-width: 0.02; }
 .art-solari .art-hub { fill: #fff4cf; }
 .art-umbral .art-hub { fill: #1d1745; }
@@ -374,3 +374,23 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .achievements li.got { opacity: 1; border-color: var(--solari-gold); }
 .achievements strong { display: flex; align-items: center; gap: 8px; }
 .achievements span { font-size: 0.8rem; opacity: 0.75; }
+
+/* Settings: forced reduced motion, and light marks for players who cannot rely on colour */
+:root[data-motion='reduced'] *, :root[data-motion='reduced'] *::before, :root[data-motion='reduced'] *::after {
+  animation: none !important; transition: none !important;
+}
+.lum-mark { font-size: 0.2rem; font-weight: 700; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke-width: 0.04; }
+.lum-mark.lit { fill: #3a2410; stroke: #fff6cf; }
+.lum-mark.dim { fill: #e4d8ff; stroke: #1d1745; }
+
+/* Puzzles, practice, settings */
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; background: rgba(111, 224, 138, 0.2); border: 1px solid #6fe08a; }
+.row-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.row-pick button {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: var(--fg); font-size: 0.85rem;
+}
+.row-pick button.on { border-color: var(--solari-gold); background: rgba(232, 182, 74, 0.2); }
+.row-pick button:disabled { opacity: 0.35; }
+.practice-out { text-align: center; font-weight: 600; }
+.swatch { display: inline-block; width: 14px; height: 14px; margin-right: 6px; border-radius: 50%; vertical-align: -2px; border: 1px solid rgba(255, 255, 255, 0.4); }
+.main-menu .menu-buttons.small + .menu-buttons.small { margin-top: 0; }

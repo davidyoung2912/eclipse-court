@@ -31,6 +31,8 @@ interface Props {
   personality?: PersonalityId
   /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
   record: GameRecord
+  /** A puzzle: you win by winning within this many of your own turns. */
+  puzzleLimit?: number
   /** Called after every action with the game so far, or null once it has ended. */
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord) => void
@@ -55,7 +57,7 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ human, difficulty, personality, record, onSave, onExit }: Props) {
+export function Game({ human, difficulty, personality, record, puzzleLimit, onSave, onExit }: Props) {
   const foe: Court = human === 'solari' ? 'umbral' : 'solari'
   const foeSkill = DIFFICULTY[difficulty].skill
   const foeAggression = DIFFICULTY[difficulty].aggression
@@ -76,6 +78,10 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
   /** The position a hint was asked for, so a slow search cannot land on a later one. */
   const hintFor = useRef<GameState | null>(null)
   const myTurn = state.turn === human
+  /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
+  const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
+  const failed = puzzleLimit !== undefined && !state.winner && turnsTaken >= puzzleLimit
+  const ended = !!state.winner || failed
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
   const targets = casting && myTurn ? spellTargets(state, human, casting, castFirst ?? undefined) : null
@@ -157,7 +163,7 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
 
   // The AI court takes its turn after a short pause, searching off the main thread.
   useEffect(() => {
-    if (state.turn !== foe || state.winner || pending) return
+    if (state.turn !== foe || state.winner || pending || failed) return
     let cancelled = false
     let flash: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
@@ -183,7 +189,7 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
     }
     // beginDuel and play only close over state/duelMode, which are covered or intentionally read fresh.
     // oxlint-disable-next-line react/exhaustive-deps
-  }, [state, pending, foe, difficulty])
+  }, [state, pending, foe, difficulty, failed])
 
   const pickSpell = (spell: Spell | null) => {
     clearHint()
@@ -194,7 +200,7 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
   }
 
   const onSquare = (p: Pos) => {
-    if (state.winner || pending) return
+    if (ended || pending) return
     if (!myTurn) {
       // Off-turn taps only look at pieces.
       const occ = pieceAt(state, p)
@@ -249,7 +255,17 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
   const defender = pending && pieceAt(state, pending.to)
   const duel = state.lastDuel
   const hinted = hint && hint !== 'thinking' ? hint : null
-  const result = state.winner === 'draw' ? 'Draw' : state.winner === human ? 'Victory' : 'Defeat'
+  const result = puzzleLimit !== undefined
+    ? state.winner === human ? 'Solved' : 'Not solved'
+    : state.winner === 'draw' ? 'Draw' : state.winner === human ? 'Victory' : 'Defeat'
+  const retry = () => {
+    setHistory((h) => h.slice(0, 1))
+    setSelectedId(null)
+    setCasting(null)
+    setCastFirst(null)
+    setPending(null)
+    clearHint()
+  }
 
   return (
     <main className="app">
@@ -274,11 +290,12 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
           onPerk={(perk) => commit({ ...asking.action, perk })}
           onPromote={(role) => commit({ ...asking.action, promote: role })} />
       )}
-      {state.winner && (
+      {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           <p className="confirm-title">{result}</p>
           <div className="buttons">
-            <button className="primary" onClick={() => onExit(state.winner, recordOf(history))}><Icon name="next" />Continue</button>
+            {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try again</button>}
+            <button className="primary" onClick={() => onExit(state.winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>
       )}
@@ -287,7 +304,7 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
       <footer className="tray">
-        {!state.winner && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />}
+        {!ended && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />}
         <div className="options">
           <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
@@ -296,9 +313,11 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
           <label><input type="checkbox" checked={sound} onChange={toggleSound} /> Sound</label>
         </div>
         <p className="status">
-          {state.winner
+          {ended
             ? result
-            : !myTurn
+            : puzzleLimit !== undefined && myTurn
+              ? `Turn ${turnsTaken + 1} of ${puzzleLimit}`
+              : !myTurn
               ? 'Opponent is thinking…'
               : duel
                 ? `Last duel: ${describeDuel(duel)}`
@@ -306,8 +325,8 @@ export function Game({ human, difficulty, personality, record, onSave, onExit }:
         </p>
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
-          <button className={hint ? 'on' : ''} disabled={!!state.winner || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
-          <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
+          <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
+          <button disabled={ended || !myTurn || !!pending} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>
       </footer>

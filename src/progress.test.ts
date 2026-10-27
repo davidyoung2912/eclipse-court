@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { CAMPAIGN } from './engine/data/campaign'
+import { PUZZLES } from './engine/data/puzzles'
 import {
-  ACHIEVEMENTS, boardUnlocked, emptyProgress, migrate, recordGame, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  ACHIEVEMENTS, boardUnlocked, emptyProgress, migrate, recordGame, recordPuzzle, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Summary,
 } from './progress'
 
@@ -56,5 +57,36 @@ describe('progress', () => {
     expect(boardUnlocked(p, 'pillars')).toBe(false)
     p.stars[0] = STAR_WIN | STAR_FLAWLESS
     expect(boardUnlocked(p, 'pillars')).toBe(true)
+  })
+
+  it('records solved puzzles once and awards their achievements', () => {
+    let p = emptyProgress()
+    let r = recordPuzzle(p, PUZZLES[0].id, false)
+    expect(r.progress.puzzles).toEqual([PUZZLES[0].id])
+    expect(r.earned).toEqual([])
+    p = recordPuzzle(r.progress, PUZZLES[0].id, true).progress
+    expect(p.puzzles).toEqual([PUZZLES[0].id])
+    expect(p.achievements).toContain('daily-puzzle')
+    for (const z of PUZZLES) p = recordPuzzle(p, z.id, false).progress
+    expect(p.achievements).toEqual(expect.arrayContaining(['puzzler', 'puzzle-master']))
+    expect(p.stats.games).toBe(0)
+  })
+
+  it('counts only won series as titles', () => {
+    const lost = recordTournament(emptyProgress(), false)
+    expect(lost.progress.tournaments).toBe(0)
+    expect(lost.earned).toEqual([])
+    const won = recordTournament(lost.progress, true)
+    expect(won.progress.tournaments).toBe(1)
+    expect(won.earned.map((a) => a.id)).toEqual(['champion'])
+  })
+
+  it('keeps puzzles and titles through a save, and drops unknown puzzle ids', () => {
+    const p = recordTournament(recordPuzzle(emptyProgress(), PUZZLES[1].id, false).progress, true).progress
+    const round = migrate(JSON.parse(JSON.stringify(p)))
+    expect(round.puzzles).toEqual([PUZZLES[1].id])
+    expect(round.tournaments).toBe(1)
+    expect(migrate({ v: 2, puzzles: ['nope', PUZZLES[0].id], tournaments: -3 })).toMatchObject({ puzzles: [PUZZLES[0].id], tournaments: 0 })
+    expect(migrate({ v: 2 }).puzzles).toEqual([])
   })
 })
