@@ -78,11 +78,13 @@ export interface PuzzleDef extends Omit<Puzzle, 'build' | 'difficulty'> {
   fallen?: string
   /** What Umbral cast last, for Mirror to copy. */
   lastUmbral?: Spell
+  /** Spells the Duskmother holds; she casts them as the AI sees fit. */
+  umbralSpells?: readonly Spell[]
 }
 
 /** Defines a puzzle from short specs; its Umbral difficulty follows the tier. */
 export function puzzle(def: PuzzleDef): Puzzle {
-  const { seed, beacons, solari: s, umbral: u, spells = [], rules, fallen, lastUmbral, ...rest } = def
+  const { seed, beacons, solari: s, umbral: u, spells = [], rules, fallen, lastUmbral, umbralSpells = [], ...rest } = def
   const difficulty: Difficulty = rest.tier === 'beginner' ? 'easy' : rest.tier === 'normal' ? 'normal' : 'hard'
   return {
     ...rest,
@@ -91,6 +93,7 @@ export function puzzle(def: PuzzleDef): Puzzle {
       const state = position(seed, beacons, [...army('solari', s), ...army('umbral', u)], spells, { passives: false, ...rules })
       return {
         ...state,
+        spells: { ...state.spells, umbral: [...umbralSpells] },
         captured: fallen ? army('solari', fallen).map((p) => ({ ...p, hp: 0 })) : [],
         lastCast: { solari: null, umbral: lastUmbral ?? null },
       }

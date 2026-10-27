@@ -17,9 +17,9 @@ function play(puzzle: Puzzle, actions: readonly Action[]): GameState {
     s = next
     if (s.winner) break
     const reply = rivalReply(s, puzzle, 'ai')
-    // A reply that attacks would be settled by a duel the puzzle cannot promise, so authors keep the rival's pieces out of reach.
-    expect(reply.type === 'move' && pieceAt(s, reply.to), `${puzzle.id}: the rival never attacks`).toBeFalsy()
-    s = reduce(s, reply)
+    // An attack by the rival must be one luck cannot change, or the puzzle would not be fair.
+    expect(reply, `${puzzle.id}: the rival's attack is not decided by luck`).not.toBeNull()
+    s = reduce(s, reply!)
   }
   return s
 }
@@ -73,7 +73,7 @@ describe('puzzles', () => {
       let s = p.build()
       for (let i = 0; i < p.limit && !s.winner; i++) {
         s = reduce(s, { type: 'pass' })
-        if (!s.winner) s = reduce(s, rivalReply(s, p, 'ai'))
+        if (!s.winner) s = reduce(s, rivalReply(s, p, 'ai') ?? { type: 'pass' })
       }
       expect(s.winner, p.id).not.toBe('solari')
     }
@@ -97,7 +97,7 @@ describe('puzzles', () => {
         }
         s = reduce(s, a)
         if (s.winner) break
-        s = reduce(s, rivalReply(s, p, 'ai'))
+        s = reduce(s, rivalReply(s, p, 'ai') ?? { type: 'pass' })
       }
     }
   })

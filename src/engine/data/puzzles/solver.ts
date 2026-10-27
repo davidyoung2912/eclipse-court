@@ -9,16 +9,22 @@ import type { Puzzle } from './helpers'
 /** How the other side answers while the solver looks for wins. */
 export type Rival = 'pass' | 'ai'
 
-/** Every action Solari could take: moves (an attack carries the stub duel's middling result), casts with each target, and a pass. */
+/** The rolls the stub duel is tried at; a puzzle fight must come out the same at all of them. */
+export const DUEL_LUCK = [0, 0.25, 0.5, 0.75, 1] as const
+
+/** Every action Solari could take: moves (an attack carries the stub duel's result, and only decided fights are offered), casts with each target, and a pass. */
 export function playerActions(state: GameState): Action[] {
   const out: Action[] = []
   for (const piece of state.pieces) {
     if (piece.court !== state.turn) continue
     for (const to of legalMoves(state, piece)) {
       const target = pieceAt(state, to)
-      out.push(target
-        ? { type: 'move', pieceId: piece.id, to, duel: stubDuel(piece, target, squareLuminance(state, to), 0.5) }
-        : { type: 'move', pieceId: piece.id, to })
+      if (!target) { out.push({ type: 'move', pieceId: piece.id, to }); continue }
+      // A fight that luck could swing either way is not something a puzzle can ask of the player.
+      const lum = squareLuminance(state, to)
+      const results = DUEL_LUCK.map((roll) => stubDuel(piece, target, lum, roll))
+      if (results.every((r) => r.defenderHp <= 0) || results.every((r) => r.attackerHp <= 0))
+        out.push({ type: 'move', pieceId: piece.id, to, duel: results[2] })
     }
   }
   for (const spell of state.spells[state.turn]) {
@@ -37,13 +43,20 @@ export function playerActions(state: GameState): Action[] {
   return out
 }
 
-/** The rival's reply, as the puzzle screen plays it; an attack by the rival leaves both pieces standing, so authors avoid positions where one happens. */
-export function rivalReply(state: GameState, puzzle: Pick<Puzzle, 'difficulty'>, rival: Rival, seedShift = 0): Action {
+/**
+ * The rival's reply, as the puzzle screen plays it. An attack it makes is settled by the stub duel, but only when luck cannot change the
+ * result; a fight that could go either way returns null, since a puzzle cannot promise how the player's duel will end.
+ */
+export function rivalReply(state: GameState, puzzle: Pick<Puzzle, 'difficulty'>, rival: Rival, seedShift = 0): Action | null {
   if (rival === 'pass') return { type: 'pass' }
   const reply = chooseAction(state, puzzle.difficulty, state.rng + state.round + seedShift)
-  return reply.type === 'move' && pieceAt(state, reply.to)
-    ? { ...reply, duel: { attackerHp: 1, defenderHp: 1 } }
-    : reply
+  if (reply.type !== 'move') return reply
+  const defender = pieceAt(state, reply.to)
+  if (!defender) return reply
+  const attacker = state.pieces.find((p) => p.id === reply.pieceId)!
+  const lum = squareLuminance(state, reply.to)
+  const results = DUEL_LUCK.map((roll) => stubDuel(attacker, defender, lum, roll))
+  return results.every((r) => r.defenderHp <= 0) || results.every((r) => r.attackerHp <= 0) ? { ...reply, duel: results[2] } : null
 }
 
 /** A key for a position that ignores how it was reached, so move orders that agree are searched once. */
@@ -64,7 +77,7 @@ export interface Solved {
 }
 
 /** Breadth-first search over Solari's turns, up to `maxTurns`; the rival answers by `rival`. */
-export function solve(start: GameState, puzzle: Pick<Puzzle, 'difficulty'>, maxTurns: number, rival: Rival, cap = 8): Solved {
+export function solve(start: GameState, puzzle: Pick<Puzzle, 'difficulty'>, maxTurns: number, rival: Rival, cap = 8, maxNodes = Infinity): Solved {
   let frontier = new Map<string, { state: GameState; line: Action[] }>([[keyOf(start), { state: start, line: [] }]])
   let nodes = 0
   for (let turn = 1; turn <= maxTurns; turn++) {
@@ -72,12 +85,15 @@ export function solve(start: GameState, puzzle: Pick<Puzzle, 'difficulty'>, maxT
     const next = new Map<string, { state: GameState; line: Action[] }>()
     for (const { state, line } of frontier.values()) {
       for (const action of playerActions(state)) {
-        nodes++
+        if (++nodes > maxNodes) return { turns: null, lines: [], firsts: 0, nodes }
         const after = reduce(state, action)
         if (after === state) continue
         if (after.winner === 'solari') { lines.push([...line, action]); continue }
         if (after.winner || turn === maxTurns) continue
-        const reply = reduce(after, rivalReply(after, puzzle, rival))
+        const answer = rivalReply(after, puzzle, rival)
+        // A rival attack that luck could swing either way is not something a puzzle can promise, so those lines are not counted.
+        if (!answer) continue
+        const reply = reduce(after, answer)
         if (reply.winner) continue
         const key = keyOf(reply)
         if (!next.has(key)) next.set(key, { state: reply, line: [...line, action] })
