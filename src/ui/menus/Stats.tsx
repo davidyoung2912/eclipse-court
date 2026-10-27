@@ -17,6 +17,7 @@ export function Stats({ progress, onReplay, onBack }: Props) {
     ['Won / lost / drawn', `${stats.wins} / ${stats.losses} / ${stats.draws}`],
     ['Enemy pieces taken', stats.captures],
     ['Own pieces lost', stats.piecesLost],
+    ['Gauntlet', `${progress.gauntlet.won} won of ${progress.gauntlet.runs} runs, furthest stage ${progress.gauntlet.best}`],
     ['Campaign', `${progress.cleared} of ${CAMPAIGN.length} beaten, ${totalStars(progress)} stars`],
   ]
   return (

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
 import {
-  ACHIEVEMENTS, boardUnlocked, emptyProgress, migrate, recordGame, recordPuzzle, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  ACHIEVEMENTS, boardUnlocked, emptyProgress, migrate, recordGame, recordPuzzle, recordRun, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Summary,
 } from './progress'
 
@@ -88,5 +88,27 @@ describe('progress', () => {
     expect(round.tournaments).toBe(1)
     expect(migrate({ v: 2, puzzles: ['nope', PUZZLES[0].id], tournaments: -3 })).toMatchObject({ puzzles: [PUZZLES[0].id], tournaments: 0 })
     expect(migrate({ v: 2 }).puzzles).toEqual([])
+  })
+
+  it('keeps a version-2 save, adding an empty gauntlet record', () => {
+    const v2 = { v: 2, cleared: 3, stars: [7, 1, 0], stats: { games: 9, wins: 5 }, achievements: ['first-win'], puzzles: [], tournaments: 1, last: 'x' }
+    const p = migrate(v2)
+    expect(p).toMatchObject({ cleared: 3, tournaments: 1, last: 'x', gauntlet: { runs: 0, won: 0, best: 0 } })
+    expect(p.stats.games).toBe(9)
+    expect(p.achievements).toEqual(['first-win'])
+    expect(migrate({ v: 3, gauntlet: { runs: 2, won: 1, best: 8, junk: 5 } }).gauntlet).toEqual({ runs: 2, won: 1, best: 8 })
+    expect(migrate({ v: 3, gauntlet: { runs: -1, best: 'x' } }).gauntlet).toEqual({ runs: 0, won: 0, best: 0 })
+  })
+
+  it('records gauntlet runs and their achievements', () => {
+    const lost = recordRun(emptyProgress(), 5, false)
+    expect(lost.progress.gauntlet).toEqual({ runs: 1, won: 0, best: 5 })
+    expect(lost.earned.map((a) => a.id)).toEqual(['deep'])
+    const early = recordRun(lost.progress, 2, false).progress
+    expect(early.gauntlet).toEqual({ runs: 2, won: 0, best: 5 })
+    const won = recordRun(early, 9, true)
+    expect(won.progress.gauntlet).toEqual({ runs: 3, won: 1, best: 8 })
+    expect(won.earned.map((a) => a.id)).toEqual(['gauntlet'])
+    expect(won.progress.stats.games).toBe(0)
   })
 })

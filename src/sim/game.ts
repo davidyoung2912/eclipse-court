@@ -35,8 +35,13 @@ export function checkInvariants(state: GameState): string[] {
  * side's difficulty skill. Gives up (winner stays null) after `maxActions`.
  */
 export function playGame(seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400, config: Partial<MatchConfig> = {}): GameResult {
+  return playFrom(newGame({ ...config, seed }), seed, solari, umbral, maxActions)
+}
+
+/** Plays a game on from a given position, in the same way as `playGame`. */
+export function playFrom(start: GameState, seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400): GameResult {
   const level: Record<Court, Difficulty> = { solari, umbral }
-  let state = newGame({ ...config, seed })
+  let state = start
   let actions = 0
   let duels = 0
   const problems: string[] = []

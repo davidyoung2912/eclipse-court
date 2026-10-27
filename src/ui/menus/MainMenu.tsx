@@ -6,6 +6,7 @@ import { PieceArt } from '../../art/PieceArt'
 interface Props {
   onSkirmish: () => void
   onCampaign: () => void
+  onGauntlet: () => void
   onTutorial: () => void
   onStats: () => void
   onPuzzles: () => void
@@ -68,7 +69,7 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onResume, firstRun }: Props) {
+export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   return (
     <main className="app menu main-menu">
@@ -80,6 +81,7 @@ export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzle
         {onResume && <button className="primary" onClick={onResume}><Icon name="play" />Resume game</button>}
         <button className={firstRun || onResume ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
+        <button onClick={onGauntlet}><Icon name="flame" />Gauntlet</button>
         <button onClick={onPuzzles}><Icon name="puzzle" />Puzzles</button>
       </div>
       <div className="menu-buttons small">

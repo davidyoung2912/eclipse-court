@@ -15,11 +15,15 @@ import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord } from './engine/serialize'
+import { replay } from './engine/log'
 import type { PersonalityId } from './ai/personality'
-import { loadProgress, recordGame, recordPuzzle, recordTournament, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
+import { loadProgress, recordGame, recordPuzzle, recordRun, recordTournament, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign } from './ui/menus/Campaign'
+import { Gauntlet } from './ui/menus/Gauntlet'
+import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { clearRun, loadRun, saveRun } from './run'
 import { Practice } from './ui/menus/Practice'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Settings } from './ui/menus/Settings'
@@ -33,6 +37,7 @@ type Screen =
   | { name: 'menu' }
   | { name: 'skirmish' }
   | { name: 'campaign' }
+  | { name: 'gauntlet' }
   | { name: 'tutorial' }
   | { name: 'stats' }
   | { name: 'puzzles' }
@@ -49,6 +54,8 @@ type Screen =
     puzzle?: { index: number; daily: boolean }
     /** Set in a best-of-three: the opponent and the games won and lost so far. */
     series?: { wins: number; losses: number }
+    /** A fight of the gauntlet run; the run itself is kept apart from the saved game. */
+    gauntlet?: boolean
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -98,6 +105,7 @@ export default function App() {
   const [report, setReport] = useState<string[]>([])
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
+  const [run, setRun] = useState(loadRun)
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
@@ -175,6 +183,35 @@ export default function App() {
       />
     )
 
+  if (screen.name === 'gauntlet') {
+    const update = (next: Run | null) => {
+      setRun(next)
+      if (next) saveRun(next)
+      else clearRun()
+    }
+    const endRun = (stage: number, won: boolean, lines: string[]) => {
+      const result = recordRun(progress, stage, won)
+      setProgress(result.progress)
+      saveProgress(result.progress)
+      setReport([...lines, ...result.earned.map((a) => `Achievement: ${a.name}`)])
+      update(null)
+    }
+    return (
+      <Gauntlet
+        progress={progress} run={run} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
+        onStart={(court, roles) => { setReport([]); update(startRun(court, roles, Date.now())) }}
+        onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
+        onAbandon={() => { if (run) endRun(run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
+        onFight={() => {
+          if (!run) return
+          const foe = stageFoe(run.seed, run.stage)
+          setReport([])
+          setScreen({ name: 'game', human: run.court, difficulty: foe.difficulty, record: { initial: stageGame(run), actions: [] }, campaignIndex: null, gauntlet: true })
+        }}
+      />
+    )
+  }
+
   if (screen.name === 'campaign')
     return (
       <Campaign
@@ -194,9 +231,9 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
-    const transient = !!puzzle || !!series
+    const transient = !!puzzle || !!series || !!gauntlet
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -249,10 +286,41 @@ export default function App() {
       })
     }
 
+    /** A gauntlet fight ends: a win carries the survivors on to a reward, anything else ends the run. */
+    const finishFight = (winner: GameState['winner'], finished: GameRecord) => {
+      setScreen({ name: 'gauntlet' })
+      if (!run || winner === null) return
+      const final = winner === human ? replay(finished) : null
+      if (!final) {
+        const result = recordRun(progress, run.stage, false)
+        setProgress(result.progress)
+        saveProgress(result.progress)
+        setReport([`${winner === 'draw' ? 'A draw' : 'A defeat'} at stage ${run.stage}: the run is over.`, ...result.earned.map((a) => `Achievement: ${a.name}`)])
+        setRun(null)
+        clearRun()
+        return
+      }
+      const next = applyVictory(run, final)
+      if (runWon(next)) {
+        const result = recordRun(progress, next.stage, true)
+        setProgress(result.progress)
+        saveProgress(result.progress)
+        setReport(['The Eclipse Tyrant falls. The run is won!', ...result.earned.map((a) => `Achievement: ${a.name}`)])
+        setRun(null)
+        clearRun()
+        return
+      }
+      setReport([`Stage ${run.stage} cleared.`])
+      setRun(next)
+      saveRun(next)
+    }
+
+    const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
     return (
       <Game
         key={record.initial.rng}
         controllers={hotSeat ? HOT_SEAT
+          : foe ? versusAi(human, foe.difficulty, foe.personality)
           : versusAi(human, difficulty, campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
@@ -262,6 +330,7 @@ export default function App() {
           else clearSaved()
         }}
         onExit={(winner, finished) => {
+          if (gauntlet) return finishFight(winner, finished)
           if (puzzle) return finishPuzzle(winner)
           if (series) return finishSeries(winner, finished)
           clearSaved()
@@ -281,7 +350,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onSettings={() => setScreen({ name: 'settings' })} />
   )
 }

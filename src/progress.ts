@@ -8,7 +8,7 @@ const PROGRESS_KEY = 'eclipse-court:progress'
 /** The pre-E8 save: just the number of opponents beaten. */
 const LEGACY_KEY = 'eclipse-court:campaign'
 
-export const PROGRESS_VERSION = 2
+export const PROGRESS_VERSION = 3
 
 /** The three stars of a campaign battle, as bits so each is remembered on its own. */
 export const STAR_WIN = 1
@@ -31,6 +31,15 @@ export interface Stats {
   piecesLost: number
 }
 
+/** What the roguelike gauntlet has shown so far. */
+export interface Gauntlet {
+  /** Runs begun, and runs won. */
+  runs: number
+  won: number
+  /** The furthest stage reached in any run. */
+  best: number
+}
+
 export interface Progress {
   v: typeof PROGRESS_VERSION
   /** Campaign opponents beaten in order; the next one is unlocked. */
@@ -43,6 +52,7 @@ export interface Progress {
   puzzles: string[]
   /** Best-of-three series won. */
   tournaments: number
+  gauntlet: Gauntlet
   /** The finished game most recently played, as a record code for the replay viewer. */
   last: string | null
 }
@@ -71,6 +81,7 @@ export const emptyProgress = (): Progress => ({
   achievements: [],
   puzzles: [],
   tournaments: 0,
+  gauntlet: { runs: 0, won: 0, best: 0 },
   last: null,
 })
 
@@ -104,6 +115,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'puzzler', name: 'Puzzler', text: 'Solve three puzzles.', earned: (p) => p.puzzles.length >= 3 },
   { id: 'puzzle-master', name: 'Puzzle Master', text: 'Solve every puzzle.', earned: (p) => PUZZLES.every((z) => p.puzzles.includes(z.id)) },
   { id: 'daily-puzzle', name: 'Puzzle of the Day', text: "Solve the day's puzzle.", earned: (_, s) => !!s.dailyPuzzle },
+  { id: 'deep', name: 'Deep Delver', text: 'Reach stage 5 of the gauntlet.', earned: (p) => p.gauntlet.best >= 5 },
+  { id: 'gauntlet', name: 'Court Eternal', text: 'Win a gauntlet run.', earned: (p) => p.gauntlet.won >= 1 },
   { id: 'champion', name: 'Champion', text: 'Win a best-of-three tournament.', earned: (p) => p.tournaments >= 1 },
 ]
 
@@ -149,6 +162,12 @@ export function recordTournament(p: Progress, won: boolean) {
   return award({ ...p, tournaments: p.tournaments + (won ? 1 : 0) }, NO_GAME, p)
 }
 
+/** The progress after a gauntlet run ends at `stage` (the stage lost, or one past the last when won). */
+export function recordRun(p: Progress, stage: number, won: boolean) {
+  const g = p.gauntlet
+  return award({ ...p, gauntlet: { runs: g.runs + 1, won: g.won + (won ? 1 : 0), best: Math.max(g.best, won ? stage - 1 : stage) } }, NO_GAME, p)
+}
+
 /** How a finished game went for `human`, found by replaying it. Null if the record is not a legal game. */
 export function summarise(
   record: GameRecord, human: Court, difficulty: Difficulty, campaignIndex: number | null,
@@ -181,13 +200,16 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 export function migrate(raw: unknown, legacyCleared = 0): Progress {
   const fresh = emptyProgress()
   const o = (raw && typeof raw === 'object' ? raw : null) as Partial<Progress> | null
-  if (!o || o.v !== PROGRESS_VERSION) {
+  // Version 2 differs only by lacking the gauntlet, which then starts empty.
+  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 2)) {
     // Before E8 the only progress was how many opponents were beaten; each counts as a plain win.
     const n = Math.min(legacyCleared, CAMPAIGN.length)
     return { ...fresh, cleared: n, stars: fresh.stars.map((_, i) => (i < n ? STAR_WIN : 0)) }
   }
   const stats = { ...fresh.stats }
   for (const k of Object.keys(stats) as (keyof Stats)[]) if (isInt(o.stats?.[k])) stats[k] = o.stats![k]
+  const gauntlet = { ...fresh.gauntlet }
+  for (const k of Object.keys(gauntlet) as (keyof Gauntlet)[]) if (isInt(o.gauntlet?.[k])) gauntlet[k] = o.gauntlet![k]
   return {
     v: PROGRESS_VERSION,
     cleared: isInt(o.cleared) ? Math.min(o.cleared, CAMPAIGN.length) : 0,
@@ -196,6 +218,7 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     achievements: Array.isArray(o.achievements) ? o.achievements.filter((a) => ACHIEVEMENTS.some((x) => x.id === a)) : [],
     puzzles: Array.isArray(o.puzzles) ? o.puzzles.filter((id) => PUZZLES.some((z) => z.id === id)) : [],
     tournaments: isInt(o.tournaments) ? o.tournaments : 0,
+    gauntlet,
     last: typeof o.last === 'string' ? o.last : null,
   }
 }
