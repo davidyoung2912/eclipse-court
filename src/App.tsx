@@ -508,13 +508,14 @@ export default function App() {
       <>
       <PlayTimer onFlush={addTime} />
       <Game
-        key={record.initial.rng}
+        key={`${record.initial.rng}${human}`}
         controllers={hotSeat ? HOT_SEAT
           : online ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
           : versusAi(human, difficulty, daily ? today.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
+        onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}

@@ -43,6 +43,8 @@ export interface SessionView {
   actions: readonly Action[]
   /** Whether the other player can be heard; it drops mid-game when the connection goes quiet or closes, and `reconnect` can restore it. */
   link: 'up' | 'down'
+  /** Playing again after the game: `ask` once it ended and the other side is still there, `sent` once asked, `asked` if only they have. */
+  rematch: 'none' | 'ask' | 'sent' | 'asked'
   /** The winner, counting a resignation; null while undecided or if the session failed. */
   winner: GameState['winner']
 }
@@ -53,6 +55,8 @@ export interface Session {
   /** Plays the local court's action, settling any capture, and sends it. False if the rules refuse it or it is not this player's turn. */
   play: (action: Action) => boolean
   resign: () => void
+  /** Asks for another match with the courts swapped; it starts once both players have asked. False if the game is not over or the other side has gone. */
+  rematch: () => boolean
   /** Takes a fresh transport after the link dropped, swaps game positions with the other side and resends whatever either missed. */
   reconnect: (transport: Transport) => void
   /** A text describing the game so far, to attach to a bug report after a desync. */
@@ -120,9 +124,17 @@ export function createSession({ transport: first, role, challenge: offered, onCh
   let catchUp: number | null = null
   let lastHeard = Date.now()
   let beating: ReturnType<typeof setInterval> | undefined
+  /** Whether the channel is still open, and who has asked for a rematch. */
+  let open = true
+  let asked = false
+  let askedByThem = false
 
+  const rematchState = (): SessionView['rematch'] => {
+    if (status !== 'over' || !open || (reason !== 'finished' && reason !== 'resigned' && reason !== 'opponent-resigned')) return 'none'
+    return asked ? 'sent' : askedByThem ? 'asked' : 'ask'
+  }
   const view = (): SessionView => ({
-    status, reason, me, challenge, state, actions: [...actions], link,
+    status, reason, me, challenge, state, actions: [...actions], link, rematch: rematchState(),
     winner: resignedBy ? otherCourt(resignedBy) : state?.winner ?? null,
   })
   const listeners = new Set<(view: SessionView) => void>()
@@ -192,9 +204,42 @@ export function createSession({ transport: first, role, challenge: offered, onCh
     changed()
   }
 
+  /** Both players want another match: the host deals it, with the courts swapped, and the guest follows on `start`. */
+  const maybeRematch = () => {
+    if (!asked || !askedByThem || rematchState() === 'none') return
+    if (role !== 'host' || !challenge) return
+    challenge = { config: challenge.config, side: otherCourt(challenge.side) }
+    me = otherCourt(challenge.side)
+    reset(newGame(challenge.config))
+    status = 'connecting'
+    reason = null
+    send({ t: 'start', challenge: encodeChallenge(challenge) })
+    changed()
+  }
+
+  /** Clears the last game so a new one can begin. */
+  const reset = (fresh: GameState) => {
+    actions.length = 0
+    sums.length = 0
+    sums.push(stateSum(fresh))
+    state = fresh
+    resignedBy = null
+    asked = false
+    askedByThem = false
+    catchUp = null
+    link = 'up'
+    lastHeard = Date.now()
+  }
+
   const receive = (m: Message) => {
     lastHeard = Date.now()
     if (m.t === 'beat') return
+    if (m.t === 'rematch') {
+      if (rematchState() === 'none') return
+      askedByThem = true
+      changed()
+      return maybeRematch()
+    }
     if (m.t === 'bye') return end(status === 'playing' ? 'opponent-left' : 'closed')
     if (m.t === 'sync') return resync(m)
     if (m.t === 'hello') {
@@ -206,14 +251,15 @@ export function createSession({ transport: first, role, challenge: offered, onCh
     }
     if (!greeted) return end('protocol')
     if (m.t === 'start') {
-      if (role !== 'guest' || state) return end('protocol')
+      const again = status === 'over' && asked && askedByThem
+      if (role !== 'guest' || (state && !again)) return end('protocol')
       const offer = decodeChallenge(m.challenge)
       if (!offer) return end('protocol')
       challenge = offer
       me = offer.side
-      state = newGame(offer.config)
+      reset(newGame(offer.config))
       status = 'playing'
-      sums.push(stateSum(state))
+      reason = null
       startBeat()
       send({ t: 'ready' })
       return changed()
@@ -243,9 +289,21 @@ export function createSession({ transport: first, role, challenge: offered, onCh
 
   /** Listens to one transport; once it is replaced, whatever it still says is ignored. */
   const attach = (t: Transport) => {
-    t.onClose(() => t === transport && drop())
+    t.onClose(() => {
+      if (t !== transport) return
+      open = false
+      drop()
+      if (status === 'over') changed()
+    })
     t.onMessage((text) => {
-      if (t !== transport || status === 'over') return
+      if (t !== transport) return
+      if (status === 'over' && rematchState() === 'none') return
+      if (status === 'over') {
+        // After a finished game only the rematch exchange is heard.
+        const m = decodeMessage(text)
+        if (m && (m.t === 'rematch' || m.t === 'start')) receive(m)
+        return
+      }
       const m = decodeMessage(text)
       if (m) receive(m)
       else end('protocol')
@@ -284,6 +342,14 @@ export function createSession({ transport: first, role, challenge: offered, onCh
       actions: actions.map(pack),
       sum: state ? stateSum(state) : null,
     }),
+    rematch: () => {
+      if (rematchState() !== 'ask' && rematchState() !== 'asked') return false
+      asked = true
+      send({ t: 'rematch' })
+      changed()
+      maybeRematch()
+      return true
+    },
     resign: () => {
       if (status !== 'playing' || !me) return
       resignedBy = me

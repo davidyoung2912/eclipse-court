@@ -1,6 +1,6 @@
 # Online play: two players, peer to peer over WebRTC, no game server
 
-**Status: N1 to N5 done; N6 (optional) not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
+**Status: N1 to N6 done (N6 was cut to rematch only; room-code signaling and live duels were not built).** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
 
 ## Decisions
 - **No backend.** A WebRTC `RTCDataChannel` carries the moves. Signaling (swapping the SDP offer/answer) is done by hand: the host shows a code or link, the guest pastes an answer code back. STUN only, using public servers. No TURN, so a minority of pairs behind symmetric NATs or corporate networks cannot connect; the lobby says so plainly and suggests another network.
@@ -28,7 +28,7 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - **N3 (done): lobby UI.** A Battle menu entry "Play online": host (pick the match with the Skirmish controls, show a code, link and QR-style copy button, paste the answer) or join (paste or open a link, show the answer code to send back). Connection states, a timeout, and a clear failed-to-connect message that explains the NAT limitation.
 - **N4 (done): Game integration.** An `online` controller kind next to `human` and AI, so `Game` plays the remote court by feeding received actions through `play`, and sends the local court's actions. The turn banner, board orientation (your court at the bottom), auto-duel for captures with the result dialog, spells, growth choices (perk and promotion travel inside the move), and the game-over flow. Undo, hint and pass screen are hidden online. Saved games and stats record online games separately or not at all (decide here).
 - **N5 (done): resilience.** Disconnect detection (heartbeat), a reconnect flow that re-handshakes and resyncs from a record code and checks both sides agree, resign and "leave" messages, an opponent-left banner, and desync reporting with a copyable record for bug reports.
-- **N6 (optional): easier signaling and live duels.** A pluggable signaler (a short room code through PeerJS's public broker or a small Worker) so joining is one step, and, if wanted, a lockstep live duel where both peers exchange inputs per tick against the deterministic duel engine.
+- **N6 (done, rematch only): easier signaling and live duels.** A pluggable signaler (a short room code through PeerJS's public broker or a small Worker) so joining is one step, and, if wanted, a lockstep live duel where both peers exchange inputs per tick against the deterministic duel engine.
 
 ## Open questions
 - Decided in N4: online games count toward nothing and are never saved (like hot-seat).
@@ -63,3 +63,8 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - `close()` sends `bye`; the other side ends with `opponent-left`. `report()` is JSON (reason, role, challenge code, packed actions, checksum) for the Copy Report button shown on a desync.
 - UI: Game shows a "Connection lost" dialog with Reconnect (opens `Lobby` with `resume`: the same host/guest roles re-exchange codes, then the game remounts from the session's actions) or Resign. End texts for opponent left and disagreement.
 - Rematch is still not done (belongs with N6).
+
+## N6 notes
+- Scope chosen with the user: rematch only. A PeerJS-style room-code signaler and lockstep live duels were left out (they add a third-party service plus a CSP change, and a large untestable-without-a-browser feature).
+- Protocol: `rematch` message. `Session.rematch()` after a finished or resigned game while the channel is open; the view's `rematch` is `none | ask | sent | asked`. When both have asked, the host deals the same config with the courts swapped and sends `start`; the guest resets and replies `ready`. A closed channel withdraws the offer.
+- UI: the Game over dialog shows Rematch / Waiting for them / Accept Rematch; `Game.onRematch` fires when the session is playing again and `App` opens the new game (Game is keyed by rng and court so it remounts).

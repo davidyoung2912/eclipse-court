@@ -23,6 +23,8 @@ export type Message =
   | { t: 'bye' }
   /** After a reconnect: how many actions the sender has played and the checksum of the state they leave. */
   | { t: 'sync'; n: number; sum: string }
+  /** After a finished game: the sender would like to play again. The host starts the next match once both sides have asked. */
+  | { t: 'rematch' }
 
 export const hello = (): Message => ({ t: 'hello', v: PROTOCOL_VERSION, fmt: FORMAT_VERSION })
 
@@ -42,6 +44,7 @@ export function decodeMessage(text: string): Message | null {
     if (m.t === 'resign') return { t: 'resign' }
     if (m.t === 'beat') return { t: 'beat' }
     if (m.t === 'bye') return { t: 'bye' }
+    if (m.t === 'rematch') return { t: 'rematch' }
     if (m.t === 'sync' && Number.isInteger(m.n) && (m.n as number) >= 0 && typeof m.sum === 'string') return { t: 'sync', n: m.n as number, sum: m.sum }
     if (m.t === 'act' && Number.isInteger(m.n) && (m.n as number) >= 0 && Array.isArray(m.a) && typeof m.sum === 'string')
       return { t: 'act', n: m.n as number, a: m.a as Packed, sum: m.sum }

@@ -53,6 +53,8 @@ interface Props {
   onExit: (winner: GameState['winner'], record: GameRecord) => void
   /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
   onReconnect?: (record: GameRecord) => void
+  /** Online, once both players asked for a rematch and the next match has begun: swap to it. */
+  onRematch?: (view: ReturnType<Session['view']>) => void
 }
 
 /** A capture waiting to be settled; `byAi` means the human is the defender. */
@@ -85,7 +87,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect }: Props) {
+export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const [net, setNet] = useState(() => session?.view() ?? null)
@@ -295,6 +297,12 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
     setInspectSq(occ ? null : p)
   })
 
+  // Both players asked for another match and the session has dealt it.
+  useEffect(() => {
+    if (online && ended && net?.status === 'playing') onRematch?.(net)
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [net, ended])
+
   // The other player's actions are played as they arrive; a capture shows its settled duel first.
   useEffect(() => {
     if (!net || settled || pending || asking) return
@@ -424,6 +432,11 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
             {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
             {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
             {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
+            {online && net && net.rematch !== 'none' && (
+              <button disabled={net.rematch === 'sent'} onClick={() => session!.rematch()}>
+                <Icon name="undo" />{net.rematch === 'sent' ? 'Waiting for them' : net.rematch === 'asked' ? 'Accept Rematch' : 'Rematch'}
+              </button>
+            )}
             <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>
