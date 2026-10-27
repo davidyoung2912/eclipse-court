@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
+import { challengeLink, parseShared, type Shared } from './share'
+import type { Challenge as ChallengeCode } from './engine/challenge'
+import { Challenge } from './ui/menus/Challenge'
+import { PasteCode } from './ui/menus/PasteCode'
 import { unlockAudio } from './audio/synth'
 import { Game } from './Game'
 import { HOT_SEAT, versusAi } from './controllers'
 import type { Difficulty } from './ai/profile'
 import { aiDraft, aiLoadout } from './ai/draft'
 import { otherCourt } from './engine/rules/board'
-import { skirmishConfig } from './engine/data/setups'
+import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
 import type { GameRecord } from './engine/log'
@@ -34,7 +38,9 @@ type Screen =
   | { name: 'puzzles' }
   | { name: 'practice' }
   | { name: 'settings' }
-  | { name: 'replay'; record: GameRecord }
+  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' }
+  | { name: 'challenge'; challenge: ChallengeCode }
+  | { name: 'paste' }
   | {
     name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
     /** Two people share the device; `human` and `difficulty` are then unused. */
@@ -63,8 +69,30 @@ function markTutorialSeen() {
   }
 }
 
+/** The screen a shared link or code opens. */
+const sharedScreen = (shared: Shared): Screen =>
+  shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge } : { name: 'replay', record: shared.record, from: 'menu' }
+
+/** Reads a `#c=` or `#r=` link out of the address, then removes it so a reload does not reopen it. */
+function takeLinkScreen(): Screen | null {
+  const { hash, pathname, search } = window.location
+  if (!/^#[cr]=/.test(hash)) return null
+  history.replaceState(null, '', pathname + search)
+  const shared = parseShared(hash)
+  return shared && sharedScreen(shared)
+}
+
+/** The match a skirmish setup describes, for starting it or sending it as a challenge. */
+function skirmishRecord(setup: SetupChoice, human: Court, difficulty: Difficulty, hotSeat: boolean, seed: number): GameRecord {
+  const config = skirmishConfig(setup, human, seed, hotSeat ? {} : {
+    roles: aiDraft(seed, difficulty),
+    loadout: setup.loadout && aiLoadout(seed, otherCourt(human)),
+  })
+  return { initial: newGame(config), actions: [] }
+}
+
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ name: 'menu' })
+  const [screen, setScreen] = useState<Screen>(() => takeLinkScreen() ?? { name: 'menu' })
   const [progress, setProgress] = useState(loadProgress)
   /** What the battle just finished earned, shown on the campaign screen. */
   const [report, setReport] = useState<string[]>([])
@@ -75,6 +103,16 @@ export default function App() {
   useEffect(() => {
     window.addEventListener('pointerdown', unlockAudio, { once: true })
     return () => window.removeEventListener('pointerdown', unlockAudio)
+  }, [])
+
+  // A link opened in a tab that is already running changes the address without reloading.
+  useEffect(() => {
+    const onHash = () => {
+      const next = takeLinkScreen()
+      if (next) setScreen(next)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   if (screen.name === 'tutorial')
@@ -113,21 +151,27 @@ export default function App() {
 
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
-  if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen({ name: 'stats' })} />
+  if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
+
+  if (screen.name === 'paste')
+    return <PasteCode onBack={() => setScreen({ name: 'menu' })} onOpen={(shared) => setScreen(sharedScreen(shared))} />
+
+  if (screen.name === 'challenge')
+    return (
+      <Challenge challenge={screen.challenge} onBack={() => setScreen({ name: 'menu' })}
+        onPlay={(human, difficulty, hotSeat) =>
+          setScreen({ name: 'game', human, difficulty, hotSeat, record: { initial: newGame(screen.challenge.config), actions: [] }, campaignIndex: null })} />
+    )
 
   if (screen.name === 'skirmish')
     return (
       <SkirmishSetup
         progress={progress}
         onBack={() => setScreen({ name: 'menu' })}
-        onStart={(human, difficulty, setup, hotSeat) => {
-          const seed = Date.now()
-          const config = skirmishConfig(setup, human, seed, hotSeat ? {} : {
-            roles: aiDraft(seed, difficulty),
-            loadout: setup.loadout && aiLoadout(seed, otherCourt(human)),
-          })
-          setScreen({ name: 'game', human, difficulty, hotSeat, record: { initial: newGame(config), actions: [] }, campaignIndex: null })
-        }}
+        challengeLink={(human, difficulty, setup, hotSeat) =>
+          challengeLink({ config: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()).initial.config, side: otherCourt(human) })}
+        onStart={(human, difficulty, setup, hotSeat) =>
+          setScreen({ name: 'game', human, difficulty, hotSeat, record: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()), campaignIndex: null })}
       />
     )
 
@@ -238,6 +282,6 @@ export default function App() {
     <MainMenu firstRun={!seen}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
       onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
-      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onPractice={() => setScreen({ name: 'practice' })} onSettings={() => setScreen({ name: 'settings' })} />
+      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onSettings={() => setScreen({ name: 'settings' })} />
   )
 }

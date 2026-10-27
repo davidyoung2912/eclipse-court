@@ -1,6 +1,7 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
 import type { Action, Court, GameState, MatchConfig, MatchMode, Perk, Pos, PromotionRole, Role, Spell } from './rules/types'
+import { inBounds, SIZE } from './rules/board'
 import { ALL_SPELLS } from './rules/spells'
 
 const MODES: readonly MatchMode[] = ['beacons', 'leader', 'score', 'hill']
@@ -60,14 +61,14 @@ function unpack(p: unknown): Action | null {
   return null
 }
 
-function toBase64Url(text: string): string {
+export function toBase64Url(text: string): string {
   const bytes = new TextEncoder().encode(text)
   let binary = ''
   for (const b of bytes) binary += String.fromCharCode(b)
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 }
 
-function fromBase64Url(code: string): string {
+export function fromBase64Url(code: string): string {
   const padded = code.replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(code.length / 4) * 4, '=')
   const binary = atob(padded)
   return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)))
@@ -87,22 +88,28 @@ export function encodeRecord(record: GameRecord): string {
   return toBase64Url(JSON.stringify(payload))
 }
 
-const validPos = (p: Partial<Pos> | undefined) => isNum(p?.x) && isNum(p?.y)
+const validPos = (p: Partial<Pos> | undefined) => isNum(p?.x) && isNum(p?.y) && inBounds(p as Pos)
 const validLayout = (l: unknown) =>
-  Array.isArray(l) && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
+  Array.isArray(l) && l.length <= SIZE * SIZE && l.every((p) => isStr(p?.role) && ROLES.includes(p.role as Role) && validPos(p))
+const inRange = (v: unknown, min: number, max: number) => isNum(v) && Number.isInteger(v) && v >= min && v <= max
 
 const validLoadouts = (l: Partial<Record<Court, unknown>>) =>
-  (['solari', 'umbral'] as const).every((c) => Array.isArray(l[c]) && (l[c] as unknown[]).every((s) => isStr(s) && (ALL_SPELLS as readonly string[]).includes(s)))
+  (['solari', 'umbral'] as const).every((c) => Array.isArray(l[c]) && (l[c] as unknown[]).length <= 20 && (l[c] as unknown[]).every((s) => isStr(s) && (ALL_SPELLS as readonly string[]).includes(s)))
 
-const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
-  !!c && isNum(c.seed) && isNum(c.eclipseRound) && isNum(c.roundLimit) &&
-  Array.isArray(c.day) && c.day.length > 0 && c.day.every(isNum) &&
-  Array.isArray(c.beacons) && c.beacons.every((b) => isNum(b?.x) && isNum(b?.y)) &&
+/** Limits on what a code from outside may ask for, so a hostile link cannot build a huge game. */
+const MAX_ROUNDS = 200
+const MAX_DAY = 16
+const MAX_RECHARGE = 50
+
+export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
+  !!c && isNum(c.seed) && inRange(c.eclipseRound, 1, MAX_ROUNDS) && inRange(c.roundLimit, 1, MAX_ROUNDS) &&
+  Array.isArray(c.day) && c.day.length > 0 && c.day.length <= MAX_DAY && c.day.every((l) => inRange(l, -3, 3)) &&
+  Array.isArray(c.beacons) && c.beacons.length <= SIZE * SIZE && c.beacons.every(validPos) &&
   validLayout(c.layout) && (c.umbralLayout === undefined || validLayout(c.umbralLayout)) &&
-  (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.every(validPos))) &&
+  (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.length <= SIZE * SIZE && c.blocked.every(validPos))) &&
   (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
-  (c.recharge === undefined || isNum(c.recharge)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
+  (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
   (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 

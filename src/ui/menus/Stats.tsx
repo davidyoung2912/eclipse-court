@@ -1,5 +1,7 @@
 import { ACHIEVEMENTS, totalStars, type Progress } from '../../progress'
 import { CAMPAIGN } from '../../engine/data/campaign'
+import { shareLink } from '../../share'
+import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 
 interface Props {
@@ -37,6 +39,7 @@ export function Stats({ progress, onReplay, onBack }: Props) {
       </ul>
       <div className="menu-buttons stacked">
         {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay last game</button>}
+        {progress.last && <ShareButton title="Eclipse Court replay" label="Copy replay link" link={() => shareLink('r', progress.last!)} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

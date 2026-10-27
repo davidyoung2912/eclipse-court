@@ -20,6 +20,8 @@ import { PieceCard } from './ui/tray/PieceCard'
 import { Dial } from './ui/dial/Dial'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
+import { replayLink } from './share'
+import { ShareButton } from './ui/ShareButton'
 import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
@@ -352,6 +354,7 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
           <p className="confirm-title">{result}</p>
           <div className="buttons">
             {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try again</button>}
+            {puzzleLimit === undefined && <ShareButton title="Eclipse Court replay" label="Copy replay link" link={() => replayLink(recordOf(history))} />}
             <button className="primary" onClick={() => onExit(state.winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>

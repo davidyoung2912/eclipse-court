@@ -8,6 +8,7 @@ import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
+import { ShareButton } from '../ShareButton'
 import { Icon, type IconName } from './icons'
 import { SkirmishArt } from './MenuArt'
 import { PieceArt } from '../../art/PieceArt'
@@ -18,6 +19,8 @@ interface Props {
   progress: Progress
   /** `hotSeat` means a second person takes the other court; the difficulty is then unused. */
   onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => void
+  /** The link to a challenge for the settings chosen, with a fresh seed. */
+  challengeLink: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => string
   onBack: () => void
 }
 
@@ -43,7 +46,7 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
   hard: 'Quick, accurate, and plans three moves ahead.',
 }
 
-export function SkirmishSetup({ progress, onStart, onBack }: Props) {
+export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [hotSeat, setHotSeat] = useState(false)
@@ -62,6 +65,12 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
   const [promotion, setPromotion] = useState(false)
   const board = boardById(boardId)
   const ready = (mode !== 'draft' || draftProblem(roles) === null) && (spellMode === 'classic' || loadoutProblem(court, loadout) === null)
+  const choice = (): SetupChoice => ({
+    mode, board: boardId, roles,
+    loadout: spellMode === 'loadout' ? loadout : undefined,
+    recharge: recharge ? RECHARGE_ROUNDS : undefined,
+    winMode, events, showdown, cycle, reverse, growth, promotion,
+  })
   const summary = {
     classic: 'The standard 12-piece army for both courts.',
     draft: `Your drafted army: ${roles.length + 1} pieces for ${draftCost(roles)} points. The AI drafts its own.`,
@@ -162,12 +171,8 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
         <strong>{SETUP_INFO[mode].name} on {mode === 'daily' ? 'the daily board' : `${board.name} board`}.</strong> {summary}
       </div>
       <div className="menu-buttons stacked">
-        <button className="primary" disabled={!ready} onClick={() => onStart(court, difficulty, {
-          mode, board: boardId, roles,
-          loadout: spellMode === 'loadout' ? loadout : undefined,
-          recharge: recharge ? RECHARGE_ROUNDS : undefined,
-          winMode, events, showdown, cycle, reverse, growth, promotion,
-        }, hotSeat)}><Icon name="play" />Start</button>
+        <button className="primary" disabled={!ready} onClick={() => onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />Start</button>
+        {ready && <ShareButton title="Eclipse Court challenge" label="Copy challenge link" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

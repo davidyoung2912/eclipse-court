@@ -11,6 +11,7 @@ interface Props {
   onPuzzles: () => void
   onPractice: () => void
   onSettings: () => void
+  onPaste: () => void
   /** Present when an unfinished game was left behind. */
   onResume?: () => void
   /** True until the player has finished or skipped the tutorial once. */
@@ -67,7 +68,7 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzles, onPractice, onSettings, onResume, firstRun }: Props) {
+export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   return (
     <main className="app menu main-menu">
@@ -88,6 +89,7 @@ export function MainMenu({ onSkirmish, onCampaign, onTutorial, onStats, onPuzzle
       </div>
       <div className="menu-buttons small">
         <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to play</button>
+        <button onClick={onPaste}><Icon name="chain" />Paste code</button>
         <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'on' : 'off'}</button>
       </div>
     </main>
