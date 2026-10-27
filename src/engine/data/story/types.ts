@@ -1,6 +1,6 @@
 import type { Court, Role } from '../../rules/types'
 
-export type CharacterId = 'ysmere' | 'aurel' | 'nocte' | 'wren' | 'tam' | 'voss' | 'ilse' | 'sable'
+export type CharacterId = 'ysmere' | 'aurel' | 'nocte' | 'wren' | 'tam' | 'voss' | 'ilse' | 'sable' | 'duskmother'
 
 export interface Character {
   id: CharacterId
@@ -30,14 +30,18 @@ export type Beat = { when?: Condition } & (
 
 /** A fight that closes a chapter: a scenario with named characters standing in for some of Solari's or Umbral's pieces. */
 export interface StoryBattle {
-  /** The id of a scenario in `scenarios.ts`; the player is Solari, as there. */
+  /** The id of a scenario in `scenarios.ts` (the player is Solari, as there), or of a fight in `umbralFights.ts` when `court` is Umbral. */
   scenario: string
+  /** The court the player takes; Solari when absent. */
+  court?: Court
   /** Which piece (by its id in the scenario) each character is. */
   bind: Partial<Record<CharacterId, string>>
   /** Characters who die for good if their piece is taken in a win; anyone else is only wounded. */
   mortal?: readonly CharacterId[]
   /** Characters the story takes in a win however the fight went; for a death the chapter is written around. */
   doomed?: readonly CharacterId[]
+  /** Fallen characters who stand again in this fight (a death in an earlier act, undone by the other court); a win leaves them ready or wounded. */
+  raised?: readonly CharacterId[]
   won: readonly Beat[]
   lost: readonly Beat[]
 }

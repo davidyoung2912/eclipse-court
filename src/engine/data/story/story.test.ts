@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actLabel, afterVictory, CHAPTERS, CHARACTERS, chapterById, scenarioOf, storyBattleGame } from '.'
+import { actLabel, afterVictory, battleCourt, CHAPTERS, CHARACTERS, chapterById, scenarioOf, storyBattleGame } from '.'
 
 describe('story data', () => {
   it('gives every chapter a unique id, title, blurb and some beats', () => {
@@ -36,7 +36,7 @@ describe('story data', () => {
       const game = storyBattleGame(c.battle, {}, 1)!
       for (const [who, piece] of Object.entries(c.battle.bind)) {
         expect(CHARACTERS[who as keyof typeof CHARACTERS]).toBeDefined()
-        expect(game.pieces.find((p) => p.id === piece)?.court).toBe('solari')
+        expect(game.pieces.find((p) => p.id === piece)?.court).toBe(battleCourt(c.battle))
       }
       expect(c.battle.won.length).toBeGreaterThan(0)
       expect(c.battle.lost.length).toBeGreaterThan(0)
@@ -44,7 +44,7 @@ describe('story data', () => {
   })
 
   it('starts the wounded one HP short and leaves the fallen out', () => {
-    const battle = CHAPTERS.find((c) => c.battle)!.battle!
+    const battle = CHAPTERS.find((c) => c.battle && !c.battle.court)!.battle!
     const [a, b] = Object.keys(battle.bind) as (keyof typeof CHARACTERS)[]
     const base = storyBattleGame(battle, {}, 1)!
     const game = storyBattleGame(battle, { [a]: 'wounded', [b]: 'fallen' }, 1)!
@@ -73,8 +73,37 @@ describe('story data', () => {
     expect(act1[act1.length - 1].battle?.doomed).toEqual(['tam'])
     CHAPTERS.forEach((c, i) => {
       for (const who of c.battle?.doomed ?? [])
-        for (const later of CHAPTERS.slice(i + 1)) expect(later.battle?.bind[who]).toBeUndefined()
+        for (const later of CHAPTERS.slice(i + 1)) {
+          if (later.battle?.raised?.includes(who)) break
+          expect(later.battle?.bind[who]).toBeUndefined()
+        }
     })
+  })
+
+  it('plays Act II as Umbral, with Tam raised as a Gloom Ghoul and no other fallen character bound', () => {
+    const act2 = CHAPTERS.filter((c) => c.act === 2)
+    expect(act2.length).toBeGreaterThanOrEqual(5)
+    expect(act2.every((c) => c.battle?.court === 'umbral')).toBe(true)
+    expect(act2[0].battle?.raised).toEqual(['tam'])
+    for (const c of act2) {
+      const standing = storyBattleGame(c.battle!, {}, 1)!
+      expect(standing.config.mode).toBe('leader')
+      expect(standing.pieces.find((p) => p.id === c.battle!.bind.tam)?.role).toBe('footsoldier')
+      expect(standing.pieces.filter((p) => p.court === 'umbral').length).toBeGreaterThan(standing.pieces.filter((p) => p.court === 'solari').length)
+    }
+  })
+
+  it('stands a raised character up from fallen and leaves a ready or wounded one in a win', () => {
+    const battle = CHAPTERS.find((c) => c.battle?.raised)!.battle!
+    const game = storyBattleGame(battle, { tam: 'fallen' }, 1)!
+    expect(afterVictory(battle, game, { tam: 'fallen' }).tam).toBe('ready')
+    const final = { ...game, pieces: game.pieces.filter((p) => p.id !== battle.bind.tam) }
+    expect(afterVictory(battle, final, { tam: 'fallen' }).tam).toBe('wounded')
+  })
+
+  it('keeps a fallen character out of a battle that does not raise them', () => {
+    const battle = CHAPTERS.filter((c) => c.act === 2)[1].battle!
+    expect(storyBattleGame(battle, { tam: 'fallen' }, 1)!.pieces.some((p) => p.id === battle.bind.tam)).toBe(false)
   })
 
   it('answers every condition with a character in the cast and a chapter that exists', () => {

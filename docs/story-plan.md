@@ -1,6 +1,6 @@
 # Story mode: a lore-driven campaign with persistent characters
 
-**Status: S1, S2 and S3 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: S1 to S4 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The setting, factions and ending are in `docs/lore.md`. Story mode tells that story across both courts, with a small cast of named characters who carry from chapter to chapter, so that wins and losses cost something the player can feel.
 
@@ -17,7 +17,7 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - **S1 (done): story format and reader.** Types (`Character`, `Beat`, `Chapter`), the cast, the Prologue ("The Stilling", a mythic retelling of the lore's backstory), a chapter list screen reached from a Story card on the main menu, a dialogue reader (tap or key to advance, back, skip, progress), chapters unlocking in order, saved read state, a tip card, and tests for data validity and the read-state store. The engine is untouched and no battle is attached yet.
 - **S2 (done): battles in chapters and characters in play.** A `battle` beat that launches a match built from the existing campaign or scenario builders, then returns to the story with the result. Named characters are bound to specific pieces in a chapter's fight; the cast screen shows each one's state (ready, wounded, fallen) and a small trait. Win, lose and lost-character outcomes are saved and picked up by later dialogue. Lose-and-retry never soft-locks.
 - **S3 (done): Act I vertical slice (Solari).** About five chapters with three or four recurring characters (Wren, Tam, Voss and the scout), ending with Tam's death. Playtest whether anyone cares before writing more.
-- **S4: Act II (Umbral).** The same war from the Vesper Halls, with Tam serving as a Gloom Ghoul; Ilse and the Duskmother.
+- **S4 (done): Act II (Umbral).** The same war from the Vesper Halls, with Tam serving as a Gloom Ghoul; Ilse and the Duskmother.
 - **S5: Act III and the four endings.** The player chooses who keeps the Hour; the Eclipse Queen is the last battle (reusing her boss rules); each ending has its own epilogue.
 - **S6: polish.** Bond and support conversations between battles, a chapter replay gallery, achievements, and a light rename pass if names change.
 
@@ -42,3 +42,9 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - `StoryBattle.doomed`: characters who fall in a win however the fight went (`afterVictory` in `battle.ts`), for a death the chapter is written around.
 - Act I in `chapters.ts`: `meridian-road` (long-road; Wren, Voss; Tam introduced), `night-watch` (long-night; Tam; Sable named), `sunless-hill` (all three; the shade is burnt), `ruined-gate` (Wren, Voss; the exiled night-touched), `darkening-sky` (all three; Tam `doomed`, the sunwells flare on the shade he stands in).
 - Tam is night-touched, the sunwells burn the shade, and the player's win lights them. Sable appears only in dialogue until Act II. Tests check Act I length, Tam's doom, and that conditions point at real characters and chapters.
+
+## S4 file map
+- `StoryBattle.court` (`'umbral'`) makes the player Umbral; `scenario` then names a fight in `umbralFights.ts` (Leader Capture, player's army larger than the Solari AI's, built with `campaignGame` and `lineup`). The engine's scenario objectives stay Solari-only, so Act II fights are plain matches.
+- `StoryBattle.raised`: fallen characters who stand again in that fight (`withRaised` in `battle.ts`). Tam is raised in `vesper-gate` as a Gloom Ghoul and is an ordinary bound character in the chapters after it. A fallen character in a chapter that does not raise them is simply absent.
+- Act II in `chapters.ts`: `vesper-gate`, `crypt-stair`, `troll-debt`, `night-crossing`, `long-dusk` (Tam, Mother Ilse, Sable bound; the Duskmother added to the cast). The act ends with Wren finding Tam; whether he remembers is only hinted (his hands, the bell, the helm). A real choice is left for S5.
+- The Company list still shows Tam with the Solari footsoldier portrait.

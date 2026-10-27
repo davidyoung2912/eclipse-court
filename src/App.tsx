@@ -32,14 +32,13 @@ import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
-import { afterVictory, chapterById, storyBattleGame } from './engine/data/story'
+import { afterVictory, battleCourt, chapterById, scenarioOf, storyBattleGame } from './engine/data/story'
 import { markChapterRead, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
 import { PlayTimer } from './ui/PlayTimer'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
-const scenarioDifficulty = (id: string): Difficulty => SCENARIOS.find((x) => x.id === id)?.difficulty ?? 'normal'
 
 // The board, duel and tutorial code load when first needed, so the menus open sooner.
 const Game = lazy(() => import('./Game').then((m) => ({ default: m.Game })))
@@ -217,7 +216,7 @@ export default function App() {
             markChapterRead(chapter.id)
             return setScreen({ name: 'story' })
           }
-          setScreen({ name: 'game', human: 'solari', difficulty: scenarioDifficulty(battle.scenario), record: { initial: game, actions: [] }, campaignIndex: null, story: chapter.id })
+          setScreen({ name: 'game', human: battleCourt(battle), difficulty: scenarioOf(battle)?.difficulty ?? 'normal', record: { initial: game, actions: [] }, campaignIndex: null, story: chapter.id })
         }} />
     )
   }

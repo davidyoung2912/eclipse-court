@@ -8,5 +8,6 @@ export const CHARACTERS: Record<CharacterId, Character> = {
   tam: { id: 'tam', name: 'Tam', title: 'Lumen Knight', portrait: { court: 'solari', role: 'footsoldier' }, trait: 'Never leaves a comrade behind' },
   voss: { id: 'voss', name: 'Ser Halvard Voss', title: 'Commander of the Meridian', portrait: { court: 'solari', role: 'charger' }, trait: 'Orders first, doubts after' },
   ilse: { id: 'ilse', name: 'Mother Ilse', title: 'Wraith-keeper', portrait: { court: 'umbral', role: 'aura' }, trait: 'Speaks to the dead as to neighbours' },
+  duskmother: { id: 'duskmother', name: 'The Duskmother', title: 'Keeper of the Vesper Halls', portrait: { court: 'umbral', role: 'leader' }, trait: 'Cannot bear to let anyone go' },
   sable: { id: 'sable', name: 'Sable', title: 'Night Raven scout', portrait: { court: 'umbral', role: 'flier' }, trait: 'Sees in the dark and tells no one' },
 }
