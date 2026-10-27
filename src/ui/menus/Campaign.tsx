@@ -3,7 +3,7 @@ import { CAMPAIGN, battlesIn } from '../../engine/data/campaign'
 import { CAMPAIGN_TIERS } from '../../engine/data/tiers'
 import { SCENARIOS, scenariosIn } from '../../engine/data/scenarios'
 import { objectiveGoal } from '../../engine/rules/events'
-import { STAR_TEXT, STAR_WIN, battleUnlocked, clearedCount, scenarioStars, totalStars, type Progress } from '../../progress'
+import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starCount, battleUnlocked, clearedCount, scenarioStars, totalStars, type Progress } from '../../progress'
 import { Icon, type IconName } from './icons'
 import { ResetButton } from './ResetButton'
 import { TipCard } from '../tips/TipCard'
@@ -37,6 +37,19 @@ function Kind({ icon, text, difficulty }: { icon: IconName; text: string; diffic
       <span className="stars" aria-label={`Difficulty ${LEVEL[difficulty]} of 3`}>
         {[1, 2, 3].map((n) => <i key={n} className={n <= LEVEL[difficulty] ? 'got' : undefined}>★</i>)}
       </span>
+    </span>
+  )
+}
+
+/** The "Completed" line at the foot of a finished card: earned stars and what earned them. */
+function Completed({ bits, texts }: { bits: number; texts: readonly string[] }) {
+  const earned = [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].map((bit, i) => (bits & bit ? texts[i] : null)).filter(Boolean)
+  return (
+    <span className="completed">
+      <span className="stars" aria-label={`${starCount(bits)} of 3 stars`}>
+        {[STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
+      </span>
+      Completed: {earned.join('; ')}
     </span>
   )
 }
@@ -83,6 +96,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                       <Kind icon="target" text={`Scenario: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
                       <span>{x.blurb}</span>
                       <span className="boss">Goal: {objectiveGoal(x.objective)}. Bonus star: {x.bonus.text}.</span>
+                      {bits & STAR_WIN ? <Completed bits={bits} texts={[STAR_TEXT[0].text.replace('battle', 'scenario'), STAR_TEXT[1].text, x.bonus.text]} /> : null}
                     </button>
                   </li>
                 )
@@ -118,6 +132,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                       <Kind icon="swords" text="Battle" difficulty={o.difficulty} />
                       <span>{o.blurb}</span>
                       {o.boss && <span className="boss">Boss rule: {o.boss}</span>}
+                      {bits & STAR_WIN ? <Completed bits={bits} texts={STAR_TEXT.map((t) => t.text)} /> : null}
                     </button>
                   </li>
                 )

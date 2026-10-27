@@ -17,6 +17,8 @@ const DATA = {
       text: 'The Daily Match and Daily Puzzle are the same for every player on the same day, so they make a fair daily challenge. A check mark means you have finished it. Playing the daily match each day builds a streak, shown as a flame next to the word Today.' },
     { id: 'menu-modes', icon: 'swords', title: 'Choose how to play',
       text: 'Battle holds one-off matches: Skirmish against the AI or a friend, the Practice arena, and shared codes. Campaign is a ladder of battles and hand-built scenarios that earn stars. Gauntlet is a roguelike run where your army keeps what it earns. Puzzles give you a set board and a turn limit. The line under each card shows your progress.' },
+    { id: 'menu-story', icon: 'book', title: 'The Story',
+      text: 'The wide Story card at the bottom of the card grid tells how Veyra came to have two courts. It is a tale read in chapters, with its own bond scenes, chapter gallery and achievements. The line on the card shows how far you have read. Story never changes your campaign stars, so read it whenever you like.' },
     { id: 'menu-utility', icon: 'book', title: 'The bottom row',
       text: 'Stats shows your record and achievements. Settings changes themes and accessibility options. How to Play replays the guided lesson at any time, and Sound switches audio on or off. Tip cards like this one appear once on every page, and you can bring them all back from Settings.' },
   ],

@@ -668,3 +668,6 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .story-member.fallen em { color: #d36a6a; }
 .story-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .story-progress i { display: block; height: 100%; background: var(--solari-gold); transition: width 0.2s; }
+
+.campaign .completed { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); font-size: 0.8rem; }
+.campaign .completed .stars { margin: 0; }
