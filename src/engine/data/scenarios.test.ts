@@ -5,7 +5,7 @@ import { decodeRecord, encodeRecord } from '../serialize'
 import { isBlocked, samePos } from '../rules/board'
 import { objectiveRounds } from '../rules/events'
 import { boardById } from './boards'
-import { SCENARIOS, scenarioById, scenarioGame } from './scenarios'
+import { SCENARIOS, scenarioById, scenarioGame, scenariosIn } from './scenarios'
 
 describe('scenarios', () => {
   it('has distinct scenarios with known boards and personalities, grouped by tier', () => {
@@ -20,6 +20,14 @@ describe('scenarios', () => {
       expect(boardById(s.board).id).toBe(s.board ?? 'classic')
       expect(scenarioById(s.id)).toBe(s)
     }
+  })
+
+  it('has a full Beginner tier of 25 with all five personalities and every objective', () => {
+    const easy = scenariosIn('easy')
+    expect(easy).toHaveLength(25)
+    expect(new Set(easy.map((s) => s.personality)).size).toBe(5)
+    expect(new Set(easy.map((s) => s.objective.kind)).size).toBe(3)
+    for (const s of easy) expect(s.bonus.text, s.id).not.toBe('')
   })
 
   it('opens each with Solari to move, a Leader each and no overlapping or walled-in pieces', () => {

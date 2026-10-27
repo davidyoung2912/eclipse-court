@@ -1,8 +1,9 @@
 import type { Difficulty } from '../../ai/profile'
 import type { Summary } from '../../progress'
-import { ROLE_STATS } from './roster'
+import { FULL_UMBRAL, at, lineup, type Spec } from './scenarioHelpers'
+import { BEGINNER_SCENARIOS } from './scenariosBeginner'
 import { campaignGame, type Opponent } from './campaign'
-import type { Court, GameState, Objective, Piece, Pos, Role, Spell } from '../rules/types'
+import type { GameState, Objective } from '../rules/types'
 
 /** A hand-built situation with its own goal; the player is Solari, as in the campaign. */
 export interface Scenario extends Opponent {
@@ -11,33 +12,6 @@ export interface Scenario extends Opponent {
   /** The third star: something harder than winning, and what it asks for. */
   bonus: { text: string; met: (s: Summary) => boolean }
 }
-
-/** [role, x, y, hp?] in board coordinates; Umbral's x is written as it stands, not mirrored. */
-type Spec = readonly [Role, number, number, number?]
-
-function army(court: Court, specs: readonly Spec[]): Piece[] {
-  const counts: Record<string, number> = {}
-  return specs.map(([role, x, y, hp]) => {
-    const key = `${court}-${role}`
-    counts[key] = (counts[key] ?? 0) + 1
-    const max = ROLE_STATS[role].hp
-    return { id: `${key}-${counts[key]}`, court, role, hp: hp ?? max, maxHp: max, pos: { x, y }, rest: 0, moved: false, bound: false }
-  })
-}
-
-/** The opening position as listed, replacing the classic armies, with the spells Solari may cast. */
-const lineup = (solari: readonly Spec[], umbral: readonly Spec[], spells?: readonly Spell[]) => (s: GameState): GameState => ({
-  ...s,
-  pieces: [...army('solari', solari), ...army('umbral', umbral)],
-  spells: spells ? { ...s.spells, solari: [...spells] } : s.spells,
-})
-
-const at = (x: number, y: number): Pos => ({ x, y })
-
-const FULL_UMBRAL: readonly Spec[] = [
-  ['flier', 6, 0], ['marksman', 6, 1], ['aura', 6, 2], ['leader', 6, 3], ['bruiser', 6, 4], ['marksman', 6, 5], ['flier', 6, 6],
-  ['footsoldier', 5, 1], ['footsoldier', 5, 2], ['charger', 5, 3], ['footsoldier', 5, 4], ['footsoldier', 5, 5],
-]
 
 const AUTHORED: readonly Scenario[] = [
   {
@@ -136,7 +110,7 @@ const AUTHORED: readonly Scenario[] = [
 const LEVEL: Record<Difficulty, number> = { easy: 0, normal: 1, hard: 2 }
 
 /** Every scenario, Beginner first; within a tier, the order they are written in. */
-export const SCENARIOS: readonly Scenario[] = [...AUTHORED].sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
+export const SCENARIOS: readonly Scenario[] = [...AUTHORED, ...BEGINNER_SCENARIOS].sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
 
 /** The scenarios of one tier, in play order. */
 export const scenariosIn = (difficulty: Difficulty) => SCENARIOS.filter((s) => s.difficulty === difficulty)
