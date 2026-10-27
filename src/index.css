@@ -360,3 +360,17 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .recharge { display: block; margin: 10px 0; font-size: 0.9rem; }
 .confirm .buttons button b, .confirm .buttons button small { display: block; }
 .confirm .buttons button small { font-size: 0.7rem; opacity: 0.8; }
+
+.campaign .stars { margin-left: auto; letter-spacing: 2px; font-style: normal; }
+.campaign .stars i { font-style: normal; opacity: 0.25; }
+.campaign .stars i.got { opacity: 1; color: var(--solari-gold); }
+.campaign .boss { color: var(--solari-gold); opacity: 1; }
+.stats { margin: 0 0 8px; display: flex; flex-direction: column; gap: 4px; }
+.stats div { display: flex; justify-content: space-between; gap: 12px; }
+.stats dt { opacity: 0.75; }
+.stats dd { margin: 0; font-weight: 600; }
+.achievements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.achievements li { display: flex; flex-direction: column; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; opacity: 0.5; }
+.achievements li.got { opacity: 1; border-color: var(--solari-gold); }
+.achievements strong { display: flex; align-items: center; gap: 8px; }
+.achievements span { font-size: 0.8rem; opacity: 0.75; }

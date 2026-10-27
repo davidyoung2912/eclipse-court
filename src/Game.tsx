@@ -3,6 +3,7 @@ import { autoDuel } from './ai/autoDuel'
 import { requestAction } from './ai/client'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
+import type { PersonalityId } from './ai/personality'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
@@ -26,11 +27,13 @@ import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 interface Props {
   human: Court
   difficulty: Difficulty
+  /** How the AI weighs positions; balanced when absent. */
+  personality?: PersonalityId
   /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
   record: GameRecord
   /** Called after every action with the game so far, or null once it has ended. */
   onSave: (record: GameRecord | null) => void
-  onExit: (winner: GameState['winner']) => void
+  onExit: (winner: GameState['winner'], record: GameRecord) => void
 }
 
 /** A capture waiting to be settled; `byAi` means the human is the defender. */
@@ -52,7 +55,7 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ human, difficulty, record, onSave, onExit }: Props) {
+export function Game({ human, difficulty, personality, record, onSave, onExit }: Props) {
   const foe: Court = human === 'solari' ? 'umbral' : 'solari'
   const foeSkill = DIFFICULTY[difficulty].skill
   const foeAggression = DIFFICULTY[difficulty].aggression
@@ -158,7 +161,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     let cancelled = false
     let flash: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
-      requestAction(state, difficulty, state.rng + state.round).then((action: Action) => {
+      requestAction(state, difficulty, state.rng + state.round, personality).then((action: Action) => {
         if (cancelled) return
         const act = () => {
           setAiFocus(null)
@@ -275,7 +278,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
         <div className="confirm result" role="dialog" aria-label="Game over">
           <p className="confirm-title">{result}</p>
           <div className="buttons">
-            <button className="primary" onClick={() => onExit(state.winner)}><Icon name="next" />Continue</button>
+            <button className="primary" onClick={() => onExit(state.winner, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>
       )}
@@ -305,7 +308,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
           <button className={hint ? 'on' : ''} disabled={!!state.winner || !myTurn || !!pending} onClick={askHint}><Icon name="bulb" />Hint</button>
           <button disabled={!!state.winner || !myTurn || !!pending} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
-          <button onClick={() => onExit(null)}><Icon name="exit" />Quit</button>
+          <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>
       </footer>
     </main>

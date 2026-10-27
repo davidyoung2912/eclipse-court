@@ -1,4 +1,5 @@
 import type { Action, GameState } from '../engine/rules/types'
+import type { PersonalityId } from './personality'
 import type { Difficulty } from './profile'
 import { chooseAction } from './strategy'
 import type { SearchRequest, SearchResponse } from './worker'
@@ -25,12 +26,12 @@ function getWorker(): Worker | null {
 }
 
 /** Searches in a Web Worker so the board stays responsive; falls back to the main thread without one. */
-export function requestAction(state: GameState, difficulty: Difficulty, seed: number): Promise<Action> {
-  const fallback = () => chooseAction(state, difficulty, seed)
+export function requestAction(state: GameState, difficulty: Difficulty, seed: number, personality?: PersonalityId): Promise<Action> {
+  const fallback = () => chooseAction(state, difficulty, seed, personality)
   const w = getWorker()
   if (!w) return Promise.resolve(fallback())
   const id = nextId++
-  const request: SearchRequest = { id, state, difficulty, seed }
+  const request: SearchRequest = { id, state, difficulty, seed, personality }
   return new Promise((resolve) => {
     waiting.set(id, { resolve, fallback })
     w.postMessage(request)

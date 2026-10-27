@@ -1,0 +1,185 @@
+import type { Difficulty } from './ai/profile'
+import { CAMPAIGN } from './engine/data/campaign'
+import { replaySteps, type GameRecord } from './engine/log'
+import type { Court } from './engine/rules/types'
+
+const PROGRESS_KEY = 'eclipse-court:progress'
+/** The pre-E8 save: just the number of opponents beaten. */
+const LEGACY_KEY = 'eclipse-court:campaign'
+
+export const PROGRESS_VERSION = 2
+
+/** The three stars of a campaign battle, as bits so each is remembered on its own. */
+export const STAR_WIN = 1
+export const STAR_FLAWLESS = 2
+export const STAR_SWIFT = 4
+export const STAR_TEXT: readonly { bit: number; text: string }[] = [
+  { bit: STAR_WIN, text: 'Win the battle' },
+  { bit: STAR_FLAWLESS, text: 'Win without losing a piece' },
+  { bit: STAR_SWIFT, text: 'Win before the Eclipse' },
+]
+
+export interface Stats {
+  games: number
+  wins: number
+  losses: number
+  draws: number
+  /** Enemy pieces taken, over every game. */
+  captures: number
+  /** Own pieces lost, over every game. */
+  piecesLost: number
+}
+
+export interface Progress {
+  v: typeof PROGRESS_VERSION
+  /** Campaign opponents beaten in order; the next one is unlocked. */
+  cleared: number
+  /** Star bits earned against each campaign opponent. */
+  stars: number[]
+  stats: Stats
+  achievements: string[]
+  /** The finished game most recently played, as a record code for the replay viewer. */
+  last: string | null
+}
+
+/** What happened in one finished game, from the human's side. */
+export interface Summary {
+  won: boolean
+  draw: boolean
+  /** Own pieces lost and enemy pieces taken. */
+  lost: number
+  taken: number
+  swift: boolean
+  spellsCast: number
+  difficulty: Difficulty
+  campaignIndex: number | null
+  daily: boolean
+}
+
+export const emptyProgress = (): Progress => ({
+  v: PROGRESS_VERSION,
+  cleared: 0,
+  stars: CAMPAIGN.map(() => 0),
+  stats: { games: 0, wins: 0, losses: 0, draws: 0, captures: 0, piecesLost: 0 },
+  achievements: [],
+  last: null,
+})
+
+export const starCount = (bits: number) => [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].filter((b) => bits & b).length
+export const totalStars = (p: Progress) => p.stars.reduce((n, b) => n + starCount(b), 0)
+
+/** Stars a campaign battle earned; none unless it was won. */
+export function starsEarned(s: Summary): number {
+  if (!s.won) return 0
+  return STAR_WIN | (s.lost === 0 ? STAR_FLAWLESS : 0) | (s.swift ? STAR_SWIFT : 0)
+}
+
+export interface Achievement {
+  id: string
+  name: string
+  text: string
+  earned: (p: Progress, s: Summary) => boolean
+}
+
+export const ACHIEVEMENTS: readonly Achievement[] = [
+  { id: 'first-win', name: 'First Light', text: 'Win a game.', earned: (_, s) => s.won },
+  { id: 'flawless', name: 'Unscathed', text: 'Win without losing a piece.', earned: (_, s) => s.won && s.lost === 0 },
+  { id: 'swift', name: 'Before the Dark', text: 'Win before the Eclipse falls.', earned: (_, s) => s.won && s.swift },
+  { id: 'silent', name: 'Silent Leader', text: 'Win without casting a spell.', earned: (_, s) => s.won && s.spellsCast === 0 },
+  { id: 'hard', name: 'Against the Tide', text: 'Win against a hard opponent.', earned: (_, s) => s.won && s.difficulty === 'hard' },
+  { id: 'daily', name: 'Daily Bread', text: "Win the day's daily game.", earned: (_, s) => s.won && s.daily },
+  { id: 'three-stars', name: 'Triple Crown', text: 'Earn all three stars on one opponent.', earned: (p) => p.stars.some((b) => starCount(b) === 3) },
+  { id: 'half', name: 'Halfway There', text: 'Beat four campaign opponents.', earned: (p) => p.cleared >= 4 },
+  { id: 'queen', name: 'Eclipse Ender', text: 'Beat the Eclipse Queen.', earned: (p) => p.cleared >= CAMPAIGN.length },
+  { id: 'veteran', name: 'Seasoned', text: 'Play 25 games.', earned: (p) => p.stats.games >= 25 },
+]
+
+/** The progress after one finished game, and the achievements it newly earned. */
+export function recordGame(p: Progress, s: Summary, replay: string | null): { progress: Progress; earned: Achievement[] } {
+  const stats: Stats = {
+    games: p.stats.games + 1,
+    wins: p.stats.wins + (s.won ? 1 : 0),
+    losses: p.stats.losses + (!s.won && !s.draw ? 1 : 0),
+    draws: p.stats.draws + (s.draw ? 1 : 0),
+    captures: p.stats.captures + s.taken,
+    piecesLost: p.stats.piecesLost + s.lost,
+  }
+  const stars = [...p.stars]
+  let cleared = p.cleared
+  const i = s.campaignIndex
+  if (i !== null && s.won) {
+    stars[i] = (stars[i] ?? 0) | starsEarned(s)
+    cleared = Math.max(cleared, i + 1)
+  }
+  const next: Progress = { ...p, cleared, stars, stats, last: replay ?? p.last }
+  const earned = ACHIEVEMENTS.filter((a) => !p.achievements.includes(a.id) && a.earned(next, s))
+  next.achievements = [...p.achievements, ...earned.map((a) => a.id)]
+  return { progress: next, earned }
+}
+
+/** How a finished game went for `human`, found by replaying it. Null if the record is not a legal game. */
+export function summarise(
+  record: GameRecord, human: Court, difficulty: Difficulty, campaignIndex: number | null,
+): Summary | null {
+  const steps = replaySteps(record.initial, record.actions)
+  if (!steps) return null
+  const end = steps[steps.length - 1].state
+  const spellsCast = steps.filter((st, i) => i > 0 && st.action?.type === 'cast' && steps[i - 1].state.turn === human).length
+  return {
+    won: end.winner === human,
+    draw: end.winner === 'draw',
+    lost: end.captured.filter((p) => p.court === human).length,
+    taken: end.captured.filter((p) => p.court !== human).length,
+    swift: !end.eclipse,
+    spellsCast,
+    difficulty,
+    campaignIndex,
+    daily: record.initial.config.setup === 'daily',
+  }
+}
+
+/** Boards open up as stars are earned in the campaign; the classic board is always open. */
+export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, flanks: 4, ruins: 6 }
+
+export const boardUnlocked = (p: Progress, boardId: string) => totalStars(p) >= (BOARD_STARS[boardId] ?? 0)
+
+const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0
+
+/** A stored value made safe to use: a damaged or older blob falls back to what it can give. */
+export function migrate(raw: unknown, legacyCleared = 0): Progress {
+  const fresh = emptyProgress()
+  const o = (raw && typeof raw === 'object' ? raw : null) as Partial<Progress> | null
+  if (!o || o.v !== PROGRESS_VERSION) {
+    // Before E8 the only progress was how many opponents were beaten; each counts as a plain win.
+    const n = Math.min(legacyCleared, CAMPAIGN.length)
+    return { ...fresh, cleared: n, stars: fresh.stars.map((_, i) => (i < n ? STAR_WIN : 0)) }
+  }
+  const stats = { ...fresh.stats }
+  for (const k of Object.keys(stats) as (keyof Stats)[]) if (isInt(o.stats?.[k])) stats[k] = o.stats![k]
+  return {
+    v: PROGRESS_VERSION,
+    cleared: isInt(o.cleared) ? Math.min(o.cleared, CAMPAIGN.length) : 0,
+    stars: fresh.stars.map((_, i) => (isInt(o.stars?.[i]) ? o.stars![i] & 7 : 0)),
+    stats,
+    achievements: Array.isArray(o.achievements) ? o.achievements.filter((a) => ACHIEVEMENTS.some((x) => x.id === a)) : [],
+    last: typeof o.last === 'string' ? o.last : null,
+  }
+}
+
+export function loadProgress(): Progress {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY)
+    if (raw) return migrate(JSON.parse(raw))
+    return migrate(null, Number(localStorage.getItem(LEGACY_KEY)) || 0)
+  } catch {
+    return emptyProgress()
+  }
+}
+
+export function saveProgress(p: Progress) {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(p))
+  } catch {
+    // Progress is a convenience; playing on without saving is fine.
+  }
+}

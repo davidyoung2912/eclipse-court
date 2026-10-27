@@ -192,7 +192,7 @@ Split into two commits; stop after each.
 
 ### E8. Campaign 2.0, progression and meta (≈4–5 days)
 
-Delivers campaign and meta recommendations.
+**Status: core done.** Opponents are now `{ personality, board, rules, army, setup, boss }` (`engine/data/campaign.ts`); `campaignGame` builds the match. Five AI personalities (balanced, rusher, turtle, grabber, caster) are weight profiles in `ai/personality.ts` that `strategy.ts` applies to material, beacons and spell use. Each battle earns up to three stars (win, no piece lost, win before the Eclipse); progress is a versioned JSON blob (`progress.ts`, key `eclipse-court:progress`) that migrates the old cleared count. Stats, ten achievements, a replay viewer for the last finished game, and board unlocks by total stars (Pillars 2, Flanks 4, Ruins 6) are in. The Eclipse Queen's boss rule is an Eclipse at round 20. **Left out for now:** puzzle pack and daily puzzle (the daily seed game already exists), practice arena, cosmetics, piece and spell unlocks, branching map or tournament format.
 
 - Opponent definitions grow from `setup` functions to `{ personality, army, loadout, board, mode, event rules, boss rule }`. AI personalities as weight profiles in `strategy.ts` (aggression, beacon focus, spell usage, retreat threshold).
 - Star ratings per level (e.g. no pieces lost, won before Eclipse, no spells used), stored with progress.

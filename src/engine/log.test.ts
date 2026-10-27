@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chooseAction } from '../ai/strategy'
-import { CAMPAIGN } from './data/campaign'
+import { CAMPAIGN, campaignGame } from './data/campaign'
 import { matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { recordOf, replay, replaySteps, type GameRecord } from './log'
@@ -120,7 +120,7 @@ describe('serialisation', () => {
   })
   it('keeps campaign handicaps through the overrides', () => {
     for (const [i, opponent] of CAMPAIGN.entries()) {
-      const initial = opponent.setup(newGame(100 + i), 'umbral')
+      const initial = campaignGame(opponent, 100 + i)
       const { record, state } = play(initial, 20)
       const back = decodeRecord(encodeRecord(record))!
       expect(back, opponent.name).not.toBeNull()

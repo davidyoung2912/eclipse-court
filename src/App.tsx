@@ -5,13 +5,18 @@ import type { Difficulty } from './ai/profile'
 import { aiDraft, aiLoadout } from './ai/draft'
 import { otherCourt } from './engine/rules/board'
 import { skirmishConfig } from './engine/data/setups'
-import { CAMPAIGN } from './engine/data/campaign'
+import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
+import { decodeRecord, encodeRecord } from './engine/serialize'
+import type { PersonalityId } from './ai/personality'
+import { loadProgress, recordGame, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import type { Court } from './engine/rules/types'
 import { Campaign } from './ui/menus/Campaign'
 import { MainMenu } from './ui/menus/MainMenu'
+import { Replay } from './ui/menus/Replay'
+import { Stats } from './ui/menus/Stats'
 import { Tutorial } from './ui/tutorial/Tutorial'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
@@ -20,9 +25,10 @@ type Screen =
   | { name: 'skirmish' }
   | { name: 'campaign' }
   | { name: 'tutorial' }
+  | { name: 'stats' }
+  | { name: 'replay'; record: GameRecord }
   | { name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null }
 
-const PROGRESS_KEY = 'eclipse-court:campaign'
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
 
 function tutorialSeen(): boolean {
@@ -41,26 +47,11 @@ function markTutorialSeen() {
   }
 }
 
-function loadCleared(): number {
-  try {
-    const n = Number(localStorage.getItem(PROGRESS_KEY))
-    return Number.isInteger(n) ? Math.min(Math.max(n, 0), CAMPAIGN.length) : 0
-  } catch {
-    return 0
-  }
-}
-
-function saveCleared(n: number) {
-  try {
-    localStorage.setItem(PROGRESS_KEY, String(n))
-  } catch {
-    // Progress is a convenience; playing on without saving is fine.
-  }
-}
-
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
-  const [cleared, setCleared] = useState(loadCleared)
+  const [progress, setProgress] = useState(loadProgress)
+  /** What the battle just finished earned, shown on the campaign screen. */
+  const [report, setReport] = useState<string[]>([])
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
 
@@ -81,9 +72,21 @@ export default function App() {
       />
     )
 
+  if (screen.name === 'stats')
+    return (
+      <Stats progress={progress} onBack={() => setScreen({ name: 'menu' })}
+        onReplay={progress.last ? () => {
+          const record = decodeRecord(progress.last!)
+          if (record) setScreen({ name: 'replay', record })
+        } : undefined} />
+    )
+
+  if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen({ name: 'stats' })} />
+
   if (screen.name === 'skirmish')
     return (
       <SkirmishSetup
+        progress={progress}
         onBack={() => setScreen({ name: 'menu' })}
         onStart={(human, difficulty, setup) => {
           const seed = Date.now()
@@ -99,13 +102,15 @@ export default function App() {
   if (screen.name === 'campaign')
     return (
       <Campaign
-        cleared={cleared}
+        progress={progress}
+        report={report}
         onBack={() => setScreen({ name: 'menu' })}
         onPlay={(i) => {
+          setReport([])
           const opponent = CAMPAIGN[i]
           setScreen({
             name: 'game', human: 'solari', difficulty: opponent.difficulty,
-            record: { initial: opponent.setup(newGame(Date.now()), 'umbral'), actions: [] }, campaignIndex: i,
+            record: { initial: campaignGame(opponent, Date.now()), actions: [] }, campaignIndex: i,
           })
         }}
       />
@@ -118,20 +123,27 @@ export default function App() {
         key={record.initial.rng}
         human={human}
         difficulty={difficulty}
+        personality={campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId)}
         record={record}
         onSave={(progress) => {
           if (progress) saveGame({ human, difficulty, campaignIndex, record: progress })
           else clearSaved()
         }}
-        onExit={(winner) => {
+        onExit={(winner, finished) => {
           clearSaved()
           setSaved(null)
-          if (campaignIndex === null) return setScreen({ name: 'menu' })
-          if (winner === human && campaignIndex >= cleared) {
-            setCleared(campaignIndex + 1)
-            saveCleared(campaignIndex + 1)
-          }
-          setScreen({ name: 'campaign' })
+          const summary = winner ? summarise(finished, human, difficulty, campaignIndex) : null
+          if (summary) {
+            const { progress: next, earned } = recordGame(progress, summary, encodeRecord(finished))
+            setProgress(next)
+            saveProgress(next)
+            const stars = starsEarned(summary)
+            setReport([
+              ...(campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),
+              ...earned.map((a) => `Achievement: ${a.name}`),
+            ])
+          } else setReport([])
+          setScreen(campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
     )
@@ -140,6 +152,6 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => setScreen({ name: 'campaign' })} onTutorial={() => setScreen({ name: 'tutorial' })} />
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })} />
   )
 }

@@ -29,6 +29,8 @@ const PATHS = {
   rise: 'M12 19V7M7 12l5-5 5 5M5 21h14',
   bulb: 'M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z',
   chain: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1.5 1.5M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1.5-1.5',
+  trophy: 'M8 4h8v5a4 4 0 01-8 0zM8 6H4v1a4 4 0 004 4M16 6h4v1a4 4 0 01-4 4M12 13v4M8 21h8M10 17h4',
+  replay: 'M4 12a8 8 0 108-8H7M7 1L4 4l3 3',
 } as const
 
 export type IconName = keyof typeof PATHS

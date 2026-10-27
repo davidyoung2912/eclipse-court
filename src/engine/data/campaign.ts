@@ -1,13 +1,27 @@
+import type { PersonalityId } from '../../ai/personality'
 import type { Difficulty } from '../../ai/profile'
+import { newGame } from '../reducer'
 import { CLASSIC_SPELLS } from '../rules/spells'
-import type { Court, GameState, Piece, Role } from '../rules/types'
+import type { Court, GameState, MatchConfig, Piece, Role } from '../rules/types'
+import { boardById } from './boards'
+import { arrange } from './draft'
+import { DEFAULT_CONFIG } from './matchConfig'
 
 export interface Opponent {
   name: string
   blurb: string
   difficulty: Difficulty
+  personality: PersonalityId
+  /** Board variant id; classic when absent. */
+  board?: string
+  /** Match settings beyond the board (win condition, events, showdown, ...). */
+  rules?: Partial<MatchConfig>
+  /** The Umbral army when it is not the classic one. */
+  army?: readonly Role[]
   /** Rewrites the opening position; `foe` is the court the AI plays. */
-  setup: (state: GameState, foe: Court) => GameState
+  setup?: (state: GameState, foe: Court) => GameState
+  /** A rule only this opponent plays by; the config and setup above already carry it out. */
+  boss?: string
 }
 
 const mapFoe = (s: GameState, foe: Court, f: (p: Piece) => Piece): GameState => ({
@@ -15,59 +29,84 @@ const mapFoe = (s: GameState, foe: Court, f: (p: Piece) => Piece): GameState => 
   pieces: s.pieces.map((p) => (p.court === foe ? f(p) : p)),
 })
 const withHp = (p: Piece, delta: number): Piece => ({ ...p, hp: p.hp + delta, maxHp: p.maxHp + delta })
-const dropRole = (s: GameState, foe: Court, role: Role): GameState => ({
-  ...s,
-  pieces: s.pieces.filter((p) => !(p.court === foe && p.role === role)),
-})
 
-/** Eight opponents, easiest first; each bends the opening position in a different way. */
+/** Eight opponents, easiest first; each bends the rules, the board or the army in a different way. */
 export const CAMPAIGN: readonly Opponent[] = [
   {
     name: 'The Novice',
     blurb: 'Fragile Footsoldiers: 1 HP less each.',
     difficulty: 'easy',
+    personality: 'balanced',
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'footsoldier' ? withHp(p, -1) : p)),
   },
   {
     name: 'The Archerless',
-    blurb: 'No Marksmen at all.',
+    blurb: 'A Rusher with no Marksmen, who hunts your pieces from the first move.',
     difficulty: 'easy',
-    setup: (s, foe) => dropRole(s, foe, 'marksman'),
+    personality: 'rusher',
+    army: ['footsoldier', 'footsoldier', 'footsoldier', 'footsoldier', 'flier', 'flier', 'bruiser', 'charger', 'charger', 'aura'],
   },
   {
     name: 'The Tongue-Tied',
-    blurb: 'Their Leader knows only three spells.',
+    blurb: 'A Caster whose Leader knows only three spells, on the Ruins board.',
     difficulty: 'normal',
+    personality: 'caster',
+    board: 'ruins',
     setup: (s, foe) => ({ ...s, spells: { ...s.spells, [foe]: CLASSIC_SPELLS.slice(0, 3) } }),
   },
   {
     name: 'The Wall',
-    blurb: 'Footsoldiers with 2 extra HP.',
+    blurb: 'A Turtle behind Footsoldiers with 2 extra HP, among the Pillars.',
     difficulty: 'normal',
+    personality: 'turtle',
+    board: 'pillars',
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'footsoldier' ? withHp(p, 2) : p)),
   },
   {
     name: 'The Troll Court',
-    blurb: 'Both Marksmen stand as Bruisers.',
+    blurb: 'Both Marksmen stand as Bruisers. Capture their Leader to win.',
     difficulty: 'normal',
+    personality: 'rusher',
+    rules: { mode: 'leader' },
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'marksman' ? { ...p, role: 'bruiser', hp: 10, maxHp: 10 } : p)),
   },
   {
     name: 'The Backwards Hour',
-    blurb: 'The day begins in reverse.',
+    blurb: 'A Grabber racing for the beacons. The day runs in reverse, with day events, on the Flanks. First to 20 points.',
     difficulty: 'hard',
-    setup: (s) => ({ ...s, dir: -1 }),
+    personality: 'grabber',
+    board: 'flanks',
+    rules: { mode: 'score', events: true, reverse: true },
   },
   {
     name: 'The Iron Court',
-    blurb: 'Every piece has 1 extra HP.',
+    blurb: 'A Turtle with 1 extra HP on every piece; duel wins make Veterans for both courts.',
     difficulty: 'hard',
+    personality: 'turtle',
+    rules: { growth: true, showdown: true },
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 1)),
   },
   {
     name: 'The Eclipse Queen',
     blurb: 'Every piece has 2 extra HP.',
+    boss: 'The Eclipse falls at round 20, and the outer squares turn deadly.',
     difficulty: 'hard',
+    personality: 'caster',
+    rules: { eclipseRound: 20, showdown: true, events: true },
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 2)),
   },
 ]
+
+/** The Umbral court is the opponent in every campaign battle. */
+export const CAMPAIGN_FOE: Court = 'umbral'
+
+/** The opening position of a campaign battle: the player is Solari with the classic army and spells. */
+export function campaignGame(opponent: Opponent, seed: number): GameState {
+  const board = boardById(opponent.board)
+  const config: MatchConfig = {
+    ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: board.beacons, blocked: board.blocked, board: board.id, setup: 'campaign',
+  }
+  if (opponent.army) config.umbralLayout = arrange(opponent.army)
+  const state = newGame(config)
+  return opponent.setup ? opponent.setup(state, CAMPAIGN_FOE) : state
+}

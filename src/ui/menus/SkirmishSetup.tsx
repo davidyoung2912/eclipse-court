@@ -9,9 +9,11 @@ import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spel
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { Icon, type IconName } from './icons'
+import { BOARD_STARS, boardUnlocked, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
+  progress: Progress
   onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice) => void
   onBack: () => void
 }
@@ -38,7 +40,7 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
   hard: 'Quick, accurate, and plans three moves ahead.',
 }
 
-export function SkirmishSetup({ onStart, onBack }: Props) {
+export function SkirmishSetup({ progress, onStart, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [mode, setMode] = useState<SetupMode>('classic')
@@ -133,9 +135,9 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (
-          <button key={b.id} className={`choice${boardId === b.id ? ' on' : ''}`} disabled={mode === 'daily'} onClick={() => setBoardId(b.id)}>
-            <strong>{b.name}</strong>
-            <span>{b.text}</span>
+          <button key={b.id} className={`choice${boardId === b.id ? ' on' : ''}`} disabled={mode === 'daily' || !boardUnlocked(progress, b.id)} onClick={() => setBoardId(b.id)}>
+            <strong>{!boardUnlocked(progress, b.id) && <Icon name="lock" />}{b.name}</strong>
+            <span>{boardUnlocked(progress, b.id) ? b.text : `Earn ${BOARD_STARS[b.id]} campaign stars to unlock.`}</span>
           </button>
         ))}
       </div>
