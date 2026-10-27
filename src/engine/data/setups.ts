@@ -46,10 +46,14 @@ export interface SetupChoice {
   growth?: boolean
   /** Footsoldiers that cross the board are promoted. */
   promotion?: boolean
+  /** Court passives (Solari fliers in full light, Umbral regeneration in the dark); on when absent. */
+  passives?: boolean
+  /** Both Leaders carry exactly these spells, whatever `loadout` says. */
+  spells?: readonly Spell[]
 }
 
 /** The rule choices of a setup: everything a preset can fill in. */
-export type PresetRules = Pick<SetupChoice, 'winMode' | 'events' | 'showdown' | 'cycle' | 'reverse' | 'clock' | 'growth' | 'promotion' | 'recharge'>
+export type PresetRules = Pick<SetupChoice, 'winMode' | 'events' | 'showdown' | 'cycle' | 'reverse' | 'clock' | 'growth' | 'promotion' | 'recharge' | 'passives' | 'spells'>
 
 export interface Preset {
   id: string
@@ -75,6 +79,41 @@ export const PRESETS: readonly Preset[] = [
     rules: { winMode: 'hill', cycle: 'swift', reverse: true } },
 ]
 
+/** The groups of options on the setup screen that a rules tier can fix. */
+export type RuleGroup = 'win' | 'spells' | 'cycle' | 'reverse' | 'showdown' | 'events' | 'growth' | 'promotion' | 'recharge' | 'clock' | 'army'
+
+export type RulesetId = 'classic' | 'standard' | 'advanced'
+
+export interface Ruleset {
+  id: RulesetId
+  name: string
+  icon: 'leaf' | 'shield' | 'flame'
+  text: string
+  rules: PresetRules
+  /** Option groups the tier fixes; the setup screen hides them. */
+  locks: readonly RuleGroup[]
+  /** Presets are bundles of Advanced rules, so only that tier offers them. */
+  presets: boolean
+}
+
+/** The spells Classic rules keep: the three that are easiest to read. */
+export const CLASSIC_RULES_SPELLS: readonly Spell[] = ['blink', 'mend', 'swap']
+
+/** How many things a player has to track: from the plain core game to every option. Separate from the AI's level. */
+export const RULESETS: readonly Ruleset[] = [
+  { id: 'classic', name: 'Classic', icon: 'leaf', text: 'Move, duel and hold the beacons. Three simple spells, no extras.',
+    rules: { passives: false, showdown: false, spells: CLASSIC_RULES_SPELLS },
+    locks: ['win', 'spells', 'cycle', 'reverse', 'showdown', 'events', 'growth', 'promotion', 'recharge', 'clock', 'army'], presets: false },
+  { id: 'standard', name: 'Standard', icon: 'shield', text: 'The full game: all seven spells, court gifts and the Eclipse showdown.',
+    rules: { showdown: true },
+    locks: ['win', 'cycle', 'reverse', 'events', 'growth', 'promotion', 'recharge', 'clock'], presets: false },
+  { id: 'advanced', name: 'Advanced', icon: 'flame', text: 'Every option open: Hill, events, growth, recharge, loadouts, the clock and presets.',
+    rules: { showdown: true },
+    locks: [], presets: true },
+]
+
+export const rulesetById = (id: string) => RULESETS.find((r) => r.id === id)
+
 export const presetById = (id: string) => PRESETS.find((p) => p.id === id)
 
 /** The rule fields of a setup in one comparable form, with absent values filled in. */
@@ -89,6 +128,8 @@ export const normalRules = (r: Partial<PresetRules>) => ({
   recharge: r.recharge ?? 0,
   seconds: r.clock?.seconds ?? 0,
   bank: !!r.clock?.bank,
+  passives: r.passives ?? true,
+  spells: (r.spells ?? []).join(','),
 })
 
 /** True while a setup's rules are exactly the preset's. */
@@ -111,7 +152,8 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   const seeded = mode === 'daily' ? dailySeed(date) : seed
   const board = boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
   const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, setup: mode, board: board.id }
-  if (choice.loadout) {
+  if (choice.spells) base.loadouts = { solari: choice.spells, umbral: choice.spells }
+  else if (choice.loadout) {
     const mine = choice.loadout
     const theirs = foe.loadout ?? choice.loadout
     base.loadouts = human === 'solari' ? { solari: mine, umbral: theirs } : { solari: theirs, umbral: mine }
@@ -125,6 +167,7 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.clock) base.turnClock = choice.clock
   if (choice.growth) base.growth = true
   if (choice.promotion) base.promotion = true
+  if (choice.passives === false) base.passives = false
   if (mode === 'classic') return base
   if (mode === 'draft') {
     const mine = arrange(choice.roles ?? [])
