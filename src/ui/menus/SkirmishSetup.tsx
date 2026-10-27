@@ -10,12 +10,12 @@ import { BANK_SECONDS } from '../../clock'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { ShareButton } from '../ShareButton'
+import { CourtPicker } from './CourtPicker'
 import { Icon, type IconName } from './icons'
 import { changedSections, type SectionId } from './menuModel'
 import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
 import { TipCard } from '../tips/TipCard'
 import { SkirmishArt } from './MenuArt'
-import { PieceArt } from '../../art/PieceArt'
 import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 import { BackButton } from './BackButton'
@@ -32,11 +32,6 @@ interface Props {
   challengeLink: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => string
   onBack: () => void
 }
-
-const COURTS: { court: Court; name: string; icon: IconName; text: string }[] = [
-  { court: 'solari', name: 'Solari', icon: 'sun', text: 'Straight shots and dashes. Moves first.' },
-  { court: 'umbral', name: 'Umbral', icon: 'moon', text: 'Lobbed shots and regeneration. Moves second.' },
-]
 
 /** Rounds before a cast spell returns, when recharging is on. */
 const RECHARGE_ROUNDS = 8
@@ -219,15 +214,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         if (v === 'two') { setSpellMode('classic'); if (mode === 'draft') setMode('classic') }
       }} />
       {!twoPlayers && <h3>Your court</h3>}
-      {!twoPlayers && <div className="choices row">
-        {COURTS.map((c) => (
-          <button key={c.court} className={`choice ${c.court}${court === c.court ? ' on' : ''}`} onClick={() => { setCourt(c.court); setLoadout([]) }}>
-            <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role="leader" court={c.court} /></svg>
-            <strong><Icon name={c.icon} />{c.name}</strong>
-            <span>{c.text}</span>
-          </button>
-        ))}
-      </div>}
+      {!twoPlayers && <CourtPicker value={court} onChange={(c) => { setCourt(c); setLoadout([]) }} />}
       {!hotSeat && <h3>Opponent</h3>}
       {!hotSeat && <Segmented label="Opponent" options={opponents} value={difficulty} onChange={setDifficulty} />}
       <h3>Rules</h3>

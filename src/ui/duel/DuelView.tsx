@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { createDuelAi } from '../../ai/duelAi'
 import { sfx, startDuelDrums } from '../../audio/synth'
-import { pieceArtSvg } from '../../art/pieceGeometry'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
 import { getSettings } from '../../settings'
 import { Icon } from '../menus/icons'
 import { profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
-import { ARENA_H, ARENA_W, DT, DUEL_SECONDS, NO_INPUT, type DuelInput, type DuelState } from '../../engine/duel/types'
+import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../../engine/duel/types'
 import type { DuelCells } from '../../engine/rules/cells'
-import type { DuelOutcome, Piece } from '../../engine/rules/types'
+import type { CellEffect, DuelOutcome, Piece } from '../../engine/rules/types'
+import { createFx, drawDuel, updateFx } from './duelFx'
 
 export interface DuelOptions {
   /** Swap the attack button to the left side of the screen. */
@@ -25,6 +25,9 @@ interface Props {
   luminance: number
   /** Special cells under the two fighters, if any. */
   cells?: DuelCells
+  /** The board the fight is on, and the cell effects under the attacker and defender, for the arena's look. */
+  boardId?: string
+  cellEffects?: [CellEffect | null, CellEffect | null]
   options: DuelOptions
   /** Which fighter the player steers: 0 attacks from the bottom, 1 defends and is shown at the bottom too. */
   playerSide?: 0 | 1
@@ -37,113 +40,20 @@ interface Props {
 }
 
 const STICK_RADIUS = 56
+/** The AI's walking speed grows by this share of its base per second, so stalling gets harder (about +36% by the time limit). */
+const FOE_SPEED_RAMP = 0.018
+/** How quickly the mouse's virtual stick drifts back to centre, per second. */
+const MOUSE_RETURN = 5
 const HIT_STOP = 0.07
 const END_DELAY = 1.1
-const COLORS = { solari: '#e8b64a', umbral: '#7a5cc8' }
 /** Fraction of normal speed the live duel plays at; the simulation itself (and so the odds) is unchanged. */
 const SLOWDOWN = 0.55
 
-const icons = new Map<string, HTMLImageElement>()
-/** The board's medallion for a piece, rendered once per role and court. */
-function iconFor(role: Piece['role'], court: Piece['court']): HTMLImageElement {
-  const key = `${court}-${role}`
-  let img = icons.get(key)
-  if (!img) {
-    img = new Image()
-    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(pieceArtSvg(role, court))}`
-    icons.set(key, img)
-  }
-  return img
-}
-
-function draw(ctx: CanvasRenderingContext2D, s: DuelState, w: number, h: number, shake: number, flip: boolean) {
-  const scale = Math.min(w / ARENA_W, h / ARENA_H)
-  const ox = (w - ARENA_W * scale) / 2 + (Math.random() - 0.5) * shake
-  const oy = (h - ARENA_H * scale) / 2 + (Math.random() - 0.5) * shake
-  const X = (x: number) => ox + x * scale
-  const Y = (y: number) => oy + y * scale
-  ctx.clearRect(0, 0, w, h)
-  ctx.fillStyle = '#0c0920'
-  ctx.fillRect(X(0), Y(0), ARENA_W * scale, ARENA_H * scale)
-  const aw = ARENA_W * s.arena
-  const ah = ARENA_H * s.arena
-  const floor = ctx.createRadialGradient(X(ARENA_W / 2), Y(ARENA_H / 2), 0, X(ARENA_W / 2), Y(ARENA_H / 2), Math.hypot(aw, ah) * scale / 2)
-  floor.addColorStop(0, '#34296e')
-  floor.addColorStop(1, '#1d1745')
-  ctx.fillStyle = floor
-  ctx.fillRect(X((ARENA_W - aw) / 2), Y((ARENA_H - ah) / 2), aw * scale, ah * scale)
-  // Centre line and circle, like a court marking.
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
-  ctx.lineWidth = 1.5
-  ctx.beginPath()
-  ctx.moveTo(X((ARENA_W - aw) / 2), Y(ARENA_H / 2))
-  ctx.lineTo(X((ARENA_W + aw) / 2), Y(ARENA_H / 2))
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(X(ARENA_W / 2), Y(ARENA_H / 2), Math.min(aw, ah) * 0.18 * scale, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.strokeStyle = s.arena < 1 ? '#ff5a5a' : '#7a5cc8'
-  ctx.lineWidth = 2
-  ctx.strokeRect(X((ARENA_W - aw) / 2), Y((ARENA_H - ah) / 2), aw * scale, ah * scale)
-
-  for (const p of s.projectiles) {
-    if (p.kind === 'lob') {
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-      ctx.beginPath()
-      ctx.arc(X(p.target.x), Y(p.target.y), 0.9 * scale, 0, Math.PI * 2)
-      ctx.stroke()
-    }
-    ctx.fillStyle = COLORS[s.fighters[p.owner].court]
-    ctx.beginPath()
-    ctx.arc(X(p.pos.x), Y(p.pos.y), 0.15 * scale, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  for (const f of s.fighters) {
-    const cx = X(f.pos.x)
-    const cy = Y(f.pos.y)
-    ctx.save()
-    ctx.shadowColor = COLORS[f.court]
-    ctx.shadowBlur = 14
-    ctx.fillStyle = COLORS[f.court]
-    ctx.beginPath()
-    ctx.arc(cx, cy, f.radius * scale, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.restore()
-    const icon = iconFor(f.role, f.court)
-    if (icon.complete && icon.naturalWidth) {
-      // Keep the medallion upright on screen when the whole canvas is turned for the defender.
-      ctx.save()
-      ctx.translate(cx, cy)
-      if (flip) ctx.rotate(Math.PI)
-      const d = f.radius * 2 * scale
-      ctx.drawImage(icon, -d / 2, -d / 2, d, d)
-      ctx.restore()
-    }
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(X(f.pos.x + Math.cos(f.facing) * f.radius), Y(f.pos.y + Math.sin(f.facing) * f.radius))
-    ctx.lineTo(X(f.pos.x + Math.cos(f.facing) * f.radius * 1.5), Y(f.pos.y + Math.sin(f.facing) * f.radius * 1.5))
-    ctx.stroke()
-    if (f.charge > 0) {
-      ctx.strokeStyle = '#fff'
-      ctx.beginPath()
-      ctx.arc(X(f.pos.x), Y(f.pos.y), (f.radius + 0.2) * scale, -Math.PI / 2, -Math.PI / 2 + Math.min(1, f.charge) * Math.PI * 2)
-      ctx.stroke()
-    }
-    const bw = 1.4 * scale
-    ctx.fillStyle = '#000'
-    ctx.fillRect(X(f.pos.x) - bw / 2, Y(f.pos.y - f.radius - 0.35), bw, 5)
-    ctx.fillStyle = '#6fe08a'
-    ctx.fillRect(X(f.pos.x) - bw / 2, Y(f.pos.y - f.radius - 0.35), bw * Math.max(0, f.hp / f.maxHp), 5)
-  }
-}
-
-export function DuelView({ attacker, defender, luminance, cells, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
+  const lookRef = useRef({ boardId, cellEffects })
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null)
   const [held, setHeld] = useState(false)
   const [time, setTime] = useState(DUEL_SECONDS)
@@ -151,17 +61,61 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
   const stickPointer = useRef<number | null>(null)
   const stickOrigin = useRef({ ox: 0, oy: 0 })
   const doneRef = useRef(onDone)
+  const stage = useRef<HTMLDivElement>(null)
+  /** Mouse steering: the virtual stick offset in pixels, active while the pointer is locked to the stage. */
+  const mouse = useRef({ x: 0, y: 0, locked: false })
+  const [desktop] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches)
+  const [locked, setLocked] = useState(false)
 
   useEffect(() => {
     optionsRef.current = options
+    lookRef.current = { boardId, cellEffects }
     doneRef.current = onDone
   })
 
   useEffect(() => {
-    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0 }
+    const el = stage.current
+    if (!desktop || !el) return
+    const lockChange = () => {
+      const on = document.pointerLockElement === el
+      mouse.current = { x: 0, y: 0, locked: on }
+      if (!on) input.current = { ...NO_INPUT }
+      setLocked(on)
+      setHeld(false)
+    }
+    const move = (e: MouseEvent) => {
+      if (!mouse.current.locked) return
+      let x = mouse.current.x + e.movementX
+      let y = mouse.current.y + e.movementY
+      const len = Math.hypot(x, y)
+      if (len > STICK_RADIUS) { x = (x * STICK_RADIUS) / len; y = (y * STICK_RADIUS) / len }
+      mouse.current.x = x
+      mouse.current.y = y
+    }
+    const up = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0 || !mouse.current.locked) return
+      input.current = { ...input.current, attack: false }
+      setHeld(false)
+    }
+    document.addEventListener('pointerlockchange', lockChange)
+    document.addEventListener('mousemove', move)
+    window.addEventListener('pointerup', up)
+    // The click that started the fight may still count as a user gesture; if not, the player clicks the arena.
+    try { void Promise.resolve(el.requestPointerLock()).catch(() => {}) } catch { /* needs a click */ }
+    return () => {
+      document.removeEventListener('pointerlockchange', lockChange)
+      document.removeEventListener('mousemove', move)
+      window.removeEventListener('pointerup', up)
+      if (document.pointerLockElement === el) document.exitPointerLock()
+      input.current = { ...NO_INPUT }
+    }
+  }, [desktop])
+
+  useEffect(() => {
+    const foeSide = (1 - playerSide) as 0 | 1
+    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP } }
     const state = createDuel(attacker, defender, luminance, cfg, cells)
     const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
-    const foeSide = (1 - playerSide) as 0 | 1
     // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
     const flip = playerSide === 1
     let raf = 0
@@ -171,6 +125,9 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
     let shake = 0
     let endTimer = -1
     let hudTick = 0
+    const fx = createFx({
+      luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
+    })
     const drums = startDuelDrums()
     sfx.duelStart()
     const el = canvas.current!
@@ -189,16 +146,25 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       if (flip) ctx.transform(-1, 0, 0, -1, w, h)
 
+      if (mouse.current.locked) {
+        // The mouse drives a virtual stick that drifts back to centre, so moving it steers and stopping it stops you.
+        const k = Math.exp(-dt * MOUSE_RETURN)
+        mouse.current.x *= k
+        mouse.current.y *= k
+        input.current = { ...input.current, mx: mouse.current.x / STICK_RADIUS, my: mouse.current.y / STICK_RADIUS }
+      }
       if (freeze > 0) freeze -= dt
       else acc += dt * SLOWDOWN
+      const events: DuelEvent[] = []
       while (acc >= DT && !state.done && freeze <= 0) {
         acc -= DT
         const mine = flip ? { ...input.current, mx: -input.current.mx, my: -input.current.my } : input.current
         const inputs: [DuelInput, DuelInput] = [NO_INPUT, NO_INPUT]
         inputs[playerSide] = mine
         inputs[foeSide] = ai(state, foeSide)
-        const events = stepDuel(state, inputs)
-        for (const e of events) {
+        const stepped = stepDuel(state, inputs)
+        events.push(...stepped)
+        for (const e of stepped) {
           if (e.type === 'swing') sfx.swing()
           else if (e.type === 'shoot') sfx.shoot()
           else if (e.type === 'slam') sfx.slam()
@@ -228,7 +194,8 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
       }
       drums.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
-      draw(ctx, state, w, h, shake, flip)
+      updateFx(fx, state, dt, events)
+      drawDuel(ctx, fx, state, w, h, dpr, shake, flip)
       hudTick += dt
       if (hudTick > 0.1) {
         hudTick = 0
@@ -277,6 +244,15 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
     setHeld(on)
   }
 
+  const onStagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!desktop || e.pointerType !== 'mouse' || e.button !== 0) return
+    if (!mouse.current.locked) {
+      try { void Promise.resolve(e.currentTarget.requestPointerLock()).catch(() => {}) } catch { /* ignored */ }
+      return
+    }
+    setAttack(true)
+  }
+
   const named = (p: Piece) => `${ROLE_NAMES[p.court][p.role]}`
   const court = (p: Piece) => (p.court === 'solari' ? 'Solari' : 'Umbral')
   const mine = playerSide === 0 ? attacker : defender
@@ -294,9 +270,14 @@ export function DuelView({ attacker, defender, luminance, cells, options, player
           </p>
           <div className="duel-timer" aria-label="Time left">{Math.ceil(time)}s</div>
         </header>
-        <div className="duel-stage">
+        <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
           <canvas ref={canvas} className="duel-canvas" />
           {banner && <div className="duel-banner">{banner}</div>}
+          {desktop && (
+            <p className={`duel-mouse-hint${locked ? '' : ' prompt'}`}>
+              {locked ? 'Move the mouse to steer · hold left click to attack · Esc frees the mouse' : 'Click the arena to take control with the mouse'}
+            </p>
+          )}
         </div>
         <div className="duel-controls">
           <div className={`duel-pad${options.mirror ? ' mirror' : ''}`}>

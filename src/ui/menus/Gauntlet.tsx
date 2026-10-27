@@ -9,6 +9,7 @@ import type { Court, Role } from '../../engine/rules/types'
 import { totalStars, type Progress } from '../../progress'
 import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
+import { CourtPicker } from './CourtPicker'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
@@ -78,11 +79,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
         </p>
         {lines}
         <h3>Your court</h3>
-        <div className="row-pick">
-          {(['solari', 'umbral'] as Court[]).map((c) => (
-            <button key={c} className={court === c ? 'on' : undefined} onClick={() => setCourt(c)}>{c === 'solari' ? 'Solari' : 'Umbral'}</button>
-          ))}
-        </div>
+        <CourtPicker value={court} onChange={setCourt} />
         <h3>Starting army</h3>
         <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
         <div className="menu-buttons stacked">

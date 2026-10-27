@@ -740,3 +740,19 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 
 /* Mode cards: a second line and a slim progress bar stay inside the card's height budget */
 .mode-card .bar.thin { margin-top: 2px; }
+
+/* Keeps a tray widget's space while it is not usable, so the board never resizes between turns. */
+.keep-space { visibility: hidden; pointer-events: none; }
+/* The play-time readout is not needed during a fight; it keeps counting underneath. */
+body:has(.duel) .play-timer { display: none; }
+.duel-mouse-hint {
+  position: absolute; left: 0; right: 0; bottom: 8px; margin: 0; text-align: center; font-size: 0.75rem; opacity: 0.7; pointer-events: none;
+  text-shadow: 0 1px 4px #000;
+}
+.duel-mouse-hint.prompt { top: 50%; bottom: auto; transform: translateY(-50%); font-size: 1rem; font-weight: 700; opacity: 0.95; animation: hint-pulse 1.4s ease-in-out infinite; }
+@keyframes hint-pulse { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .duel-mouse-hint.prompt { animation: none; } }
+.confirm-advice { margin: 0 0 10px; text-align: center; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.confirm-advice.go { color: #6fe08a; }
+.confirm-advice.even { color: var(--solari-gold); }
+.confirm-advice.stop { color: #ff8088; }

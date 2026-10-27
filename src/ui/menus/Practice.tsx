@@ -6,6 +6,7 @@ import { estimateOdds } from '../../engine/reducer'
 import type { Court, DuelOutcome, Piece, Role } from '../../engine/rules/types'
 import { PlayTimer } from '../PlayTimer'
 import { DuelView } from '../duel/DuelView'
+import { CourtPicker } from './CourtPicker'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
@@ -71,11 +72,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
       <h2>Practice Arena</h2>
       <p className="tagline">Fight any piece against any other. Nothing is saved.</p>
       <h3>Your court</h3>
-      <div className="row-pick">
-        {(['solari', 'umbral'] as Court[]).map((c) => (
-          <button key={c} className={court === c ? 'on' : undefined} onClick={() => { setCourt(c); setOutcome(null) }}>{c === 'solari' ? 'Solari' : 'Umbral'}</button>
-        ))}
-      </div>
+      <CourtPicker value={court} onChange={(c) => { setCourt(c); setOutcome(null) }} />
       <h3>Your piece (attacks)</h3>
       {pick(mine, setMine, court, 'Your piece')}
       <h3>Opponent piece (defends)</h3>

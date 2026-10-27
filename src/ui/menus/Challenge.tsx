@@ -4,7 +4,7 @@ import type { Challenge as ChallengeCode } from '../../engine/challenge'
 import { describeConfig } from '../../share'
 import { rulesetById, tierOfConfig } from '../../engine/data/setups'
 import type { Court } from '../../engine/rules/types'
-import { PieceArt } from '../../art/PieceArt'
+import { CourtPicker } from './CourtPicker'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
@@ -29,14 +29,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
         {describeConfig(challenge).map((line) => <li key={line}>{line}</li>)}
       </ul>
       <h3>Your court</h3>
-      <div className="choices">
-        {(['solari', 'umbral'] as const).map((c) => (
-          <button key={c} className={`choice ${c}${court === c ? ' on' : ''}`} onClick={() => setCourt(c)}>
-            <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role="leader" court={c} /></svg>
-            <strong><Icon name={c === 'solari' ? 'sun' : 'moon'} />{c === 'solari' ? 'Solari' : 'Umbral'}</strong>
-          </button>
-        ))}
-      </div>
+      <CourtPicker value={court} onChange={setCourt} />
       <h3>Play</h3>
       <div className="menu-buttons stacked">
         {DIFFICULTY_LIST.map((d) => (

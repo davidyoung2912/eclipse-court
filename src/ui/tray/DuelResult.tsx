@@ -12,7 +12,7 @@ interface Props {
 }
 
 /** How long the summary stays up before play carries on by itself. */
-const SHOWN_MS = 5000
+const SHOWN_MS = 3000
 
 type Verdict = 'attacker' | 'defender' | 'both' | 'draw'
 

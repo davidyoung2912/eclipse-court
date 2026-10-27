@@ -404,6 +404,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
       )}
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={duelCells(state, attacker, defender)}
+          boardId={state.config.board} cellEffects={[cellAt(state.config, attacker.pos), cellAt(state.config, defender.pos)]}
           options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
           seed={state.rng + state.round} onDone={finishDuel} />
       )}
@@ -458,8 +459,12 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
       <footer className="tray">
-        {clock && !ended && myTurn && <ClockRing clock={clock} elapsedMs={elapsed} bankMs={banks[state.turn]} court={state.turn} paused={!clockRunning} />}
-        {!ended && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />}
+        {clock && <div className={myTurn && !ended ? undefined : 'keep-space'} aria-hidden={!myTurn || ended}>
+          <ClockRing clock={clock} elapsedMs={elapsed} bankMs={banks[state.turn]} court={state.turn} paused={!clockRunning} />
+        </div>}
+        <div className={!ended && !pending && myTurn ? undefined : 'keep-space'} aria-hidden={ended || !!pending || !myTurn}>
+          <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />
+        </div>
         <div className="options">
           {hotSeat ? (
             <>

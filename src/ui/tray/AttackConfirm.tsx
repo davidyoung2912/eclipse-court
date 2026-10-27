@@ -3,6 +3,7 @@ import type { Odds } from '../../engine/reducer'
 import { Icon } from '../menus/icons'
 import type { CellEffect, Piece } from '../../engine/rules/types'
 import { CELL_INFO } from '../../engine/rules/cells'
+import { adviceFor } from './attackAdvice'
 
 interface Props {
   attacker: Piece
@@ -19,6 +20,7 @@ interface Props {
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
 export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, onConfirm, onCancel }: Props) {
+  const advice = adviceFor(odds, defender)
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
     <div className="confirm" role="dialog" aria-label="Confirm attack">
@@ -35,6 +37,7 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, cells
         {cells?.attacker && <><br />Attacker on {CELL_INFO[cells.attacker].name}</>}
         {cells?.defender && <><br />Defender on {CELL_INFO[cells.defender].name}</>}
       </p>
+      <p className={`confirm-advice ${advice.tone}`}>{advice.text}</p>
       <div className="buttons">
         <button onClick={onCancel}><Icon name="close" />Cancel</button>
         <button className="primary" onClick={onConfirm}>{live ? <><Icon name="swords" />Attack</> : <><Icon name="bolt" />Auto-resolve</>}</button>

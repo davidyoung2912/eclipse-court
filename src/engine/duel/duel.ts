@@ -187,7 +187,9 @@ function stepFighter(state: DuelState, i: 0 | 1, input: DuelInput, events: DuelE
     const k = len > 1 ? 1 / len : 1
     // Charging slows movement so a held shot is a commitment.
     const slow = me.charge > 0 ? 0.6 : 1
-    me.vel = { x: input.mx * k * st.speed * slow, y: input.my * k * st.speed * slow }
+    const ramp = state.config.foeSpeedRamp
+    const grow = ramp && ramp.side === i ? 1 + ramp.perSecond * state.t : 1
+    me.vel = { x: input.mx * k * st.speed * slow * grow, y: input.my * k * st.speed * slow * grow }
   }
   me.pos.x += me.vel.x * DT
   me.pos.y += me.vel.y * DT

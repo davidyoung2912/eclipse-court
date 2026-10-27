@@ -27,6 +27,8 @@ export const NO_INPUT: DuelInput = { mx: 0, my: 0, attack: false }
 export interface DuelConfig {
   /** Auto-aim cone half-angle in radians; 0 turns aim assist off. */
   aimCone: number
+  /** Live fights only: the AI's walking speed grows by `perSecond` of its base for every second of the duel. */
+  foeSpeedRamp?: { side: 0 | 1; perSecond: number }
 }
 
 export interface Fighter {
