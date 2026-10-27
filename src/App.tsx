@@ -86,6 +86,26 @@ function markTutorialSeen() {
   }
 }
 
+/** Set when the tutorial is left; the next Skirmish setup then opens on Classic rules and clears it. */
+const CLASSIC_NEXT_KEY = 'eclipse-court:classic-next'
+
+function classicNext(): boolean {
+  try {
+    return localStorage.getItem(CLASSIC_NEXT_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function setClassicNext(on: boolean) {
+  try {
+    if (on) localStorage.setItem(CLASSIC_NEXT_KEY, '1')
+    else localStorage.removeItem(CLASSIC_NEXT_KEY)
+  } catch {
+    // Without storage Skirmish simply opens on Standard.
+  }
+}
+
 /** The screen a shared link or code opens. */
 const sharedScreen = (shared: Shared): Screen =>
   shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge } : { name: 'replay', record: shared.record, from: 'menu' }
@@ -150,6 +170,7 @@ export default function App() {
         <Tutorial
           onExit={() => {
             markTutorialSeen()
+            setClassicNext(true)
             setSeen(true)
             setScreen({ name: 'menu' })
           }}
@@ -214,11 +235,14 @@ export default function App() {
     return (
       <SkirmishSetup
         progress={progress}
+        initialTier={classicNext() ? 'classic' : 'standard'}
         onBack={() => setScreen({ name: 'battle' })}
         challengeLink={(human, difficulty, setup, hotSeat) =>
           challengeLink({ config: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()).initial.config, side: otherCourt(human) })}
-        onStart={(human, difficulty, setup, hotSeat) =>
-          setScreen({ name: 'game', human, difficulty, hotSeat, record: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()), campaignIndex: null })}
+        onStart={(human, difficulty, setup, hotSeat) => {
+          setClassicNext(false)
+          setScreen({ name: 'game', human, difficulty, hotSeat, record: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()), campaignIndex: null })
+        }}
       />
     )
 

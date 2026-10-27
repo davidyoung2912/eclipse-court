@@ -114,6 +114,16 @@ export const RULESETS: readonly Ruleset[] = [
 
 export const rulesetById = (id: string) => RULESETS.find((r) => r.id === id)
 
+/** The tier a config plays as: Classic if it has the Classic spells and no passives, Advanced if it uses any Advanced-only option, else Standard. */
+export function tierOfConfig(config: MatchConfig): RulesetId {
+  const spells = config.loadouts && Object.values(config.loadouts)
+  const classicSpells = !!spells && spells.every((l) => l.join(',') === CLASSIC_RULES_SPELLS.join(','))
+  if (config.passives === false && classicSpells && !config.showdown) return 'classic'
+  const advanced = !!(config.events || config.growth || config.promotion || config.recharge || config.turnClock || config.reverse
+    || (config.mode && config.mode !== 'beacons') || config.day.length !== DEFAULT_CONFIG.day.length || config.loadouts)
+  return advanced ? 'advanced' : 'standard'
+}
+
 export const presetById = (id: string) => PRESETS.find((p) => p.id === id)
 
 /** The rule fields of a setup in one comparable form, with absent values filled in. */

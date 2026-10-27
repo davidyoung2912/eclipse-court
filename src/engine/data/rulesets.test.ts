@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decodeRecord, encodeRecord } from '../serialize'
 import { checkInvariants, playGame } from '../../sim/game'
 import { newGame } from '../reducer'
-import { CLASSIC_RULES_SPELLS, RULESETS, rulesetById, skirmishConfig, type SetupChoice } from './setups'
+import { CLASSIC_RULES_SPELLS, RULESETS, rulesetById, skirmishConfig, tierOfConfig, type SetupChoice } from './setups'
 import { loadoutOf } from '../rules/spells'
 
 const choiceOf = (id: string): SetupChoice => ({ mode: 'classic', board: 'classic', ...rulesetById(id)!.rules })
@@ -51,6 +51,15 @@ describe('rulesets', () => {
     const config = skirmishConfig({ mode: 'classic', board: 'classic' }, 'solari', 5)
     expect(config.passives).toBe(true)
     expect(config.loadouts).toBeUndefined()
+  })
+
+  it('are recognised from a config, and Advanced options lift a Standard one', () => {
+    // Advanced opens options without switching any on, so on its own it plays as Standard.
+    for (const id of ['classic', 'standard']) expect(tierOfConfig(skirmishConfig(choiceOf(id), 'solari', 5))).toBe(id)
+    expect(tierOfConfig(skirmishConfig(choiceOf('advanced'), 'solari', 5))).toBe('standard')
+    expect(tierOfConfig(skirmishConfig({ mode: 'classic', board: 'classic' }, 'solari', 5))).toBe('standard')
+    expect(tierOfConfig(skirmishConfig({ ...choiceOf('standard'), growth: true }, 'solari', 5))).toBe('advanced')
+    expect(tierOfConfig(skirmishConfig({ ...choiceOf('standard'), winMode: 'hill' }, 'solari', 5))).toBe('advanced')
   })
 
   it('finish a soak-test game each', () => {

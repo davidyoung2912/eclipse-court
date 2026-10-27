@@ -2,7 +2,7 @@ import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
-import { dayIndex } from './engine/data/setups'
+import { dayIndex, tierOfConfig } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
 import type { Court } from './engine/rules/types'
 
@@ -95,6 +95,8 @@ export interface Summary {
   difficulty: Difficulty
   campaignIndex: number | null
   daily: boolean
+  /** The game used Classic rules (no court passives, three spells); achievements that lean on the full rules skip it. */
+  classic?: boolean
   /** The game was the day's puzzle, solved. */
   dailyPuzzle?: boolean
 }
@@ -133,7 +135,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'first-win', name: 'First Light', text: 'Win a game.', earned: (_, s) => s.won },
   { id: 'flawless', name: 'Unscathed', text: 'Win without losing a piece.', earned: (_, s) => s.won && s.lost === 0 },
   { id: 'swift', name: 'Before the Dark', text: 'Win before the Eclipse falls.', earned: (_, s) => s.won && s.swift },
-  { id: 'silent', name: 'Silent Leader', text: 'Win without casting a spell.', earned: (_, s) => s.won && s.spellsCast === 0 },
+  { id: 'silent', name: 'Silent Leader', text: 'Win without casting a spell.', earned: (_, s) => s.won && s.spellsCast === 0 && !s.classic },
   { id: 'hard', name: 'Against the Tide', text: 'Win against a hard opponent.', earned: (_, s) => s.won && s.difficulty === 'hard' },
   { id: 'daily', name: 'Daily Bread', text: "Win the day's daily game.", earned: (_, s) => s.won && s.daily },
   { id: 'three-stars', name: 'Triple Crown', text: 'Earn all three stars on one opponent.', earned: (p) => p.stars.some((b) => starCount(b) === 3) },
@@ -265,6 +267,7 @@ export function summarise(
     difficulty,
     campaignIndex,
     daily: record.initial.config.setup === 'daily',
+    classic: record.initial.config.setup !== undefined && tierOfConfig(record.initial.config) === 'classic',
   }
 }
 

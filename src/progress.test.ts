@@ -35,6 +35,13 @@ describe('progress', () => {
     expect(totalStars(p)).toBe(3)
   })
 
+  it('counts Classic games in stats but not towards full-rules achievements', () => {
+    const r = recordGame(emptyProgress(), win({ spellsCast: 0, classic: true }), null)
+    expect(r.progress.stats.games).toBe(1)
+    expect(r.earned.map((a) => a.id)).toContain('first-win')
+    expect(r.earned.map((a) => a.id)).not.toContain('silent')
+  })
+
   it('reports each achievement once', () => {
     const first = recordGame(emptyProgress(), win({ lost: 0, spellsCast: 0 }), 'code')
     expect(first.earned.map((a) => a.id)).toEqual(expect.arrayContaining(['first-win', 'flawless', 'silent']))

@@ -18,6 +18,8 @@ import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
   progress: Progress
+  /** The Rules tier the screen opens on; Classic for a player fresh from the tutorial. */
+  initialTier?: RulesetId
   /** `hotSeat` means a second person takes the other court; the difficulty is then unused. */
   onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => void
   /** The link to a challenge for the settings chosen, with a fresh seed. */
@@ -54,7 +56,7 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
   hard: 'Quick, accurate, and plans three moves ahead.',
 }
 
-export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Props) {
+export function SkirmishSetup({ progress, initialTier = 'standard', onStart, challengeLink, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [hotSeat, setHotSeat] = useState(false)
@@ -66,7 +68,7 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
   const [recharge, setRecharge] = useState(false)
   const [winMode, setWinMode] = useState<MatchMode>('beacons')
   const [events, setEvents] = useState(false)
-  const [showdown, setShowdown] = useState(true)
+  const [showdown, setShowdown] = useState(initialTier !== 'classic')
   const [cycle, setCycle] = useState<CycleId>('standard')
   const [reverse, setReverse] = useState(false)
   const [clockSeconds, setClockSeconds] = useState(0)
@@ -74,7 +76,7 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
   const [growth, setGrowth] = useState(false)
   const [promotion, setPromotion] = useState(false)
   const [presetId, setPresetId] = useState<string | null>(null)
-  const [rulesId, setRulesId] = useState<RulesetId>('standard')
+  const [rulesId, setRulesId] = useState<RulesetId>(initialTier)
   const tier = rulesetById(rulesId) ?? RULESETS[1]
   const open = (group: RuleGroup) => !tier.locks.includes(group)
   const board = boardById(boardId)

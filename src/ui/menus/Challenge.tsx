@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import type { Challenge as ChallengeCode } from '../../engine/challenge'
 import { describeConfig } from '../../share'
+import { rulesetById, tierOfConfig } from '../../engine/data/setups'
 import type { Court } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
@@ -22,6 +23,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
       <h2>Challenge</h2>
       <p className="tagline">Someone sent you this match. Every game from this link begins from the same position.</p>
       <ul className="setup-card">
+        <li>Rules: {rulesetById(tierOfConfig(challenge.config))?.name}</li>
         {describeConfig(challenge).map((line) => <li key={line}>{line}</li>)}
       </ul>
       <h3>Your court</h3>
