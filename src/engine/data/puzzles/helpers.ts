@@ -88,7 +88,7 @@ export function puzzle(def: PuzzleDef): Puzzle {
     ...rest,
     difficulty,
     build: () => {
-      const state = position(seed, beacons, [...army('solari', s), ...army('umbral', u)], spells, rules)
+      const state = position(seed, beacons, [...army('solari', s), ...army('umbral', u)], spells, { passives: false, ...rules })
       return {
         ...state,
         captured: fallen ? army('solari', fallen).map((p) => ({ ...p, hp: 0 })) : [],

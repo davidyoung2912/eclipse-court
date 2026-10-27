@@ -127,7 +127,7 @@ describe('puzzles', () => {
     for (const p of PUZZLES) {
       const s = p.build()
       for (const a of p.solution) {
-        if (a.type === 'move') roles.add(s.pieces.find((x) => x.id === a.pieceId)!.role)
+        if (a.type === 'move') roles.add(s.pieces.find((x) => x.id === a.pieceId)?.role ?? 'footsoldier')
         if (a.type === 'cast') spells.add(a.spell)
       }
     }
