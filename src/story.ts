@@ -156,17 +156,6 @@ export function markBondRead(id: string) {
 /** Bonds whose chapter has been read, in the order they were written. */
 export const availableBonds = (s: Pick<StoryState, 'read'>): Bond[] => BONDS.filter((b) => s.read.has(b.after))
 
-/** Chapters the player can read again as a scene, without a battle or any change to the story. */
-export const replayableChapters = (s: Pick<StoryState, 'read'>) => CHAPTERS.filter((c) => s.read.has(c.id))
-
-/** The scenes of a chapter for replay: its own beats, then the victory scene, then the chosen epilogue. */
-export function replayBeats(chapterId: string, s: StoryState): Beat[] {
-  const chapter = CHAPTERS.find((c) => c.id === chapterId)
-  if (!chapter) return []
-  const epilogue = chapter.ending?.options.find((o) => o.id === s.ending)?.beats ?? []
-  return visibleBeats([...chapter.beats, ...(chapter.battle?.won ?? []), ...epilogue], s)
-}
-
 export interface Achievement {
   id: string
   title: string

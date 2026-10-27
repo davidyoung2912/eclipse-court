@@ -68,6 +68,26 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     text: 'In the classic game, hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy piece. Beacons also heal whoever stands on them. Skirmish adds other goals (capture the Leader, a beacon score race, hold the centre); the line under the round counter shows yours.',
   },
   {
+    kind: 'info',
+    title: '12. Special squares',
+    text: 'Some boards have coloured squares with effects: Might adds damage, Ward cuts damage taken, Recovery heals, Hazard hurts, Silence blocks a Leader\'s spells and Invincibility protects on odd rounds. A legend under the board names each colour, and tapping an empty square describes it. Use them: a duel on a Ward square is far safer.',
+  },
+  {
+    kind: 'info',
+    title: '13. Veterans and promotion',
+    text: 'In some games a piece that wins duels grows. It becomes a Veteran with +1 max HP, then an Elite that picks a perk. A Footsoldier that reaches the enemy home column is promoted to a Charger or a Marksman. You are asked to choose just before your move is played.',
+  },
+  {
+    kind: 'info',
+    title: '14. Goal line, hints and undo',
+    text: 'The white line above every board states the goal of that battle, whether it is a campaign opponent, a scenario, a puzzle or a story chapter. Stuck? The Hint button suggests a move for free (puzzles give the setter\'s own hints), and Undo takes your last move back in games against the AI. Neither is available online.',
+  },
+  {
+    kind: 'info',
+    title: '15. Ways to play',
+    text: 'Skirmish builds a match to your liking, including the 9x9 Grand board. The Campaign is a ladder of battles and hand-built scenarios that earn stars, the Gauntlet is a run with one army, Puzzles give you a fixed position, the Daily is the same for everyone, and Story tells the tale of the two courts. You can also play a friend on one device or online.',
+  },
+  {
     kind: 'end',
     title: 'The Eclipse',
     text: 'At round 30 the Eclipse falls: the shifting light freezes at dusk, spells fall silent and any piece off a beacon loses 1 HP every round. With the showdown rule, red squares hurt 3 HP a round and the safe zone shrinks to the centre. Otherwise, if nobody has won by round 50, the court holding more beacons (then more total HP) wins. Good luck.',

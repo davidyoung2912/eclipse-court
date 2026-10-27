@@ -12,6 +12,7 @@ import { DraftPicker } from './DraftPicker'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   progress: Progress
@@ -64,7 +65,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
   const g = progress.gauntlet
   const lines = report.length > 0 && <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
-  const back = <button onClick={onBack}><Icon name="back" />Back</button>
+  const back = <BackButton onClick={onBack} />
 
   if (!run)
     return (

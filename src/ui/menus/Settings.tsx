@@ -5,6 +5,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { resetTips } from '../../tips'
+import { BackButton } from './BackButton'
 
 interface Props {
   progress: Progress
@@ -44,7 +45,7 @@ export function Settings({ progress, onBack }: Props) {
         <button onClick={resetTips}><Icon name="bulb" />Show Tips Again</button>
       </div>
       <div className="menu-buttons">
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="settings" />
     </main>

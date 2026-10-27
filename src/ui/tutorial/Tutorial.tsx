@@ -17,6 +17,7 @@ import { AttackConfirm } from '../tray/AttackConfirm'
 import { DuelResult } from '../tray/DuelResult'
 import { PieceCard } from '../tray/PieceCard'
 import { SpellBar } from '../tray/SpellBar'
+import { BackButton } from '../menus/BackButton'
 
 interface Props {
   onExit: () => void
@@ -109,7 +110,7 @@ export function Tutorial({ onExit }: Props) {
         </section>
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
-          <button onClick={onExit}>{current.kind === 'end' ? <><Icon name="back" />Back</> : <><Icon name="skip" />Skip</>}</button>
+          {current.kind === 'end' ? <BackButton onClick={onExit} /> : <button onClick={onExit}><Icon name="skip" />Skip</button>}
           {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setStep(step + 1) }}><Icon name="check" />Got It</button>}
           {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>

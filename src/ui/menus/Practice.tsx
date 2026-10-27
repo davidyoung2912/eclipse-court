@@ -9,6 +9,7 @@ import { DuelView } from '../duel/DuelView'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   onPlaytime: (seconds: number) => void
@@ -100,7 +101,7 @@ export function Practice({ onPlaytime, onBack }: Props) {
       </div>
       <div className="menu-buttons stacked">
         <button className="primary" onClick={() => { setSeed(Date.now()); setOutcome(null); setFighting(true) }}><Icon name="swords" />Fight</button>
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="practice" />
     </main>

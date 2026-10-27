@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from 'react'
 import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
-import { achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, replayableChapters, storySnapshot, subscribeStory } from '../../story'
+import { achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
+import { ResetButton } from './ResetButton'
 
 interface Props {
   onOpen: (id: string) => void
@@ -12,18 +14,15 @@ interface Props {
   onEnding?: (chapterId: string) => void
   /** Opens a bond scene between two characters. */
   onBond?: (id: string) => void
-  /** Plays a read chapter again as a scene, with no battle. */
-  onReplay?: (id: string) => void
   onBack: () => void
 }
 
 /** The chapters of the tale of the two courts, opened in order. */
-export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
+export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const read = story.read
   const ending = endingChapter()
   const bonds = availableBonds(story)
-  const replays = replayableChapters(story)
   const medals = achievements(story)
   const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
   const chapterButton = ({ c, i }: { c: (typeof CHAPTERS)[number]; i: number }) => {
@@ -36,6 +35,11 @@ export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
       </button>
     )
   }
+  /** Once an act is under way it opens by itself: the act of the next chapter still to read. */
+  const next = CHAPTERS.find((c, i) => c.act !== 'prologue' && !read.has(c.id) && chapterUnlocked(i, read))
+  const underway = CHAPTERS.some((c) => c.act !== 'prologue' && read.has(c.id))
+  const current = underway ? next?.act : undefined
+  const untouched = read.size === 0 && Object.keys(story.characters).length === 0 && Object.keys(story.losses).length === 0 && !story.ending
   const prologue = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === 'prologue')
   return (
     <main className="app menu">
@@ -48,7 +52,7 @@ export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
         if (list.length === 0) return null
         const finished = list.filter(({ c }) => read.has(c.id)).length
         return (
-          <details key={act} className="tier-fold">
+          <details key={act} className="tier-fold" open={act === current}>
             <summary><h3>{actLabel(act)} ({finished}/{list.length})</h3></summary>
             <div className="choices">{list.map(chapterButton)}</div>
           </details>
@@ -89,14 +93,6 @@ export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
           ))}
         </section>
       )}
-      {replays.length > 0 && (
-        <section className="story-cast" aria-label="Gallery">
-          <h3>Gallery</h3>
-          {replays.map((c) => (
-            <button key={c.id} onClick={() => onReplay?.(c.id)}><Icon name="book" />Replay: {c.title}</button>
-          ))}
-        </section>
-      )}
       <section className="story-cast" aria-label="Achievements">
         <h3>Achievements · {medals.filter((m) => m.earned).length} of {medals.length}</h3>
         {medals.map((m) => (
@@ -107,9 +103,10 @@ export function Story({ onOpen, onEnding, onBond, onReplay, onBack }: Props) {
         ))}
       </section>
       <div className="menu-buttons stacked">
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <ResetButton label="Reset Story" disabled={untouched} warning="Forget every chapter read, bond scene, ending and story achievement, and bring every character back? Campaign, puzzle and scenario progress is kept." onReset={resetStory} />
+        <BackButton onClick={onBack} />
       </div>
-      <TipCard page="story" />
+      <TipCard page={['story', 'story-acts']} />
     </main>
   )
 }

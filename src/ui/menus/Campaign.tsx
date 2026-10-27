@@ -8,6 +8,7 @@ import { Icon, type IconName } from './icons'
 import { ResetButton } from './ResetButton'
 import { TipCard } from '../tips/TipCard'
 import { CampaignArt, OpponentAvatar } from './MenuArt'
+import { BackButton } from './BackButton'
 
 interface Props {
   progress: Progress
@@ -148,7 +149,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
         {tab === 'scenarios'
           ? <ResetButton label="Reset Scenarios" disabled={scenarioStars(progress) === 0} warning="Clear every scenario star so you can retry them all?" onReset={() => onReset('scenarios')} />
           : <ResetButton label="Reset Campaign" disabled={cleared === 0 && totalStars(progress) === 0} warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page={tab === 'scenarios' ? 'campaign-scenarios' : 'campaign-battles'} />
     </main>

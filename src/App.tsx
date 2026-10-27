@@ -1,4 +1,4 @@
-import { lazy, useEffect, useRef, useState } from 'react'
+import { lazy, useEffect, useRef, useState, type ComponentProps } from 'react'
 import { challengeLink, parseShared, type Shared } from './share'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
@@ -35,7 +35,7 @@ import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
 import { afterVictory, battleCourt, bondById, chapterById, scenarioOf, storyBattleGame, type EndingId } from './engine/data/story'
 import { StoryEnding } from './ui/story/StoryEnding'
-import { markBondRead, markChapterRead, recordEnding, replayBeats, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
+import { markBondRead, markChapterRead, recordEnding, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
@@ -59,9 +59,8 @@ type Screen =
   | { name: 'chapter'; id: string }
   /** The scene after a chapter's battle. */
   | { name: 'aftermath'; id: string; won: boolean }
-  /** A bond scene between two characters, and a read chapter played again as a scene. */
+  /** A bond scene between two characters. */
   | { name: 'bond'; id: string }
-  | { name: 'gallery'; id: string }
   /** The choice that ends the story, and the epilogue read once it is made. */
   | { name: 'ending'; id: string }
   | { name: 'epilogue'; id: string; ending: EndingId }
@@ -218,7 +217,7 @@ export default function App() {
 
   if (screen.name === 'story')
     return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onEnding={(id) => setScreen({ name: 'ending', id })}
-      onBond={(id) => setScreen({ name: 'bond', id })} onReplay={(id) => setScreen({ name: 'gallery', id })} onBack={() => setScreen({ name: 'menu' })} />
+      onBond={(id) => setScreen({ name: 'bond', id })} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'bond') {
     const bond = bondById(screen.id)
@@ -228,13 +227,6 @@ export default function App() {
       <StoryReader key={bond.id} chapter={{ ...after, title: bond.title }} beats={visibleBeats(bond.beats, storySnapshot())}
         onBack={() => setScreen({ name: 'story' })} onDone={() => { markBondRead(bond.id); setScreen({ name: 'story' }) }} />
     )
-  }
-
-  if (screen.name === 'gallery') {
-    const chapter = chapterById(screen.id)
-    const beats = chapter ? replayBeats(chapter.id, storySnapshot()) : []
-    if (!chapter || beats.length === 0) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
-    return <StoryReader key={`replay-${chapter.id}`} chapter={chapter} beats={beats} onBack={() => setScreen({ name: 'story' })} onDone={() => setScreen({ name: 'story' })} />
   }
 
   if (screen.name === 'chapter') {
@@ -503,6 +495,13 @@ export default function App() {
       setScreen({ name: 'aftermath', id: chapterId, won: !!final })
     }
 
+    const context: ComponentProps<typeof Game>['context'] =
+      story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
+      : gauntlet ? { label: `Gauntlet stage ${run?.stage ?? ''}`.trim(), kind: 'gauntlet' }
+      : scenario !== undefined ? { label: `Scenario: ${SCENARIOS[scenario].name}`, kind: 'scenario' }
+      : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
+      : daily ? { label: 'Daily match', kind: 'daily' }
+      : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
     return (
       <>
@@ -515,6 +514,8 @@ export default function App() {
           : versusAi(human, difficulty, daily ? today.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
+        context={context}
+        puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text }}
         onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}

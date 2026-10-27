@@ -1,3 +1,4 @@
+import type { MatchMode } from '../rules/types'
 import type { Difficulty } from './difficulty'
 
 /** What happened in one finished game, from the human's side. */
@@ -18,4 +19,13 @@ export interface Summary {
   classic?: boolean
   /** The game was the day's puzzle, solved. */
   dailyPuzzle?: boolean
+  /** How the match was set up, for achievements tied to a board or a rule. */
+  size?: number
+  mode?: MatchMode
+  cells?: boolean
+  events?: boolean
+  showdown?: boolean
+  clock?: boolean
+  growth?: boolean
+  promotion?: boolean
 }

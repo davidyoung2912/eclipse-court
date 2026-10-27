@@ -18,13 +18,17 @@ const DATA = {
     { id: 'menu-modes', icon: 'swords', title: 'Choose how to play',
       text: 'Battle holds one-off matches: Skirmish against the AI or a friend, the Practice arena, and shared codes. Campaign is a ladder of battles and hand-built scenarios that earn stars. Gauntlet is a roguelike run where your army keeps what it earns. Puzzles give you a set board and a turn limit. The line under each card shows your progress.' },
     { id: 'menu-story', icon: 'book', title: 'The Story',
-      text: 'The wide Story card at the bottom of the card grid tells how Veyra came to have two courts. It is a tale read in chapters, with its own bond scenes, chapter gallery and achievements. The line on the card shows how far you have read. Story never changes your campaign stars, so read it whenever you like.' },
+      text: 'The wide Story card at the bottom of the card grid tells how Veyra came to have two courts. It is a tale read in chapters, with its own bond scenes and achievements. The line on the card shows how far you have read. Story never changes your campaign stars, so read it whenever you like.' },
     { id: 'menu-utility', icon: 'book', title: 'The bottom row',
       text: 'Stats shows your record and achievements. Settings changes themes and accessibility options. How to Play replays the guided lesson at any time, and Sound switches audio on or off. Tip cards like this one appear once on every page, and you can bring them all back from Settings.' },
   ],
   story: [
     { id: 'story-intro', icon: 'book', title: 'The tale of the two courts',
-      text: 'Story chapters tell how Veyra came to have two courts and an Eclipse Queen. Each chapter is read one line at a time: tap, press Enter or use the arrow keys to move on, and Skip jumps to the end. Chapters open in order, and reading one marks it done. Bonds are quiet scenes between two characters that open as you read, the Gallery replays any chapter you have read, and Achievements track your progress. Story keeps its own record, so it never affects your campaign stars.' },
+      text: 'Story chapters tell how Veyra came to have two courts and an Eclipse Queen. Each chapter is read one line at a time: tap, press Enter or use the arrow keys to move on, and Skip jumps to the end. Chapters open in order, and reading one marks it done. Bonds are quiet scenes between two characters that open as you read, and Achievements track your progress. Story keeps its own record, so it never affects your campaign stars.' },
+  ],
+  'story-acts': [
+    { id: 'story-acts-intro', icon: 'book', title: 'Acts and starting over', 
+      text: 'Chapters are grouped into acts. Once you have started an act, it opens by itself when you come back, so your place is easy to find; tap any act heading to open or close it. Reset Story at the bottom forgets every chapter, bond, ending and story achievement so you can read it all again. It never touches your campaign, puzzle or scenario progress.' },
   ],
   battle: [
     { id: 'battle-modes', icon: 'swords', title: 'One-off matches',
@@ -89,6 +93,8 @@ const DATA = {
       text: 'This page keeps every number about your play: games, wins and losses, pieces taken and lost, Gauntlet runs, campaign progress and total time played. Games against a friend on one device are never counted. It all stays on this device.' },
     { id: 'stats-achievements', icon: 'star', title: 'Achievements and replays',
       text: 'Achievements you have earned shine with a trophy, and locked ones show a padlock and the goal. Replay Last Game plays your most recent match back move by move, and Copy Replay Link lets you share it. Reset Stats clears your records and achievements but keeps campaign, puzzle and scenario progress.' },
+    { id: 'stats-categories', icon: 'trophy', title: 'Achievement categories',
+      text: 'There are 100 achievements, grouped into categories such as Battle Craft, Campaign, Puzzles and Gauntlet. Tap a category heading to open or close it; the numbers beside it show how many you have earned there. Some achievements need a certain rule or board, so try the options in Skirmish to find them.' },
   ],
   settings: [
     { id: 'settings-look', icon: 'sparkle', title: 'Themes',
@@ -121,6 +127,8 @@ const DATA = {
   game: [
     { id: 'game-board', icon: 'grid', title: 'Reading the board',
       text: 'The top dial shows the current light and the next few steps of the cycle. On the board, bright squares favour the Solari court and dark ones favour the Umbral, and the light ripples outward from the centre each round. Dashed gold circles are beacons, and walls block movement. Pieces show their hit points as pips underneath.' },
+    { id: 'game-goal', icon: 'banner', title: 'The goal line',
+      text: 'The white line just above the board says what this battle is about: the way to win, such as holding every beacon or defeating the enemy Leader, followed by where the game comes from, such as a campaign opponent or a scenario. Check it whenever you are unsure what to aim for.' },
     { id: 'game-move', icon: 'target', title: 'Move a piece',
       text: 'On your turn, tap one of your pieces and glowing squares show where it can go. Tap one to move there. Each piece moves differently, and its card under the board explains how. Moving one piece uses up your whole turn, so choose which piece matters most. End Turn passes without moving, which lets wounded pieces rest and heal. Undo takes your last move back.' },
     { id: 'game-card', icon: 'book', title: 'Inspect anything',
@@ -136,11 +144,49 @@ const DATA = {
     { id: 'game-cells-intro', icon: 'sparkle', title: 'Cell effects',
       text: 'The coloured squares on this board have special effects. Might adds damage dealt, Ward cuts damage taken, Recovery heals at the end of the round, Hazard hurts, Silence blocks a Leader\'s spells and Invincibility protects on odd rounds. The legend under the board names each colour, and tapping any empty square describes its effect.' },
   ],
+  'game-scenario': [
+    { id: 'game-scenario-goal', icon: 'target', title: 'A scenario goal',
+      text: 'This battle has its own goal instead of the usual beacons: survive, escort your Leader to a marked beacon, or hold one. The goal line above the board and the round counter show how long you have, and running out of rounds loses unless the goal is to survive. Losing your Leader always loses.' },
+  ],
+  'game-story': [
+    { id: 'game-story-battle', icon: 'book', title: 'A story battle',
+      text: 'Named characters fight as some of the pieces. Win and the ones taken are wounded and start the next fight weaker, and some can fall for good. Lose and nothing changes, so you can try again at once. Story battles are not saved if you quit, and they never affect your campaign stars.' },
+  ],
+  'game-gauntlet': [
+    { id: 'game-gauntlet-fight', icon: 'flame', title: 'A gauntlet fight',
+      text: 'Your army fights with the wounds, ranks and perks it carries from the run. A win takes you on to a reward, while a defeat or a draw ends the run. Quitting counts as giving up the fight, so play it out.' },
+  ],
+  'game-series': [
+    { id: 'game-series-tournament', icon: 'trophy', title: 'Best of three',
+      text: 'This is one game of a tournament: the first to win two games takes the title. Each game is a fresh start against the same opponent. Tournament games earn no stars, but a won tournament counts towards your achievements.' },
+  ],
+  'game-grand': [
+    { id: 'game-grand-board', icon: 'grid', title: 'The Grand board',
+      text: 'The 9x9 Grand board gives each side sixteen pieces and more room to manoeuvre, with the light rippling out in more rings. Distances are longer and battles last longer, so plan several moves ahead and keep your army together.' },
+  ],
+  'game-modes': [
+    { id: 'game-modes-goal', icon: 'banner', title: 'A different way to win',
+      text: 'This match is not won by holding every beacon. Leader Capture ends when a Leader falls, Score Race gives each court points for the beacons it holds every round, and King of the Hill needs the centre square for several of your turns in a row. The goal line and the round counter show your progress.' },
+  ],
+  'game-events': [
+    { id: 'game-events-day', icon: 'cycle', title: 'Day events',
+      text: 'On some days an event bends the rules for two rounds: Solar Flare brightens the shifting squares, Gloaming darkens them, Fog shortens long-range moves and Blight stops healing. The round counter area names the current event and warns you one or two rounds before the next.' },
+  ],
+  'game-growth': [
+    { id: 'game-growth-ranks', icon: 'rise', title: 'Veterans, perks and promotion',
+      text: 'With these rules a piece that wins duels grows: it becomes a Veteran with one more hit point and then an Elite that chooses a perk. A Footsoldier that crosses to the enemy home column is promoted to a Charger or a Marksman. You are asked to choose when it happens, before your move is played.' },
+  ],
+  'game-online': [
+    { id: 'game-online-play', icon: 'chain', title: 'Playing online',
+      text: 'Moves reach your friend as you make them, and their moves arrive on their turn. Undo and hints are off, and captures are settled automatically. If the connection drops the game is kept and you can Reconnect with the same player. Resign ends the game at once. When it is over, either side can ask for a Rematch with the courts swapped.' },
+  ],
   'game-hotseat': [
     { id: 'game-hotseat-intro', icon: 'swap', title: 'Two players, one device',
       text: 'Players take turns on the same screen. A pass screen hides the board between turns so nobody sees the other\'s plans, so hand over the device and tap to continue. The board can turn to face whoever is playing. Both options can be switched off under the board. Duels are resolved automatically.' },
   ],
   'game-puzzle': [
+    { id: 'game-puzzle-brief', icon: 'puzzle', title: 'The briefing and the goal line',
+      text: 'When a puzzle opens, a card repeats its title and what you must achieve; press Got It! to begin. The first sentence of the description stays on the line above the board, so you can always check what the setter asks for.' },
     { id: 'game-puzzle-intro', icon: 'puzzle', title: 'Puzzle rules',
       text: 'You must win within the number of turns shown under the board, and every turn of yours counts, including ones where you pass. If you run out, press Try Again to reset the board. The Hint button reveals the setter\'s advice in stages. Think about the order of your moves and which piece should strike first.' },
   ],

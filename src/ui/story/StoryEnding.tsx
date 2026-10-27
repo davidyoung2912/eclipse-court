@@ -1,6 +1,7 @@
 import type { EndingChoice, EndingId } from '../../engine/data/story'
 import { cleanVictory, type StoryState } from '../../story'
 import { Icon } from '../menus/icons'
+import { BackButton } from '../menus/BackButton'
 
 interface Props {
   choice: EndingChoice
@@ -30,7 +31,7 @@ export function StoryEnding({ choice, story, chapterId, onChoose, onBack }: Prop
         })}
       </div>
       <div className="menu-buttons stacked">
-        <button onClick={onBack}><Icon name="back" />Decide later</button>
+        <BackButton onClick={onBack} label="Decide later" />
       </div>
     </main>
   )

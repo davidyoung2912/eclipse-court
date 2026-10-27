@@ -9,6 +9,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   /** The host brings the match to offer; the guest takes whatever the host sends. */
@@ -166,7 +167,7 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
         {(step.name === 'offer' || step.name === 'paste') && (
           <button className="primary" disabled={!text.trim()} onClick={connect}><Icon name="play" />{host ? 'Connect' : 'Join'}</button>
         )}
-        <button onClick={onBack}><Icon name="back" />{step.name === 'connected' ? 'Leave' : 'Back'}</button>
+        <BackButton onClick={onBack} label={step.name === 'connected' ? 'Leave' : 'Back'} />
       </div>
       <p className="tagline">Connecting shares your network address with your friend and with public STUN servers.</p>
       <TipCard page="online" />

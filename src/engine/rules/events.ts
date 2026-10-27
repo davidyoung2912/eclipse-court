@@ -60,6 +60,13 @@ export function objectiveGoal(o: Objective): string {
 /** The round after which a scenario is over: Survive is won by reaching it, the others lost. */
 export const objectiveRounds = (o: Objective) => (o.kind === 'survive' ? o.rounds : o.limit)
 
+/** What the match asks of the player, in one short line: the scenario goal, or the way the mode is won. */
+export function matchGoal(config: Pick<MatchConfig, 'mode' | 'objective' | 'beacons'>): string {
+  if (config.objective) return objectiveGoal(config.objective)
+  const mode = modeOf(config)
+  return mode === 'beacons' ? `Hold all ${config.beacons.length} beacons at the end of your turn` : MODE_INFO[mode].goal
+}
+
 export const modeOf = (config: Pick<MatchConfig, 'mode'>): MatchMode => config.mode ?? 'beacons'
 
 /** Damage a piece takes at the end of each round while outside the safe zone. */

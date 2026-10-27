@@ -4,6 +4,7 @@ import { Icon } from './icons'
 import { ResetButton } from './ResetButton'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   progress: Progress
@@ -50,7 +51,7 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
       })}
       <div className="menu-buttons stacked">
         <ResetButton label="Reset Puzzles" disabled={solved === 0} warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="puzzles" />
     </main>

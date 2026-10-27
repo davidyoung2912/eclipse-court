@@ -7,7 +7,7 @@ import {
   resetCampaign,
   resetPuzzles,
   resetScenarios,
-  ACHIEVEMENTS, addPlaytime, resetStats, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, addPlaytime, resetStats, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Progress, type Summary,
 } from './progress'
 
@@ -75,7 +75,7 @@ describe('progress', () => {
     let p = emptyProgress()
     let r = recordPuzzle(p, PUZZLES[0].id, false)
     expect(r.progress.puzzles).toEqual([PUZZLES[0].id])
-    expect(r.earned).toEqual([])
+    expect(r.earned.map((a) => a.id)).toEqual(['puzzle-1'])
     p = recordPuzzle(r.progress, PUZZLES[0].id, true).progress
     expect(p.puzzles).toEqual([PUZZLES[0].id])
     expect(p.achievements).toContain('daily-puzzle')
@@ -126,12 +126,12 @@ describe('progress', () => {
   it('records gauntlet runs and their achievements', () => {
     const lost = recordRun(emptyProgress(), 5, false)
     expect(lost.progress.gauntlet).toEqual({ runs: 1, won: 0, best: 5 })
-    expect(lost.earned.map((a) => a.id)).toEqual(['deep'])
+    expect(lost.earned.map((a) => a.id)).toEqual(['gauntlet-run-1', 'stage-3', 'deep'])
     const early = recordRun(lost.progress, 2, false).progress
     expect(early.gauntlet).toEqual({ runs: 2, won: 0, best: 5 })
     const won = recordRun(early, 9, true)
     expect(won.progress.gauntlet).toEqual({ runs: 3, won: 1, best: 8 })
-    expect(won.earned.map((a) => a.id)).toEqual(['gauntlet'])
+    expect(won.earned.map((a) => a.id)).toEqual(['stage-7', 'gauntlet'])
     expect(won.progress.stats.games).toBe(0)
   })
 
@@ -259,5 +259,20 @@ describe('battle unlocks', () => {
     expect(sevens.map((o) => firsts.indexOf(o.difficulty))).toEqual([...sevens.map((o) => firsts.indexOf(o.difficulty))].sort())
     expect(CAMPAIGN.slice(sevens.length).every((o) => o.size === 9)).toBe(true)
     expect(new Set(CAMPAIGN.map((o) => o.id)).size).toBe(CAMPAIGN.length)
+  })
+})
+
+describe('achievement catalogue', () => {
+  it('has 100 unique achievements, each in a known category', () => {
+    expect(ACHIEVEMENTS).toHaveLength(100)
+    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(100)
+    expect(ACHIEVEMENTS.every((a) => ACHIEVEMENT_CATEGORIES.includes(a.category))).toBe(true)
+    expect(ACHIEVEMENT_CATEGORIES.every((c) => ACHIEVEMENTS.some((a) => a.category === c))).toBe(true)
+  })
+
+  it('lets achievements that count achievements unlock in the same step', () => {
+    const p = { ...emptyProgress(), achievements: ACHIEVEMENTS.slice(0, 9).map((a) => a.id).filter((id) => id !== 'first-win') }
+    const r = recordGame(p, win({ lost: 0 }), null)
+    expect(r.progress.achievements).toContain('badges-10')
   })
 })

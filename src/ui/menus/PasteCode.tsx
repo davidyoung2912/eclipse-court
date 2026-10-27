@@ -3,6 +3,7 @@ import { parseShared, type Shared } from '../../share'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   onOpen: (shared: Shared) => void
@@ -27,7 +28,7 @@ export function PasteCode({ onOpen, onBack }: Props) {
           if (shared) onOpen(shared)
           else setError(true)
         }}><Icon name="play" />Open</button>
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="paste" />
     </main>

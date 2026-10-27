@@ -6,6 +6,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   match: DailyMatch
@@ -53,7 +54,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
           <ShareButton title="Eclipse Court daily" label="Share Result" text={resultText(match, result.won, result.turns, result.lost)}
             link={() => challengeLink({ config: match.config, side: DAILY_COURT })} />
         )}
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="daily" />
     </main>

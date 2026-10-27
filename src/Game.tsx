@@ -6,8 +6,9 @@ import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './co
 import type { EndReason, Session } from './net/session'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
+import { matchGoal, modeOf } from './engine/rules/events'
 import { estimateOdds, reduce } from './engine/reducer'
-import { otherCourt, samePos } from './engine/rules/board'
+import { otherCourt, samePos, sizeOf } from './engine/rules/board'
 import { duelCells } from './engine/rules/cells'
 import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
@@ -46,6 +47,10 @@ interface Props {
   session?: Session
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
+  /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
+  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series' }
+  /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
+  puzzle?: { name: string; text: string }
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
   puzzleHelp?: PuzzleHelp
   /** Called after every action with the game so far, or null once it has ended. */
@@ -87,7 +92,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, record, session, context, puzzle, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const [net, setNet] = useState(() => session?.view() ?? null)
@@ -114,6 +119,8 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
     const last = history[history.length - 1].state
     return last.winner ? null : { court: last.turn }
   })
+  /** The puzzle briefing waits for Got It! before play can begin; resumed games are never puzzles, so it only shows at the start. */
+  const [briefing, setBriefing] = useState(!!puzzle)
   const state = history[history.length - 1].state
   const myTurn = isHuman(controllers, state.turn)
   /** The court the person at the screen acts for: the one human court, or whoever's turn it is in hot-seat. */
@@ -367,6 +374,9 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
     : winner === 'draw' ? 'Draw'
     : hotSeat ? `${COURT_NAME[winner ?? 'solari']} wins`
     : winner === human ? 'Victory' : 'Defeat'
+  /** One line on what this battle is for: a puzzle's first sentence, else the goal followed by where the game comes from. */
+  const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
+    : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label].filter(Boolean).join(' · ')
   const retry = () => {
     turnClock.reset()
     setHistory((h) => h.slice(0, 1))
@@ -381,6 +391,7 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
   return (
     <main className="app timed">
       <Dial state={state} />
+      <p className="objective" aria-label="Objective">{objective}</p>
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
@@ -476,13 +487,30 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
         </p>
         <div className="buttons">
           {!online && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
-          {!hotSeat && !online && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
+          {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
       </footer>
-      <TipCard float hidden={!!banner || !!pending || !!settled || !!asking || ended}
-        page={['game', !!state.config.cells?.length && 'game-cells', hotSeat && 'game-hotseat', puzzleLimit !== undefined && 'game-puzzle', !!clock && 'game-clock']} />
+      {briefing && puzzle && (
+        <div className="puzzle-intro-backdrop">
+          <section className="puzzle-intro" role="dialog" aria-label={`Puzzle: ${puzzle.name}`}>
+            <div className="puzzle-intro-icon"><Icon name="puzzle" /></div>
+            <h2>{puzzle.name}</h2>
+            <span className="pill">win in {puzzleLimit} {puzzleLimit === 1 ? 'turn' : 'turns'}</span>
+            <p>{puzzle.text}</p>
+            <div className="puzzle-intro-foot"><button onClick={() => setBriefing(false)}><Icon name="check" />Got It!</button></div>
+          </section>
+        </div>
+      )}
+      <TipCard float hidden={briefing || !!banner || !!pending || !!settled || !!asking || ended}
+        page={[
+          'game', !!state.config.cells?.length && 'game-cells', hotSeat && 'game-hotseat', online && 'game-online',
+          puzzleLimit !== undefined && 'game-puzzle', !!state.config.objective && context?.kind !== 'story' && 'game-scenario',
+          context?.kind === 'story' && 'game-story', context?.kind === 'gauntlet' && 'game-gauntlet', context?.kind === 'series' && 'game-series',
+          sizeOf(state.config) === 9 && 'game-grand', modeOf(state.config) !== 'beacons' && !state.config.objective && 'game-modes',
+          !!state.config.events && 'game-events', (!!state.config.growth || !!state.config.promotion) && 'game-growth', !!clock && 'game-clock',
+        ]} />
     </main>
   )
 }

@@ -18,6 +18,7 @@ import { SkirmishArt } from './MenuArt'
 import { PieceArt } from '../../art/PieceArt'
 import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
+import { BackButton } from './BackButton'
 
 interface Props {
   progress: Progress
@@ -280,7 +281,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
       <div className="setup-actions">
         {problem && <button className="setup-problem" onClick={() => reveal(problem.section)}>{problem.text}</button>}
         <div className="menu-buttons">
-          <button onClick={onBack}><Icon name="back" />Back</button>
+          <BackButton onClick={onBack} />
           {ready && !online && <ShareButton title="Eclipse Court challenge" label="Share" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
           <button className="primary" disabled={!ready} onClick={() => online ? onHost?.(court, choice()) : onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />{online ? 'Host' : 'Start'}</button>
         </div>

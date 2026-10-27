@@ -1,4 +1,13 @@
 :root {
+  --reset-bg: #7a2b57;
+  --reset-border: #e27bb0;
+  --reset-glow: 226, 123, 176;
+  --back-bg: #3d4a58;
+  --back-border: #9fb4c8;
+  --back-glow: 159, 180, 200;
+  --tip-bg: linear-gradient(160deg, rgba(12, 98, 104, 0.97), rgba(7, 58, 66, 0.97));
+  --tip-border: #4fd9c8;
+  --tip-accent: #8ff3e4;
   --display: 'Nunito', ui-rounded, 'Trebuchet MS', system-ui, sans-serif;
   --solari-gold: #e8b64a;
   --solari-cream: #fbf1d4;
@@ -610,9 +619,9 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   display: flex; gap: 12px; align-items: flex-start; flex-shrink: 0; width: 100%;
   position: sticky; bottom: 4px; margin-top: auto; z-index: 15;
   padding: 12px 12px 10px; border-radius: 14px;
-  background: linear-gradient(160deg, rgba(58, 44, 130, 0.97), rgba(29, 23, 69, 0.97));
-  border: 1px solid rgba(232, 182, 74, 0.65);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(232, 182, 74, 0.18);
+  background: var(--tip-bg);
+  border: 1px solid var(--tip-border);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(79, 217, 200, 0.25);
   animation: tip-in 0.35s ease-out both;
 }
 .tip-card.float {
@@ -621,18 +630,18 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 }
 .tip-icon {
   flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--solari-gold)); color: #1b1740;
-  box-shadow: 0 0 12px rgba(232, 182, 74, 0.5);
+  background: radial-gradient(circle at 35% 30%, #c9fff6, var(--tip-border)); color: #06343a;
+  box-shadow: 0 0 12px rgba(79, 217, 200, 0.5);
 }
 .tip-icon .btn-icon { width: 24px; height: 24px; }
 .tip-body { flex: 1; min-width: 0; }
-.tip-body h4 { margin: 0 0 4px; font-family: var(--display); font-size: 1rem; color: var(--solari-gold); }
+.tip-body h4 { margin: 0 0 4px; font-family: var(--display); font-size: 1rem; color: var(--tip-accent); }
 .tip-body p { margin: 0; font-size: 0.82rem; line-height: 1.42; }
 .tip-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .tip-foot small { margin-right: auto; opacity: 0.6; font-size: 0.7rem; }
 .tip-foot button {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 700;
-  background: var(--solari-gold); color: #1b1740; border: 1px solid var(--solari-cream);
+  background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6;
 }
 @keyframes tip-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 [data-motion='reduced'] .tip-card { animation: none; }
@@ -671,3 +680,41 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 
 .campaign .completed { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); font-size: 0.8rem; }
 .campaign .completed .stars { margin: 0; }
+
+/* Reset and Hint buttons share one colour, Back buttons another, so each kind is easy to spot */
+.buttons button.reset, .menu-buttons button.reset, .buttons button.hint {
+  background: var(--reset-bg); border-color: var(--reset-border); --glow: var(--reset-glow);
+}
+.buttons button.hint.on { border-color: #ffd45a; --glow: 255, 212, 90; }
+.buttons button.back, .menu-buttons button.back {
+  background: var(--back-bg); border-color: var(--back-border); --glow: var(--back-glow);
+}
+
+/* The one line above the board that says what the battle is for */
+.objective {
+  margin: 0; min-height: 1.3em; color: #fff; font-size: 0.82rem; font-weight: 600; line-height: 1.3;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Puzzle briefing over the board */
+.puzzle-intro-backdrop {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px;
+  background: rgba(10, 7, 26, 0.72);
+}
+.puzzle-intro {
+  width: 100%; max-width: 420px; padding: 20px 18px 14px; border-radius: 16px; text-align: center;
+  background: #1d1745; border: 2px solid var(--solari-gold); box-shadow: 0 0 28px rgba(232, 182, 74, 0.35);
+}
+.puzzle-intro-icon {
+  display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--solari-gold)); color: #1b1740;
+}
+.puzzle-intro-icon .btn-icon { width: 36px; height: 36px; }
+.puzzle-intro h2 { margin: 0 0 4px; font-family: var(--display); color: var(--solari-cream); }
+.puzzle-intro .pill { display: inline-block; margin-bottom: 8px; }
+.puzzle-intro p { margin: 0 0 14px; line-height: 1.45; }
+.puzzle-intro-foot { display: flex; justify-content: flex-end; }
+.puzzle-intro-foot button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-size: 1rem; font-weight: 700;
+  background: var(--solari-gold); color: #1b1740; border: 1px solid var(--solari-cream);
+}

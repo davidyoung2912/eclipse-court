@@ -7,6 +7,8 @@ import { PUZZLES, puzzlesIn, type PuzzleTier } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import { dayIndex, tierOfConfig } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
+import { sizeOf } from './engine/rules/board'
+import { modeOf } from './engine/rules/events'
 import type { Court } from './engine/rules/types'
 
 const PROGRESS_KEY = 'eclipse-court:progress'
@@ -123,8 +125,16 @@ export function starsEarned(s: Summary): number {
   return STAR_WIN | (s.lost === 0 ? STAR_FLAWLESS : 0) | (s.swift ? STAR_SWIFT : 0)
 }
 
+/** The groups the Stats page folds achievements into. */
+export const ACHIEVEMENT_CATEGORIES = [
+  'Milestones', 'Battle Craft', 'Conquest', 'Campaign', 'Boards and Rules', 'Scenarios', 'Puzzles', 'Gauntlet', 'Daily and Tournaments', 'Mastery',
+] as const
+
+export type AchievementCategory = (typeof ACHIEVEMENT_CATEGORIES)[number]
+
 export interface Achievement {
   id: string
+  category: AchievementCategory
   name: string
   text: string
   earned: (p: Progress, s: Summary) => boolean
@@ -136,30 +146,125 @@ const tierCleared = (p: Progress, tier: PuzzleTier) => {
   return list.length > 0 && list.every((z) => p.puzzles.includes(z.id))
 }
 
+const battleWon = (p: Progress, o: { id: string }) => ((p.battles[o.id] ?? 0) & STAR_WIN) !== 0
+const tierWon = (p: Progress, list: readonly { id: string }[]) => list.length > 0 && list.every((o) => battleWon(p, o))
+const scenariosCleared = (p: Progress) => SCENARIOS.filter((x) => (p.scenarios[x.id] ?? 0) & STAR_WIN).length
+const perfectScenarios = (p: Progress) => SCENARIOS.filter((x) => starCount(p.scenarios[x.id] ?? 0) === 3).length
+const hours = (p: Progress, h: number) => p.stats.playSeconds >= h * 3600
+
+const def = (category: AchievementCategory, id: string, name: string, text: string, earned: Achievement['earned']): Achievement => ({ id, category, name, text, earned })
+
 export const ACHIEVEMENTS: readonly Achievement[] = [
-  { id: 'first-win', name: 'First Light', text: 'Win a game.', earned: (_, s) => s.won },
-  { id: 'flawless', name: 'Unscathed', text: 'Win without losing a piece.', earned: (_, s) => s.won && s.lost === 0 },
-  { id: 'swift', name: 'Before the Dark', text: 'Win before the Eclipse falls.', earned: (_, s) => s.won && s.swift },
-  { id: 'silent', name: 'Silent Leader', text: 'Win without casting a spell.', earned: (_, s) => s.won && s.spellsCast === 0 && !s.classic },
-  { id: 'hard', name: 'Against the Tide', text: 'Win against a hard opponent.', earned: (_, s) => s.won && s.difficulty === 'hard' },
-  { id: 'daily', name: 'Daily Bread', text: "Win the day's daily game.", earned: (_, s) => s.won && s.daily },
-  { id: 'three-stars', name: 'Triple Crown', text: 'Earn all three stars on one opponent.', earned: (p) => Object.values(p.battles).some((b) => starCount(b) === 3) },
-  { id: 'half', name: 'Halfway There', text: 'Beat four campaign opponents.', earned: (p) => clearedCount(p) >= 4 },
-  { id: 'queen', name: 'Eclipse Ender', text: 'Beat the Eclipse Queen.', earned: (p) => ((p.battles['eclipse-queen'] ?? 0) & STAR_WIN) !== 0 },
-  { id: 'veteran', name: 'Seasoned', text: 'Play 25 games.', earned: (p) => p.stats.games >= 25 },
-  { id: 'puzzler', name: 'Puzzler', text: 'Solve three puzzles.', earned: (p) => p.puzzles.length >= 3 },
-  { id: 'puzzle-master', name: 'Puzzle Master', text: 'Solve every puzzle.', earned: (p) => PUZZLES.every((z) => p.puzzles.includes(z.id)) },
-  { id: 'beginner-cleared', name: 'First Steps', text: 'Solve every Beginner puzzle.', earned: (p) => tierCleared(p, 'beginner') },
-  { id: 'normal-cleared', name: 'Steady Hands', text: 'Solve every Normal puzzle.', earned: (p) => tierCleared(p, 'normal') },
-  { id: 'expert-cleared', name: 'Eclipse Scholar', text: 'Solve every Expert puzzle.', earned: (p) => tierCleared(p, 'expert') },
-  { id: 'daily-puzzle', name: 'Puzzle of the Day', text: "Solve the day's puzzle.", earned: (_, s) => !!s.dailyPuzzle },
-  { id: 'deep', name: 'Deep Delver', text: 'Reach stage 5 of the gauntlet.', earned: (p) => p.gauntlet.best >= 5 },
-  { id: 'gauntlet', name: 'Court Eternal', text: 'Win a gauntlet run.', earned: (p) => p.gauntlet.won >= 1 },
-  { id: 'streak-3', name: 'Three Days Running', text: 'Play the daily match three days in a row.', earned: (p) => p.daily.best >= 3 },
-  { id: 'streak-7', name: 'A Week of Eclipses', text: 'Play the daily match seven days in a row.', earned: (p) => p.daily.best >= 7 },
-  { id: 'scenario-first', name: 'Against the Odds', text: 'Clear a scenario.', earned: (p) => Object.values(p.scenarios).some((b) => b & STAR_WIN) },
-  { id: 'scenario-all', name: 'Tactician', text: 'Clear every scenario.', earned: (p) => SCENARIOS.every((x) => (p.scenarios[x.id] ?? 0) & STAR_WIN) },
-  { id: 'champion', name: 'Champion', text: 'Win a best-of-three tournament.', earned: (p) => p.tournaments >= 1 },
+  // Milestones
+  def('Milestones', 'first-win', 'First Light', 'Win a game.', (_, s) => s.won),
+  def('Milestones', 'wins-10', 'Ten Victories', 'Win 10 games.', (p) => p.stats.wins >= 10),
+  def('Milestones', 'wins-25', 'Quarter Century', 'Win 25 games.', (p) => p.stats.wins >= 25),
+  def('Milestones', 'wins-50', 'Fifty Fallen Foes', 'Win 50 games.', (p) => p.stats.wins >= 50),
+  def('Milestones', 'wins-100', 'Hundred Crowns', 'Win 100 games.', (p) => p.stats.wins >= 100),
+  def('Milestones', 'veteran', 'Seasoned', 'Play 25 games.', (p) => p.stats.games >= 25),
+  def('Milestones', 'games-100', 'Centurion', 'Play 100 games.', (p) => p.stats.games >= 100),
+  def('Milestones', 'games-250', 'Old Guard', 'Play 250 games.', (p) => p.stats.games >= 250),
+  def('Milestones', 'first-loss', 'Lessons in Dusk', 'Lose a game.', (p) => p.stats.losses >= 1),
+  def('Milestones', 'first-draw', 'Stalemate', 'Draw a game.', (p) => p.stats.draws >= 1),
+  // Battle Craft
+  def('Battle Craft', 'flawless', 'Unscathed', 'Win without losing a piece.', (_, s) => s.won && s.lost === 0),
+  def('Battle Craft', 'swift', 'Before the Dark', 'Win before the Eclipse falls.', (_, s) => s.won && s.swift),
+  def('Battle Craft', 'silent', 'Silent Leader', 'Win without casting a spell.', (_, s) => s.won && s.spellsCast === 0 && !s.classic),
+  def('Battle Craft', 'hard', 'Against the Tide', 'Win against a hard opponent.', (_, s) => s.won && s.difficulty === 'hard'),
+  def('Battle Craft', 'quick-win', 'Blitzkrieg', 'Win in 10 rounds or fewer.', (_, s) => s.won && s.turns <= 10),
+  def('Battle Craft', 'rout', 'Rout', 'Take 8 enemy pieces in one game you win.', (_, s) => s.won && s.taken >= 8),
+  def('Battle Craft', 'comeback', 'Against the Dying Light', 'Win after losing 6 or more pieces.', (_, s) => s.won && s.lost >= 6),
+  def('Battle Craft', 'hard-flawless', 'Untouchable', 'Win against a hard opponent without losing a piece.', (_, s) => s.won && s.lost === 0 && s.difficulty === 'hard'),
+  def('Battle Craft', 'spell-weaver', 'Spell Weaver', 'Win after casting 4 or more spells.', (_, s) => s.won && s.spellsCast >= 4),
+  def('Battle Craft', 'eclipse-win', 'Through the Eclipse', 'Win after the Eclipse has fallen.', (_, s) => s.won && !s.swift),
+  // Conquest
+  def('Conquest', 'captures-10', 'First Spoils', 'Take 10 enemy pieces.', (p) => p.stats.captures >= 10),
+  def('Conquest', 'captures-50', 'Harvest of Shadows', 'Take 50 enemy pieces.', (p) => p.stats.captures >= 50),
+  def('Conquest', 'captures-100', 'Hundred Fallen', 'Take 100 enemy pieces.', (p) => p.stats.captures >= 100),
+  def('Conquest', 'captures-250', 'Reaper of Light', 'Take 250 enemy pieces.', (p) => p.stats.captures >= 250),
+  def('Conquest', 'captures-500', 'Scourge of the Court', 'Take 500 enemy pieces.', (p) => p.stats.captures >= 500),
+  def('Conquest', 'captures-1000', 'A Thousand Eclipses', 'Take 1000 enemy pieces.', (p) => p.stats.captures >= 1000),
+  def('Conquest', 'defeats-5', 'Persistent', 'Lose 5 games and keep playing.', (p) => p.stats.losses >= 5),
+  def('Conquest', 'defeats-25', 'Unbowed', 'Lose 25 games and keep playing.', (p) => p.stats.losses >= 25),
+  def('Conquest', 'pieces-lost-50', 'Fallen Legion', 'Lose 50 pieces over all your games.', (p) => p.stats.piecesLost >= 50),
+  def('Conquest', 'draws-5', 'Deadlock', 'Draw 5 games.', (p) => p.stats.draws >= 5),
+  // Campaign
+  def('Campaign', 'half', 'Halfway There', 'Beat four campaign opponents.', (p) => clearedCount(p) >= 4),
+  def('Campaign', 'queen', 'Eclipse Ender', 'Beat the Eclipse Queen.', (p) => ((p.battles['eclipse-queen'] ?? 0) & STAR_WIN) !== 0),
+  def('Campaign', 'three-stars', 'Triple Crown', 'Earn all three stars on one opponent.', (p) => Object.values(p.battles).some((b) => starCount(b) === 3)),
+  def('Campaign', 'battles-10', 'Ten Banners', 'Beat 10 campaign opponents.', (p) => clearedCount(p) >= 10),
+  def('Campaign', 'battles-25', 'Warlord', 'Beat 25 campaign opponents.', (p) => clearedCount(p) >= 25),
+  def('Campaign', 'tier-beginner', 'Beginner Ladder', 'Beat every Beginner battle.', (p) => tierWon(p, battlesIn('easy'))),
+  def('Campaign', 'tier-normal', 'Normal Ladder', 'Beat every Normal battle.', (p) => tierWon(p, battlesIn('normal'))),
+  def('Campaign', 'tier-expert', 'Expert Ladder', 'Beat every Expert battle.', (p) => tierWon(p, battlesIn('hard'))),
+  def('Campaign', 'tier-grand', 'Grand Marshal', 'Beat every Grand Court battle.', (p) => tierWon(p, grandBattles())),
+  def('Campaign', 'stars-50', 'Constellation', 'Earn 50 campaign stars.', (p) => totalStars(p) >= 50),
+  // Boards and Rules
+  def('Boards and Rules', 'grand-win', 'Grand Strategist', 'Win a game on the 9x9 Grand board.', (_, s) => s.won && s.size === 9),
+  def('Boards and Rules', 'leader-win', 'Regicide', 'Win a Leader Capture game.', (_, s) => s.won && s.mode === 'leader'),
+  def('Boards and Rules', 'score-win', 'Beacon Baron', 'Win a Score Race game.', (_, s) => s.won && s.mode === 'score'),
+  def('Boards and Rules', 'hill-win', 'King of the Hill', 'Win a King of the Hill game.', (_, s) => s.won && s.mode === 'hill'),
+  def('Boards and Rules', 'cells-win', 'Ground Truth', 'Win on a board with cell effects.', (_, s) => s.won && !!s.cells),
+  def('Boards and Rules', 'events-win', 'Weathered', 'Win a game with day events.', (_, s) => s.won && !!s.events),
+  def('Boards and Rules', 'showdown-win', 'Last Light Standing', 'Win a game with the Eclipse showdown.', (_, s) => s.won && !!s.showdown),
+  def('Boards and Rules', 'blitz-win', 'Beat the Clock', 'Win a game with a turn clock.', (_, s) => s.won && !!s.clock),
+  def('Boards and Rules', 'growth-win', 'Battle-Hardened', 'Win a game with veterancy and perks.', (_, s) => s.won && !!s.growth),
+  def('Boards and Rules', 'promotion-win', 'Rank and File', 'Win a game with promotion.', (_, s) => s.won && !!s.promotion),
+  // Scenarios
+  def('Scenarios', 'scenario-first', 'Against the Odds', 'Clear a scenario.', (p) => scenariosCleared(p) >= 1),
+  def('Scenarios', 'scenario-5', 'Problem Solver', 'Clear 5 scenarios.', (p) => scenariosCleared(p) >= 5),
+  def('Scenarios', 'scenario-10', 'Field Officer', 'Clear 10 scenarios.', (p) => scenariosCleared(p) >= 10),
+  def('Scenarios', 'scenario-25', 'Staff Captain', 'Clear 25 scenarios.', (p) => scenariosCleared(p) >= 25),
+  def('Scenarios', 'scenario-50', 'War Council', 'Clear 50 scenarios.', (p) => scenariosCleared(p) >= 50),
+  def('Scenarios', 'scenario-all', 'Tactician', 'Clear every scenario.', (p) => scenariosCleared(p) === SCENARIOS.length),
+  def('Scenarios', 'scenario-stars-30', 'Scenario Stars', 'Earn 30 scenario stars.', (p) => scenarioStars(p) >= 30),
+  def('Scenarios', 'scenario-stars-100', 'Night Sky', 'Earn 100 scenario stars.', (p) => scenarioStars(p) >= 100),
+  def('Scenarios', 'scenario-perfect-1', 'Perfect Plan', 'Earn all three stars in one scenario.', (p) => perfectScenarios(p) >= 1),
+  def('Scenarios', 'scenario-perfect-10', 'Master Planner', 'Earn all three stars in 10 scenarios.', (p) => perfectScenarios(p) >= 10),
+  // Puzzles
+  def('Puzzles', 'puzzle-1', 'Fresh Eyes', 'Solve a puzzle.', (p) => p.puzzles.length >= 1),
+  def('Puzzles', 'puzzler', 'Puzzler', 'Solve three puzzles.', (p) => p.puzzles.length >= 3),
+  def('Puzzles', 'puzzle-10', 'Riddle Reader', 'Solve 10 puzzles.', (p) => p.puzzles.length >= 10),
+  def('Puzzles', 'puzzle-25', 'Knot Cutter', 'Solve 25 puzzles.', (p) => p.puzzles.length >= 25),
+  def('Puzzles', 'puzzle-50', 'Puzzle Sage', 'Solve 50 puzzles.', (p) => p.puzzles.length >= 50),
+  def('Puzzles', 'beginner-cleared', 'First Steps', 'Solve every Beginner puzzle.', (p) => tierCleared(p, 'beginner')),
+  def('Puzzles', 'normal-cleared', 'Steady Hands', 'Solve every Normal puzzle.', (p) => tierCleared(p, 'normal')),
+  def('Puzzles', 'expert-cleared', 'Eclipse Scholar', 'Solve every Expert puzzle.', (p) => tierCleared(p, 'expert')),
+  def('Puzzles', 'puzzle-master', 'Puzzle Master', 'Solve every puzzle.', (p) => PUZZLES.every((z) => p.puzzles.includes(z.id))),
+  def('Puzzles', 'daily-puzzle', 'Puzzle of the Day', "Solve the day's puzzle.", (_, s) => !!s.dailyPuzzle),
+  // Gauntlet
+  def('Gauntlet', 'gauntlet-run-1', 'Into the Gauntlet', 'Begin a gauntlet run.', (p) => p.gauntlet.runs >= 1),
+  def('Gauntlet', 'stage-3', 'Third Fight', 'Reach stage 3 of the gauntlet.', (p) => p.gauntlet.best >= 3),
+  def('Gauntlet', 'deep', 'Deep Delver', 'Reach stage 5 of the gauntlet.', (p) => p.gauntlet.best >= 5),
+  def('Gauntlet', 'stage-7', 'At the Boss Door', 'Reach stage 7 of the gauntlet.', (p) => p.gauntlet.best >= 7),
+  def('Gauntlet', 'gauntlet', 'Court Eternal', 'Win a gauntlet run.', (p) => p.gauntlet.won >= 1),
+  def('Gauntlet', 'gauntlet-runs-5', 'Returning Runner', 'Begin 5 gauntlet runs.', (p) => p.gauntlet.runs >= 5),
+  def('Gauntlet', 'gauntlet-runs-10', 'Gauntlet Regular', 'Begin 10 gauntlet runs.', (p) => p.gauntlet.runs >= 10),
+  def('Gauntlet', 'gauntlet-runs-25', 'Gauntlet Devotee', 'Begin 25 gauntlet runs.', (p) => p.gauntlet.runs >= 25),
+  def('Gauntlet', 'gauntlet-won-3', 'Thrice Crowned', 'Win 3 gauntlet runs.', (p) => p.gauntlet.won >= 3),
+  def('Gauntlet', 'gauntlet-won-5', 'Eternal Champion', 'Win 5 gauntlet runs.', (p) => p.gauntlet.won >= 5),
+  // Daily and Tournaments
+  def('Daily and Tournaments', 'daily', 'Daily Bread', "Win the day's daily game.", (_, s) => s.won && s.daily),
+  def('Daily and Tournaments', 'streak-2', 'Back Tomorrow', 'Play the daily match two days in a row.', (p) => p.daily.best >= 2),
+  def('Daily and Tournaments', 'streak-3', 'Three Days Running', 'Play the daily match three days in a row.', (p) => p.daily.best >= 3),
+  def('Daily and Tournaments', 'streak-7', 'A Week of Eclipses', 'Play the daily match seven days in a row.', (p) => p.daily.best >= 7),
+  def('Daily and Tournaments', 'streak-14', 'Fortnight Vigil', 'Play the daily match 14 days in a row.', (p) => p.daily.best >= 14),
+  def('Daily and Tournaments', 'streak-30', 'A Month of Dawns', 'Play the daily match 30 days in a row.', (p) => p.daily.best >= 30),
+  def('Daily and Tournaments', 'champion', 'Champion', 'Win a best-of-three tournament.', (p) => p.tournaments >= 1),
+  def('Daily and Tournaments', 'tournaments-3', 'Circuit Rider', 'Win 3 tournaments.', (p) => p.tournaments >= 3),
+  def('Daily and Tournaments', 'tournaments-5', 'Tournament Terror', 'Win 5 tournaments.', (p) => p.tournaments >= 5),
+  def('Daily and Tournaments', 'tournaments-10', 'Grand Champion', 'Win 10 tournaments.', (p) => p.tournaments >= 10),
+  // Mastery
+  def('Mastery', 'time-1', 'An Hour Well Spent', 'Play for 1 hour.', (p) => hours(p, 1)),
+  def('Mastery', 'time-5', 'Dedicated', 'Play for 5 hours.', (p) => hours(p, 5)),
+  def('Mastery', 'time-10', 'Devoted', 'Play for 10 hours.', (p) => hours(p, 10)),
+  def('Mastery', 'time-25', 'Lifelong Courtier', 'Play for 25 hours.', (p) => hours(p, 25)),
+  def('Mastery', 'badges-10', 'Collector', 'Earn 10 achievements.', (p) => p.achievements.length >= 10),
+  def('Mastery', 'badges-25', 'Trophy Shelf', 'Earn 25 achievements.', (p) => p.achievements.length >= 25),
+  def('Mastery', 'badges-50', 'Hall of Honours', 'Earn 50 achievements.', (p) => p.achievements.length >= 50),
+  def('Mastery', 'badges-75', 'Near Legend', 'Earn 75 achievements.', (p) => p.achievements.length >= 75),
+  def('Mastery', 'campaign-all', 'Conqueror', 'Beat every campaign battle.', (p) => tierWon(p, CAMPAIGN)),
+  def('Mastery', 'stars-all', 'Every Star', 'Earn every campaign star.', (p) => totalStars(p) === CAMPAIGN.length * 3),
 ]
 
 /** The progress after one finished game, and the achievements it newly earned. */
@@ -186,8 +291,16 @@ const NO_GAME: Summary = {
 }
 
 function award(next: Progress, s: Summary, before: Progress): { progress: Progress; earned: Achievement[] } {
-  const earned = ACHIEVEMENTS.filter((a) => !before.achievements.includes(a.id) && a.earned(next, s))
-  return { progress: { ...next, achievements: [...before.achievements, ...earned.map((a) => a.id)] }, earned }
+  // Achievements that count achievements can unlock others, so go round until nothing new is earned.
+  const earned: Achievement[] = []
+  let have = before.achievements
+  for (;;) {
+    const fresh = ACHIEVEMENTS.filter((a) => !have.includes(a.id) && a.earned({ ...next, achievements: have }, s))
+    if (fresh.length === 0) break
+    earned.push(...fresh)
+    have = [...have, ...fresh.map((a) => a.id)]
+  }
+  return { progress: { ...next, achievements: have }, earned }
 }
 
 /** The progress after a puzzle is solved; `daily` marks the day's puzzle. */
@@ -272,6 +385,14 @@ export function summarise(
     campaignIndex,
     daily: record.initial.config.setup === 'daily',
     classic: record.initial.config.setup !== undefined && tierOfConfig(record.initial.config) === 'classic',
+    size: sizeOf(record.initial.config),
+    mode: modeOf(record.initial.config),
+    cells: !!record.initial.config.cells?.length,
+    events: !!record.initial.config.events,
+    showdown: !!record.initial.config.showdown,
+    clock: !!record.initial.config.turnClock,
+    growth: !!record.initial.config.growth,
+    promotion: !!record.initial.config.promotion,
   }
 }
 

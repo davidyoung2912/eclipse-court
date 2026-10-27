@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { BONDS, CHAPTERS } from './engine/data/story'
-import { achievements, availableBonds, bondRead, markBondRead, replayBeats, replayableChapters, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
+import { achievements, availableBonds, bondRead, markBondRead, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -89,22 +89,6 @@ describe('story progress', () => {
     markBondRead(bond.id)
     expect(bondRead(storySnapshot(), bond.id)).toBe(true)
     expect(chapterRead(bond.id)).toBe(false)
-  })
-
-  it('replays only read chapters, with the victory scene and the chosen epilogue, and changes nothing', () => {
-    expect(replayableChapters(storySnapshot())).toEqual([])
-    const battle = CHAPTERS.find((c) => c.battle && !c.ending)!
-    recordStoryWin(battle.id, {})
-    const before = storySnapshot()
-    const beats = replayBeats(battle.id, before)
-    expect(beats.length).toBeGreaterThanOrEqual(battle.beats.length)
-    expect(storySnapshot()).toBe(before)
-    const final = endingChapter()!
-    recordStoryWin(final.id, {})
-    const without = replayBeats(final.id, storySnapshot()).length
-    recordEnding('free')
-    expect(replayBeats(final.id, storySnapshot()).length).toBeGreaterThan(without)
-    expect(replayBeats('nope', storySnapshot())).toEqual([])
   })
 
   it('earns achievements from the saved story alone', () => {

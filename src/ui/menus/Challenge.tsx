@@ -8,6 +8,7 @@ import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   challenge: ChallengeCode
@@ -44,7 +45,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
           </button>
         ))}
         <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a Friend on This Device</button>
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="challenge" />
     </main>

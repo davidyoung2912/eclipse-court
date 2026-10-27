@@ -2,6 +2,7 @@ import { rtcSupported } from '../../net/rtc'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
+import { BackButton } from './BackButton'
 
 interface Props {
   onHost: () => void
@@ -29,7 +30,7 @@ export function Online({ onHost, onJoin, onBack }: Props) {
         </button>
       </div>
       <div className="menu-buttons stacked">
-        <button onClick={onBack}><Icon name="back" />Back</button>
+        <BackButton onClick={onBack} />
       </div>
       <TipCard page="online" />
     </main>
