@@ -43,11 +43,11 @@ export function parseShared(text: string): Shared | null {
   return null
 }
 
-/** Offers `url` through the system share sheet where there is one, else copies it. */
-export async function shareOrCopy(title: string, url: string): Promise<'shared' | 'copied' | 'failed'> {
+/** Offers `url` (and a line of `text` to go with it) through the system share sheet where there is one, else copies them. */
+export async function shareOrCopy(title: string, url: string, text?: string): Promise<'shared' | 'copied' | 'failed'> {
   try {
     if (typeof navigator.share === 'function') {
-      await navigator.share({ title, url })
+      await navigator.share(text ? { title, text, url } : { title, url })
       return 'shared'
     }
   } catch (e) {
@@ -55,7 +55,7 @@ export async function shareOrCopy(title: string, url: string): Promise<'shared' 
     if (e instanceof DOMException && e.name === 'AbortError') return 'failed'
   }
   try {
-    await navigator.clipboard.writeText(url)
+    await navigator.clipboard.writeText(text ? `${text}\n${url}` : url)
     return 'copied'
   } catch {
     return 'failed'

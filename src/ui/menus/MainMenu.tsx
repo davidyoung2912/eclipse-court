@@ -13,6 +13,10 @@ interface Props {
   onPractice: () => void
   onSettings: () => void
   onPaste: () => void
+  onDaily: () => void
+  onDailyPuzzle: () => void
+  /** Whether today's match and puzzle have been played and solved. */
+  dailyDone: { match: boolean; puzzle: boolean }
   /** Present when an unfinished game was left behind. */
   onResume?: () => void
   /** True until the player has finished or skipped the tutorial once. */
@@ -69,7 +73,7 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onResume, firstRun }: Props) {
+export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   return (
     <main className="app menu main-menu">
@@ -83,6 +87,10 @@ export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onSta
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
         <button onClick={onGauntlet}><Icon name="flame" />Gauntlet</button>
         <button onClick={onPuzzles}><Icon name="puzzle" />Puzzles</button>
+      </div>
+      <div className="menu-buttons small">
+        <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily match</button>
+        <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily puzzle</button>
       </div>
       <div className="menu-buttons small">
         <button onClick={onPractice}><Icon name="target" />Practice</button>

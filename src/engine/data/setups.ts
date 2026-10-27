@@ -14,6 +14,9 @@ export const SETUP_INFO: Record<SetupMode, { name: string; text: string }> = {
   daily: { name: 'Daily', text: "Today's board and army, the same for everyone." },
 }
 
+/** The day number of a `dailySeed`, counted the same way everywhere so that consecutive days differ by one. */
+export const dayIndex = (seed: number) => Math.round(Date.UTC(Math.floor(seed / 10000), Math.floor((seed % 10000) / 100) - 1, seed % 100) / 86400000)
+
 /** A day as one number, such as 20261026, so everyone playing it gets the same game. */
 export const dailySeed = (date = new Date()) => date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate()
 
@@ -53,10 +56,10 @@ export interface FoeChoice {
  * The match settings for a skirmish. `foe` holds the army the AI drafted (used by `draft`) and the
  * spells it carries; the other modes derive everything from the seed.
  */
-export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foe: FoeChoice = {}): MatchConfig {
+export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foe: FoeChoice = {}, date = new Date()): MatchConfig {
   const foeRoles = foe.roles ?? []
   const { mode } = choice
-  const seeded = mode === 'daily' ? dailySeed() : seed
+  const seeded = mode === 'daily' ? dailySeed(date) : seed
   const board = boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
   const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, setup: mode, board: board.id }
   if (choice.loadout) {

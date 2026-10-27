@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
 import {
-  ACHIEVEMENTS, boardUnlocked, emptyProgress, migrate, recordGame, recordPuzzle, recordRun, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
-  totalStars, type Summary,
+  ACHIEVEMENTS, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  totalStars, type Progress, type Summary,
 } from './progress'
 
 const win = (over: Partial<Summary> = {}): Summary => ({
-  won: true, draw: false, lost: 2, taken: 5, swift: false, spellsCast: 1, difficulty: 'normal', campaignIndex: 0, daily: false, ...over,
+  won: true, draw: false, lost: 2, taken: 5, turns: 12, swift: false, spellsCast: 1, difficulty: 'normal', campaignIndex: 0, daily: false, ...over,
 })
 
 describe('progress', () => {
@@ -110,5 +110,39 @@ describe('progress', () => {
     expect(won.progress.gauntlet).toEqual({ runs: 3, won: 1, best: 8 })
     expect(won.earned.map((a) => a.id)).toEqual(['gauntlet'])
     expect(won.progress.stats.games).toBe(0)
+  })
+
+  it('scores only the first daily attempt of a day', () => {
+    const first = recordDaily(emptyProgress(), { date: 20261026, won: true, turns: 14, lost: 2 })
+    expect(first.scored).toBe(true)
+    expect(first.progress.daily).toEqual({ last: { date: 20261026, won: true, turns: 14, lost: 2 }, streak: 1, best: 1 })
+    const again = recordDaily(first.progress, { date: 20261026, won: false, turns: 3, lost: 9 })
+    expect(again.scored).toBe(false)
+    expect(again.progress).toBe(first.progress)
+    expect(dailyResult(first.progress, 20261026)?.turns).toBe(14)
+    expect(dailyResult(first.progress, 20261027)).toBeNull()
+  })
+
+  it('builds the day streak across month ends, drops it after a missed day and awards achievements', () => {
+    const play = (p: Progress, date: number) => recordDaily(p, { date, won: false, turns: 9, lost: 4 })
+    let p = play(emptyProgress(), 20261030).progress
+    p = play(p, 20261031).progress
+    expect(liveStreak(p, 20261031)).toBe(2)
+    const third = play(p, 20261101)
+    expect(third.progress.daily.streak).toBe(3)
+    expect(third.earned.map((a) => a.id)).toEqual(['streak-3'])
+    // Alive the next day, lapsed the day after that.
+    expect(liveStreak(third.progress, 20261102)).toBe(3)
+    expect(liveStreak(third.progress, 20261103)).toBe(0)
+    const restart = play(third.progress, 20261103).progress
+    expect(restart.daily).toMatchObject({ streak: 1, best: 3 })
+  })
+
+  it('keeps the daily record through a save, adds it to older saves and drops damaged ones', () => {
+    const p = recordDaily(emptyProgress(), { date: 20261026, won: true, turns: 14, lost: 2 }).progress
+    expect(migrate(JSON.parse(JSON.stringify(p))).daily).toEqual(p.daily)
+    expect(migrate({ v: 3, cleared: 2 })).toMatchObject({ cleared: 2, daily: { last: null, streak: 0, best: 0 } })
+    expect(migrate({ v: 4, daily: { last: { date: 'x', won: true, turns: 1, lost: 0 }, streak: 5, best: 5 } }).daily).toEqual({ last: null, streak: 0, best: 0 })
+    expect(migrate({ v: 4, daily: { last: { date: 20261026, won: true, turns: 1, lost: 0 }, streak: 2, best: 1 } }).daily.best).toBe(2)
   })
 })

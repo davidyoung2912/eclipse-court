@@ -1,6 +1,7 @@
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
+import { dayIndex } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
 import type { Court } from './engine/rules/types'
 
@@ -8,7 +9,7 @@ const PROGRESS_KEY = 'eclipse-court:progress'
 /** The pre-E8 save: just the number of opponents beaten. */
 const LEGACY_KEY = 'eclipse-court:campaign'
 
-export const PROGRESS_VERSION = 3
+export const PROGRESS_VERSION = 4
 
 /** The three stars of a campaign battle, as bits so each is remembered on its own. */
 export const STAR_WIN = 1
@@ -40,6 +41,23 @@ export interface Gauntlet {
   best: number
 }
 
+/** The one scored attempt of a day's daily match: won or lost, then rounds taken, then pieces lost. */
+export interface DailyAttempt {
+  /** The day as a `dailySeed`. */
+  date: number
+  won: boolean
+  turns: number
+  lost: number
+}
+
+/** The daily match so far: the latest scored attempt, and the run of days played. */
+export interface Daily {
+  last: DailyAttempt | null
+  /** Consecutive days with a scored attempt, as of `last`. */
+  streak: number
+  best: number
+}
+
 export interface Progress {
   v: typeof PROGRESS_VERSION
   /** Campaign opponents beaten in order; the next one is unlocked. */
@@ -53,6 +71,7 @@ export interface Progress {
   /** Best-of-three series won. */
   tournaments: number
   gauntlet: Gauntlet
+  daily: Daily
   /** The finished game most recently played, as a record code for the replay viewer. */
   last: string | null
 }
@@ -64,6 +83,8 @@ export interface Summary {
   /** Own pieces lost and enemy pieces taken. */
   lost: number
   taken: number
+  /** Rounds played. */
+  turns: number
   swift: boolean
   spellsCast: number
   difficulty: Difficulty
@@ -82,6 +103,7 @@ export const emptyProgress = (): Progress => ({
   puzzles: [],
   tournaments: 0,
   gauntlet: { runs: 0, won: 0, best: 0 },
+  daily: { last: null, streak: 0, best: 0 },
   last: null,
 })
 
@@ -117,6 +139,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'daily-puzzle', name: 'Puzzle of the Day', text: "Solve the day's puzzle.", earned: (_, s) => !!s.dailyPuzzle },
   { id: 'deep', name: 'Deep Delver', text: 'Reach stage 5 of the gauntlet.', earned: (p) => p.gauntlet.best >= 5 },
   { id: 'gauntlet', name: 'Court Eternal', text: 'Win a gauntlet run.', earned: (p) => p.gauntlet.won >= 1 },
+  { id: 'streak-3', name: 'Three Days Running', text: 'Play the daily match three days in a row.', earned: (p) => p.daily.best >= 3 },
+  { id: 'streak-7', name: 'A Week of Eclipses', text: 'Play the daily match seven days in a row.', earned: (p) => p.daily.best >= 7 },
   { id: 'champion', name: 'Champion', text: 'Win a best-of-three tournament.', earned: (p) => p.tournaments >= 1 },
 ]
 
@@ -143,7 +167,7 @@ export function recordGame(p: Progress, s: Summary, replay: string | null): { pr
 
 /** What no game happened looks like, for achievements earned outside a game. */
 const NO_GAME: Summary = {
-  won: false, draw: false, lost: 0, taken: 0, swift: false, spellsCast: 0, difficulty: 'normal', campaignIndex: null, daily: false,
+  won: false, draw: false, lost: 0, taken: 0, turns: 0, swift: false, spellsCast: 0, difficulty: 'normal', campaignIndex: null, daily: false,
 }
 
 function award(next: Progress, s: Summary, before: Progress): { progress: Progress; earned: Achievement[] } {
@@ -168,6 +192,26 @@ export function recordRun(p: Progress, stage: number, won: boolean) {
   return award({ ...p, gauntlet: { runs: g.runs + 1, won: g.won + (won ? 1 : 0), best: Math.max(g.best, won ? stage - 1 : stage) } }, NO_GAME, p)
 }
 
+/** The days-in-a-row count that is still alive on `today`: it lapses after a day with no attempt. */
+export function liveStreak(p: Progress, today: number): number {
+  const last = p.daily.last
+  return last && dayIndex(today) - dayIndex(last.date) <= 1 ? p.daily.streak : 0
+}
+
+/** The scored attempt of `date`, if one was made. */
+export const dailyResult = (p: Progress, date: number) => (p.daily.last?.date === date ? p.daily.last : null)
+
+/**
+ * The progress after a daily match is finished. Only the first attempt of a day is scored, so a
+ * replay changes nothing and `scored` is false.
+ */
+export function recordDaily(p: Progress, attempt: DailyAttempt) {
+  if (p.daily.last && p.daily.last.date >= attempt.date) return { progress: p, earned: [] as Achievement[], scored: false }
+  const streak = liveStreak(p, attempt.date) + 1
+  const daily: Daily = { last: attempt, streak, best: Math.max(p.daily.best, streak) }
+  return { ...award({ ...p, daily }, NO_GAME, p), scored: true }
+}
+
 /** How a finished game went for `human`, found by replaying it. Null if the record is not a legal game. */
 export function summarise(
   record: GameRecord, human: Court, difficulty: Difficulty, campaignIndex: number | null,
@@ -181,6 +225,7 @@ export function summarise(
     draw: end.winner === 'draw',
     lost: end.captured.filter((p) => p.court === human).length,
     taken: end.captured.filter((p) => p.court !== human).length,
+    turns: end.round,
     swift: !end.eclipse,
     spellsCast,
     difficulty,
@@ -200,8 +245,8 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 export function migrate(raw: unknown, legacyCleared = 0): Progress {
   const fresh = emptyProgress()
   const o = (raw && typeof raw === 'object' ? raw : null) as Partial<Progress> | null
-  // Version 2 differs only by lacking the gauntlet, which then starts empty.
-  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 2)) {
+  // Older versions only lack the gauntlet (2) and the daily record (2, 3), which then start empty.
+  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 3 && o.v !== 2)) {
     // Before E8 the only progress was how many opponents were beaten; each counts as a plain win.
     const n = Math.min(legacyCleared, CAMPAIGN.length)
     return { ...fresh, cleared: n, stars: fresh.stars.map((_, i) => (i < n ? STAR_WIN : 0)) }
@@ -210,6 +255,11 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
   for (const k of Object.keys(stats) as (keyof Stats)[]) if (isInt(o.stats?.[k])) stats[k] = o.stats![k]
   const gauntlet = { ...fresh.gauntlet }
   for (const k of Object.keys(gauntlet) as (keyof Gauntlet)[]) if (isInt(o.gauntlet?.[k])) gauntlet[k] = o.gauntlet![k]
+  const d = o.daily?.last
+  const last: DailyAttempt | null = d && isInt(d.date) && isInt(d.turns) && isInt(d.lost) && typeof d.won === 'boolean'
+    ? { date: d.date, won: d.won, turns: d.turns, lost: d.lost } : null
+  const daily: Daily = last && isInt(o.daily?.streak) && isInt(o.daily?.best)
+    ? { last, streak: o.daily!.streak, best: Math.max(o.daily!.best, o.daily!.streak) } : fresh.daily
   return {
     v: PROGRESS_VERSION,
     cleared: isInt(o.cleared) ? Math.min(o.cleared, CAMPAIGN.length) : 0,
@@ -219,6 +269,7 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     puzzles: Array.isArray(o.puzzles) ? o.puzzles.filter((id) => PUZZLES.some((z) => z.id === id)) : [],
     tournaments: isInt(o.tournaments) ? o.tournaments : 0,
     gauntlet,
+    daily,
     last: typeof o.last === 'string' ? o.last : null,
   }
 }
