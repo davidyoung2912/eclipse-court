@@ -1,7 +1,7 @@
 :root {
-  --reset-bg: #7a2b57;
-  --reset-border: #e27bb0;
-  --reset-glow: 226, 123, 176;
+  --reset-bg: #8a2a1f;
+  --reset-border: #e8654a;
+  --reset-glow: 232, 101, 74;
   --back-bg: #3d4a58;
   --back-border: #9fb4c8;
   --back-glow: 159, 180, 200;
@@ -244,12 +244,12 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 
 /* Title screen */
 .main-menu {
-  justify-content: flex-start; gap: 4px; padding-top: 2px;
+  justify-content: flex-start; gap: 3px; padding-top: 0;
   background:
     radial-gradient(ellipse 80% 45% at 50% 28%, rgba(122, 92, 200, 0.35), transparent 70%),
     radial-gradient(ellipse 60% 30% at 50% 100%, rgba(232, 182, 74, 0.14), transparent 70%);
 }
-.hero { width: 100%; max-height: 19vh; margin-top: -6px; flex-shrink: 1; overflow: visible; }
+.hero { width: 100%; max-height: 16vh; margin-top: -10px; flex-shrink: 1; overflow: visible; }
 .star { fill: #fbf1d4; opacity: 0.2; animation: twinkle 3.6s ease-in-out infinite; }
 .corona, .rays { transform-box: fill-box; transform-origin: center; }
 .corona { animation: breathe 4.35s ease-in-out infinite; }

@@ -35,9 +35,9 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
       </button>
     )
   }
-  /** Once an act is under way it opens by itself: the act of the next chapter still to read. */
+  /** Once the prologue is read, the act of the next chapter still to read opens by itself. */
   const next = CHAPTERS.find((c, i) => c.act !== 'prologue' && !read.has(c.id) && chapterUnlocked(i, read))
-  const underway = CHAPTERS.some((c) => c.act !== 'prologue' && read.has(c.id))
+  const underway = read.size > 0
   const current = underway ? next?.act : undefined
   const untouched = read.size === 0 && Object.keys(story.characters).length === 0 && Object.keys(story.losses).length === 0 && !story.ending
   const prologue = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === 'prologue')

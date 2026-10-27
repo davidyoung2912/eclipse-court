@@ -15,6 +15,7 @@ import { Dial } from '../dial/Dial'
 import { DuelView } from '../duel/DuelView'
 import { AttackConfirm } from '../tray/AttackConfirm'
 import { DuelResult } from '../tray/DuelResult'
+import { CellCard } from '../tray/CellCard'
 import { PieceCard } from '../tray/PieceCard'
 import { SpellBar } from '../tray/SpellBar'
 import { BackButton } from '../menus/BackButton'
@@ -32,6 +33,8 @@ export function Tutorial({ onExit }: Props) {
   const [selected, setSelected] = useState(false)
   /** The piece whose card an `info` step is showing, as in play when a piece is tapped off-turn. */
   const [inspectId, setInspectId] = useState<string | null>(null)
+  /** An empty square being inspected; its card shows the light and any cell effect there. */
+  const [inspectSq, setInspectSq] = useState<Pos | null>(null)
   const [duel, setDuel] = useState<Duel>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
   const [outcome, setOutcome] = useState<DuelOutcome | null>(null)
@@ -47,6 +50,7 @@ export function Tutorial({ onExit }: Props) {
     setState(s.winner ? s : reduce(s, { type: 'pass' }))
     setSelected(false)
     setInspectId(null)
+    setInspectSq(null)
     setDuel(null)
     setCasting(null)
     setStep((n) => n + 1)
@@ -62,6 +66,7 @@ export function Tutorial({ onExit }: Props) {
     if (duel) return
     if (current.kind === 'info' || current.kind === 'end') {
       const occ = pieceAt(state, p)
+      setInspectSq(occ ? null : p)
       return setInspectId(occ ? occ.id : null)
     }
     if (current.kind === 'move') {
@@ -102,7 +107,9 @@ export function Tutorial({ onExit }: Props) {
         <DuelResult attacker={knight} defender={foe} outcome={outcome}
           onContinue={() => next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: TUTORIAL_FOE_AT, duel: outcome }))} />
       )}
-      <PieceCard state={state} human="solari" piece={shown} hint="Tap any piece to read its card." />
+      {!shown && inspectSq
+        ? <CellCard state={state} pos={inspectSq} />
+        : <PieceCard state={state} human="solari" piece={shown} hint="Tap any piece to read its card." />}
       <footer className="tray">
         <section className="lesson" aria-live="polite">
           <h2>{current.title}</h2>
@@ -111,7 +118,7 @@ export function Tutorial({ onExit }: Props) {
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
           {current.kind === 'end' ? <BackButton onClick={onExit} /> : <button onClick={onExit}><Icon name="skip" />Skip</button>}
-          {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setStep(step + 1) }}><Icon name="check" />Got It</button>}
+          {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setInspectSq(null); setStep(step + 1) }}><Icon name="check" />Got It</button>}
           {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>
       </footer>
