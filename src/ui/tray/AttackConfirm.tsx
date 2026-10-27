@@ -1,13 +1,16 @@
 import { ROLE_NAMES } from '../../engine/data/roster'
 import type { Odds } from '../../engine/reducer'
 import { Icon } from '../menus/icons'
-import type { Piece } from '../../engine/rules/types'
+import type { CellEffect, Piece } from '../../engine/rules/types'
+import { CELL_INFO } from '../../engine/rules/cells'
 
 interface Props {
   attacker: Piece
   defender: Piece
   luminance: number
   odds: Odds
+  /** The cell effects under each fighter, already counted in the odds. */
+  cells?: { attacker: CellEffect | null; defender: CellEffect | null }
   live: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -15,7 +18,7 @@ interface Props {
 
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
-export function AttackConfirm({ attacker, defender, luminance, odds, live, onConfirm, onCancel }: Props) {
+export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, onConfirm, onCancel }: Props) {
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
     <div className="confirm" role="dialog" aria-label="Confirm attack">
@@ -29,6 +32,8 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, onCon
         Attacker {pct(odds.attacker)} · Draw {pct(odds.other)} · Defender {pct(odds.defender)}
         <br />
         Square light {luminance > 0 ? `+${luminance}` : luminance}
+        {cells?.attacker && <><br />Attacker on {CELL_INFO[cells.attacker].name}</>}
+        {cells?.defender && <><br />Defender on {CELL_INFO[cells.defender].name}</>}
       </p>
       <div className="buttons">
         <button onClick={onCancel}><Icon name="close" />Cancel</button>

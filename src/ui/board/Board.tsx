@@ -7,6 +7,8 @@ import type { GameState, Piece, Pos } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { BoardDefs } from '../../art/Tile'
 import { getSettings } from '../../settings'
+import { cellAt } from '../../engine/rules/cells'
+import { CellMark } from './CellMark'
 import { lumColor } from './lumColor'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
@@ -89,6 +91,7 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
                 <path d={`M${cx - 0.3},${cy - 0.1}H${cx + 0.3}M${cx - 0.3},${cy + 0.15}H${cx + 0.3}M${cx},${cy - 0.1}V${cy + 0.15}`} />
               </g>
             )}
+            {(() => { const effect = cellAt(state.config, p); return effect && <CellMark effect={effect} cx={cx} cy={cy} round={state.round} /> })()}
             {cycling && (
               <rect key={rippleKey} x={cx - 0.5} y={cy - 0.5} width={1} height={1} className={`ripple ${lum >= 0 ? 'lit' : 'dim'}`}
                 style={{ animationDelay: `${ringOf(p) * 70}ms` }} />

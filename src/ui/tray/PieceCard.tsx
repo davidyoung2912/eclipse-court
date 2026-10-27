@@ -2,6 +2,7 @@ import { ROLE_INFO, courtFight, courtPassive } from '../../engine/data/pieceInfo
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { styleOf } from '../../engine/duel/duel'
 import { PERK_INFO, rankOf } from '../../engine/rules/growth'
+import { CELL_INFO, cellAt } from '../../engine/rules/cells'
 import { isBeacon } from '../../engine/rules/board'
 import { favouredCourt, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece } from '../../engine/rules/types'
@@ -31,6 +32,7 @@ export function PieceCard({ state, piece, human, hint }: Props) {
         : piece.hp < piece.maxHp ? 'Wounded: heals 1 per 2 resting rounds'
           : favoured === piece.court ? 'The light favours it here'
             : favoured ? 'The light works against it here' : ''
+  const cell = cellAt(state.config, piece.pos)
   const gift = state.config.passives ? courtPassive(piece.court, piece.role) : ''
   const rank = rankOf(piece)
   const record = state.config.growth
@@ -46,6 +48,7 @@ export function PieceCard({ state, piece, human, hint }: Props) {
       </header>
       <p><i>Moves</i>{info.move}</p>
       <p><i>Duel</i>{duel}</p>
+      {cell && <p><i>Cell</i>{CELL_INFO[cell].name}: {CELL_INFO[cell].text}</p>}
       {gift && <p><i>Gift</i>{gift}</p>}
       {record && <p><i>Record</i>{record}</p>}
       <p className="piece-stats">

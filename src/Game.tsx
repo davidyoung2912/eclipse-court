@@ -24,6 +24,8 @@ import { useLatest } from './hooks/useLatest'
 import { useTurnClock } from './hooks/useTurnClock'
 import { ClockRing } from './ui/dial/ClockRing'
 import { DuelView, type DuelOptions } from './ui/duel/DuelView'
+import { cellAt } from './engine/rules/cells'
+import { CellLegend } from './ui/board/CellLegend'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
 import { replayLink } from './share'
 import { ShareButton } from './ui/ShareButton'
@@ -317,8 +319,10 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
       <Dial state={state} />
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+      <CellLegend cells={state.config.cells} />
       {pending && !pending.confirmed && attacker && defender && (
         <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
+          cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}
           luminance={squareLuminance(state, pending.to)}
           odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, duelCells(state, attacker, defender))}
           onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />

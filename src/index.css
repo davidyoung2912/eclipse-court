@@ -57,6 +57,21 @@ body {
 .acting { fill: rgba(60, 130, 255, 0.55); pointer-events: none; }
 .sq.fixed { opacity: 0.85; }
 .beacon { fill: none; stroke: var(--solari-gold); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
+.cell { pointer-events: none; }
+.cell-tint { fill: var(--cell); fill-opacity: 0.18; stroke: var(--cell); stroke-width: 0.03; stroke-opacity: 0.8; }
+.cell-glyph { fill: var(--cell); stroke: var(--cell); stroke-width: 0.06; stroke-linejoin: round; stroke-linecap: round; paint-order: stroke; }
+.cell-hazard .cell-glyph, .cell-silence .cell-glyph { fill: none; stroke: var(--cell); stroke-width: 0.09; }
+.cell.dormant { opacity: 0.4; }
+.cell.dormant .cell-tint { stroke-dasharray: 0.1 0.08; }
+.cell-might { --cell: #ff9a3c; }
+.cell-ward { --cell: #4fb3ff; }
+.cell-recovery { --cell: #5fdc7a; }
+.cell-hazard { --cell: #ff4d5e; }
+.cell-silence { --cell: #b0a8c9; }
+.cell-invincible { --cell: #f4e04d; }
+.cell-legend { display: flex; flex-wrap: wrap; gap: 2px 10px; justify-content: center; margin: 0; padding: 0; list-style: none; font-size: 0.7rem; opacity: 0.85; }
+.cell-legend li { display: flex; align-items: center; gap: 4px; }
+.cell-legend i { width: 9px; height: 9px; border-radius: 2px; background: var(--cell); }
 .move-dot { fill: #fffbe0; stroke: #e8b64a; stroke-width: 0.03; pointer-events: none; }
 .move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
 @keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
