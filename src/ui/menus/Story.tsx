@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
-import { CHAPTERS, actLabel } from '../../engine/data/story'
-import { chapterUnlocked, storySnapshot, subscribeStory } from '../../story'
+import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
+import { characterState, chapterUnlocked, metCharacters, storySnapshot, subscribeStory } from '../../story'
+import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
@@ -12,7 +13,9 @@ interface Props {
 
 /** The chapters of the tale of the two courts, opened in order. */
 export function Story({ onOpen, onBack }: Props) {
-  const read = useSyncExternalStore(subscribeStory, storySnapshot)
+  const story = useSyncExternalStore(subscribeStory, storySnapshot)
+  const read = story.read
+  const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
   return (
     <main className="app menu">
       <PageArt icon="book" />
@@ -31,6 +34,22 @@ export function Story({ onOpen, onBack }: Props) {
         })}
       </div>
       <p className="tagline">More chapters are still to be told.</p>
+      {company.length > 0 && (
+        <section className="story-cast" aria-label="Company">
+          <h3>Company</h3>
+          {company.map((id) => {
+            const c = CHARACTERS[id]
+            const state = characterState(story, id)
+            return (
+              <div key={id} className={`story-member ${state}`}>
+                <svg viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 50) scale(92)"><PieceArt role={c.portrait!.role} court={c.portrait!.court} /></g></svg>
+                <span><strong>{c.name}</strong> · {c.title}<small>{c.trait}</small></span>
+                <em>{state}</em>
+              </div>
+            )
+          })}
+        </section>
+      )}
       <div className="menu-buttons stacked">
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>

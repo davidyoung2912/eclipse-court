@@ -3,7 +3,8 @@ import type { Act } from './types'
 
 export { CHAPTERS }
 export { CHARACTERS } from './characters'
-export type { Act, Beat, Chapter, Character, CharacterId } from './types'
+export { afterVictory, boundCharacters, scenarioOf, storyBattleGame } from './battle'
+export type { Act, Beat, Chapter, Character, CharacterId, CharacterState, Condition, StoryBattle } from './types'
 
 const BY_ID = new Map(CHAPTERS.map((c) => [c.id, c]))
 

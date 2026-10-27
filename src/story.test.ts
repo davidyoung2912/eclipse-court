@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CHAPTERS } from './engine/data/story'
-import { chapterRead, chapterUnlocked, markChapterRead, resetStory, storySnapshot, storySummary, subscribeStory } from './story'
+import { chapterRead, chapterUnlocked, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -37,5 +37,32 @@ describe('story progress', () => {
   it('summarises how much has been read', () => {
     expect(storySummary(new Set())).toMatch(/courts/)
     expect(storySummary(new Set([CHAPTERS[0].id]))).toBe(`1 of ${CHAPTERS.length} chapters read`)
+  })
+
+  it('keeps a won battle\'s character states and a lost battle\'s count apart from the rest', () => {
+    recordStoryLoss('meridian-road')
+    expect(storySnapshot().read.has('meridian-road')).toBe(false)
+    expect(storySnapshot().losses['meridian-road']).toBe(1)
+    recordStoryWin('meridian-road', { wren: 'wounded' })
+    expect(chapterRead('meridian-road')).toBe(true)
+    expect(storySnapshot().characters).toEqual({ wren: 'wounded' })
+  })
+
+  it('shows conditional lines only when they hold', () => {
+    const chapter = CHAPTERS.find((c) => c.id === 'meridian-road')!
+    const text = (s = storySnapshot()) => visibleBeats(chapter.beats, s).map((b) => b.text)
+    expect(text().some((t) => t.includes('careful, and fast'))).toBe(true)
+    expect(text().some((t) => t.includes('careful, and slow'))).toBe(false)
+    expect(text().some((t) => t.includes('coin toss'))).toBe(false)
+    recordStoryLoss('meridian-road')
+    recordStoryWin('x', { wren: 'wounded' })
+    expect(text().some((t) => t.includes('careful, and slow'))).toBe(true)
+    expect(text().some((t) => t.includes('coin toss'))).toBe(true)
+  })
+
+  it('lists the characters of chapters read as met', () => {
+    expect(metCharacters(storySnapshot())).toEqual([])
+    markChapterRead('meridian-road')
+    expect(metCharacters(storySnapshot())).toEqual(expect.arrayContaining(['wren', 'voss']))
   })
 })

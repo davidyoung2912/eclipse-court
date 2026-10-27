@@ -1,6 +1,6 @@
 # Story mode: a lore-driven campaign with persistent characters
 
-**Status: S1 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: S1 and S2 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The setting, factions and ending are in `docs/lore.md`. Story mode tells that story across both courts, with a small cast of named characters who carry from chapter to chapter, so that wins and losses cost something the player can feel.
 
@@ -15,7 +15,7 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 
 ## Phases
 - **S1 (done): story format and reader.** Types (`Character`, `Beat`, `Chapter`), the cast, the Prologue ("The Stilling", a mythic retelling of the lore's backstory), a chapter list screen reached from a Story card on the main menu, a dialogue reader (tap or key to advance, back, skip, progress), chapters unlocking in order, saved read state, a tip card, and tests for data validity and the read-state store. The engine is untouched and no battle is attached yet.
-- **S2: battles in chapters and characters in play.** A `battle` beat that launches a match built from the existing campaign or scenario builders, then returns to the story with the result. Named characters are bound to specific pieces in a chapter's fight; the cast screen shows each one's state (ready, wounded, fallen) and a small trait. Win, lose and lost-character outcomes are saved and picked up by later dialogue. Lose-and-retry never soft-locks.
+- **S2 (done): battles in chapters and characters in play.** A `battle` beat that launches a match built from the existing campaign or scenario builders, then returns to the story with the result. Named characters are bound to specific pieces in a chapter's fight; the cast screen shows each one's state (ready, wounded, fallen) and a small trait. Win, lose and lost-character outcomes are saved and picked up by later dialogue. Lose-and-retry never soft-locks.
 - **S3: Act I vertical slice (Solari).** About five chapters with three or four recurring characters (Wren, Tam, Voss and the scout), ending with Tam's death. Playtest whether anyone cares before writing more.
 - **S4: Act II (Umbral).** The same war from the Vesper Halls, with Tam serving as a Gloom Ghoul; Ilse and the Duskmother.
 - **S5: Act III and the four endings.** The player chooses who keeps the Hour; the Eclipse Queen is the last battle (reusing her boss rules); each ending has its own epilogue.
@@ -29,3 +29,12 @@ The setting, factions and ending are in `docs/lore.md`. Story mode tells that st
 - `src/story.ts` (+ test): read-state store, unlocking and the menu summary line.
 - `src/ui/menus/Story.tsx` (chapter list) and `src/ui/story/StoryReader.tsx` (dialogue).
 - Wiring in `App.tsx`, `MainMenu.tsx`, `menuModel.ts`, `tipData.ts` and `index.css`.
+
+## S2 file map
+- `Chapter.battle` (`StoryBattle` in `types.ts`): a scenario id, `bind` (character to piece id), optional `mortal`, and `won` / `lost` scenes. The player is Solari, as in scenarios.
+- Beats may carry `when` (`{character, state}` or `{lostBefore: chapterId}`), so later lines answer earlier results.
+- `battle.ts`: `storyBattleGame` (wounded start one HP short, fallen are absent), `afterVictory` (taken piece wounds, or kills a `mortal` character; survivors become ready).
+- `src/story.ts`: state is now `{read, characters, losses}` (the old array of read ids still loads); `recordStoryWin`, `recordStoryLoss`, `visibleBeats`, `metCharacters`.
+- `App.tsx`: chapter beats, then the game (`story` field, not resumable, no campaign stats), then an `aftermath` scene. Quitting mid-fight changes nothing. A loss never changes states, so retrying cannot soft-lock.
+- `Story.tsx`: a Company list with each met character's trait and state. Traits are flavour only.
+- Chapter 1, "The Meridian Road" (scenario `long-road`, Wren and Voss bound), is a stand-in S3 may rewrite; its id must stay stable.

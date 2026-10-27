@@ -28,4 +28,35 @@ export const CHAPTERS: readonly Chapter[] = [
       { kind: 'narrate', text: 'Neither has ever agreed what that means.' },
     ],
   },
+  {
+    id: 'meridian-road',
+    act: 1,
+    title: 'The Meridian Road',
+    blurb: 'Ser Voss sends the Sunhawks to carry the Solarch\'s banner through the Umbral wall.',
+    beats: [
+      { kind: 'narrate', text: 'Three hundred years on, the Hour is still held, and still disputed. At the border of the Meridian the Solari muster before dawn.' },
+      { kind: 'say', who: 'voss', text: 'The Duskmother has closed the road. The beacon at the far end is ours by right and by oath. We take it back today.' },
+      { kind: 'say', who: 'wren', text: 'I can be over their wall before they have lit a lamp, Ser. Give me the word.' },
+      { kind: 'say', who: 'voss', text: 'You will have it when I have counted what they have behind it. Stay with the banner, Wren. A scout who dies early reports nothing.' },
+      { kind: 'say', who: 'wren', text: 'Then I shall be careful, and fast.', when: { character: 'wren', state: 'ready' } },
+      { kind: 'say', who: 'wren', text: 'My wing still aches from the last road, Ser. I shall be careful, and slow.', when: { character: 'wren', state: 'wounded' } },
+      { kind: 'say', who: 'voss', text: 'Last time you called the odds a coin toss, and I shouted at you. The odds are worse. Be ready.', when: { lostBefore: 'meridian-road' } },
+      { kind: 'narrate', text: 'The banner goes forward. Across the field, the Umbral wall waits for it.' },
+    ],
+    battle: {
+      scenario: 'long-road',
+      bind: { wren: 'solari-flier-1', voss: 'solari-charger-1' },
+      won: [
+        { kind: 'narrate', text: 'The banner reaches the far beacon, and the Umbral line breaks back into the dusk.' },
+        { kind: 'say', who: 'voss', text: 'Well ridden. We hold the road tonight.' },
+        { kind: 'say', who: 'wren', text: 'Tonight, Ser. They will be back.', when: { character: 'wren', state: 'ready' } },
+        { kind: 'say', who: 'wren', text: 'I am hurt, Ser, but I am here. That is something.', when: { character: 'wren', state: 'wounded' } },
+        { kind: 'say', who: 'voss', text: 'We shall need you whole. Rest. That is an order.', when: { character: 'wren', state: 'wounded' } },
+      ],
+      lost: [
+        { kind: 'narrate', text: 'The banner falls short of the beacon. The riders pull back in the failing light.' },
+        { kind: 'say', who: 'voss', text: 'Again. I have counted their wall now, and it can be broken.' },
+      ],
+    },
+  },
 ]

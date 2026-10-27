@@ -1,38 +1,80 @@
-import { CHAPTERS } from './engine/data/story'
+import { CHAPTERS, CHARACTERS, type Beat, type CharacterId, type CharacterState } from './engine/data/story'
 
-/** Which story chapters have been read; kept apart from the campaign's progress. */
+/** Which story chapters have been read and what became of the named characters; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:story'
 
 type Listener = () => void
 const listeners = new Set<Listener>()
 
-function read(): string[] {
+export type CharacterStates = Partial<Record<CharacterId, CharacterState>>
+
+export interface StoryState {
+  read: ReadonlySet<string>
+  /** A character not listed is ready. */
+  characters: CharacterStates
+  /** How many times each chapter's battle has been lost. */
+  losses: Readonly<Record<string, number>>
+}
+
+const EMPTY: StoryState = { read: new Set(), characters: {}, losses: {} }
+
+const STATES: readonly string[] = ['ready', 'wounded', 'fallen']
+
+function parse(raw: unknown): StoryState {
+  // The first version stored just the list of read chapters.
+  if (Array.isArray(raw)) return { ...EMPTY, read: new Set(raw.filter((x): x is string => typeof x === 'string')) }
+  const o = (raw ?? {}) as Partial<Record<'read' | 'characters' | 'losses', unknown>>
+  const characters: CharacterStates = {}
+  if (o.characters && typeof o.characters === 'object')
+    for (const [id, state] of Object.entries(o.characters))
+      if (id in CHARACTERS && typeof state === 'string' && STATES.includes(state)) characters[id as CharacterId] = state as CharacterState
+  const losses: Record<string, number> = {}
+  if (o.losses && typeof o.losses === 'object')
+    for (const [id, n] of Object.entries(o.losses)) if (typeof n === 'number' && Number.isInteger(n) && n > 0) losses[id] = n
+  const read = Array.isArray(o.read) ? o.read.filter((x): x is string => typeof x === 'string') : []
+  return { read: new Set(read), characters, losses }
+}
+
+function load(): StoryState {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+    return parse(JSON.parse(localStorage.getItem(KEY) ?? 'null'))
   } catch {
-    return []
+    return EMPTY
   }
 }
 
 /** Held in memory too, so a device without storage still remembers for the visit. */
-let done = new Set(read())
+let state = load()
 
-export const chapterRead = (id: string) => done.has(id)
-
-export function markChapterRead(id: string) {
-  if (done.has(id)) return
-  done = new Set(done).add(id)
+function commit(next: StoryState) {
+  state = next
   try {
-    localStorage.setItem(KEY, JSON.stringify([...done]))
+    localStorage.setItem(KEY, JSON.stringify({ read: [...next.read], characters: next.characters, losses: next.losses }))
   } catch {
-    // Without storage the chapter simply reads as new next visit.
+    // Without storage the story simply starts over next visit.
   }
   listeners.forEach((l) => l())
 }
 
+export const chapterRead = (id: string) => state.read.has(id)
+
+export function markChapterRead(id: string) {
+  if (state.read.has(id)) return
+  commit({ ...state, read: new Set(state.read).add(id) })
+}
+
+/** A won battle: the chapter is done and the characters' states are replaced by the ones it left them in. */
+export function recordStoryWin(id: string, characters: CharacterStates) {
+  commit({ ...state, read: new Set(state.read).add(id), characters })
+}
+
+/** A lost battle changes no one's state, so losing and retrying can never leave the story stuck. */
+export function recordStoryLoss(id: string) {
+  commit({ ...state, losses: { ...state.losses, [id]: (state.losses[id] ?? 0) + 1 } })
+}
+
 export function resetStory() {
-  done = new Set()
+  state = EMPTY
   try {
     localStorage.removeItem(KEY)
   } catch {
@@ -46,8 +88,34 @@ export const subscribeStory = (l: Listener) => {
   return () => { listeners.delete(l) }
 }
 
-/** Identity changes whenever the set does, for `useSyncExternalStore`. */
-export const storySnapshot = () => done
+/** Identity changes whenever the story does, for `useSyncExternalStore`. */
+export const storySnapshot = () => state
+
+export const characterState = (s: Pick<StoryState, 'characters'>, id: CharacterId): CharacterState => s.characters[id] ?? 'ready'
+
+/** The beats that apply to the story so far, those with a condition kept only when it holds. */
+export const visibleBeats = (beats: readonly Beat[], s: StoryState) =>
+  beats.filter((b) => {
+    if (!b.when) return true
+    return 'character' in b.when ? characterState(s, b.when.character) === b.when.state : (s.losses[b.when.lostBefore] ?? 0) > 0
+  })
+
+/** Everyone the player has met: a speaker or a bound piece in a chapter already read. */
+export function metCharacters(s: StoryState): CharacterId[] {
+  const met = new Set<CharacterId>()
+  const take = (beats: readonly Beat[]) => beats.forEach((b) => { if (b.kind === 'say') met.add(b.who) })
+  for (const c of CHAPTERS) {
+    if (!s.read.has(c.id)) continue
+    take(c.beats)
+    if (c.battle) {
+      take(c.battle.won)
+      Object.keys(c.battle.bind).forEach((id) => met.add(id as CharacterId))
+    }
+  }
+  return (Object.keys(CHARACTERS) as CharacterId[]).filter((id) => met.has(id))
+}
+
+
 
 /** Chapters open in order: the first from the start, each other once the one before it has been read. */
 export const chapterUnlocked = (index: number, readIds: ReadonlySet<string>) =>

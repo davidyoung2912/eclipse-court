@@ -99,7 +99,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
     { icon: 'banner', title: 'Campaign', line: summary.campaign, onClick: onCampaign },
     { icon: 'flame', title: 'Gauntlet', line: summary.gauntlet, onClick: onGauntlet },
     { icon: 'puzzle', title: 'Puzzles', line: summary.puzzles, onClick: onPuzzles },
-    { icon: 'book', title: 'Story', line: storySummary(storyRead), onClick: onStory, wide: true },
+    { icon: 'book', title: 'Story', line: storySummary(storyRead.read), onClick: onStory, wide: true },
   ]
   return (
     <main className="app menu main-menu">

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 import { PieceArt } from '../../art/PieceArt'
-import { CHARACTERS, actLabel, type Chapter } from '../../engine/data/story'
+import { CHARACTERS, actLabel, type Beat, type Chapter } from '../../engine/data/story'
 import { Icon } from '../menus/icons'
 
 interface Props {
   chapter: Chapter
+  /** The beats to read, when not the chapter's own (its victory or defeat scene). */
+  beats?: readonly Beat[]
+  /** The last beat's button reads this instead of Finish, when a fight follows. */
+  finishLabel?: string
   /** Called once the last beat is passed, or the chapter is skipped. */
   onDone: () => void
   /** Leaves without marking the chapter read. */
@@ -12,10 +16,10 @@ interface Props {
 }
 
 /** One chapter, a beat at a time: tap, Enter or the arrow keys move through it. */
-export function StoryReader({ chapter, onDone, onBack }: Props) {
+export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDone, onBack }: Props) {
   const [index, setIndex] = useState(0)
-  const last = index === chapter.beats.length - 1
-  const beat = chapter.beats[index]
+  const last = index === beats.length - 1
+  const beat = beats[index]
   const speaker = beat.kind === 'say' ? CHARACTERS[beat.who] : null
 
   const forward = () => (last ? onDone() : setIndex(index + 1))
@@ -50,12 +54,12 @@ export function StoryReader({ chapter, onDone, onBack }: Props) {
           <p className="story-line story-narrate">{beat.text}</p>
         )}
       </div>
-      <div className="story-progress" role="progressbar" aria-valuemin={1} aria-valuemax={chapter.beats.length} aria-valuenow={index + 1}>
-        <i style={{ width: `${((index + 1) / chapter.beats.length) * 100}%` }} />
+      <div className="story-progress" role="progressbar" aria-valuemin={1} aria-valuemax={beats.length} aria-valuenow={index + 1}>
+        <i style={{ width: `${((index + 1) / beats.length) * 100}%` }} />
       </div>
       <div className="menu-buttons">
         <button onClick={backward} disabled={index === 0}><Icon name="back" />Previous</button>
-        <button className="primary" onClick={forward}>{last ? <><Icon name="check" />Finish</> : <><Icon name="next" />Next</>}</button>
+        <button className="primary" onClick={forward}>{last ? <><Icon name="check" />{finishLabel ?? 'Finish'}</> : <><Icon name="next" />Next</>}</button>
       </div>
       <div className="menu-buttons">
         <button onClick={onDone}><Icon name="skip" />Skip</button>

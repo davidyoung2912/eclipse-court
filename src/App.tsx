@@ -32,13 +32,14 @@ import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
-import { chapterById } from './engine/data/story'
-import { markChapterRead } from './story'
+import { afterVictory, chapterById, storyBattleGame } from './engine/data/story'
+import { markChapterRead, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
 import { PlayTimer } from './ui/PlayTimer'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
+const scenarioDifficulty = (id: string): Difficulty => SCENARIOS.find((x) => x.id === id)?.difficulty ?? 'normal'
 
 // The board, duel and tutorial code load when first needed, so the menus open sooner.
 const Game = lazy(() => import('./Game').then((m) => ({ default: m.Game })))
@@ -53,6 +54,8 @@ type Screen =
   | { name: 'campaign' }
   | { name: 'story' }
   | { name: 'chapter'; id: string }
+  /** The scene after a chapter's battle. */
+  | { name: 'aftermath'; id: string; won: boolean }
   | { name: 'daily' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
@@ -75,6 +78,8 @@ type Screen =
     gauntlet?: boolean
     /** A scenario of the campaign's second tab: its index. */
     scenario?: number
+    /** A chapter of the story whose battle this is; story games are not resumable and touch no campaign progress. */
+    story?: string
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -202,9 +207,28 @@ export default function App() {
   if (screen.name === 'chapter') {
     const chapter = chapterById(screen.id)
     if (!chapter) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    const { battle } = chapter
     return (
-      <StoryReader key={chapter.id} chapter={chapter} onBack={() => setScreen({ name: 'story' })}
-        onDone={() => { markChapterRead(chapter.id); setScreen({ name: 'story' }) }} />
+      <StoryReader key={chapter.id} chapter={chapter} beats={visibleBeats(chapter.beats, storySnapshot())}
+        finishLabel={battle ? 'To battle' : undefined} onBack={() => setScreen({ name: 'story' })}
+        onDone={() => {
+          const game = battle && storyBattleGame(battle, storySnapshot().characters, Date.now())
+          if (!battle || !game) {
+            markChapterRead(chapter.id)
+            return setScreen({ name: 'story' })
+          }
+          setScreen({ name: 'game', human: 'solari', difficulty: scenarioDifficulty(battle.scenario), record: { initial: game, actions: [] }, campaignIndex: null, story: chapter.id })
+        }} />
+    )
+  }
+
+  if (screen.name === 'aftermath') {
+    const chapter = chapterById(screen.id)
+    const scene = chapter?.battle && (screen.won ? chapter.battle.won : chapter.battle.lost)
+    if (!chapter || !scene) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryReader key={`${chapter.id}-${screen.won}`} chapter={chapter} beats={visibleBeats(scene, storySnapshot())}
+        onBack={() => setScreen({ name: 'story' })} onDone={() => setScreen({ name: 'story' })} />
     )
   }
 
@@ -325,13 +349,13 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet, scenario } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet, scenario, story } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !puzzle && !series && !gauntlet && scenario === undefined && campaignIndex === null && human === DAILY_COURT
+    const daily = !hotSeat && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === DAILY_COURT
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
-    const transient = !!puzzle || !!series || !!gauntlet || scenario !== undefined
+    const transient = !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -401,6 +425,16 @@ export default function App() {
       saveRun(next)
     }
 
+    /** A story battle ends: a win settles who is wounded or fallen, a loss changes nothing so the chapter can be tried again. */
+    const finishStory = (chapterId: string, winner: GameState['winner'], finished: GameRecord) => {
+      const battle = chapterById(chapterId)?.battle
+      const final = winner === human && battle ? replay(finished) : null
+      if (!battle || winner === null) return setScreen({ name: 'story' })
+      if (final) recordStoryWin(chapterId, afterVictory(battle, final, storySnapshot().characters))
+      else recordStoryLoss(chapterId)
+      setScreen({ name: 'aftermath', id: chapterId, won: !!final })
+    }
+
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
     return (
       <>
@@ -420,6 +454,7 @@ export default function App() {
         }}
         onExit={(winner, finished) => {
           if (gauntlet) return finishFight(winner, finished)
+          if (story) return finishStory(story, winner, finished)
           if (puzzle) return finishPuzzle(winner)
           if (series) return finishSeries(winner, finished)
           clearSaved()
