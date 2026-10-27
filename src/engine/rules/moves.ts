@@ -1,4 +1,5 @@
 import { fixedCourt, inBounds, isBlocked, samePos, SIZE } from './board'
+import { eventAt } from './events'
 import { squareLuminance } from './luminance'
 import type { GameState, Piece, Pos } from './types'
 
@@ -41,6 +42,9 @@ function slide(state: GameState, piece: Piece, maxSteps: number, over: boolean):
 const flierBonus = (state: GameState, piece: Piece) =>
   state.config.passives && piece.court === 'solari' && !fixedCourt(piece.pos) && squareLuminance(state, piece.pos) >= 2 ? 1 : 0
 
+/** Fog cuts the reach of long-range movers by one square. */
+const reach = (state: GameState, steps: number) => (eventAt(state.config, state.round) === 'fog' ? Math.max(1, steps - 1) : steps)
+
 /** Every square the piece may move to; a square holding an enemy means an attack. */
 export function legalMoves(state: GameState, piece: Piece): Pos[] {
   if (piece.bound) return []
@@ -49,11 +53,11 @@ export function legalMoves(state: GameState, piece: Piece): Pos[] {
     case 'bruiser':
       return slide(state, piece, 1, false)
     case 'marksman':
-      return slide(state, piece, 2, false)
+      return slide(state, piece, reach(state, 2), false)
     case 'flier':
-      return slide(state, piece, 3 + flierBonus(state, piece), true)
+      return slide(state, piece, reach(state, 3 + flierBonus(state, piece)), true)
     case 'aura':
-      return slide(state, piece, 3, true)
+      return slide(state, piece, reach(state, 3), true)
     case 'charger':
       return KNIGHT.map((d) => ({ x: piece.pos.x + d.x, y: piece.pos.y + d.y })).filter((p) => {
         if (!inBounds(p) || isBlocked(state.config, p)) return false

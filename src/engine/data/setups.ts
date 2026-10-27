@@ -2,7 +2,8 @@ import { boardById, BOARDS } from './boards'
 import { arrange, randomDraft } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
 import { rngNext } from '../rng'
-import type { Court, MatchConfig, Role, Spell } from '../rules/types'
+import { DAYS, type CycleId } from '../rules/luminance'
+import type { Court, MatchConfig, MatchMode, Role, Spell } from '../rules/types'
 
 export type SetupMode = 'classic' | 'draft' | 'random' | 'daily'
 
@@ -26,6 +27,16 @@ export interface SetupChoice {
   loadout?: readonly Spell[]
   /** Spells return to their Leader after this many rounds; one-use when absent. */
   recharge?: number
+  /** How the match is won; Beacons when absent. */
+  winMode?: MatchMode
+  /** Day events strike. */
+  events?: boolean
+  /** The Eclipse closes in on the centre. */
+  showdown?: boolean
+  /** Length of the light's day; standard when absent. */
+  cycle?: CycleId
+  /** The light starts out running the other way. */
+  reverse?: boolean
 }
 
 /** The AI court's choices that a skirmish needs beyond the seed. */
@@ -50,6 +61,11 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
     base.loadouts = human === 'solari' ? { solari: mine, umbral: theirs } : { solari: theirs, umbral: mine }
   }
   if (choice.recharge) base.recharge = choice.recharge
+  if (choice.winMode && choice.winMode !== 'beacons') base.mode = choice.winMode
+  if (choice.events) base.events = true
+  if (choice.showdown) base.showdown = true
+  if (choice.cycle && choice.cycle !== 'standard') base.day = DAYS[choice.cycle]
+  if (choice.reverse) base.reverse = true
   if (mode === 'classic') return base
   if (mode === 'draft') {
     const mine = arrange(choice.roles ?? [])

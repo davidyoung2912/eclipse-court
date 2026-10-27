@@ -1,7 +1,8 @@
 import { DEFAULT_CONFIG, matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
-import { chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
+import { CENTER, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
+import { eventAt, HILL_TURNS, modeOf, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
 import { duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, MatchConfig, Piece } from './rules/types'
@@ -27,13 +28,16 @@ export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
     captured: [],
     turn: 'solari',
     round: 1,
-    phase: 0,
-    dir: 1,
+    // The Hill opens with the light rising from dusk; at full dark the first court to sit on the centre could not be dislodged.
+    phase: modeOf(config) === 'hill' ? Math.floor(config.day.length / 4) : 0,
+    dir: config.reverse ? -1 : 1,
     eclipse: false,
     spells: { solari: [...loadoutOf(config, 'solari')], umbral: [...loadoutOf(config, 'umbral')] },
     recharging: { solari: [], umbral: [] },
     lastCast: { solari: null, umbral: null },
     hold: 0,
+    score: { solari: 0, umbral: 0 },
+    streak: { solari: 0, umbral: 0 },
     winner: null,
     rng: config.seed,
     lastDuel: null,
@@ -99,18 +103,26 @@ export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samp
   return { attacker: a / samples, defender: d / samples, other: 1 - (a + d) / samples }
 }
 
+/** A side wiped out or, in Leader Capture, robbed of its Leader; both at once is a draw. */
 function eliminationWinner(state: GameState): GameState['winner'] {
-  const solari = state.pieces.some((p) => p.court === 'solari')
-  const umbral = state.pieces.some((p) => p.court === 'umbral')
+  const has = (c: Court, leaderOnly: boolean) => state.pieces.some((p) => p.court === c && (!leaderOnly || p.role === 'leader'))
+  const leaderOnly = modeOf(state.config) === 'leader'
+  const solari = has('solari', leaderOnly)
+  const umbral = has('umbral', leaderOnly)
   if (solari && umbral) return null
   return solari ? 'solari' : umbral ? 'umbral' : 'draw'
 }
 
-function evaluateWin(state: GameState, mover: Court): GameState['winner'] {
-  const eliminated = eliminationWinner(state)
-  if (eliminated) return eliminated
-  const holdsAll = state.config.beacons.every((b) => pieceAt(state, b)?.court === mover)
-  return holdsAll ? mover : null
+const holdsCentre = (state: GameState, court: Court) => pieceAt(state, CENTER)?.court === court
+
+/** Beacons held by each court. */
+function beaconsHeld(state: GameState): Record<Court, number> {
+  const held: Record<Court, number> = { solari: 0, umbral: 0 }
+  for (const b of state.config.beacons) {
+    const occ = pieceAt(state, b)
+    if (occ) held[occ.court]++
+  }
+  return held
 }
 
 /** End of a round: healing, Eclipse attrition, then the luminance steps. */
@@ -119,21 +131,25 @@ function endRound(state: GameState): GameState {
   const survivors: Piece[] = []
   const dead: Piece[] = []
   const auras = state.pieces.filter((p) => p.role === 'aura')
+  const heals = eventAt(state.config, state.round) !== 'blight'
+  const radius = safeRadius(state)
   for (const p of state.pieces) {
     let { hp, rest } = p
     // An Aura soothes the allies standing next to it.
-    if (auras.some((a) => a.id !== p.id && a.court === p.court && chebyshev(a.pos, p.pos) === 1)) hp += 1
+    if (heals && auras.some((a) => a.id !== p.id && a.court === p.court && chebyshev(a.pos, p.pos) === 1)) hp += 1
     const onBeacon = isBeacon(p.pos, state.config.beacons)
     if (p.moved) rest = 0
     else {
       rest += 1
-      if (rest % 2 === 0) hp += 1
+      if (heals && rest % 2 === 0) hp += 1
     }
-    if (onBeacon) hp += 1
+    if (heals && onBeacon) hp += 1
     // Umbral passive: the dark mends them while the light still cycles.
-    if (state.config.passives && p.court === 'umbral' && !eclipse && squareLuminance(state, p.pos) < 0) hp += 1
+    if (heals && state.config.passives && p.court === 'umbral' && !eclipse && squareLuminance(state, p.pos) < 0) hp += 1
     hp = Math.min(hp, p.maxHp)
     if (eclipse && !onBeacon) hp -= 1
+    // The showdown: whatever stands outside the safe zone is hurt, beacon or not.
+    if (radius !== null && chebyshev(p.pos, CENTER) > radius) hp -= SHRINK_DAMAGE
     const next = { ...p, hp, rest, moved: false }
     ;(hp > 0 ? survivors : dead).push(next)
   }
@@ -145,8 +161,13 @@ function endRound(state: GameState): GameState {
     umbral: [...state.spells.umbral, ...back('umbral')],
   }
   const waiting = (court: Court) => state.recharging[court].filter((r) => r.ready > round)
+  const held = beaconsHeld({ ...state, pieces: survivors })
+  const score = modeOf(state.config) === 'score'
+    ? { solari: state.score.solari + held.solari, umbral: state.score.umbral + held.umbral }
+    : state.score
   return {
     ...state,
+    score,
     pieces: survivors,
     captured: [...state.captured, ...dead],
     spells,
@@ -159,31 +180,48 @@ function endRound(state: GameState): GameState {
 }
 
 function adjudicate(state: GameState): GameState['winner'] {
-  const held: Record<Court, number> = { solari: 0, umbral: 0 }
+  const held = beaconsHeld(state)
   const hp: Record<Court, number> = { solari: 0, umbral: 0 }
-  for (const b of state.config.beacons) {
-    const occ = pieceAt(state, b)
-    if (occ) held[occ.court]++
-  }
   for (const p of state.pieces) hp[p.court] += p.hp
+  if (modeOf(state.config) === 'score' && state.score.solari !== state.score.umbral)
+    return state.score.solari > state.score.umbral ? 'solari' : 'umbral'
   if (held.solari !== held.umbral) return held.solari > held.umbral ? 'solari' : 'umbral'
   if (hp.solari !== hp.umbral) return hp.solari > hp.umbral ? 'solari' : 'umbral'
   return 'draw'
 }
 
+/** The winner, if any, once `mover` has finished a turn. Hill streaks are updated by the caller. */
+function evaluateWin(state: GameState, mover: Court, streak: number): GameState['winner'] {
+  const eliminated = eliminationWinner(state)
+  if (eliminated) return eliminated
+  const mode = modeOf(state.config)
+  if (mode === 'beacons' && state.config.beacons.every((b) => pieceAt(state, b)?.court === mover)) return mover
+  if (mode === 'hill' && streak >= HILL_TURNS) return mover
+  return null
+}
+
+/** Score Race: the first court to the target wins, the higher score if both arrive together. */
+function scoreWinner(state: GameState): GameState['winner'] {
+  if (modeOf(state.config) !== 'score') return null
+  const { solari, umbral } = state.score
+  if (Math.max(solari, umbral) < SCORE_TARGET || solari === umbral) return null
+  return solari > umbral ? 'solari' : 'umbral'
+}
+
 function finishTurn(state: GameState): GameState {
   const mover = state.turn
-  const winner = evaluateWin(state, mover)
-  if (winner) return { ...state, winner }
+  const streak = { ...state.streak, [mover]: holdsCentre(state, mover) ? state.streak[mover] + 1 : 0 }
+  const winner = evaluateWin(state, mover, streak[mover])
+  if (winner) return { ...state, streak, winner }
   // A Bind lasts until the bound court's own turn has passed; a Shroud until its caster's next turn.
   const pieces = state.pieces.map((p) => {
     if (p.court === mover && p.bound) return { ...p, bound: false }
     return p.court !== mover && p.shrouded ? { ...p, shrouded: false } : p
   })
-  let next: GameState = { ...state, pieces, turn: otherCourt(mover) }
+  let next: GameState = { ...state, pieces, streak, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
-    next = { ...next, winner: eliminationWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
+    next = { ...next, winner: eliminationWinner(next) ?? scoreWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
   }
   return next
 }

@@ -1,6 +1,7 @@
 import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
-import { COURTS, isBeacon, otherCourt } from '../engine/rules/board'
+import { CENTER, chebyshev, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
+import { modeOf, safeRadius } from '../engine/rules/events'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spells'
@@ -53,17 +54,34 @@ export function evaluate(state: GameState, court: Court): number {
     if (holder) held[holder]++
     for (const c of COURTS) if (holder !== c) open[c].push(b)
   }
-  score += (held[court] - held[otherCourt(court)]) * 4
-  if (held[court] >= 4) score += 10
-  if (held[otherCourt(court)] >= 4) score -= 10
+  const foe = otherCourt(court)
+  const mode = modeOf(state.config)
+  // What the mode rewards: beacons for Beacons and Score Race, the centre for the Hill, little for Leader Capture.
+  score += (held[court] - held[foe]) * (mode === 'leader' ? 1.5 : 4)
+  if (mode === 'beacons') {
+    if (held[court] >= 4) score += 10
+    if (held[foe] >= 4) score -= 10
+  } else if (mode === 'score') score += (state.score[court] - state.score[foe]) * 3
+  else if (mode === 'hill') {
+    for (const c of COURTS) {
+      const sign = c === court ? 1 : -1
+      score += sign * ((pieceAt(state, CENTER)?.court === c ? 6 : 0) + state.streak[c] ** 2 * 6)
+    }
+  }
+  const radius = safeRadius(state)
 
   for (const p of state.pieces) {
     const sign = p.court === court ? 1 : -1
-    score += sign * VALUE[p.role] * (0.4 + 0.6 * (p.hp / p.maxHp))
+    const value = mode === 'leader' && p.role === 'leader' ? 40 : VALUE[p.role]
+    score += sign * value * (0.4 + 0.6 * (p.hp / p.maxHp))
+    // Outside the closing safe zone a piece is about to be hurt, and the mover cannot save them all.
+    if (radius !== null && chebyshev(p.pos, CENTER) > radius) score -= sign * VALUE[p.role] * 0.8
     if (p.bound) score -= sign * VALUE[p.role] * 0.4
     if (p.shrouded) score += sign * VALUE[p.role] * 0.15
-    // Pull towards the beacons nobody on its own side holds yet.
-    if (open[p.court].length && p.role !== 'leader') {
+    // Pull towards the beacons nobody on its own side holds yet (the centre, on the Hill).
+    if (mode === 'hill' && p.role !== 'leader') {
+      score += sign * 0.25 * (12 - Math.abs(CENTER.x - p.pos.x) - Math.abs(CENTER.y - p.pos.y))
+    } else if (open[p.court].length && p.role !== 'leader') {
       let near = Infinity
       for (const b of open[p.court]) near = Math.min(near, Math.abs(b.x - p.pos.x) + Math.abs(b.y - p.pos.y))
       score += sign * 0.15 * (12 - near)

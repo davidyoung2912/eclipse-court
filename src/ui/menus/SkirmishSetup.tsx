@@ -3,11 +3,13 @@ import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import { BOARDS, boardById } from '../../engine/data/boards'
 import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
 import { SETUP_INFO, type SetupChoice, type SetupMode } from '../../engine/data/setups'
+import { MODE_INFO } from '../../engine/rules/events'
+import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { Icon, type IconName } from './icons'
-import type { Court, Role, Spell } from '../../engine/rules/types'
+import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
   onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice) => void
@@ -21,6 +23,12 @@ const COURTS: { court: Court; name: string; icon: IconName; text: string }[] = [
 
 /** Rounds before a cast spell returns, when recharging is on. */
 const RECHARGE_ROUNDS = 8
+
+const CYCLES: { id: CycleId; name: string; text: string }[] = [
+  { id: 'standard', name: 'Standard', text: 'An 8-round day.' },
+  { id: 'swift', name: 'Swift', text: 'A 6-round day.' },
+  { id: 'long', name: 'Long', text: 'A 10-round day.' },
+]
 
 const LEVEL_ICON: Record<Difficulty, IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
@@ -39,6 +47,11 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
   const [spellMode, setSpellMode] = useState<'classic' | 'loadout'>('classic')
   const [loadout, setLoadout] = useState<Spell[]>([])
   const [recharge, setRecharge] = useState(false)
+  const [winMode, setWinMode] = useState<MatchMode>('beacons')
+  const [events, setEvents] = useState(false)
+  const [showdown, setShowdown] = useState(true)
+  const [cycle, setCycle] = useState<CycleId>('standard')
+  const [reverse, setReverse] = useState(false)
   const board = boardById(boardId)
   const ready = (mode !== 'draft' || draftProblem(roles) === null) && (spellMode === 'classic' || loadoutProblem(court, loadout) === null)
   const summary = {
@@ -92,6 +105,27 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
       </div>
       {spellMode === 'loadout' && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} />}
       <label className="recharge"><input type="checkbox" checked={recharge} onChange={() => setRecharge((r) => !r)} /> Spells recharge after {RECHARGE_ROUNDS} rounds</label>
+      <h3>Win condition</h3>
+      <div className="choices row">
+        {(Object.keys(MODE_INFO) as MatchMode[]).map((m) => (
+          <button key={m} className={`choice${winMode === m ? ' on' : ''}`} onClick={() => setWinMode(m)}>
+            <strong>{MODE_INFO[m].name}</strong>
+            <span>{MODE_INFO[m].text}</span>
+          </button>
+        ))}
+      </div>
+      <h3>Light</h3>
+      <div className="choices row">
+        {CYCLES.map((c) => (
+          <button key={c.id} className={`choice${cycle === c.id ? ' on' : ''}`} onClick={() => setCycle(c.id)}>
+            <strong>{c.name}</strong>
+            <span>{c.text}</span>
+          </button>
+        ))}
+      </div>
+      <label className="recharge"><input type="checkbox" checked={reverse} onChange={() => setReverse((r) => !r)} /> The light starts running the other way</label>
+      <label className="recharge"><input type="checkbox" checked={events} onChange={() => setEvents((e) => !e)} /> Day events (Solar Flare, Gloaming, Fog, Blight)</label>
+      <label className="recharge"><input type="checkbox" checked={showdown} onChange={() => setShowdown((d) => !d)} /> Eclipse showdown: the outer squares turn deadly, closing in on the centre</label>
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (
@@ -109,6 +143,7 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
           mode, board: boardId, roles,
           loadout: spellMode === 'loadout' ? loadout : undefined,
           recharge: recharge ? RECHARGE_ROUNDS : undefined,
+          winMode, events, showdown, cycle, reverse,
         })}><Icon name="play" />Start</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>

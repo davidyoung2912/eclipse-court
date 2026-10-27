@@ -1,8 +1,9 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
-import type { Action, Court, GameState, MatchConfig, Pos, Role, Spell } from './rules/types'
+import type { Action, Court, GameState, MatchConfig, MatchMode, Pos, Role, Spell } from './rules/types'
 import { ALL_SPELLS } from './rules/spells'
 
+const MODES: readonly MatchMode[] = ['beacons', 'leader', 'score', 'hill']
 const ROLES: readonly Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
 
 /** Bumped whenever the encoding changes, so old saves and links are recognised and refused cleanly. */
@@ -91,7 +92,9 @@ const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   (c.blocked === undefined || (Array.isArray(c.blocked) && c.blocked.every(validPos))) &&
   (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
-  (c.recharge === undefined || isNum(c.recharge)) && (c.passives === undefined || typeof c.passives === 'boolean')
+  (c.recharge === undefined || isNum(c.recharge)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
+  (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) &&
+  (['events', 'showdown', 'reverse'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */
 export function decodeRecord(code: string): GameRecord | null {

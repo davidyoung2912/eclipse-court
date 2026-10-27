@@ -13,7 +13,8 @@
     "sim": "node scripts/run-sim.mjs sim",
     "soak": "node scripts/run-sim.mjs soak",
     "draft": "node scripts/run-sim.mjs draft",
-    "courts": "node scripts/run-sim.mjs courts"
+    "courts": "node scripts/run-sim.mjs courts",
+    "modes": "node scripts/run-sim.mjs modes"
   },
   "dependencies": {
     "react": "^19.3.1",

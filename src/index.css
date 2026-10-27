@@ -35,6 +35,8 @@ body {
 
 .hud { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; }
 .hud-round { display: flex; flex-direction: column; font-weight: 600; }
+.hud-note { font-size: 0.72rem; font-weight: 400; opacity: 0.85; max-width: 62vw; line-height: 1.25; }
+.doom { fill: #b3202a; opacity: 0.38; pointer-events: none; }
 .turn { font-size: 0.8rem; font-weight: 400; }
 .turn-solari { color: var(--solari-gold); }
 .turn-umbral { color: var(--umbral-violet); }

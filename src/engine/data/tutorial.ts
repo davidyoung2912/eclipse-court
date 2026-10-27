@@ -65,12 +65,12 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     kind: 'info',
     title: '11. How to win',
-    text: 'Hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy piece. Beacons also heal whoever stands on them, so they are worth fighting for.',
+    text: 'In the classic game, hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy piece. Beacons also heal whoever stands on them. Skirmish adds other goals (capture the Leader, a beacon score race, hold the centre); the line under the round counter shows yours.',
   },
   {
     kind: 'end',
     title: 'The Eclipse',
-    text: 'At round 30 the Eclipse falls: the shifting light freezes at dusk, spells fall silent and any piece off a beacon loses 1 HP every round. If nobody has won by round 50, the court holding more beacons (then more total HP) wins. Good luck.',
+    text: 'At round 30 the Eclipse falls: the shifting light freezes at dusk, spells fall silent and any piece off a beacon loses 1 HP every round. With the showdown rule, red squares hurt 3 HP a round and the safe zone shrinks to the centre. Otherwise, if nobody has won by round 50, the court holding more beacons (then more total HP) wins. Good luck.',
   },
 ]
 

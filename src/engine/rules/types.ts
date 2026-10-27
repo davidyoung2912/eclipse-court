@@ -55,6 +55,12 @@ export interface Placement {
   y: number
 }
 
+/** How a match is won: all beacons, the enemy Leader, a beacon score race, or holding the centre. */
+export type MatchMode = 'beacons' | 'leader' | 'score' | 'hill'
+
+/** A day event: one of these bends the rules for a couple of rounds. */
+export type DayEvent = 'flare' | 'gloaming' | 'fog' | 'blight'
+
 /** Everything that describes how a match is set up and paced; plain data, so it can be saved and shared. */
 export interface MatchConfig {
   seed: number
@@ -79,6 +85,14 @@ export interface MatchConfig {
   recharge?: number
   /** Court passives tied to the light (Solari fliers reach further in full light, Umbral regenerate in the dark); off when absent. */
   passives?: boolean
+  /** How the match is won; Beacons when absent. */
+  mode?: MatchMode
+  /** A day event strikes at the start of each day after the first (decided by the seed). */
+  events?: boolean
+  /** From the Eclipse on, the outer squares turn deadly, closing in on the centre. */
+  showdown?: boolean
+  /** The light starts out running the other way round. */
+  reverse?: boolean
 }
 
 /** A spell cast earlier, waiting to return to its Leader. */
@@ -107,6 +121,10 @@ export interface GameState {
   lastCast: Record<Court, Spell | null>
   /** Rounds for which the light is held where it is. */
   hold: number
+  /** Score Race points: beacons held at the end of each round, added up. */
+  score: Record<Court, number>
+  /** King of the Hill: consecutive turns each court has ended holding the centre. */
+  streak: Record<Court, number>
   winner: Court | 'draw' | null
   rng: number
   lastDuel: DuelRecord | null

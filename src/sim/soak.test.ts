@@ -3,6 +3,7 @@ import { MATCHUP_DATA } from '../engine/data/matchupData'
 import { matchup } from '../engine/data/matchups'
 import { estimateOdds } from '../engine/reducer'
 import { courtGames, reportOn as courtReport, winShape } from './courts'
+import { modeGames, MODES, reportOn as modeReport } from './modes'
 import { draftGames, reportOn } from './draft'
 import { checkInvariants, playGame } from './game'
 import { COURTS } from '../engine/rules/board'
@@ -81,4 +82,16 @@ describe('loadout games', () => {
     const r = playGame(1, 'easy', 'easy')
     expect(['beacons', 'elimination', 'adjudication']).toContain(winShape(r.state))
   }, 60_000)
+})
+
+describe('match modes', () => {
+  it('finish every mode with events and the showdown, well inside the round limit', () => {
+    for (const mode of MODES) {
+      const results = modeGames(3, { mode, events: true, showdown: true }, 4)
+      expect(results.flatMap((r) => r.problems)).toEqual([])
+      const report = modeReport(results)
+      expect(report.unfinished).toBe(0)
+      expect(report.atLimit).toBe(0)
+    }
+  }, 240_000)
 })

@@ -147,6 +147,8 @@ Delivers recommendations 2 and 3.
 
 ### E4. Match modes, events and the Eclipse showdown (≈2–3 days)
 
+**Status: done.** Modes (`config.mode`): Beacons, Leader Capture, Score Race (beacons held are scored each round, first to 20) and King of the Hill (end 5 turns in a row on the centre; the Hill opens at rising light because at full dark the first sitter could not be dislodged). Day events (`config.events`) are a pure function of seed and round (`rules/events.ts`): from day two, a Solar Flare, Gloaming, Fog or Blight lasts 2 rounds from dawn, none after the Eclipse. Cycles: Standard 8, Swift 6, Long 10, plus a reversed start. Showdown (`config.showdown`): from the Eclipse the safe radius is 3, 2, 2, 1, 1, 0 and anything outside takes 3 HP at round end. All of it is optional in the config, so old codes still replay. `npm run modes` (20 games per mode, showdown on): Beacons median round 38 (longest 39, none at the cap; 51 and 11 of 12 at the cap without it), Leader Capture 35, Score Race 9, Hill 5. The AI's first-mover/light bias is visible in the win split (Umbral 15 of 20 in Leader Capture), a candidate for E8 tuning. Skirmish setup has the new options (showdown on by default); the tutorial mentions them.
+
 Delivers recommendations 5 and 6 and the pacing fix.
 
 - Win conditions as pluggable rules: Beacons, Leader Capture, Score Race (beacons score per round), King of the Hill. Selection in setup; the `evaluate` function and win text follow the mode.

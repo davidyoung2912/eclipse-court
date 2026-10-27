@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ROLE_NAMES } from '../../engine/data/roster'
-import { allSquares, isBeacon, isBlocked, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
+import { allSquares, CENTER, chebyshev, isBeacon, isBlocked, isCycling, ringOf, samePos, SIZE } from '../../engine/rules/board'
+import { safeRadius } from '../../engine/rules/events'
 import { squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece, Pos } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
@@ -54,6 +55,7 @@ function HintGhost({ piece, from, to, flip }: { piece: Piece; from: Pos; to: Pos
 export function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
+  const radius = safeRadius(state)
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (
     <svg className="board" viewBox={`0 0 ${SIZE} ${SIZE}`} role="grid">
@@ -82,6 +84,7 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
               <rect key={rippleKey} x={cx - 0.5} y={cy - 0.5} width={1} height={1} className={`ripple ${lum >= 0 ? 'lit' : 'dim'}`}
                 style={{ animationDelay: `${ringOf(p) * 70}ms` }} />
             )}
+            {radius !== null && chebyshev(p, CENTER) > radius && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="doom" />}
             {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
             {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
