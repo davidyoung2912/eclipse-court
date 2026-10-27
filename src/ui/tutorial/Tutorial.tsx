@@ -29,18 +29,23 @@ export function Tutorial({ onExit }: Props) {
   const [state, setState] = useState<GameState>(tutorialStart)
   const [step, setStep] = useState(0)
   const [selected, setSelected] = useState(false)
+  /** The piece whose card an `info` step is showing, as in play when a piece is tapped off-turn. */
+  const [inspectId, setInspectId] = useState<string | null>(null)
   const [duel, setDuel] = useState<Duel>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
   const [outcome, setOutcome] = useState<DuelOutcome | null>(null)
   const current = TUTORIAL_STEPS[step]
   const knight = state.pieces.find((p) => p.id === TUTORIAL_KNIGHT) ?? null
   const foe = pieceAt(state, TUTORIAL_FOE_AT)
+  const inspected = state.pieces.find((p) => p.id === inspectId)
+  const shown = selected ? knight : inspected ?? null
   const targets = casting ? spellTargets(state, 'solari', casting) : null
 
   /** Play the scripted Umbral reply: it simply passes, which ends the round. */
   const next = (s: GameState) => {
     setState(s.winner ? s : reduce(s, { type: 'pass' }))
     setSelected(false)
+    setInspectId(null)
     setDuel(null)
     setCasting(null)
     setStep((n) => n + 1)
@@ -54,6 +59,10 @@ export function Tutorial({ onExit }: Props) {
 
   const onSquare = (p: Pos) => {
     if (duel) return
+    if (current.kind === 'info' || current.kind === 'end') {
+      const occ = pieceAt(state, p)
+      return setInspectId(occ ? occ.id : null)
+    }
     if (current.kind === 'move') {
       if (knight && samePos(p, knight.pos)) return setSelected(true)
       if (selected && samePos(p, TUTORIAL_STEP_TO)) {
@@ -77,7 +86,7 @@ export function Tutorial({ onExit }: Props) {
   return (
     <main className="app tutorial">
       <Dial state={state} />
-      <Board state={state} selected={selected ? knight : null} moves={moves} onSquare={onSquare} />
+      <Board state={state} selected={selected ? knight : (inspected ?? null)} moves={moves} onSquare={onSquare} />
       {duel === 'confirm' && knight && foe && (
         <AttackConfirm attacker={knight} defender={foe} live luminance={squareLuminance(state, foe.pos)}
           odds={estimateOdds(knight, foe, squareLuminance(state, foe.pos))}
@@ -92,7 +101,7 @@ export function Tutorial({ onExit }: Props) {
         <DuelResult attacker={knight} defender={foe} outcome={outcome}
           onContinue={() => next(reduce(state, { type: 'move', pieceId: TUTORIAL_KNIGHT, to: TUTORIAL_FOE_AT, duel: outcome }))} />
       )}
-      {selected && knight && <PieceCard state={state} human="solari" piece={knight} hint="" />}
+      <PieceCard state={state} human="solari" piece={shown} hint="Tap any piece to read its card." />
       <footer className="tray">
         <section className="lesson" aria-live="polite">
           <h2>{current.title}</h2>
@@ -101,7 +110,7 @@ export function Tutorial({ onExit }: Props) {
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
           <button onClick={onExit}>{current.kind === 'end' ? <><Icon name="back" />Back</> : <><Icon name="skip" />Skip</>}</button>
-          {current.kind === 'info' && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got It</button>}
+          {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setStep(step + 1) }}><Icon name="check" />Got It</button>}
           {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>
       </footer>

@@ -101,9 +101,9 @@ export function Board({ state, selected, moves, targetIds = [], onSquare, focus,
         const { cx, cy } = toScreen(pc.pos, flip)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id)
         return (
-          <g key={pc.id} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
+          <g key={pc.id} aria-label={`${ROLE_NAMES[pc.court][pc.role]} ${pc.hp}/${pc.maxHp}`} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
             className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
-            <title>{ROLE_NAMES[pc.court][pc.role]} {pc.hp}/{pc.maxHp}</title>
+            
             <circle className="halo" r={0.4} />
             <circle className="ring" r={0.4} />
             <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
