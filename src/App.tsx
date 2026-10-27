@@ -77,7 +77,7 @@ type Screen =
   | { name: 'paste' }
   /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
   | { name: 'online' }
-  | { name: 'lobby'; challenge?: ChallengeCode; offer?: string }
+  | { name: 'lobby'; challenge?: ChallengeCode; offer?: string; /** A dropped game to pick up again, with the game so far. */ resume?: { session: Session; record: GameRecord } }
   | {
     name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
     /** Two people share the device; `human` and `difficulty` are then unused. */
@@ -317,7 +317,8 @@ export default function App() {
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
 
   if (screen.name === 'lobby')
-    return <Lobby key={screen.offer ?? 'host'} challenge={screen.challenge} offer={screen.offer}
+    return <Lobby key={screen.offer ?? 'host'} challenge={screen.challenge} offer={screen.offer} resume={screen.resume?.session}
+      onResumed={(session) => setScreen({ name: 'game', human: session.view().me!, difficulty: 'normal', online: session, record: { initial: screen.resume!.record.initial, actions: [...session.view().actions] }, campaignIndex: null })}
       onStart={(session) => {
         const view = session.view()
         setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online: session, record: { initial: view.state!, actions: [] }, campaignIndex: null })
@@ -514,6 +515,7 @@ export default function App() {
           : versusAi(human, difficulty, daily ? today.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
+        onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}
         onSave={(progress) => {

@@ -17,6 +17,12 @@ export type Message =
   /** An action: its number (the count of actions played before it), its packed form, and a checksum of the state after it. */
   | { t: 'act'; n: number; a: Packed; sum: string }
   | { t: 'resign' }
+  /** Sent now and then so a silent connection can be told from a quiet opponent. */
+  | { t: 'beat' }
+  /** The sender is leaving on purpose. */
+  | { t: 'bye' }
+  /** After a reconnect: how many actions the sender has played and the checksum of the state they leave. */
+  | { t: 'sync'; n: number; sum: string }
 
 export const hello = (): Message => ({ t: 'hello', v: PROTOCOL_VERSION, fmt: FORMAT_VERSION })
 
@@ -34,6 +40,9 @@ export function decodeMessage(text: string): Message | null {
     if (m.t === 'start' && typeof m.challenge === 'string') return { t: 'start', challenge: m.challenge }
     if (m.t === 'ready') return { t: 'ready' }
     if (m.t === 'resign') return { t: 'resign' }
+    if (m.t === 'beat') return { t: 'beat' }
+    if (m.t === 'bye') return { t: 'bye' }
+    if (m.t === 'sync' && Number.isInteger(m.n) && (m.n as number) >= 0 && typeof m.sum === 'string') return { t: 'sync', n: m.n as number, sum: m.sum }
     if (m.t === 'act' && Number.isInteger(m.n) && (m.n as number) >= 0 && Array.isArray(m.a) && typeof m.sum === 'string')
       return { t: 'act', n: m.n as number, a: m.a as Packed, sum: m.sum }
     return null

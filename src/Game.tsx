@@ -3,7 +3,7 @@ import { autoDuel } from './ai/autoDuel'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
-import type { Session } from './net/session'
+import type { EndReason, Session } from './net/session'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
 import { estimateOdds, reduce } from './engine/reducer'
@@ -51,6 +51,8 @@ interface Props {
   /** Called after every action with the game so far, or null once it has ended. */
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord) => void
+  /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
+  onReconnect?: (record: GameRecord) => void
 }
 
 /** A capture waiting to be settled; `byAi` means the human is the defender. */
@@ -76,7 +78,14 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit }: Props) {
+const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
+  'opponent-left': 'Your opponent left',
+  desync: 'The games disagreed',
+  illegal: 'The games disagreed',
+  version: 'Different game versions',
+}
+
+export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const [net, setNet] = useState(() => session?.view() ?? null)
@@ -126,6 +135,10 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
   /** The connection broke, or the other build disagreed, before the game was decided. */
   const dropped = !!net && net.status === 'over' && net.reason !== 'finished' && !winner
   const ended = !!winner || failed || dropped
+  /** Online and playing, but the other side cannot be heard: the game waits for a new connection. */
+  const lost = online && !ended && net?.status === 'playing' && net.link === 'down'
+  /** The two games disagreed, which is worth a bug report. */
+  const disagreed = dropped && (net?.reason === 'desync' || net?.reason === 'illegal')
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
   const targets = useMemo(
@@ -342,7 +355,7 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
   )
   const result = puzzleLimit !== undefined
     ? winner === human ? 'Solved' : 'Not solved'
-    : dropped ? 'Connection lost'
+    : dropped ? DROPPED_TEXT[net?.reason ?? 'closed'] ?? 'Connection lost'
     : winner === 'draw' ? 'Draw'
     : hotSeat ? `${COURT_NAME[winner ?? 'solari']} wins`
     : winner === human ? 'Victory' : 'Defeat'
@@ -394,11 +407,22 @@ export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, on
           {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
         </div>
       )}
+      {lost && (
+        <div className="confirm result" role="dialog" aria-label="Connection lost">
+          <p className="confirm-title">Connection lost</p>
+          <p>The game is kept. Make a new connection with the same player to carry on.</p>
+          <div className="buttons">
+            {onReconnect && <button className="primary" onClick={() => onReconnect({ initial: record.initial, actions: [...net!.actions] })}><Icon name="chain" />Reconnect</button>}
+            <button onClick={() => { session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />Resign</button>
+          </div>
+        </div>
+      )}
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           <p className="confirm-title">{result}</p>
           <div className="buttons">
             {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
+            {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
             {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
             <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>

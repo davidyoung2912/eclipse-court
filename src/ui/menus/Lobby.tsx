@@ -17,6 +17,9 @@ interface Props {
   offer?: string
   /** Both players are connected and the match is known: play it. The game then owns the session. */
   onStart: (session: Session) => void
+  /** Picking a dropped game back up: the session to reconnect, and what to do once the link is back. */
+  resume?: Session
+  onResumed?: (session: Session) => void
   onBack: () => void
 }
 
@@ -34,8 +37,8 @@ type Step =
 const copy = (text: string) => navigator.clipboard?.writeText(text).catch(() => {})
 
 /** Where two players find each other: the host shows an offer and takes an answer, the guest does the reverse. */
-export function Lobby({ challenge, offer, onStart, onBack }: Props) {
-  const host = !!challenge
+export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: Props) {
+  const host = resume ? resume.role === 'host' : !!challenge
   const [step, setStep] = useState<Step>(host ? { name: 'making' } : { name: 'paste' })
   const [text, setText] = useState(offer ?? '')
   const [note, setNote] = useState<string | null>(null)
@@ -48,6 +51,10 @@ export function Lobby({ challenge, offer, onStart, onBack }: Props) {
 
   const begin = (transport: Parameters<typeof createSession>[0]['transport']) => {
     if (gone.current) return transport.close()
+    if (resume) {
+      resume.reconnect(transport)
+      return setStep({ name: 'connecting' })
+    }
     session.current = createSession({
       transport, role: host ? 'host' : 'guest', challenge,
       onChange: (view) => {
@@ -72,6 +79,15 @@ export function Lobby({ challenge, offer, onStart, onBack }: Props) {
   // The host makes its offer on arrival.
   useEffect(() => {
     gone.current = false
+    session.current = resume ?? null
+    const stop = resume?.listen((view) => {
+      if (gone.current || started.current) return
+      if (view.status === 'over') setStep({ name: 'failed', text: failure(view) })
+      else if (view.link === 'up') {
+        started.current = true
+        onResumed?.(resume)
+      }
+    })
     if (host) {
       hostOffer().then((o) => {
         if (gone.current) return o.cancel()
@@ -80,6 +96,7 @@ export function Lobby({ challenge, offer, onStart, onBack }: Props) {
       }, fail)
     }
     return () => {
+      stop?.()
       gone.current = true
       pending.current?.cancel()
       if (!started.current) session.current?.close()
@@ -113,7 +130,7 @@ export function Lobby({ challenge, offer, onStart, onBack }: Props) {
   return (
     <main className="app menu">
       <PageArt icon="chain" />
-      <h2>{host ? 'Host a Game' : 'Join a Game'}</h2>
+      <h2>{resume ? 'Reconnect' : host ? 'Host a Game' : 'Join a Game'}</h2>
       {step.name === 'making' && <p className="tagline">Making your connection code…</p>}
       {step.name === 'offer' && <>
         <p className="tagline">Send your friend the link or code. They will send back an answer code; paste it here.</p>
@@ -161,6 +178,8 @@ export function Lobby({ challenge, offer, onStart, onBack }: Props) {
 function failure(view: SessionView): string {
   switch (view.reason) {
     case 'version': return 'Your friend is running a different version of the game. Both of you should reload the page.'
+    case 'opponent-left': return 'Your friend left the game.'
+    case 'desync': case 'illegal': return 'The two games no longer agree, so the match cannot go on.'
     case 'closed': return `The connection closed. ${NAT_HELP}`
     default: return 'The connection ended unexpectedly.'
   }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { matchConfig } from '../engine/data/matchConfig'
 import { encodeChallenge, type Challenge } from '../engine/challenge'
 import { newGame, reduce } from '../engine/reducer'
@@ -248,11 +248,11 @@ describe('ending', () => {
     expect(host.view()).toMatchObject({ status: 'over', reason: 'opponent-resigned', winner: 'solari' })
   })
 
-  it('a dropped connection ends the other side', async () => {
+  it('leaving tells the other side', async () => {
     const { host, guest } = await connected()
     guest.close()
     await settle()
-    expect(host.view()).toMatchObject({ status: 'over', reason: 'closed', winner: null })
+    expect(host.view()).toMatchObject({ status: 'over', reason: 'opponent-left', winner: null })
     expect(guest.play({ type: 'pass' })).toBe(false)
   })
 
@@ -292,5 +292,126 @@ describe('protocol', () => {
     guest.play(firstMove(guest.view().state!))
     await settle()
     expect(seen).toEqual([1])
+  })
+})
+
+describe('resilience', () => {
+  afterEach(() => vi.useRealTimers())
+
+  /** A host and guest whose host-to-guest messages can be swallowed, to lose an action in flight. */
+  async function lossy() {
+    const [a, b] = loopbackPair()
+    const state = { lose: false }
+    const wire = { ...a, send: (t: string) => !state.lose && a.send(t) }
+    const host = createSession({ transport: wire, role: 'host', challenge })
+    const guest = createSession({ transport: b, role: 'guest' })
+    await settle()
+    return { host, guest, a, state }
+  }
+
+  const rejoin = async (host: Session, guest: Session) => {
+    const [a, b] = loopbackPair()
+    host.reconnect(a)
+    guest.reconnect(b)
+    await settle()
+  }
+
+  it('a dropped connection keeps the game and holds play until reconnected', async () => {
+    const { host, guest, a } = await lossy()
+    host.play(firstMove(host.view().state!))
+    await settle()
+    a.close()
+    await settle()
+    expect(host.view()).toMatchObject({ status: 'playing', link: 'down' })
+    expect(guest.view()).toMatchObject({ status: 'playing', link: 'down' })
+    expect(guest.play(firstMove(guest.view().state!))).toBe(false)
+    await rejoin(host, guest)
+    expect(host.view().link).toBe('up')
+    expect(guest.view().link).toBe('up')
+    expect(guest.play(firstMove(guest.view().state!))).toBe(true)
+    await settle()
+    expect(host.view().actions).toHaveLength(2)
+  })
+
+  it('an action lost in flight is resent on reconnect', async () => {
+    const { host, guest, a, state } = await lossy()
+    state.lose = true
+    host.play(firstMove(host.view().state!))
+    await settle()
+    expect(guest.view().actions).toHaveLength(0)
+    a.close()
+    await settle()
+    await rejoin(host, guest)
+    expect(guest.view()).toMatchObject({ link: 'up', status: 'playing' })
+    expect(guest.view().actions).toEqual(host.view().actions)
+    expect(stateSum(guest.view().state!)).toBe(stateSum(host.view().state!))
+  })
+
+  it('a side that is behind waits for the other to resend', async () => {
+    const { host, guest, a, state } = await lossy()
+    state.lose = true
+    host.play(firstMove(host.view().state!))
+    a.close()
+    await settle()
+    const [x, y] = loopbackPair()
+    guest.reconnect(y)
+    await settle()
+    expect(guest.view().link).toBe('down')
+    host.reconnect(x)
+    await settle()
+    expect(guest.view().link).toBe('up')
+    expect(guest.view().actions).toHaveLength(1)
+  })
+
+  it('games that disagree at reconnect end as a desync', async () => {
+    const { host, guest, a } = await lossy()
+    host.play(firstMove(host.view().state!))
+    await settle()
+    a.close()
+    await settle()
+    const [x, y] = loopbackPair()
+    host.reconnect(x)
+    y.onMessage(() => {})
+    y.send(encodeMessage({ t: 'sync', n: 1, sum: 'deadbeef' }))
+    await settle()
+    expect(host.view()).toMatchObject({ status: 'over', reason: 'desync' })
+    expect(guest.view().status).toBe('playing')
+  })
+
+  it('a silent connection is noticed by the heartbeat', async () => {
+    vi.useFakeTimers()
+    const [a, b] = loopbackPair()
+    const wire = { ...b, send: () => {} }
+    const host = createSession({ transport: a, role: 'host', challenge, beatMs: 1000, lostMs: 3000 })
+    const guest = createSession({ transport: wire, role: 'guest', beatMs: 1000, lostMs: 3000 })
+    await vi.advanceTimersByTimeAsync(0)
+    b.send(encodeMessage(hello()))
+    await vi.advanceTimersByTimeAsync(0)
+    b.send(encodeMessage({ t: 'ready' }))
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(host.view()).toMatchObject({ status: 'playing', link: 'up' })
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(host.view()).toMatchObject({ status: 'playing', link: 'down' })
+    host.close()
+    guest.close()
+  })
+
+  it('beats keep a quiet but live connection up', async () => {
+    vi.useFakeTimers()
+    const [a, b] = loopbackPair()
+    const host = createSession({ transport: a, role: 'host', challenge, beatMs: 1000, lostMs: 3000 })
+    const guest = createSession({ transport: b, role: 'guest', beatMs: 1000, lostMs: 3000 })
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(host.view().link).toBe('up')
+    expect(guest.view().link).toBe('up')
+    host.close()
+  })
+
+  it('reports the game so far', async () => {
+    const { host } = await connected()
+    host.play(firstMove(host.view().state!))
+    const report = JSON.parse(host.report())
+    expect(report).toMatchObject({ role: 'host', link: 'up' })
+    expect(report.actions).toHaveLength(1)
   })
 })

@@ -1,6 +1,6 @@
 # Online play: two players, peer to peer over WebRTC, no game server
 
-**Status: N1 to N4 done; N5 and N6 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
+**Status: N1 to N5 done; N6 (optional) not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
 
 ## Decisions
 - **No backend.** A WebRTC `RTCDataChannel` carries the moves. Signaling (swapping the SDP offer/answer) is done by hand: the host shows a code or link, the guest pastes an answer code back. STUN only, using public servers. No TURN, so a minority of pairs behind symmetric NATs or corporate networks cannot connect; the lobby says so plainly and suggests another network.
@@ -18,7 +18,7 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - `start { challenge code }`: host to guest, the match to play. The guest replies `ready`.
 - `act { n, action, sum }`: action number `n` (0-based, must equal the count of actions played), the action packed as in `serialize.ts`, and `sum`, a checksum of the state after it.
 - `resign`, `bye`.
-- `sync { record code }` (N5): resend the whole game after a reconnect.
+- `beat` (heartbeat), `bye` (leaving on purpose), and `sync { n, sum }` (N5): after a reconnect each side states its action count and checksum; whoever is ahead resends the missing `act`s, equal counts with different sums are a desync.
 
 `Session` (pure, no DOM) holds the `GameState`, the local court and the action count. It refuses: an action out of turn, a wrong `n`, a rules refusal, a duel mismatch, a checksum mismatch. Refusals end the game as a desync rather than guessing.
 
@@ -27,7 +27,7 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - **N2 (done): WebRTC transport and manual signaling.** `rtc.ts` wraps `RTCPeerConnection` and one data channel with public STUN, waits for ICE gathering to finish, and produces a single offer or answer blob. `signal.ts` squeezes the SDP into a short URL-safe code (keep ufrag, pwd, fingerprint and candidates; drop the rest) and rebuilds it, with round-trip tests on sample SDP. Links of the form `#j=<offer>` open the guest flow.
 - **N3 (done): lobby UI.** A Battle menu entry "Play online": host (pick the match with the Skirmish controls, show a code, link and QR-style copy button, paste the answer) or join (paste or open a link, show the answer code to send back). Connection states, a timeout, and a clear failed-to-connect message that explains the NAT limitation.
 - **N4 (done): Game integration.** An `online` controller kind next to `human` and AI, so `Game` plays the remote court by feeding received actions through `play`, and sends the local court's actions. The turn banner, board orientation (your court at the bottom), auto-duel for captures with the result dialog, spells, growth choices (perk and promotion travel inside the move), and the game-over flow. Undo, hint and pass screen are hidden online. Saved games and stats record online games separately or not at all (decide here).
-- **N5: resilience.** Disconnect detection (heartbeat), a reconnect flow that re-handshakes and resyncs from a record code and checks both sides agree, resign and "leave" messages, an opponent-left banner, and desync reporting with a copyable record for bug reports.
+- **N5 (done): resilience.** Disconnect detection (heartbeat), a reconnect flow that re-handshakes and resyncs from a record code and checks both sides agree, resign and "leave" messages, an opponent-left banner, and desync reporting with a copyable record for bug reports.
 - **N6 (optional): easier signaling and live duels.** A pluggable signaler (a short room code through PeerJS's public broker or a small Worker) so joining is one step, and, if wanted, a lockstep live duel where both peers exchange inputs per tick against the deterministic duel engine.
 
 ## Open questions
@@ -56,3 +56,10 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - `Lobby` calls `onStart(session)` once playing and then leaves the session open on unmount. `App` opens `game` with `online: session`, `human: view.me`, never saves it, never touches stats, and on exit closes the session and returns to the Online menu.
 - `Game` takes `session`. Local actions go through `session.play` (which settles any duel) and the settled action is what the history keeps. Remote actions are stepped in by an effect, one per render and only while no dialog is open; a remote capture shows the `DuelResult` dialog first. Duels are auto-settled with the hot-seat arguments, which match `settleDuel`.
 - Hidden online: undo, hint, Auto-duel. Quit becomes Resign mid-game. A resignation or a dropped connection ends the game ("Connection lost" if undecided). The AI hook is off online. Turn clocks stay local and advisory.
+
+## N5 notes
+- `Session` gained `link` ('up' | 'down') in the view, `role`, `reconnect(transport)` and `report()`. A closed or silent transport mid-game drops the link instead of ending the game (before the match starts it still ends as `closed`). Heartbeat: `beat` every 4 s, link down after 12 s of silence (`beatMs`/`lostMs` options). `play` is refused while the link is down.
+- `reconnect` swaps in a new transport (the old one's handlers are ignored), sends `sync`, and the link comes back up once both sides agree and any missing actions have arrived. Checks use per-action checksums kept in the session.
+- `close()` sends `bye`; the other side ends with `opponent-left`. `report()` is JSON (reason, role, challenge code, packed actions, checksum) for the Copy Report button shown on a desync.
+- UI: Game shows a "Connection lost" dialog with Reconnect (opens `Lobby` with `resume`: the same host/guest roles re-exchange codes, then the game remounts from the session's actions) or Resign. End texts for opponent left and disagreement.
+- Rematch is still not done (belongs with N6).
