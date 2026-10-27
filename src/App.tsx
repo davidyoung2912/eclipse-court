@@ -19,10 +19,11 @@ import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './ai/personality'
-import { dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordTournament, saveProgress, STAR_TEXT, starsEarned, summarise } from './progress'
+import { dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import type { Court, GameState } from './engine/rules/types'
-import { Campaign } from './ui/menus/Campaign'
+import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
+import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
 import { Daily } from './ui/menus/Daily'
 import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
@@ -60,6 +61,8 @@ type Screen =
     series?: { wins: number; losses: number }
     /** A fight of the gauntlet run; the run itself is kept apart from the saved game. */
     gauntlet?: boolean
+    /** A scenario of the campaign's second tab: its index. */
+    scenario?: number
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -110,6 +113,7 @@ export default function App() {
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
   const [run, setRun] = useState(loadRun)
+  const [campaignTab, setCampaignTab] = useState<CampaignTab>('battles')
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
@@ -232,7 +236,16 @@ export default function App() {
       <Campaign
         progress={progress}
         report={report}
+        tab={campaignTab}
+        onTab={setCampaignTab}
         onBack={() => setScreen({ name: 'menu' })}
+        onPlayScenario={(i) => {
+          setReport([])
+          setScreen({
+            name: 'game', human: 'solari', difficulty: SCENARIOS[i].difficulty,
+            record: { initial: scenarioGame(SCENARIOS[i], Date.now()), actions: [] }, campaignIndex: null, scenario: i,
+          })
+        }}
         onPlay={(i, series) => {
           setReport([])
           const opponent = CAMPAIGN[i]
@@ -246,13 +259,13 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet, scenario } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !puzzle && !series && !gauntlet && campaignIndex === null && human === DAILY_COURT
+    const daily = !hotSeat && !puzzle && !series && !gauntlet && scenario === undefined && campaignIndex === null && human === DAILY_COURT
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
-    const transient = !!puzzle || !!series || !!gauntlet
+    const transient = !!puzzle || !!series || !!gauntlet || scenario !== undefined
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -274,7 +287,15 @@ export default function App() {
       const scored = stats && daily
         ? recordDaily(played, { date: today.date, won: summary.won, turns: summary.turns, lost: summary.lost })
         : null
-      const next = scored?.progress ?? played
+      let next = scored?.progress ?? played
+      const lines: string[] = []
+      if (scenario !== undefined && summary.won) {
+        const x = SCENARIOS[scenario]
+        const bits = STAR_WIN | (summary.lost === 0 ? STAR_FLAWLESS : 0) | (x.bonus.met(summary) ? STAR_SWIFT : 0)
+        const result = recordScenario(next, x.id, bits)
+        next = result.progress
+        lines.push(`Stars: Win${bits & STAR_FLAWLESS ? ', no pieces lost' : ''}${bits & STAR_SWIFT ? `, ${x.bonus.text.toLowerCase()}` : ''}.`, ...result.earned.map((a) => `Achievement: ${a.name}`))
+      }
       return {
         summary,
         progress: next,
@@ -283,6 +304,7 @@ export default function App() {
           ...(scored?.earned ?? []).map((a) => `Achievement: ${a.name}`),
           ...(stats && campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),
           ...earned.map((a) => `Achievement: ${a.name}`),
+          ...lines,
         ],
       }
     }
@@ -366,7 +388,8 @@ export default function App() {
           setProgress(done.progress)
           if (done.summary) saveProgress(done.progress)
           setReport(done.lines)
-          setScreen(daily ? { name: 'daily' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
+          if (scenario !== undefined) setCampaignTab('scenarios')
+          setScreen(daily ? { name: 'daily' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
     )
@@ -375,7 +398,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setCampaignTab('battles'); setScreen({ name: 'campaign' }) }} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }}
       dailyDone={{ match: !!dailyResult(progress, dailySeed()), puzzle: progress.puzzles.includes(PUZZLES[dailyPuzzleIndex()].id) }}
       onDailyPuzzle={() => {

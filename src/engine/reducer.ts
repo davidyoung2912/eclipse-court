@@ -2,7 +2,7 @@ import { DEFAULT_CONFIG, matchConfig } from './data/matchConfig'
 import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
 import { CENTER, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
-import { eventAt, HILL_TURNS, modeOf, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
+import { eventAt, HILL_TURNS, modeOf, objectiveRounds, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
 import { isStock, perkMods, promote, recordWin } from './rules/growth'
 import { duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
@@ -106,17 +106,19 @@ export function estimateOdds(attacker: Piece, defender: Piece, lum: number, samp
   return { attacker: a / samples, defender: d / samples, other: 1 - (a + d) / samples }
 }
 
-/** A side wiped out or, in Leader Capture, robbed of its Leader; both at once is a draw. */
+/** A side wiped out or, in Leader Capture, robbed of its Leader; both at once is a draw. A scenario ends when Solari's Leader falls. */
 function eliminationWinner(state: GameState): GameState['winner'] {
   const has = (c: Court, leaderOnly: boolean) => state.pieces.some((p) => p.court === c && (!leaderOnly || p.role === 'leader'))
   const leaderOnly = modeOf(state.config) === 'leader'
-  const solari = has('solari', leaderOnly)
+  const solari = has('solari', leaderOnly || !!state.config.objective)
   const umbral = has('umbral', leaderOnly)
   if (solari && umbral) return null
   return solari ? 'solari' : umbral ? 'umbral' : 'draw'
 }
 
-const holdsCentre = (state: GameState, court: Court) => pieceAt(state, CENTER)?.court === court
+/** The square whose holder builds a streak: the marked beacon of a Hold scenario, otherwise the centre. */
+const hillSquare = (config: MatchConfig) => (config.objective?.kind === 'hold' ? config.objective.at : CENTER)
+const holdsHill = (state: GameState, court: Court) => pieceAt(state, hillSquare(state.config))?.court === court
 
 /** Beacons held by each court. */
 function beaconsHeld(state: GameState): Record<Court, number> {
@@ -198,10 +200,24 @@ function adjudicate(state: GameState): GameState['winner'] {
 function evaluateWin(state: GameState, mover: Court, streak: number): GameState['winner'] {
   const eliminated = eliminationWinner(state)
   if (eliminated) return eliminated
+  const { objective } = state.config
+  if (objective) {
+    if (mover !== 'solari') return null
+    if (objective.kind === 'escort' && samePos(leaderOf(state, 'solari')?.pos ?? { x: -1, y: -1 }, objective.goal)) return 'solari'
+    if (objective.kind === 'hold' && streak >= objective.turns) return 'solari'
+    return null
+  }
   const mode = modeOf(state.config)
   if (mode === 'beacons' && state.config.beacons.every((b) => pieceAt(state, b)?.court === mover)) return mover
   if (mode === 'hill' && streak >= HILL_TURNS) return mover
   return null
+}
+
+/** A scenario that has run its course: Survive is won by lasting, the others lost by running out of rounds. */
+function objectiveWinner(state: GameState): GameState['winner'] {
+  const { objective } = state.config
+  if (!objective || state.round <= objectiveRounds(objective)) return null
+  return objective.kind === 'survive' ? 'solari' : 'umbral'
 }
 
 /** Score Race: the first court to the target wins, the higher score if both arrive together. */
@@ -214,7 +230,7 @@ function scoreWinner(state: GameState): GameState['winner'] {
 
 function finishTurn(state: GameState): GameState {
   const mover = state.turn
-  const streak = { ...state.streak, [mover]: holdsCentre(state, mover) ? state.streak[mover] + 1 : 0 }
+  const streak = { ...state.streak, [mover]: holdsHill(state, mover) ? state.streak[mover] + 1 : 0 }
   const winner = evaluateWin(state, mover, streak[mover])
   if (winner) return { ...state, streak, winner }
   // A Bind lasts until the bound court's own turn has passed; a Shroud until its caster's next turn.
@@ -225,7 +241,7 @@ function finishTurn(state: GameState): GameState {
   let next: GameState = { ...state, pieces, streak, turn: otherCourt(mover) }
   if (mover === 'umbral') {
     next = endRound(next)
-    next = { ...next, winner: eliminationWinner(next) ?? scoreWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
+    next = { ...next, winner: eliminationWinner(next) ?? scoreWinner(next) ?? objectiveWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
   }
   return next
 }

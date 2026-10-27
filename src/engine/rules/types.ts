@@ -67,6 +67,15 @@ export interface Placement {
 /** How a match is won: all beacons, the enemy Leader, a beacon score race, or holding the centre. */
 export type MatchMode = 'beacons' | 'leader' | 'score' | 'hill'
 
+/**
+ * A scenario's goal, always for Solari. Losing the Leader loses the game, and so does running out of rounds
+ * (except for Survive, where running out of rounds is the win).
+ */
+export type Objective =
+  | { kind: 'survive'; rounds: number }
+  | { kind: 'escort'; goal: Pos; limit: number }
+  | { kind: 'hold'; at: Pos; turns: number; limit: number }
+
 /** A day event: one of these bends the rules for a couple of rounds. */
 export type DayEvent = 'flare' | 'gloaming' | 'fog' | 'blight'
 
@@ -96,6 +105,8 @@ export interface MatchConfig {
   passives?: boolean
   /** How the match is won; Beacons when absent. */
   mode?: MatchMode
+  /** A scenario goal for Solari; it replaces `mode` as the way to win. */
+  objective?: Objective
   /** A day event strikes at the start of each day after the first (decided by the seed). */
   events?: boolean
   /** From the Eclipse on, the outer squares turn deadly, closing in on the centre. */

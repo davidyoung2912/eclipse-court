@@ -1,4 +1,4 @@
-import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, safeRadius, SCORE_TARGET } from '../../engine/rules/events'
+import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, objectiveRounds, safeRadius, SCORE_TARGET } from '../../engine/rules/events'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
 import { lumColor } from '../board/lumColor'
@@ -29,7 +29,12 @@ function hudNotes(state: GameState): string[] {
   const { config } = state
   const notes: string[] = []
   const mode = modeOf(config)
-  if (mode === 'leader') notes.push('Defeat the enemy Leader')
+  const { objective } = config
+  if (objective) {
+    const left = objectiveRounds(objective) - state.round + 1
+    notes.push(`${objectiveGoal(objective)} (${left} ${left === 1 ? 'round' : 'rounds'} left)`)
+    if (objective.kind === 'hold') notes.push(`Held ${state.streak.solari} of ${objective.turns} turns`)
+  } else if (mode === 'leader') notes.push('Defeat the enemy Leader')
   else if (mode === 'score') notes.push(`Score ${state.score.solari}–${state.score.umbral} of ${SCORE_TARGET}`)
   else if (mode === 'hill') notes.push(`Hill ${state.streak.solari}–${state.streak.umbral} of ${HILL_TURNS}`)
   const event = eventAt(config, state.round)

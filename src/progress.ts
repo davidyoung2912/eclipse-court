@@ -1,6 +1,7 @@
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
+import { SCENARIOS } from './engine/data/scenarios'
 import { dayIndex } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
 import type { Court } from './engine/rules/types'
@@ -9,7 +10,7 @@ const PROGRESS_KEY = 'eclipse-court:progress'
 /** The pre-E8 save: just the number of opponents beaten. */
 const LEGACY_KEY = 'eclipse-court:campaign'
 
-export const PROGRESS_VERSION = 4
+export const PROGRESS_VERSION = 5
 
 /** The three stars of a campaign battle, as bits so each is remembered on its own. */
 export const STAR_WIN = 1
@@ -72,6 +73,8 @@ export interface Progress {
   tournaments: number
   gauntlet: Gauntlet
   daily: Daily
+  /** Star bits earned in each scenario, by scenario id. */
+  scenarios: Record<string, number>
   /** The finished game most recently played, as a record code for the replay viewer. */
   last: string | null
 }
@@ -104,6 +107,7 @@ export const emptyProgress = (): Progress => ({
   tournaments: 0,
   gauntlet: { runs: 0, won: 0, best: 0 },
   daily: { last: null, streak: 0, best: 0 },
+  scenarios: {},
   last: null,
 })
 
@@ -141,6 +145,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'gauntlet', name: 'Court Eternal', text: 'Win a gauntlet run.', earned: (p) => p.gauntlet.won >= 1 },
   { id: 'streak-3', name: 'Three Days Running', text: 'Play the daily match three days in a row.', earned: (p) => p.daily.best >= 3 },
   { id: 'streak-7', name: 'A Week of Eclipses', text: 'Play the daily match seven days in a row.', earned: (p) => p.daily.best >= 7 },
+  { id: 'scenario-first', name: 'Against the Odds', text: 'Clear a scenario.', earned: (p) => Object.values(p.scenarios).some((b) => b & STAR_WIN) },
+  { id: 'scenario-all', name: 'Tactician', text: 'Clear every scenario.', earned: (p) => SCENARIOS.every((x) => (p.scenarios[x.id] ?? 0) & STAR_WIN) },
   { id: 'champion', name: 'Champion', text: 'Win a best-of-three tournament.', earned: (p) => p.tournaments >= 1 },
 ]
 
@@ -185,6 +191,13 @@ export function recordPuzzle(p: Progress, id: string, daily: boolean) {
 export function recordTournament(p: Progress, won: boolean) {
   return award({ ...p, tournaments: p.tournaments + (won ? 1 : 0) }, NO_GAME, p)
 }
+
+/** The progress after a scenario is won with `bits` of its stars; stars once earned are kept. */
+export function recordScenario(p: Progress, id: string, bits: number) {
+  return award({ ...p, scenarios: { ...p.scenarios, [id]: (p.scenarios[id] ?? 0) | bits } }, NO_GAME, p)
+}
+
+export const scenarioStars = (p: Progress) => SCENARIOS.reduce((n, x) => n + starCount(p.scenarios[x.id] ?? 0), 0)
 
 /** The progress after a gauntlet run ends at `stage` (the stage lost, or one past the last when won). */
 export function recordRun(p: Progress, stage: number, won: boolean) {
@@ -245,8 +258,8 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 export function migrate(raw: unknown, legacyCleared = 0): Progress {
   const fresh = emptyProgress()
   const o = (raw && typeof raw === 'object' ? raw : null) as Partial<Progress> | null
-  // Older versions only lack the gauntlet (2) and the daily record (2, 3), which then start empty.
-  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 3 && o.v !== 2)) {
+  // Older versions only lack the gauntlet (2), the daily record (2, 3) and the scenarios (2-4), which then start empty.
+  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 4 && o.v !== 3 && o.v !== 2)) {
     // Before E8 the only progress was how many opponents were beaten; each counts as a plain win.
     const n = Math.min(legacyCleared, CAMPAIGN.length)
     return { ...fresh, cleared: n, stars: fresh.stars.map((_, i) => (i < n ? STAR_WIN : 0)) }
@@ -260,6 +273,11 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     ? { date: d.date, won: d.won, turns: d.turns, lost: d.lost } : null
   const daily: Daily = last && isInt(o.daily?.streak) && isInt(o.daily?.best)
     ? { last, streak: o.daily!.streak, best: Math.max(o.daily!.best, o.daily!.streak) } : fresh.daily
+  const scenarios: Record<string, number> = {}
+  for (const x of SCENARIOS) {
+    const bits = (o.scenarios as Record<string, unknown> | undefined)?.[x.id]
+    if (isInt(bits) && (bits & 7) !== 0) scenarios[x.id] = bits & 7
+  }
   return {
     v: PROGRESS_VERSION,
     cleared: isInt(o.cleared) ? Math.min(o.cleared, CAMPAIGN.length) : 0,
@@ -270,6 +288,7 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     tournaments: isInt(o.tournaments) ? o.tournaments : 0,
     gauntlet,
     daily,
+    scenarios,
     last: typeof o.last === 'string' ? o.last : null,
   }
 }

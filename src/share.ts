@@ -2,7 +2,7 @@ import { decodeChallenge, encodeChallenge, type Challenge } from './engine/chall
 import type { GameRecord } from './engine/log'
 import { boardById } from './engine/data/boards'
 import { SETUP_INFO, type SetupMode } from './engine/data/setups'
-import { modeOf, MODE_INFO } from './engine/rules/events'
+import { modeOf, MODE_INFO, objectiveGoal } from './engine/rules/events'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 
 /** What a pasted link or code holds. */
@@ -66,7 +66,7 @@ export async function shareOrCopy(title: string, url: string, text?: string): Pr
 export function describeConfig({ config }: Challenge): string[] {
   const out = [
     `${SETUP_INFO[config.setup && config.setup in SETUP_INFO ? (config.setup as SetupMode) : 'classic'].name} army on the ${boardById(config.board).name} board`,
-    `Win by: ${MODE_INFO[modeOf(config)].goal}`,
+    `Win by: ${config.objective ? objectiveGoal(config.objective) : MODE_INFO[modeOf(config)].goal}`,
   ]
   if (config.day.length !== 8) out.push(`${config.day.length}-round day`)
   if (config.reverse) out.push('Light runs the other way')

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
+import { SCENARIOS } from './engine/data/scenarios'
 import {
-  ACHIEVEMENTS, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
+  ACHIEVEMENTS, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Progress, type Summary,
 } from './progress'
 
@@ -144,5 +145,23 @@ describe('progress', () => {
     expect(migrate({ v: 3, cleared: 2 })).toMatchObject({ cleared: 2, daily: { last: null, streak: 0, best: 0 } })
     expect(migrate({ v: 4, daily: { last: { date: 'x', won: true, turns: 1, lost: 0 }, streak: 5, best: 5 } }).daily).toEqual({ last: null, streak: 0, best: 0 })
     expect(migrate({ v: 4, daily: { last: { date: 20261026, won: true, turns: 1, lost: 0 }, streak: 2, best: 1 } }).daily.best).toBe(2)
+  })
+})
+
+describe('scenario progress', () => {
+  it('keeps stars once earned and awards the scenario achievements', () => {
+    let p = emptyProgress()
+    const first = recordScenario(p, SCENARIOS[0].id, 1)
+    expect(first.earned.map((a) => a.id)).toContain('scenario-first')
+    p = recordScenario(first.progress, SCENARIOS[0].id, 2).progress
+    expect(p.scenarios[SCENARIOS[0].id]).toBe(3)
+    for (const x of SCENARIOS) p = recordScenario(p, x.id, 1).progress
+    expect(p.achievements).toContain('scenario-all')
+  })
+  it('migrates older saves with no scenarios, and cleans a damaged record', () => {
+    expect(migrate({ v: 4, cleared: 2 })).toMatchObject({ cleared: 2, scenarios: {} })
+    const id = SCENARIOS[0].id
+    expect(migrate({ v: 5, scenarios: { [id]: 15, nope: 7 } }).scenarios).toEqual({ [id]: 7 })
+    expect(migrate({ v: 5, scenarios: { [id]: 'x' } }).scenarios).toEqual({})
   })
 })

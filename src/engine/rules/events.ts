@@ -1,4 +1,4 @@
-import type { DayEvent, GameState, MatchConfig, MatchMode } from './types'
+import type { DayEvent, GameState, MatchConfig, MatchMode, Objective } from './types'
 
 export const EVENT_INFO: Record<DayEvent, { name: string; text: string }> = {
   flare: { name: 'Solar Flare', text: 'Light surges: every shifting square is one step brighter.' },
@@ -48,6 +48,16 @@ export const MODE_INFO: Record<MatchMode, { name: string; text: string; goal: st
   score: { name: 'Score Race', text: `Every round, each court scores the beacons it holds. First to ${SCORE_TARGET} wins.`, goal: `First to ${SCORE_TARGET} points` },
   hill: { name: 'King of the Hill', text: `End ${HILL_TURNS} of your turns in a row holding the centre.`, goal: `Hold the centre ${HILL_TURNS} turns` },
 }
+
+/** A scenario goal in a sentence, for the status line and the scenario list. */
+export function objectiveGoal(o: Objective): string {
+  if (o.kind === 'survive') return `Keep your Leader alive for ${o.rounds} rounds`
+  if (o.kind === 'escort') return `Bring your Leader to the marked beacon within ${o.limit} rounds`
+  return `Hold the marked beacon for ${o.turns} turns in a row within ${o.limit} rounds`
+}
+
+/** The round after which a scenario is over: Survive is won by reaching it, the others lost. */
+export const objectiveRounds = (o: Objective) => (o.kind === 'survive' ? o.rounds : o.limit)
 
 export const modeOf = (config: Pick<MatchConfig, 'mode'>): MatchMode => config.mode ?? 'beacons'
 

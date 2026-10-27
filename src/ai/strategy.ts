@@ -59,32 +59,40 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
   }
   const foe = otherCourt(court)
   const mode = modeOf(state.config)
+  const { objective } = state.config
+  const hillAt = objective?.kind === 'hold' ? objective.at : CENTER
+  const hill = mode === 'hill' || objective?.kind === 'hold'
   // What the mode rewards: beacons for Beacons and Score Race, the centre for the Hill, little for Leader Capture.
   score += (held[court] - held[foe]) * (mode === 'leader' ? 1.5 : 4) * w.beacon
   if (mode === 'beacons') {
     if (held[court] >= 4) score += 10
     if (held[foe] >= 4) score -= 10
   } else if (mode === 'score') score += (state.score[court] - state.score[foe]) * 3
-  else if (mode === 'hill') {
+  if (hill) {
     for (const c of COURTS) {
       const sign = c === court ? 1 : -1
-      score += sign * ((pieceAt(state, CENTER)?.court === c ? 6 : 0) + state.streak[c] ** 2 * 6)
+      score += sign * ((pieceAt(state, hillAt)?.court === c ? 6 : 0) + state.streak[c] ** 2 * 6)
     }
+  }
+  if (objective?.kind === 'escort') {
+    // Solari wants its Leader near the goal, and Umbral wants it kept away.
+    const lead = state.pieces.find((p) => p.court === 'solari' && p.role === 'leader')
+    if (lead) score += (court === 'solari' ? 1 : -1) * (10 - Math.abs(lead.pos.x - objective.goal.x) - Math.abs(lead.pos.y - objective.goal.y)) * 1.5
   }
   const radius = safeRadius(state)
 
   for (const p of state.pieces) {
     const sign = p.court === court ? 1 : -1
     // Veterans and Elites are worth more than recruits of the same role.
-    const value = (mode === 'leader' && p.role === 'leader' ? 40 : VALUE[p.role]) * (1 + ((p.wins ?? 0) >= 2 ? 0.1 : 0) + (p.perk ? 0.15 : 0))
+    const value = ((mode === 'leader' && p.role === 'leader') || (objective && p.court === 'solari' && p.role === 'leader') ? 40 : VALUE[p.role]) * (1 + ((p.wins ?? 0) >= 2 ? 0.1 : 0) + (p.perk ? 0.15 : 0))
     score += sign * value * (0.4 + 0.6 * (p.hp / p.maxHp)) * (sign > 0 ? w.guard : w.attack)
     // Outside the closing safe zone a piece is about to be hurt, and the mover cannot save them all.
     if (radius !== null && chebyshev(p.pos, CENTER) > radius) score -= sign * VALUE[p.role] * 0.8
     if (p.bound) score -= sign * VALUE[p.role] * 0.4
     if (p.shrouded) score += sign * VALUE[p.role] * 0.15
     // Pull towards the beacons nobody on its own side holds yet (the centre, on the Hill).
-    if (mode === 'hill' && p.role !== 'leader') {
-      score += sign * 0.25 * (12 - Math.abs(CENTER.x - p.pos.x) - Math.abs(CENTER.y - p.pos.y))
+    if (hill && p.role !== 'leader') {
+      score += sign * 0.25 * (12 - Math.abs(hillAt.x - p.pos.x) - Math.abs(hillAt.y - p.pos.y))
     } else if (open[p.court].length && p.role !== 'leader') {
       let near = Infinity
       for (const b of open[p.court]) near = Math.min(near, Math.abs(b.x - p.pos.x) + Math.abs(b.y - p.pos.y))

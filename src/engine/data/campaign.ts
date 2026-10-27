@@ -101,10 +101,10 @@ export const CAMPAIGN: readonly Opponent[] = [
 export const CAMPAIGN_FOE: Court = 'umbral'
 
 /** The opening position of a campaign battle: the player is Solari with the classic army and spells. */
-export function campaignGame(opponent: Opponent, seed: number): GameState {
+export function campaignGame(opponent: Opponent, seed: number, setup = 'campaign'): GameState {
   const board = boardById(opponent.board)
   const config: MatchConfig = {
-    ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: board.beacons, blocked: board.blocked, board: board.id, setup: 'campaign',
+    ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: opponent.rules?.beacons ?? board.beacons, blocked: board.blocked, board: board.id, setup,
   }
   if (opponent.army) config.umbralLayout = arrange(opponent.army)
   const state = newGame(config)

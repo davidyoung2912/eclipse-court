@@ -476,3 +476,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 
 .code-box { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.35); color: inherit; font: 0.8rem monospace; word-break: break-all; }
 ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
+
+.tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+.tabs button { min-width: 7rem; }
+.tabs button.on { border-color: var(--solari-gold); color: var(--solari-gold); }

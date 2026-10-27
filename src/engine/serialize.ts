@@ -101,6 +101,14 @@ const MAX_ROUNDS = 200
 const MAX_DAY = 16
 const MAX_RECHARGE = 50
 
+const validObjective = (o: unknown) => {
+  const x = o as { kind?: unknown; rounds?: unknown; goal?: Partial<Pos>; at?: Partial<Pos>; turns?: unknown; limit?: unknown } | null
+  if (!x || typeof x !== 'object') return false
+  if (x.kind === 'survive') return inRange(x.rounds, 1, MAX_ROUNDS)
+  if (x.kind === 'escort') return validPos(x.goal) && inRange(x.limit, 1, MAX_ROUNDS)
+  return x.kind === 'hold' && validPos(x.at) && inRange(x.turns, 1, MAX_ROUNDS) && inRange(x.limit, 1, MAX_ROUNDS)
+}
+
 export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   !!c && isNum(c.seed) && inRange(c.eclipseRound, 1, MAX_ROUNDS) && inRange(c.roundLimit, 1, MAX_ROUNDS) &&
   Array.isArray(c.day) && c.day.length > 0 && c.day.length <= MAX_DAY && c.day.every((l) => inRange(l, -3, 3)) &&
@@ -110,7 +118,7 @@ export const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConf
   (c.setup === undefined || isStr(c.setup)) && (c.board === undefined || isStr(c.board)) &&
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
   (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
-  (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) &&
+  (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) && (c.objective === undefined || validObjective(c.objective)) &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */

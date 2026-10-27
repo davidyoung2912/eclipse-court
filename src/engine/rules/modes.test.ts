@@ -185,3 +185,57 @@ describe('saving', () => {
     expect(decodeRecord(code)).toBeNull()
   })
 })
+
+describe('scenario objectives', () => {
+  const wall = () => [piece('footsoldier', 'umbral', { x: 6, y: 0 }, 'uf', 10)]
+  const cfg = (objective: MatchConfig['objective']): Partial<MatchConfig> => ({ objective })
+
+  it('Survive is won by reaching the round, and lost with the Leader', () => {
+    const s = world([...kings(), ...wall()], cfg({ kind: 'survive', rounds: 3 }))
+    expect(pass(s, 4).winner).toBeNull()
+    expect(pass(s, 6).winner).toBe('solari')
+    // A Leader captured on the way loses even in the last round.
+    const doomed = pass(world([...kings(), piece('bruiser', 'umbral', { x: 1, y: 1 }, 'ub')], cfg({ kind: 'survive', rounds: 3 })))
+    expect(reduce(doomed, { type: 'move', pieceId: 'ub', to: { x: 0, y: 0 }, duel: { attackerHp: 2, defenderHp: 0 } }).winner).toBe('umbral')
+  })
+  it('Survive is not ended by losing every other piece but the Leader', () => {
+    const s = world([...kings()], cfg({ kind: 'survive', rounds: 3 }))
+    expect(pass(s, 2).winner).toBeNull()
+  })
+  it('Escort is won with the Leader on the goal at the end of the turn', () => {
+    const goal = { x: 4, y: 0 }
+    const s = world([piece('leader', 'solari', { x: 1, y: 0 }, 'sl', 7), piece('leader', 'umbral', { x: 6, y: 6 }, 'ul')], { ...cfg({ kind: 'escort', goal, limit: 5 }), beacons: [goal] })
+    expect(reduce(s, { type: 'move', pieceId: 'sl', to: { x: 3, y: 0 } }).winner).toBeNull()
+    expect(reduce(s, { type: 'move', pieceId: 'sl', to: goal }).winner).toBe('solari')
+    const near = reduce(world([piece('leader', 'solari', { x: 0, y: 0 }, 'sl', 7), piece('leader', 'umbral', { x: 6, y: 6 }, 'ul')], { ...cfg({ kind: 'escort', goal, limit: 5 }), beacons: [goal] }), { type: 'move', pieceId: 'sl', to: goal })
+    expect(near.winner).toBe('solari')
+  })
+  it('Escort is not won by another piece, and the beacons do not win it', () => {
+    const goal = { x: 4, y: 0 }
+    const holders = [goal, { x: 0, y: 3 }].map((b, i) => piece('footsoldier', 'solari', b, `h${i}`))
+    const s = world([...holders, ...kings()], { ...cfg({ kind: 'escort', goal, limit: 5 }), beacons: [goal, { x: 0, y: 3 }] })
+    expect(pass(s).winner).toBeNull()
+  })
+  it('Escort is lost when the rounds run out', () => {
+    const goal = { x: 4, y: 0 }
+    const s = world([...kings(), ...wall()], { ...cfg({ kind: 'escort', goal, limit: 2 }), beacons: [goal] })
+    expect(pass(s, 3).winner).toBeNull()
+    expect(pass(s, 4).winner).toBe('umbral')
+  })
+  it('Hold is won after the required turns on the square, and the streak resets when it is lost', () => {
+    const at = { x: 2, y: 2 }
+    const s = world([piece('bruiser', 'solari', at, 'sb', 10), ...kings()], { ...cfg({ kind: 'hold', at, turns: 3, limit: 9 }), beacons: [at] })
+    expect(pass(s, 2).streak.solari).toBe(1)
+    expect(pass(s, 4).winner).toBeNull()
+    expect(pass(s, 5).winner).toBe('solari')
+    // The streak is Solari's alone: Umbral holding the square never wins.
+    const rival = world([piece('bruiser', 'umbral', at, 'ub', 10), ...kings()], { ...cfg({ kind: 'hold', at, turns: 1, limit: 9 }), beacons: [at] })
+    expect(pass(rival, 6).winner).toBeNull()
+  })
+  it('Hold is lost when the rounds run out', () => {
+    const at = { x: 2, y: 2 }
+    const s = world([...kings(), ...wall()], { ...cfg({ kind: 'hold', at, turns: 2, limit: 3 }), beacons: [at] })
+    expect(pass(s, 5).winner).toBeNull()
+    expect(pass(s, 6).winner).toBe('umbral')
+  })
+})
