@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { PERSONALITIES } from '../../engine/data/personality'
 import { CAMPAIGN, battlesIn } from '../../engine/data/campaign'
 import { CAMPAIGN_TIERS } from '../../engine/data/tiers'
 import { SCENARIOS, scenariosIn } from '../../engine/data/scenarios'
 import { objectiveGoal } from '../../engine/rules/events'
 import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, battleUnlocked, clearedCount, scenarioStars, starCount, totalStars, type Progress } from '../../progress'
-import { Icon } from './icons'
+import { Icon, type IconName } from './icons'
 import { ResetButton } from './ResetButton'
 import { CampaignArt, OpponentAvatar } from './MenuArt'
 
@@ -28,6 +27,19 @@ interface Props {
 export type Tab = 'battles' | 'scenarios'
 
 const STARS = [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT]
+const LEVEL = { easy: 1, normal: 2, hard: 3 } as const
+
+/** The kind of item (icon and words) with its difficulty as lit stars on the same line. */
+function Kind({ icon, text, difficulty }: { icon: IconName; text: string; difficulty: keyof typeof LEVEL }) {
+  return (
+    <span className="kind">
+      <Icon name={icon} />{text}
+      <span className="stars" aria-label={`Difficulty ${LEVEL[difficulty]} of 3`}>
+        {[1, 2, 3].map((n) => <i key={n} className={n <= LEVEL[difficulty] ? 'got' : undefined}>★</i>)}
+      </span>
+    </span>
+  )
+}
 
 export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'battles', onTab, onReset, onBack }: Props) {
   const [series, setSeries] = useState(false)
@@ -71,7 +83,8 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                           {STARS.map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
                         </span>
                       </strong>
-                      <span>{x.blurb} ({PERSONALITIES[x.personality].name})</span>
+                      <Kind icon="target" text={`Scenario: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
+                      <span>{x.blurb}</span>
                       <span className="boss">Goal: {objectiveGoal(x.objective)}. Bonus star: {x.bonus.text}.</span>
                     </button>
                   </li>
@@ -98,7 +111,6 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                 const i = CAMPAIGN.indexOf(o)
                 const bits = progress.battles[o.id] ?? 0
                 const locked = !battleUnlocked(progress, i)
-                const personality = PERSONALITIES[o.personality]
                 return (
                   <li key={o.id}>
                     <button className={`choice${bits & STAR_WIN ? ' won' : ''}`} disabled={locked} onClick={() => onPlay(i, series)}>
@@ -109,7 +121,8 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                           {STARS.map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
                         </span>
                       </strong>
-                      <span>{o.blurb} ({personality.name})</span>
+                      <Kind icon="swords" text="Battle" difficulty={o.difficulty} />
+                      <span>{o.blurb}</span>
                       {o.boss && <span className="boss">Boss rule: {o.boss}</span>}
                     </button>
                   </li>

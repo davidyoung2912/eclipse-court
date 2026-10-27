@@ -58,6 +58,8 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
   // A new key replays the ripple each time the day steps or the Hour turns.
   const radius = safeRadius(state)
   const marks = getSettings().marks
+  const activeId = selected?.id ?? focus?.mover
+  const active = activeId ? state.pieces.find((pc) => pc.id === activeId)?.pos : undefined
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (
     <svg className="board" viewBox={`0 0 ${SIZE} ${SIZE}`} role="grid">
@@ -67,10 +69,12 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
         const lum = squareLuminance(state, p)
         const target = isMove(p)
         const cycling = isCycling(p)
+        const acting = !!active && samePos(active, p)
         return (
           <g key={`${p.x}-${p.y}`} onClick={() => onSquare(p)}>
             <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} style={{ fill: lumColor(lum) }}
               className={cycling ? 'sq cycling' : 'sq fixed'} />
+            {acting && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="acting" />}
             {lum !== 0 && (
               <circle cx={cx} cy={cy} r={0.5} fill={`url(#glow-${lum > 0 ? 'solari' : 'umbral'})`}
                 opacity={Math.abs(lum) / 2} className="glow" />
