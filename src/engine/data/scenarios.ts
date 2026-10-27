@@ -1,3 +1,4 @@
+import type { Difficulty } from '../../ai/profile'
 import type { Summary } from '../../progress'
 import { ROLE_STATS } from './roster'
 import { campaignGame, type Opponent } from './campaign'
@@ -38,7 +39,7 @@ const FULL_UMBRAL: readonly Spec[] = [
   ['footsoldier', 5, 1], ['footsoldier', 5, 2], ['charger', 5, 3], ['footsoldier', 5, 4], ['footsoldier', 5, 5],
 ]
 
-export const SCENARIOS: readonly Scenario[] = [
+const AUTHORED: readonly Scenario[] = [
   {
     id: 'long-night',
     name: 'The Long Night',
@@ -131,6 +132,14 @@ export const SCENARIOS: readonly Scenario[] = [
     ),
   },
 ]
+
+const LEVEL: Record<Difficulty, number> = { easy: 0, normal: 1, hard: 2 }
+
+/** Every scenario, Beginner first; within a tier, the order they are written in. */
+export const SCENARIOS: readonly Scenario[] = [...AUTHORED].sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
+
+/** The scenarios of one tier, in play order. */
+export const scenariosIn = (difficulty: Difficulty) => SCENARIOS.filter((s) => s.difficulty === difficulty)
 
 export const scenarioById = (id: string) => SCENARIOS.find((s) => s.id === id)
 

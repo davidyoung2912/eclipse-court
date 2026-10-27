@@ -1,5 +1,5 @@
 import type { Difficulty } from './ai/profile'
-import { CAMPAIGN } from './engine/data/campaign'
+import { CAMPAIGN, battlesIn } from './engine/data/campaign'
 import { PUZZLES, puzzlesIn, type PuzzleTier } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import { dayIndex, tierOfConfig } from './engine/data/setups'
@@ -10,7 +10,10 @@ const PROGRESS_KEY = 'eclipse-court:progress'
 /** The pre-E8 save: just the number of opponents beaten. */
 const LEGACY_KEY = 'eclipse-court:campaign'
 
-export const PROGRESS_VERSION = 5
+/** The first eight battles in the order they had when progress was a list; older saves are read against it. */
+const LEGACY_BATTLES = ['novice', 'archerless', 'tongue-tied', 'wall', 'troll-court', 'backwards-hour', 'iron-court', 'eclipse-queen']
+
+export const PROGRESS_VERSION = 6
 
 /** The three stars of a campaign battle, as bits so each is remembered on its own. */
 export const STAR_WIN = 1
@@ -63,10 +66,8 @@ export interface Daily {
 
 export interface Progress {
   v: typeof PROGRESS_VERSION
-  /** Campaign opponents beaten in order; the next one is unlocked. */
-  cleared: number
-  /** Star bits earned against each campaign opponent. */
-  stars: number[]
+  /** Star bits earned in each campaign battle, by battle id. */
+  battles: Record<string, number>
   stats: Stats
   achievements: string[]
   /** Ids of the puzzles solved. */
@@ -103,8 +104,7 @@ export interface Summary {
 
 export const emptyProgress = (): Progress => ({
   v: PROGRESS_VERSION,
-  cleared: 0,
-  stars: CAMPAIGN.map(() => 0),
+  battles: {},
   stats: { games: 0, wins: 0, losses: 0, draws: 0, captures: 0, piecesLost: 0, playSeconds: 0 },
   achievements: [],
   puzzles: [],
@@ -116,7 +116,18 @@ export const emptyProgress = (): Progress => ({
 })
 
 export const starCount = (bits: number) => [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].filter((b) => bits & b).length
-export const totalStars = (p: Progress) => p.stars.reduce((n, b) => n + starCount(b), 0)
+export const totalStars = (p: Progress) => CAMPAIGN.reduce((n, o) => n + starCount(p.battles[o.id] ?? 0), 0)
+
+/** Campaign battles won, in any tier. */
+export const clearedCount = (p: Progress) => CAMPAIGN.filter((o) => (p.battles[o.id] ?? 0) & STAR_WIN).length
+
+/** A tier opens its first battle at once; each later one opens when the battle before it, in the same tier, is won. */
+export function battleUnlocked(p: Progress, index: number): boolean {
+  const o = CAMPAIGN[index]
+  const tier = battlesIn(o.difficulty)
+  const at = tier.indexOf(o)
+  return at <= 0 || ((p.battles[tier[at - 1].id] ?? 0) & STAR_WIN) !== 0
+}
 
 /** Stars a campaign battle earned; none unless it was won. */
 export function starsEarned(s: Summary): number {
@@ -144,9 +155,9 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'silent', name: 'Silent Leader', text: 'Win without casting a spell.', earned: (_, s) => s.won && s.spellsCast === 0 && !s.classic },
   { id: 'hard', name: 'Against the Tide', text: 'Win against a hard opponent.', earned: (_, s) => s.won && s.difficulty === 'hard' },
   { id: 'daily', name: 'Daily Bread', text: "Win the day's daily game.", earned: (_, s) => s.won && s.daily },
-  { id: 'three-stars', name: 'Triple Crown', text: 'Earn all three stars on one opponent.', earned: (p) => p.stars.some((b) => starCount(b) === 3) },
-  { id: 'half', name: 'Halfway There', text: 'Beat four campaign opponents.', earned: (p) => p.cleared >= 4 },
-  { id: 'queen', name: 'Eclipse Ender', text: 'Beat the Eclipse Queen.', earned: (p) => p.cleared >= CAMPAIGN.length },
+  { id: 'three-stars', name: 'Triple Crown', text: 'Earn all three stars on one opponent.', earned: (p) => Object.values(p.battles).some((b) => starCount(b) === 3) },
+  { id: 'half', name: 'Halfway There', text: 'Beat four campaign opponents.', earned: (p) => clearedCount(p) >= 4 },
+  { id: 'queen', name: 'Eclipse Ender', text: 'Beat the Eclipse Queen.', earned: (p) => ((p.battles['eclipse-queen'] ?? 0) & STAR_WIN) !== 0 },
   { id: 'veteran', name: 'Seasoned', text: 'Play 25 games.', earned: (p) => p.stats.games >= 25 },
   { id: 'puzzler', name: 'Puzzler', text: 'Solve three puzzles.', earned: (p) => p.puzzles.length >= 3 },
   { id: 'puzzle-master', name: 'Puzzle Master', text: 'Solve every puzzle.', earned: (p) => PUZZLES.every((z) => p.puzzles.includes(z.id)) },
@@ -174,14 +185,10 @@ export function recordGame(p: Progress, s: Summary, replay: string | null): { pr
     captures: p.stats.captures + s.taken,
     piecesLost: p.stats.piecesLost + s.lost,
   }
-  const stars = [...p.stars]
-  let cleared = p.cleared
-  const i = s.campaignIndex
-  if (i !== null && s.won) {
-    stars[i] = (stars[i] ?? 0) | starsEarned(s)
-    cleared = Math.max(cleared, i + 1)
-  }
-  const next: Progress = { ...p, cleared, stars, stats, last: replay ?? p.last }
+  const battles = { ...p.battles }
+  const id = s.campaignIndex === null ? undefined : CAMPAIGN[s.campaignIndex]?.id
+  if (id && s.won) battles[id] = (battles[id] ?? 0) | starsEarned(s)
+  const next: Progress = { ...p, battles, stats, last: replay ?? p.last }
   return award(next, s, p)
 }
 
@@ -227,7 +234,7 @@ export const resetPuzzles = (p: Progress): Progress => ({ ...p, puzzles: [] })
 export const resetScenarios = (p: Progress): Progress => ({ ...p, scenarios: {} })
 
 /** The progress with the campaign battles unbeaten and unstarred; boards and themes gated on stars lock again. */
-export const resetCampaign = (p: Progress): Progress => ({ ...p, cleared: 0, stars: CAMPAIGN.map(() => 0) })
+export const resetCampaign = (p: Progress): Progress => ({ ...p, battles: {} })
 
 export const scenarioStars = (p: Progress) => SCENARIOS.reduce((n, x) => n + starCount(p.scenarios[x.id] ?? 0), 0)
 
@@ -294,10 +301,26 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
   const fresh = emptyProgress()
   const o = (raw && typeof raw === 'object' ? raw : null) as Partial<Progress> | null
   // Older versions only lack the gauntlet (2), the daily record (2, 3) and the scenarios (2-4), which then start empty.
-  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 4 && o.v !== 3 && o.v !== 2)) {
+  if (!o || (o.v !== PROGRESS_VERSION && o.v !== 5 && o.v !== 4 && o.v !== 3 && o.v !== 2)) {
     // Before E8 the only progress was how many opponents were beaten; each counts as a plain win.
-    const n = Math.min(legacyCleared, CAMPAIGN.length)
-    return { ...fresh, cleared: n, stars: fresh.stars.map((_, i) => (i < n ? STAR_WIN : 0)) }
+    const battles: Record<string, number> = {}
+    LEGACY_BATTLES.slice(0, legacyCleared).forEach((id) => { battles[id] = STAR_WIN })
+    return { ...fresh, battles }
+  }
+  const battles: Record<string, number> = {}
+  if (o.v === PROGRESS_VERSION) {
+    for (const b of CAMPAIGN) {
+      const bits = (o.battles as Record<string, unknown> | undefined)?.[b.id]
+      if (isInt(bits) && (bits & 7) !== 0) battles[b.id] = bits & 7
+    }
+  } else {
+    // Before v6 the battles were a list: stars by position, and a count of the first few beaten.
+    const oldStars = (o as { stars?: unknown[] }).stars
+    const oldCleared = (o as { cleared?: unknown }).cleared
+    LEGACY_BATTLES.forEach((id, i) => {
+      const bits = (isInt(oldStars?.[i]) ? (oldStars![i] as number) & 7 : 0) | (isInt(oldCleared) && i < oldCleared ? STAR_WIN : 0)
+      if (bits) battles[id] = bits
+    })
   }
   const stats = { ...fresh.stats }
   for (const k of Object.keys(stats) as (keyof Stats)[]) if (isInt(o.stats?.[k])) stats[k] = o.stats![k]
@@ -315,8 +338,7 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
   }
   return {
     v: PROGRESS_VERSION,
-    cleared: isInt(o.cleared) ? Math.min(o.cleared, CAMPAIGN.length) : 0,
-    stars: fresh.stars.map((_, i) => (isInt(o.stars?.[i]) ? o.stars![i] & 7 : 0)),
+    battles,
     stats,
     achievements: Array.isArray(o.achievements) ? o.achievements.filter((a) => ACHIEVEMENTS.some((x) => x.id === a)) : [],
     puzzles: Array.isArray(o.puzzles) ? o.puzzles.filter((id) => PUZZLES.some((z) => z.id === id)) : [],

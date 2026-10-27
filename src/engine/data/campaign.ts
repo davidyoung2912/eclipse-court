@@ -8,6 +8,8 @@ import { arrange } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
 
 export interface Opponent {
+  /** Stable key for saved progress; unique among battles. */
+  id: string
   name: string
   blurb: string
   difficulty: Difficulty
@@ -30,9 +32,10 @@ const mapFoe = (s: GameState, foe: Court, f: (p: Piece) => Piece): GameState => 
 })
 const withHp = (p: Piece, delta: number): Piece => ({ ...p, hp: p.hp + delta, maxHp: p.maxHp + delta })
 
-/** Eight opponents, easiest first; each bends the rules, the board or the army in a different way. */
+/** Opponents grouped by tier, easiest tier first (the tier is the AI level: easy, normal, hard); each bends the rules, the board or the army in a different way. */
 export const CAMPAIGN: readonly Opponent[] = [
   {
+    id: 'novice',
     name: 'The Novice',
     blurb: 'Fragile Footsoldiers: 1 HP less each.',
     difficulty: 'easy',
@@ -40,6 +43,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'footsoldier' ? withHp(p, -1) : p)),
   },
   {
+    id: 'archerless',
     name: 'The Archerless',
     blurb: 'A Rusher with no Marksmen, who hunts your pieces from the first move.',
     difficulty: 'easy',
@@ -47,6 +51,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     army: ['footsoldier', 'footsoldier', 'footsoldier', 'footsoldier', 'flier', 'flier', 'bruiser', 'charger', 'charger', 'aura'],
   },
   {
+    id: 'tongue-tied',
     name: 'The Tongue-Tied',
     blurb: 'A Caster whose Leader knows only three spells, on the Ruins board.',
     difficulty: 'normal',
@@ -55,6 +60,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => ({ ...s, spells: { ...s.spells, [foe]: CLASSIC_SPELLS.slice(0, 3) } }),
   },
   {
+    id: 'wall',
     name: 'The Wall',
     blurb: 'A Turtle behind Footsoldiers with 2 extra HP, among the Pillars.',
     difficulty: 'normal',
@@ -63,6 +69,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'footsoldier' ? withHp(p, 2) : p)),
   },
   {
+    id: 'troll-court',
     name: 'The Troll Court',
     blurb: 'Both Marksmen stand as Bruisers. Capture their Leader to win.',
     difficulty: 'normal',
@@ -71,6 +78,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'marksman' ? { ...p, role: 'bruiser', hp: 10, maxHp: 10 } : p)),
   },
   {
+    id: 'backwards-hour',
     name: 'The Backwards Hour',
     blurb: 'A Grabber racing for the beacons. The day runs in reverse, with day events, on the Flanks. First to 20 points.',
     difficulty: 'hard',
@@ -79,6 +87,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     rules: { mode: 'score', events: true, reverse: true },
   },
   {
+    id: 'iron-court',
     name: 'The Iron Court',
     blurb: 'A Turtle with 1 extra HP on every piece; duel wins make Veterans for both courts.',
     difficulty: 'hard',
@@ -87,6 +96,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 1)),
   },
   {
+    id: 'eclipse-queen',
     name: 'The Eclipse Queen',
     blurb: 'Every piece has 2 extra HP.',
     boss: 'The Eclipse falls at round 20, and the outer squares turn deadly.',
@@ -96,6 +106,9 @@ export const CAMPAIGN: readonly Opponent[] = [
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 2)),
   },
 ]
+
+/** The battles of one tier, in play order. */
+export const battlesIn = (difficulty: Difficulty) => CAMPAIGN.filter((o) => o.difficulty === difficulty)
 
 /** The Umbral court is the opponent in every campaign battle. */
 export const CAMPAIGN_FOE: Court = 'umbral'

@@ -8,9 +8,11 @@ import { boardById } from './boards'
 import { SCENARIOS, scenarioById, scenarioGame } from './scenarios'
 
 describe('scenarios', () => {
-  it('has six to eight distinct scenarios with known boards and personalities', () => {
+  it('has distinct scenarios with known boards and personalities, grouped by tier', () => {
     expect(SCENARIOS.length).toBeGreaterThanOrEqual(6)
-    expect(SCENARIOS.length).toBeLessThanOrEqual(8)
+    const levels = ['easy', 'normal', 'hard']
+    const order = SCENARIOS.map((s) => levels.indexOf(s.difficulty))
+    expect(order).toEqual([...order].sort())
     expect(new Set(SCENARIOS.map((s) => s.id)).size).toBe(SCENARIOS.length)
     expect(new Set(SCENARIOS.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of SCENARIOS) {

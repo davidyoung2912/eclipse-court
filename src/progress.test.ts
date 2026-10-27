@@ -3,6 +3,7 @@ import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES, puzzlesIn } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import {
+  battleUnlocked, clearedCount,
   resetCampaign,
   resetPuzzles,
   resetScenarios,
@@ -25,12 +26,12 @@ describe('progress', () => {
   it('keeps the best stars and unlocks the next opponent only on a win', () => {
     let p = emptyProgress()
     p = recordGame(p, win({ lost: 0 }), null).progress
-    expect(p.cleared).toBe(1)
-    expect(p.stars[0]).toBe(STAR_WIN | STAR_FLAWLESS)
+    expect(clearedCount(p)).toBe(1)
+    expect(p.battles[CAMPAIGN[0].id]).toBe(STAR_WIN | STAR_FLAWLESS)
     p = recordGame(p, win({ swift: true }), null).progress
-    expect(p.stars[0]).toBe(STAR_WIN | STAR_FLAWLESS | STAR_SWIFT)
+    expect(p.battles[CAMPAIGN[0].id]).toBe(STAR_WIN | STAR_FLAWLESS | STAR_SWIFT)
     p = recordGame(p, win({ won: false, campaignIndex: 1 }), null).progress
-    expect(p.cleared).toBe(1)
+    expect(clearedCount(p)).toBe(1)
     expect(p.stats).toMatchObject({ games: 3, wins: 2, losses: 1 })
     expect(totalStars(p)).toBe(3)
   })
@@ -52,13 +53,13 @@ describe('progress', () => {
 
   it('migrates the old cleared count and survives damaged data', () => {
     const old = migrate(null, 3)
-    expect(old.cleared).toBe(3)
-    expect(old.stars.slice(0, 4)).toEqual([STAR_WIN, STAR_WIN, STAR_WIN, 0])
-    expect(migrate(null, 99).cleared).toBe(CAMPAIGN.length)
+    expect(clearedCount(old)).toBe(3)
+    expect(old.battles).toEqual({ novice: STAR_WIN, archerless: STAR_WIN, 'tongue-tied': STAR_WIN })
+    expect(clearedCount(migrate(null, 99))).toBe(8)
     const round = migrate(JSON.parse(JSON.stringify(recordGame(emptyProgress(), win(), 'x').progress)))
-    expect(round.cleared).toBe(1)
+    expect(clearedCount(round)).toBe(1)
     expect(round.last).toBe('x')
-    expect(migrate({ v: 2, cleared: 'lots', stars: [9, 'x'], stats: { games: -1 }, achievements: ['nope'] }).stars[0]).toBe(1)
+    expect(migrate({ v: 2, cleared: 'lots', stars: [9, 'x'], stats: { games: -1 }, achievements: ['nope'] }).battles.novice).toBe(1)
     expect(migrate({ v: 2, achievements: ['nope', 'first-win'] }).achievements).toEqual(['first-win'])
   })
 
@@ -66,7 +67,7 @@ describe('progress', () => {
     const p = emptyProgress()
     expect(boardUnlocked(p, 'classic')).toBe(true)
     expect(boardUnlocked(p, 'pillars')).toBe(false)
-    p.stars[0] = STAR_WIN | STAR_FLAWLESS
+    p.battles[CAMPAIGN[0].id] = STAR_WIN | STAR_FLAWLESS
     expect(boardUnlocked(p, 'pillars')).toBe(true)
   })
 
@@ -113,7 +114,9 @@ describe('progress', () => {
   it('keeps a version-2 save, adding an empty gauntlet record', () => {
     const v2 = { v: 2, cleared: 3, stars: [7, 1, 0], stats: { games: 9, wins: 5 }, achievements: ['first-win'], puzzles: [], tournaments: 1, last: 'x' }
     const p = migrate(v2)
-    expect(p).toMatchObject({ cleared: 3, tournaments: 1, last: 'x', gauntlet: { runs: 0, won: 0, best: 0 } })
+    expect(clearedCount(p)).toBe(3)
+    expect(p.battles).toEqual({ novice: 7, archerless: 1, 'tongue-tied': 1 })
+    expect(p).toMatchObject({ tournaments: 1, last: 'x', gauntlet: { runs: 0, won: 0, best: 0 } })
     expect(p.stats.games).toBe(9)
     expect(p.achievements).toEqual(['first-win'])
     expect(migrate({ v: 3, gauntlet: { runs: 2, won: 1, best: 8, junk: 5 } }).gauntlet).toEqual({ runs: 2, won: 1, best: 8 })
@@ -161,7 +164,7 @@ describe('progress', () => {
   it('keeps the daily record through a save, adds it to older saves and drops damaged ones', () => {
     const p = recordDaily(emptyProgress(), { date: 20261026, won: true, turns: 14, lost: 2 }).progress
     expect(migrate(JSON.parse(JSON.stringify(p))).daily).toEqual(p.daily)
-    expect(migrate({ v: 3, cleared: 2 })).toMatchObject({ cleared: 2, daily: { last: null, streak: 0, best: 0 } })
+    expect(migrate({ v: 3, cleared: 2 })).toMatchObject({ battles: { novice: 1, archerless: 1 }, daily: { last: null, streak: 0, best: 0 } })
     expect(migrate({ v: 4, daily: { last: { date: 'x', won: true, turns: 1, lost: 0 }, streak: 5, best: 5 } }).daily).toEqual({ last: null, streak: 0, best: 0 })
     expect(migrate({ v: 4, daily: { last: { date: 20261026, won: true, turns: 1, lost: 0 }, streak: 2, best: 1 } }).daily.best).toBe(2)
   })
@@ -178,15 +181,15 @@ describe('scenario progress', () => {
     expect(p.achievements).toContain('scenario-all')
   })
   it('migrates older saves with no scenarios, and cleans a damaged record', () => {
-    expect(migrate({ v: 4, cleared: 2 })).toMatchObject({ cleared: 2, scenarios: {} })
+    expect(migrate({ v: 4, cleared: 2 })).toMatchObject({ battles: { novice: 1, archerless: 1 }, scenarios: {} })
     const id = SCENARIOS[0].id
-    expect(migrate({ v: 5, scenarios: { [id]: 15, nope: 7 } }).scenarios).toEqual({ [id]: 7 })
-    expect(migrate({ v: 5, scenarios: { [id]: 'x' } }).scenarios).toEqual({})
+    expect(migrate({ v: 6, scenarios: { [id]: 15, nope: 7 } }).scenarios).toEqual({ [id]: 7 })
+    expect(migrate({ v: 6, scenarios: { [id]: 'x' } }).scenarios).toEqual({})
   })
 })
 
 describe('resets', () => {
-  const played = { ...emptyProgress(), cleared: 3, stars: [7, 3, 1, 0, 0, 0, 0, 0].slice(0, emptyProgress().stars.length), puzzles: ['a', 'b'], scenarios: { x: 7 }, achievements: ['k'] }
+  const played = { ...emptyProgress(), battles: { novice: 7, archerless: 3, 'tongue-tied': 1 }, puzzles: ['a', 'b'], scenarios: { x: 7 }, achievements: ['k'] }
 
   it('clears puzzles only', () => {
     expect(resetPuzzles(played)).toEqual({ ...played, puzzles: [] })
@@ -198,8 +201,7 @@ describe('resets', () => {
 
   it('clears the campaign battles only', () => {
     const after = resetCampaign(played)
-    expect(after.cleared).toBe(0)
-    expect(after.stars).toEqual(emptyProgress().stars)
+    expect(after.battles).toEqual({})
     expect(after.puzzles).toEqual(played.puzzles)
   })
 })
@@ -212,16 +214,37 @@ describe('play time and stats reset', () => {
   })
 
   it('resets stats but keeps campaign progress', () => {
-    const p = { ...addPlaytime(emptyProgress(), 50), cleared: 3, achievements: ['champion'], last: 'x' }
+    const p = { ...addPlaytime(emptyProgress(), 50), battles: { novice: 1 }, achievements: ['champion'], last: 'x' }
     const r = resetStats(p)
     expect(r.stats).toEqual(emptyProgress().stats)
     expect(r.achievements).toEqual([])
     expect(r.last).toBeNull()
-    expect(r.cleared).toBe(3)
+    expect(r.battles).toEqual({ novice: 1 })
   })
 
   it('migrates a v5 save without play time', () => {
     const { playSeconds: _, ...old } = emptyProgress().stats
     expect(migrate({ ...emptyProgress(), stats: old }).stats.playSeconds).toBe(0)
+  })
+})
+
+describe('battle unlocks', () => {
+  const firsts = ['easy', 'normal', 'hard'] as const
+
+  it('opens the first battle of every tier and the next only after a win', () => {
+    let p = emptyProgress()
+    const index = (id: string) => CAMPAIGN.findIndex((o) => o.id === id)
+    expect(battleUnlocked(p, index('novice'))).toBe(true)
+    expect(battleUnlocked(p, index('archerless'))).toBe(false)
+    expect(battleUnlocked(p, index('tongue-tied'))).toBe(true)
+    expect(battleUnlocked(p, index('backwards-hour'))).toBe(true)
+    p = recordGame(p, win({ campaignIndex: index('novice') }), null).progress
+    expect(battleUnlocked(p, index('archerless'))).toBe(true)
+    expect(battleUnlocked(p, index('wall'))).toBe(false)
+  })
+
+  it('keeps every battle of a tier together, in tier order', () => {
+    expect(CAMPAIGN.map((o) => firsts.indexOf(o.difficulty))).toEqual([...CAMPAIGN.map((o) => firsts.indexOf(o.difficulty))].sort())
+    expect(new Set(CAMPAIGN.map((o) => o.id)).size).toBe(CAMPAIGN.length)
   })
 })

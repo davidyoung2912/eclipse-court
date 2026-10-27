@@ -13,7 +13,7 @@ describe('campaign', () => {
       if (o.board) expect(boardById(o.board).id).toBe(o.board)
     }
     expect(new Set(CAMPAIGN.map((o) => o.personality)).size).toBeGreaterThanOrEqual(4)
-    expect(CAMPAIGN.filter((o) => o.boss)).toHaveLength(1)
+    expect(CAMPAIGN.filter((o) => o.boss).length).toBeGreaterThanOrEqual(1)
   })
 
   it('opens every battle with the player as Solari and a legal AI army', () => {

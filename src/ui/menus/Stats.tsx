@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS, totalStars, type Progress } from '../../progress'
+import { ACHIEVEMENTS, clearedCount, totalStars, type Progress } from '../../progress'
 import { CAMPAIGN } from '../../engine/data/campaign'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
@@ -22,7 +22,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
     ['Enemy pieces taken', stats.captures],
     ['Own pieces lost', stats.piecesLost],
     ['Gauntlet', `${progress.gauntlet.won} won of ${progress.gauntlet.runs} runs, furthest stage ${progress.gauntlet.best}`],
-    ['Campaign', `${progress.cleared} of ${CAMPAIGN.length} beaten, ${totalStars(progress)} stars`],
+    ['Campaign', `${clearedCount(progress)} of ${CAMPAIGN.length} beaten, ${totalStars(progress)} stars`],
     ['Total time played', formatTime(stats.playSeconds)],
   ]
   return (

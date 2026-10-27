@@ -1,7 +1,7 @@
 import { CAMPAIGN } from '../../engine/data/campaign'
 import { PUZZLES } from '../../engine/data/puzzles'
 import { normalRules, type PresetRules } from '../../engine/data/setups'
-import { liveStreak, totalStars, type Progress } from '../../progress'
+import { clearedCount, liveStreak, totalStars, type Progress } from '../../progress'
 
 export type PrimaryKind = 'resume' | 'learn' | 'campaign' | 'skirmish'
 
@@ -14,7 +14,7 @@ export interface PrimaryAction {
 export function primaryAction(progress: Progress, hasSaved: boolean, firstRun: boolean): PrimaryAction {
   if (hasSaved) return { kind: 'resume', label: 'Resume Game' }
   if (firstRun) return { kind: 'learn', label: 'Learn to Play' }
-  const { cleared } = progress
+  const cleared = clearedCount(progress)
   if (cleared < CAMPAIGN.length)
     return { kind: 'campaign', label: cleared === 0 ? 'Start Campaign' : `Continue Campaign · Battle ${cleared + 1}` }
   return { kind: 'skirmish', label: 'Play Skirmish' }

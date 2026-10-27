@@ -16,12 +16,12 @@ describe('primaryAction', () => {
 
   it('starts, then continues, the campaign', () => {
     expect(primaryAction(emptyProgress(), false, false)).toEqual({ kind: 'campaign', label: 'Start Campaign' })
-    const p = { ...emptyProgress(), cleared: 3 }
+    const p = { ...emptyProgress(), battles: { novice: 1, archerless: 1, 'tongue-tied': 1 } }
     expect(primaryAction(p, false, false)).toEqual({ kind: 'campaign', label: 'Continue Campaign · Battle 4' })
   })
 
   it('falls back to a skirmish once the campaign is cleared', () => {
-    const p = { ...emptyProgress(), cleared: CAMPAIGN.length }
+    const p = { ...emptyProgress(), battles: Object.fromEntries(CAMPAIGN.map((o) => [o.id, 1])) }
     expect(primaryAction(p, false, false).kind).toBe('skirmish')
   })
 })
