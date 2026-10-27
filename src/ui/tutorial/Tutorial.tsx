@@ -91,7 +91,7 @@ export function Tutorial({ onExit }: Props) {
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
           <button onClick={onExit}>{current.kind === 'end' ? <><Icon name="back" />Back</> : <><Icon name="skip" />Skip</>}</button>
-          {current.kind === 'light' && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got it</button>}
+          {(current.kind === 'light' || current.kind === 'hp') && <button className="primary" onClick={() => setStep(step + 1)}><Icon name="check" />Got it</button>}
           {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
         </div>
       </footer>

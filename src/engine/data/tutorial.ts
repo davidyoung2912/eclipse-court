@@ -2,7 +2,7 @@ import { newGame } from '../reducer'
 import { ROLE_STATS } from './roster'
 import type { GameState, Piece, Pos, Role } from '../rules/types'
 
-export type TutorialKind = 'move' | 'light' | 'duel' | 'spell' | 'end'
+export type TutorialKind = 'move' | 'light' | 'duel' | 'hp' | 'spell' | 'end'
 
 export interface TutorialStep {
   kind: TutorialKind
@@ -27,8 +27,13 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     text: 'Every capture is a 20 second duel. Tap your Knight, then the enemy beside it, and confirm. Drag on the left to move, hold the right button to attack. The odds bar shows who is favoured before you commit.',
   },
   {
+    kind: 'hp',
+    title: '4. Hit points',
+    text: 'The dots under each piece are its HP. Blows in a duel drain it, and HP carries over afterwards, so your Knight stays wounded. A piece at 0 is captured and the winner takes its square. If time runs out, both keep what is left and the defender holds. Pieces heal at the end of each round: +1 for every two rounds spent standing still, +1 on a beacon, +1 beside your Seraph or Wraith.',
+  },
+  {
     kind: 'spell',
-    title: '4. Cast a spell',
+    title: '5. Cast a spell',
     text: 'Your Solarch can cast each of seven spells once per game. A cast costs 1 HP and your whole turn. Choose Blink, then tap any empty square to jump the Solarch there.',
   },
   {
