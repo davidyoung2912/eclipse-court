@@ -7,17 +7,19 @@ import { boardById } from './boards'
 import { draftProblem } from './draft'
 
 describe('campaign', () => {
-  it('has distinct ids and a full Beginner tier of 25', () => {
+  it('has distinct ids and a full Beginner and Normal tier of 25', () => {
     expect(new Set(CAMPAIGN.map((o) => o.id)).size).toBe(CAMPAIGN.length)
     expect(battlesIn('easy')).toHaveLength(25)
+    expect(battlesIn('normal')).toHaveLength(25)
   })
 
-  it('gives every Beginner battle a legal draft and a spread of personalities', () => {
-    const easy = battlesIn('easy')
-    for (const o of easy) if (o.army) expect(draftProblem(o.army), o.name).toBeNull()
-    expect(new Set(easy.map((o) => o.personality)).size).toBe(5)
-    for (const o of easy) {
-      for (const p of campaignGame(o, 5).pieces) expect(p.hp, o.name).toBeGreaterThan(0)
+  it('gives every Beginner and Normal battle a legal draft and a spread of personalities', () => {
+    for (const tier of [battlesIn('easy'), battlesIn('normal')]) {
+      for (const o of tier) if (o.army) expect(draftProblem(o.army), o.name).toBeNull()
+      expect(new Set(tier.map((o) => o.personality)).size).toBe(5)
+      for (const o of tier) {
+        for (const p of campaignGame(o, 5).pieces) expect(p.hp, o.name).toBeGreaterThan(0)
+      }
     }
   })
 

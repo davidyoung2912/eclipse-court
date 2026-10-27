@@ -6,6 +6,7 @@ import { boardById } from './boards'
 import { arrange } from './draft'
 import { mapFoe, withHp } from './campaignHelpers'
 import { BEGINNER_BATTLES } from './campaignBeginner'
+import { NORMAL_BATTLES } from './campaignNormal'
 import { DEFAULT_CONFIG } from './matchConfig'
 import type { Opponent } from './campaignHelpers'
 
@@ -57,6 +58,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     rules: { mode: 'leader' },
     setup: (s, foe) => mapFoe(s, foe, (p) => (p.role === 'marksman' ? { ...p, role: 'bruiser', hp: 10, maxHp: 10 } : p)),
   },
+  ...NORMAL_BATTLES,
   {
     id: 'backwards-hour',
     name: 'The Backwards Hour',
