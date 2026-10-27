@@ -1,6 +1,6 @@
 import type { Difficulty } from './ai/profile'
 import { CAMPAIGN } from './engine/data/campaign'
-import { PUZZLES } from './engine/data/puzzles'
+import { PUZZLES, puzzlesIn, type PuzzleTier } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import { dayIndex, tierOfConfig } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
@@ -131,6 +131,12 @@ export interface Achievement {
   earned: (p: Progress, s: Summary) => boolean
 }
 
+/** Every puzzle of a tier solved; a tier with no puzzles yet never counts. */
+const tierCleared = (p: Progress, tier: PuzzleTier) => {
+  const list = puzzlesIn(tier)
+  return list.length > 0 && list.every((z) => p.puzzles.includes(z.id))
+}
+
 export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'first-win', name: 'First Light', text: 'Win a game.', earned: (_, s) => s.won },
   { id: 'flawless', name: 'Unscathed', text: 'Win without losing a piece.', earned: (_, s) => s.won && s.lost === 0 },
@@ -144,6 +150,9 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'veteran', name: 'Seasoned', text: 'Play 25 games.', earned: (p) => p.stats.games >= 25 },
   { id: 'puzzler', name: 'Puzzler', text: 'Solve three puzzles.', earned: (p) => p.puzzles.length >= 3 },
   { id: 'puzzle-master', name: 'Puzzle Master', text: 'Solve every puzzle.', earned: (p) => PUZZLES.every((z) => p.puzzles.includes(z.id)) },
+  { id: 'beginner-cleared', name: 'First Steps', text: 'Solve every Beginner puzzle.', earned: (p) => tierCleared(p, 'beginner') },
+  { id: 'normal-cleared', name: 'Steady Hands', text: 'Solve every Normal puzzle.', earned: (p) => tierCleared(p, 'normal') },
+  { id: 'expert-cleared', name: 'Eclipse Scholar', text: 'Solve every Expert puzzle.', earned: (p) => tierCleared(p, 'expert') },
   { id: 'daily-puzzle', name: 'Puzzle of the Day', text: "Solve the day's puzzle.", earned: (_, s) => !!s.dailyPuzzle },
   { id: 'deep', name: 'Deep Delver', text: 'Reach stage 5 of the gauntlet.', earned: (p) => p.gauntlet.best >= 5 },
   { id: 'gauntlet', name: 'Court Eternal', text: 'Win a gauntlet run.', earned: (p) => p.gauntlet.won >= 1 },

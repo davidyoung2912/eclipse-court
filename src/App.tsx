@@ -418,6 +418,7 @@ export default function App() {
           : versusAi(human, difficulty, daily ? today.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
+        puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}
         onSave={(progress) => {
           if (transient) return
           if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })

@@ -1,4 +1,4 @@
-import { dailyPuzzleIndex, PUZZLES } from '../../engine/data/puzzles'
+import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzlesIn } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
 import { Icon } from './icons'
 import { ResetButton } from './ResetButton'
@@ -15,25 +15,36 @@ interface Props {
 
 export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
-  const solved = PUZZLES.filter((p) => progress.puzzles.includes(p.id)).length
+  const isSolved = (id: string) => progress.puzzles.includes(id)
+  const solved = PUZZLES.filter((p) => isSolved(p.id)).length
   return (
     <main className="app menu">
       <PageArt icon="puzzle" />
       <h2>Puzzles</h2>
-      <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you.</p>
+      <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you. Stuck? The Hint button helps, at no cost.</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}
       <h3>Puzzle of the day</h3>
       <div className="choices">
-        <PuzzleButton index={daily} solved={progress.puzzles.includes(PUZZLES[daily].id)} onPlay={() => onPlay(daily, true)} />
+        <PuzzleButton index={daily} number={null} solved={isSolved(PUZZLES[daily].id)} onPlay={() => onPlay(daily, true)} />
       </div>
-      <h3>All puzzles</h3>
-      <ol className="campaign">
-        {PUZZLES.map((p, i) => (
-          <li key={p.id}><PuzzleButton index={i} solved={progress.puzzles.includes(p.id)} onPlay={() => onPlay(i, false)} /></li>
-        ))}
-      </ol>
+      {PUZZLE_TIERS.map(({ tier, name, blurb }) => {
+        const list = puzzlesIn(tier)
+        if (list.length === 0) return null
+        return (
+          <section key={tier} aria-label={`${name} puzzles`}>
+            <h3>{name} ({list.filter((p) => isSolved(p.id)).length}/{list.length})</h3>
+            <p className="tagline">{blurb}</p>
+            <ol className="campaign">
+              {list.map((p, i) => {
+                const index = PUZZLES.indexOf(p)
+                return <li key={p.id}><PuzzleButton index={index} number={i + 1} solved={isSolved(p.id)} onPlay={() => onPlay(index, false)} /></li>
+              })}
+            </ol>
+          </section>
+        )
+      })}
       <div className="menu-buttons stacked">
         <ResetButton label="Reset Puzzles" disabled={solved === 0} warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />
         <button onClick={onBack}><Icon name="back" />Back</button>
@@ -42,11 +53,11 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
   )
 }
 
-function PuzzleButton({ index, solved, onPlay }: { index: number; solved: boolean; onPlay: () => void }) {
+function PuzzleButton({ index, number, solved, onPlay }: { index: number; number: number | null; solved: boolean; onPlay: () => void }) {
   const p = PUZZLES[index]
   return (
     <button className={`choice${solved ? ' won' : ''}`} onClick={onPlay}>
-      <strong><Icon name={solved ? 'check' : 'puzzle'} />{index + 1}. {p.name} <span className="pill">win in {p.limit}</span></strong>
+      <strong><Icon name={solved ? 'check' : 'puzzle'} />{number === null ? '' : `${number}. `}{p.name} <span className="pill">win in {p.limit}</span></strong>
       <span>{p.text}</span>
     </button>
   )

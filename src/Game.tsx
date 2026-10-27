@@ -36,6 +36,8 @@ interface Props {
   record: GameRecord
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
+  /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
+  puzzleHelp?: { hints: readonly [string, string]; solution: readonly Action[] }
   /** Called after every action with the game so far, or null once it has ended. */
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord) => void
@@ -64,7 +66,7 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props) {
+export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onExit }: Props) {
   const hotSeat = isHotSeat(controllers)
   const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -96,6 +98,8 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
   })
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
+  /** Puzzles: how far through the hints the player has asked (0 none, 3 the move itself). */
+  const [hintLevel, setHintLevel] = useState(0)
   const state = history[history.length - 1].state
   /** The position a hint was asked for, so a slow search cannot land on a later one. */
   const hintFor = useRef<GameState | null>(null)
@@ -175,9 +179,21 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
   const clearHint = () => {
     hintFor.current = null
     setHint(null)
+    setHintLevel(0)
+  }
+
+  /** A puzzle's hints: a nudge, then the idea, then the move; the next tap closes them. */
+  const askPuzzleHint = (help: NonNullable<typeof puzzleHelp>) => {
+    const level = hintLevel + 1
+    if (level > 3) return clearHint()
+    const next = help.solution[turnsTaken]
+    const move = level === 3 && next && reduce(state, next) !== state ? describeHint(state, next) : null
+    setHintLevel(level)
+    setHint(move ?? { action: { type: 'pass' }, headline: `Hint ${Math.min(level, 2)} of 3`, detail: help.hints[Math.min(level, 2) - 1] })
   }
 
   const askHint = () => {
+    if (puzzleHelp) return askPuzzleHint(puzzleHelp)
     if (hint) return clearHint()
     hintFor.current = state
     setHint('thinking')
@@ -405,7 +421,7 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
           </div>
         </div>
       )}
-      {hint && myTurn ? <HintCard hint={hint} /> : (
+      {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? 'From the puzzle setter' : undefined} /> : (
         <PieceCard state={state} human={human} piece={shown}
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
@@ -439,7 +455,7 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
         </p>
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
-          {!hotSeat && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint</button>}
+          {!hotSeat && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>

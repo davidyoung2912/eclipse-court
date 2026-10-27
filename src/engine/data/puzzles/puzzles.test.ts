@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { chooseAction } from '../../ai/strategy'
-import { reduce } from '../reducer'
-import type { Action, GameState } from '../rules/types'
-import { dailyPuzzleIndex, PUZZLES, puzzleById, type Puzzle } from './puzzles'
+import { chooseAction } from '../../../ai/strategy'
+import { reduce } from '../../reducer'
+import type { Action, GameState } from '../../rules/types'
+import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzleById, puzzlesIn, type Puzzle } from '.'
 
 /** Plays the puzzle as the game does: the Umbral AI answers each action with the seed the game gives it. */
 function play(puzzle: Puzzle, actions: readonly Action[]): GameState {
@@ -27,6 +27,16 @@ describe('puzzles', () => {
       expect(p.solution.length).toBeLessThanOrEqual(p.limit)
       expect(puzzleById(p.id)).toBe(p)
     }
+  })
+
+  it('sit in a tier, play at that tier\'s strength and carry two hints', () => {
+    for (const p of PUZZLES) {
+      const info = PUZZLE_TIERS.find((t) => t.tier === p.tier)!
+      expect(p.difficulty, p.id).toBe(info.difficulty)
+      expect(p.hints[0].length, p.id).toBeGreaterThan(0)
+      expect(p.hints[1].length, p.id).toBeGreaterThan(0)
+    }
+    expect(PUZZLE_TIERS.flatMap((t) => puzzlesIn(t.tier))).toHaveLength(PUZZLES.length)
   })
 
   it('start with Solari to move, one Leader a side and no overlapping pieces', () => {

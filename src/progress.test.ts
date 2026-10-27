@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CAMPAIGN } from './engine/data/campaign'
-import { PUZZLES } from './engine/data/puzzles'
+import { PUZZLES, puzzlesIn } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import {
   resetCampaign,
@@ -90,6 +90,15 @@ describe('progress', () => {
     const won = recordTournament(lost.progress, true)
     expect(won.progress.tournaments).toBe(1)
     expect(won.earned.map((a) => a.id)).toEqual(['champion'])
+  })
+
+  it('awards a tier achievement only once that tier is cleared, and never for an empty tier', () => {
+    let p = emptyProgress()
+    for (const z of puzzlesIn('beginner').slice(0, -1)) p = recordPuzzle(p, z.id, false).progress
+    expect(p.achievements).not.toContain('beginner-cleared')
+    p = recordPuzzle(p, puzzlesIn('beginner').at(-1)!.id, false).progress
+    expect(p.achievements).toContain('beginner-cleared')
+    if (puzzlesIn('expert').length === 0) expect(p.achievements).not.toContain('expert-cleared')
   })
 
   it('keeps puzzles and titles through a save, and drops unknown puzzle ids', () => {
