@@ -3,6 +3,7 @@ import type { Summary } from './summary'
 import { FULL_UMBRAL, at, lineup, type Spec } from './scenarioHelpers'
 import { BEGINNER_SCENARIOS } from './scenariosBeginner'
 import { EXPERT_SCENARIOS } from './scenariosExpert'
+import { CELL_SCENARIOS } from './scenariosCells'
 import { NORMAL_SCENARIOS } from './scenariosNormal'
 import { campaignGame, type Opponent } from './campaign'
 import type { GameState, Objective } from '../rules/types'
@@ -112,7 +113,7 @@ const AUTHORED: readonly Scenario[] = [
 const LEVEL: Record<Difficulty, number> = { easy: 0, normal: 1, hard: 2 }
 
 /** Every scenario, Beginner first; within a tier, the order they are written in. */
-export const SCENARIOS: readonly Scenario[] = [...AUTHORED, ...BEGINNER_SCENARIOS, ...NORMAL_SCENARIOS, ...EXPERT_SCENARIOS].sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
+export const SCENARIOS: readonly Scenario[] = [...AUTHORED, ...BEGINNER_SCENARIOS, ...NORMAL_SCENARIOS, ...EXPERT_SCENARIOS, ...CELL_SCENARIOS].sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
 
 /** The scenarios of one tier, in play order. */
 export const scenariosIn = (difficulty: Difficulty) => SCENARIOS.filter((s) => s.difficulty === difficulty)

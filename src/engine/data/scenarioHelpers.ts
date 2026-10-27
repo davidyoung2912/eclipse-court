@@ -1,7 +1,7 @@
 import { ROLE_STATS } from './roster'
 import type { Scenario } from './scenarios'
 import type { Difficulty } from './difficulty'
-import type { Court, GameState, Piece, Pos, Role, Spell } from '../rules/types'
+import type { CellEffect, CellSquare, Court, GameState, Piece, Pos, Role, Spell } from '../rules/types'
 
 /** [role, x, y, hp?] in board coordinates; Umbral's x is written as it stands, not mirrored. */
 export type Spec = readonly [Role, number, number, number?]
@@ -24,6 +24,9 @@ export const lineup = (solari: readonly Spec[], umbral: readonly Spec[], spells?
 })
 
 export const at = (x: number, y: number): Pos => ({ x, y })
+
+/** Cells of one effect at the listed squares; a scenario's cells replace its board's and need not be symmetric. */
+export const cells = (effect: CellEffect, ...squares: readonly (readonly [number, number])[]): CellSquare[] => squares.map(([x, y]) => ({ pos: at(x, y), effect }))
 
 export const FULL_UMBRAL: readonly Spec[] = [
   ['flier', 6, 0], ['marksman', 6, 1], ['aura', 6, 2], ['leader', 6, 3], ['bruiser', 6, 4], ['marksman', 6, 5], ['flier', 6, 6],

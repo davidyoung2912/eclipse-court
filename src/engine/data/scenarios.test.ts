@@ -30,7 +30,7 @@ describe('scenarios', () => {
 
   it('has a full Beginner tier of 25 with all five personalities and every objective', () => {
     const easy = scenariosIn('easy')
-    expect(easy).toHaveLength(25)
+    expect(easy.length).toBeGreaterThanOrEqual(25)
     expect(new Set(easy.map((s) => s.personality)).size).toBe(5)
     expect(new Set(easy.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of easy) expect(s.bonus.text, s.id).not.toBe('')
@@ -38,7 +38,7 @@ describe('scenarios', () => {
 
   it('has a Normal tier of 25 with all five personalities and every objective', () => {
     const normal = scenariosIn('normal')
-    expect(normal).toHaveLength(25)
+    expect(normal.length).toBeGreaterThanOrEqual(25)
     expect(new Set(normal.map((s) => s.personality)).size).toBe(5)
     expect(new Set(normal.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of normal) expect(s.bonus.text, s.id).not.toBe('')
@@ -46,7 +46,7 @@ describe('scenarios', () => {
 
   it('has an Expert tier of 25 with all five personalities and every objective', () => {
     const hard = scenariosIn('hard')
-    expect(hard).toHaveLength(25)
+    expect(hard.length).toBeGreaterThanOrEqual(25)
     expect(new Set(hard.map((s) => s.personality)).size).toBe(5)
     expect(new Set(hard.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of hard) expect(s.bonus.text, s.id).not.toBe('')
@@ -70,6 +70,22 @@ describe('scenarios', () => {
       expect(g.winner, s.id).not.toBe('solari')
     }
   }, 120_000)
+
+  it('places cell scenarios on open squares, never on a goal square', () => {
+    const withCells = SCENARIOS.filter((s) => s.rules?.cells)
+    expect(withCells.length).toBeGreaterThanOrEqual(4)
+    expect(new Set(withCells.flatMap((s) => s.rules!.cells!.map((c) => c.effect))).size).toBeGreaterThanOrEqual(4)
+    for (const s of withCells) {
+      const g = scenarioGame(s, 6)
+      expect(g.config.cells, s.id).toEqual(s.rules!.cells)
+      const o = s.objective
+      const goal = o.kind === 'escort' ? o.goal : o.kind === 'hold' ? o.at : null
+      for (const c of g.config.cells!) {
+        expect(isBlocked(g.config, c.pos), `${s.id} ${c.effect}`).toBe(false)
+        if (o.kind === 'escort') expect(samePos(c.pos, goal!), `${s.id} ${c.effect}`).toBe(false)
+      }
+    }
+  })
 
   it('opens each with Solari to move, a Leader each and no overlapping or walled-in pieces', () => {
     for (const [i, s] of SCENARIOS.entries()) {
