@@ -7,6 +7,7 @@ import { arrange } from './draft'
 import { mapFoe, withHp } from './campaignHelpers'
 import { BEGINNER_BATTLES } from './campaignBeginner'
 import { NORMAL_BATTLES } from './campaignNormal'
+import { EXPERT_BATTLES } from './campaignExpert'
 import { DEFAULT_CONFIG } from './matchConfig'
 import type { Opponent } from './campaignHelpers'
 
@@ -77,6 +78,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     rules: { growth: true, showdown: true },
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 1)),
   },
+  ...EXPERT_BATTLES,
   {
     id: 'eclipse-queen',
     name: 'The Eclipse Queen',
