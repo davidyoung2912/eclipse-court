@@ -16,7 +16,8 @@ import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
   progress: Progress
-  onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice) => void
+  /** `hotSeat` means a second person takes the other court; the difficulty is then unused. */
+  onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => void
   onBack: () => void
 }
 
@@ -45,6 +46,7 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
 export function SkirmishSetup({ progress, onStart, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
+  const [hotSeat, setHotSeat] = useState(false)
   const [mode, setMode] = useState<SetupMode>('classic')
   const [boardId, setBoardId] = useState('classic')
   const [roles, setRoles] = useState<Role[]>([...CLASSIC_ROLES])
@@ -70,8 +72,19 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
     <main className="app menu">
       <SkirmishArt />
       <h2>Skirmish</h2>
-      <h3>Your court</h3>
-      <div className="choices">
+      <h3>Players</h3>
+      <div className="choices row">
+        <button className={`choice${!hotSeat ? ' on' : ''}`} onClick={() => setHotSeat(false)}>
+          <strong><Icon name="swords" />One player</strong>
+          <span>Play against the AI.</span>
+        </button>
+        <button className={`choice${hotSeat ? ' on' : ''}`} onClick={() => { setHotSeat(true); setSpellMode('classic'); if (mode === 'draft') setMode('classic') }}>
+          <strong><Icon name="banner" />Two players</strong>
+          <span>Share this device, taking turns. Duels are settled automatically.</span>
+        </button>
+      </div>
+      {!hotSeat && <h3>Your court</h3>}
+      {!hotSeat && <div className="choices">
         {COURTS.map((c) => (
           <button key={c.court} className={`choice ${c.court}${court === c.court ? ' on' : ''}`} onClick={() => { setCourt(c.court); setLoadout([]) }}>
             <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role="leader" court={c.court} /></svg>
@@ -79,20 +92,20 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
             <span>{c.text}</span>
           </button>
         ))}
-      </div>
-      <h3>Opponent</h3>
-      <div className="choices">
+      </div>}
+      {!hotSeat && <h3>Opponent</h3>}
+      {!hotSeat && <div className="choices">
         {DIFFICULTY_LIST.map((d) => (
           <button key={d} className={`choice${difficulty === d ? ' on' : ''}`} onClick={() => setDifficulty(d)}>
             <strong><Icon name={LEVEL_ICON[d]} />{d[0].toUpperCase() + d.slice(1)}</strong>
             <span>{LEVEL_TEXT[d]}</span>
           </button>
         ))}
-      </div>
+      </div>}
       <h3>Army</h3>
       <div className="choices row">
         {(Object.keys(SETUP_INFO) as SetupMode[]).map((m) => (
-          <button key={m} className={`choice${mode === m ? ' on' : ''}`} onClick={() => setMode(m)}>
+          <button key={m} className={`choice${mode === m ? ' on' : ''}`} disabled={hotSeat && m === 'draft'} onClick={() => setMode(m)}>
             <strong>{SETUP_INFO[m].name}</strong>
             <span>{SETUP_INFO[m].text}</span>
           </button>
@@ -105,10 +118,10 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
           <strong>Classic</strong>
           <span>The seven classic spells.</span>
         </button>
-        <button className={`choice${spellMode === 'loadout' ? ' on' : ''}`}
+        <button className={`choice${spellMode === 'loadout' ? ' on' : ''}`} disabled={hotSeat}
           onClick={() => { setSpellMode('loadout'); setLoadout((l) => l.filter((sp) => spellPool(court).includes(sp)).slice(0, LOADOUT_SIZE)) }}>
           <strong>Loadout</strong>
-          <span>Pick {LOADOUT_SIZE} from the shared pool and your court's signatures.</span>
+          <span>{hotSeat ? 'Not available with two players.' : `Pick ${LOADOUT_SIZE} from the shared pool and your court's signatures.`}</span>
         </button>
       </div>
       {spellMode === 'loadout' && <LoadoutPicker court={court} spells={loadout} onChange={setLoadout} stars={totalStars(progress)} />}
@@ -154,7 +167,7 @@ export function SkirmishSetup({ progress, onStart, onBack }: Props) {
           loadout: spellMode === 'loadout' ? loadout : undefined,
           recharge: recharge ? RECHARGE_ROUNDS : undefined,
           winMode, events, showdown, cycle, reverse, growth, promotion,
-        })}><Icon name="play" />Start</button>
+        }, hotSeat)}><Icon name="play" />Start</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

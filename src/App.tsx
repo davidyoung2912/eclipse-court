@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { unlockAudio } from './audio/synth'
 import { Game } from './Game'
+import { HOT_SEAT, versusAi } from './controllers'
 import type { Difficulty } from './ai/profile'
 import { aiDraft, aiLoadout } from './ai/draft'
 import { otherCourt } from './engine/rules/board'
@@ -36,6 +37,8 @@ type Screen =
   | { name: 'replay'; record: GameRecord }
   | {
     name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
+    /** Two people share the device; `human` and `difficulty` are then unused. */
+    hotSeat?: boolean
     /** Set when the game is a puzzle: its index, whether it is the day's, and the turns allowed. */
     puzzle?: { index: number; daily: boolean }
     /** Set in a best-of-three: the opponent and the games won and lost so far. */
@@ -117,13 +120,13 @@ export default function App() {
       <SkirmishSetup
         progress={progress}
         onBack={() => setScreen({ name: 'menu' })}
-        onStart={(human, difficulty, setup) => {
+        onStart={(human, difficulty, setup, hotSeat) => {
           const seed = Date.now()
-          const config = skirmishConfig(setup, human, seed, {
+          const config = skirmishConfig(setup, human, seed, hotSeat ? {} : {
             roles: aiDraft(seed, difficulty),
             loadout: setup.loadout && aiLoadout(seed, otherCourt(human)),
           })
-          setScreen({ name: 'game', human, difficulty, record: { initial: newGame(config), actions: [] }, campaignIndex: null })
+          setScreen({ name: 'game', human, difficulty, hotSeat, record: { initial: newGame(config), actions: [] }, campaignIndex: null })
         }}
       />
     )
@@ -147,7 +150,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     const transient = !!puzzle || !!series
 
@@ -205,14 +208,13 @@ export default function App() {
     return (
       <Game
         key={record.initial.rng}
-        human={human}
-        difficulty={difficulty}
-        personality={campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId)}
+        controllers={hotSeat ? HOT_SEAT
+          : versusAi(human, difficulty, campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         onSave={(progress) => {
           if (transient) return
-          if (progress) saveGame({ human, difficulty, campaignIndex, record: progress })
+          if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })
           else clearSaved()
         }}
         onExit={(winner, finished) => {
@@ -220,6 +222,8 @@ export default function App() {
           if (series) return finishSeries(winner, finished)
           clearSaved()
           setSaved(null)
+          // Games between two people say nothing about the player's own record.
+          if (hotSeat) return setScreen({ name: 'menu' })
           const done = finishGame(winner, finished, true)
           setProgress(done.progress)
           if (done.summary) saveProgress(done.progress)

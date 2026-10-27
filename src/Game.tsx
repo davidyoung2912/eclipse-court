@@ -3,12 +3,12 @@ import { autoDuel } from './ai/autoDuel'
 import { requestAction } from './ai/client'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
-import type { PersonalityId } from './ai/personality'
-import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
+import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
+import { humanCourt, isHotSeat, isHuman, type Controllers } from './controllers'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
 import { estimateOdds, reduce } from './engine/reducer'
-import { samePos } from './engine/rules/board'
+import { otherCourt, samePos } from './engine/rules/board'
 import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
@@ -26,10 +26,8 @@ import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 
 interface Props {
-  human: Court
-  difficulty: Difficulty
-  /** How the AI weighs positions; balanced when absent. */
-  personality?: PersonalityId
+  /** Who plays each court: a person at the screen, or the AI. Two people make a hot-seat game. */
+  controllers: Controllers
   /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
   record: GameRecord
   /** A puzzle: you win by winning within this many of your own turns. */
@@ -49,6 +47,8 @@ interface Pending {
 
 type DuelMode = 'live' | 'auto'
 
+const COURT_NAME: Record<Court, string> = { solari: 'Solari', umbral: 'Umbral' }
+
 const AI_DELAY_MS = 450
 /** How long the AI's chosen piece flashes before it moves. */
 const AI_FLASH_MS = 1080
@@ -60,14 +60,15 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ human, difficulty, personality, record, puzzleLimit, onSave, onExit }: Props) {
-  const foe: Court = human === 'solari' ? 'umbral' : 'solari'
-  const foeSkill = DIFFICULTY[difficulty].skill
-  const foeAggression = DIFFICULTY[difficulty].aggression
+export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props) {
+  const hotSeat = isHotSeat(controllers)
   const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
   const [duelMode, setDuelMode] = useState<DuelMode>('live')
+  /** Hot-seat only: hide the board between turns, and turn it to face whoever is about to play. */
+  const [passScreen, setPassScreen] = useState(true)
+  const [flipBoard, setFlipBoard] = useState(true)
   const [pending, setPending] = useState<Pending | null>(null)
   const [inspectId, setInspectId] = useState<string | null>(null)
   const [casting, setCasting] = useState<Spell | null>(null)
@@ -87,7 +88,17 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   const state = history[history.length - 1].state
   /** The position a hint was asked for, so a slow search cannot land on a later one. */
   const hintFor = useRef<GameState | null>(null)
-  const myTurn = state.turn === human
+  const myTurn = isHuman(controllers, state.turn)
+  /** The court the person at the screen acts for: the one human court, or whoever's turn it is in hot-seat. */
+  const human = hotSeat ? state.turn : humanCourt(controllers)
+  const foe = otherCourt(human)
+  const foeController = controllers[foe]
+  const difficulty = foeController === 'human' ? 'normal' : foeController.ai
+  const personality = foeController === 'human' ? undefined : foeController.personality
+  const foeSkill = DIFFICULTY[difficulty].skill
+  const foeAggression = DIFFICULTY[difficulty].aggression
+  /** Hot-seat duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
+  const settleAuto = hotSeat || duelMode === 'auto'
   /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
   const failed = puzzleLimit !== undefined && !state.winner && turnsTaken >= puzzleLimit
@@ -103,18 +114,18 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   // Each court's bell rings as its turn begins.
   useEffect(() => {
     if (state.winner) {
-      if (state.winner === human) sfx.win()
+      if (hotSeat ? state.winner !== 'draw' : state.winner === human) sfx.win()
       else sfx.lose()
     } else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
-  }, [state, human])
+  }, [state, human, hotSeat])
 
   // The turn announcement fades after a second and then lets play go on.
   useEffect(() => {
-    if (!banner) return
+    if (!banner || (hotSeat && passScreen)) return
     const timer = setTimeout(() => setBanner(null), TURN_BANNER_MS)
     return () => clearTimeout(timer)
-  }, [banner])
+  }, [banner, hotSeat, passScreen])
 
   const clearHint = () => {
     hintFor.current = null
@@ -175,20 +186,20 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
 
   /** Settle a capture: play it live, or let the duel AI play it out at the auto-duel skill. */
   const beginDuel = (p: Pending) => {
-    if (duelMode === 'live') return setPending({ ...p, confirmed: true })
+    if (!settleAuto) return setPending({ ...p, confirmed: true })
     const attacker = state.pieces.find((x) => x.id === p.pieceId)
     const defender = pieceAt(state, p.to)
     if (!attacker || !defender) return
-    const skills: [number, number] = p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
+    const skills: [number, number] = hotSeat ? [AUTO_DUEL_SKILL, AUTO_DUEL_SKILL] : p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
-      p.byAi ? [foeAggression, 1] : [1, foeAggression])
+      hotSeat ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression])
     setPending({ ...p, confirmed: true })
     setSettled({ pending: p, outcome: duel })
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
   useEffect(() => {
-    if (state.turn !== foe || state.winner || pending || failed || banner) return
+    if (myTurn || state.winner || pending || failed || banner) return
     let cancelled = false
     let flash: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
@@ -214,7 +225,7 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
     }
     // beginDuel and play only close over state/duelMode, which are covered or intentionally read fresh.
     // oxlint-disable-next-line react/exhaustive-deps
-  }, [state, pending, foe, difficulty, failed, banner])
+  }, [state, pending, myTurn, difficulty, failed, banner])
 
   const pickSpell = (spell: Spell | null) => {
     if (banner) return
@@ -253,11 +264,17 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   }
 
   const undo = () => {
-    setHistory((h) => {
-      let i = h.length - 2
-      while (i > 0 && h[i].state.turn !== human) i--
-      return h.slice(0, i + 1)
-    })
+    if (hotSeat) {
+      // Take back the last move, whoever made it.
+      const earlier = history.slice(0, -1)
+      setHistory(earlier)
+      setBanner({ court: earlier[earlier.length - 1].state.turn })
+    } else
+      setHistory((h) => {
+        let i = h.length - 2
+        while (i > 0 && h[i].state.turn !== human) i--
+        return h.slice(0, i + 1)
+      })
     setSelectedId(null)
     setCasting(null)
     setCastFirst(null)
@@ -280,7 +297,9 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
   const hinted = hint && hint !== 'thinking' ? hint : null
   const result = puzzleLimit !== undefined
     ? state.winner === human ? 'Solved' : 'Not solved'
-    : state.winner === 'draw' ? 'Draw' : state.winner === human ? 'Victory' : 'Defeat'
+    : state.winner === 'draw' ? 'Draw'
+    : hotSeat ? `${COURT_NAME[state.winner ?? 'solari']} wins`
+    : state.winner === human ? 'Victory' : 'Defeat'
   const retry = () => {
     setHistory((h) => h.slice(0, 1))
     setBanner({ court: history[0].state.turn })
@@ -297,9 +316,9 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? []} onSquare={onSquare}
         focus={pending ? { mover: pending.pieceId, target: defender?.id }
           : aiFocus ?? (hinted ? { mover: hinted.mover, target: hinted.target } : undefined)}
-        hint={hinted ? { from: hinted.from, to: hinted.to, square: hinted.square, pieceId: hinted.mover } : undefined} flip={human === 'umbral'} />
+        hint={hinted ? { from: hinted.from, to: hinted.to, square: hinted.square, pieceId: hinted.mover } : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       {pending && !pending.confirmed && attacker && defender && (
-        <AttackConfirm attacker={attacker} defender={defender} live={duelMode === 'live'}
+        <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
           luminance={squareLuminance(state, pending.to)}
           odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to))}
           onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
@@ -317,9 +336,15 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
           onPerk={(perk) => commit({ ...asking.action, perk })}
           onPromote={(role) => commit({ ...asking.action, promote: role })} />
       )}
-      {banner && !ended && (
+      {banner && !ended && hotSeat && passScreen && (
+        <button key={banner.court + history.length} className={`pass-screen ${banner.court}`} onClick={() => setBanner(null)}>
+          <strong>{COURT_NAME[banner.court]} to move</strong>
+          <span>Hand over the device, then tap to begin</span>
+        </button>
+      )}
+      {banner && !ended && !(hotSeat && passScreen) && (
         <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status">
-          {banner.court === human ? 'Your Turn' : 'AI Turn'}
+          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : 'AI Turn'}
         </div>
       )}
       {ended && (
@@ -338,7 +363,14 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
       <footer className="tray">
         {!ended && !pending && myTurn && <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />}
         <div className="options">
-          <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
+          {hotSeat ? (
+            <>
+              <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>
+              <label><input type="checkbox" checked={flipBoard} onChange={() => setFlipBoard((v) => !v)} /> Face the player</label>
+            </>
+          ) : (
+            <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
+          )}
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
           <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> Aim assist</label>
           <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> Haptics</label>
@@ -357,7 +389,7 @@ export function Game({ human, difficulty, personality, record, puzzleLimit, onSa
         </p>
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
-          <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint</button>
+          {!hotSeat && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>

@@ -464,3 +464,12 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   18%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
 }
+
+.pass-screen {
+  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; border: 0; border-radius: 0; cursor: pointer; background: rgba(20, 16, 43, 0.97); color: var(--solari-cream);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.pass-screen strong { font-size: 2rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--solari-gold); }
+.pass-screen.umbral strong { color: #d9ccff; }
+.pass-screen span { font-size: 1rem; opacity: 0.8; }

@@ -10,6 +10,8 @@ interface Saved {
   human: Court
   difficulty: Difficulty
   campaignIndex: number | null
+  /** Two people shared the device; absent in saves from before hot-seat. */
+  hotSeat?: boolean
   code: string
 }
 
@@ -17,6 +19,7 @@ export interface Resumable {
   human: Court
   difficulty: Difficulty
   campaignIndex: number | null
+  hotSeat?: boolean
   record: GameRecord
 }
 
