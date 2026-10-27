@@ -252,6 +252,8 @@ export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, fla
 
 export const boardUnlocked = (p: Progress, boardId: string) => totalStars(p) >= (BOARD_STARS[boardId] ?? 0)
 
+export const presetUnlocked = (p: Progress, preset: { stars: number }) => totalStars(p) >= preset.stars
+
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0
 
 /** A stored value made safe to use: a damaged or older blob falls back to what it can give. */

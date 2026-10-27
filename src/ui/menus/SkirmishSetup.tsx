@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import { BOARDS, boardById } from '../../engine/data/boards'
 import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
-import { SETUP_INFO, type SetupChoice, type SetupMode } from '../../engine/data/setups'
+import { matchesPreset, presetById, PRESETS, SETUP_INFO, type Preset, type SetupChoice, type SetupMode } from '../../engine/data/setups'
 import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
@@ -13,7 +13,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon, type IconName } from './icons'
 import { SkirmishArt } from './MenuArt'
 import { PieceArt } from '../../art/PieceArt'
-import { BOARD_STARS, boardUnlocked, totalStars, type Progress } from '../../progress'
+import { BOARD_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
@@ -73,6 +73,7 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
   const [extraTime, setExtraTime] = useState(false)
   const [growth, setGrowth] = useState(false)
   const [promotion, setPromotion] = useState(false)
+  const [presetId, setPresetId] = useState<string | null>(null)
   const board = boardById(boardId)
   const ready = (mode !== 'draft' || draftProblem(roles) === null) && (spellMode === 'classic' || loadoutProblem(court, loadout) === null)
   const choice = (): SetupChoice => ({
@@ -82,6 +83,22 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
     winMode, events, showdown, cycle, reverse, growth, promotion,
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
   })
+  const applyPreset = (preset: Preset) => {
+    const r = preset.rules
+    setPresetId(preset.id)
+    setWinMode(r.winMode ?? 'beacons')
+    setEvents(!!r.events)
+    setShowdown(!!r.showdown)
+    setCycle(r.cycle ?? 'standard')
+    setReverse(!!r.reverse)
+    setGrowth(!!r.growth)
+    setPromotion(!!r.promotion)
+    setRecharge(!!r.recharge)
+    setClockSeconds(r.clock?.seconds ?? 0)
+    setExtraTime(!!r.clock?.bank)
+  }
+  const chosenPreset = presetId ? presetById(presetId) : undefined
+  const customised = !!chosenPreset && !matchesPreset(choice(), chosenPreset)
   const summary = {
     classic: 'The standard 12-piece army for both courts.',
     draft: `Your drafted army: ${roles.length + 1} pieces for ${draftCost(roles)} points. The AI drafts its own.`,
@@ -122,6 +139,18 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
           </button>
         ))}
       </div>}
+      <h3>Presets{customised && <small> · customised</small>}</h3>
+      <div className="choices row">
+        {PRESETS.map((pr) => {
+          const open = presetUnlocked(progress, pr)
+          return (
+            <button key={pr.id} className={`choice${chosenPreset === pr ? ' on' : ''}`} disabled={!open} onClick={() => applyPreset(pr)}>
+              <strong>{!open && <Icon name="lock" />}<Icon name={pr.icon} />{pr.name}{chosenPreset === pr && customised ? ' (customised)' : ''}</strong>
+              <span>{open ? `${pr.text} ${'★'.repeat(pr.difficulty)}` : `Earn ${pr.stars} campaign stars to unlock.`}</span>
+            </button>
+          )
+        })}
+      </div>
       <h3>Army</h3>
       <div className="choices row">
         {(Object.keys(SETUP_INFO) as SetupMode[]).map((m) => (
@@ -179,9 +208,6 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
         ))}
       </div>
       {clockSeconds > 0 && <label className="recharge"><input type="checkbox" checked={extraTime} onChange={() => setExtraTime((v) => !v)} /> Extra time: {BANK_SECONDS} seconds per court, spent only after a turn runs out</label>}
-      <div className="menu-buttons">
-        <button onClick={() => { setWinMode('hill'); setClockSeconds(15); setExtraTime(false) }}><Icon name="flame" />Blitz Hill preset</button>
-      </div>
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (

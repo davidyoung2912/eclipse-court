@@ -48,6 +48,53 @@ export interface SetupChoice {
   promotion?: boolean
 }
 
+/** The rule choices of a setup: everything a preset can fill in. */
+export type PresetRules = Pick<SetupChoice, 'winMode' | 'events' | 'showdown' | 'cycle' | 'reverse' | 'clock' | 'growth' | 'promotion' | 'recharge'>
+
+export interface Preset {
+  id: string
+  name: string
+  icon: 'moon' | 'sparkle' | 'sun' | 'flame'
+  text: string
+  /** 1 (gentle) to 3 (demanding). */
+  difficulty: 1 | 2 | 3
+  /** Campaign stars needed to pick it. */
+  stars: number
+  rules: PresetRules
+}
+
+/** Named bundles of rules. Every field that matters is stated, so a preset also switches off what it leaves out. */
+export const PRESETS: readonly Preset[] = [
+  { id: 'long-night', name: 'Long Night', icon: 'moon', text: 'A long day of fog and blight, ending in an Eclipse showdown.', difficulty: 2, stars: 0,
+    rules: { cycle: 'long', events: true, showdown: true } },
+  { id: 'blitz-hill', name: 'Blitz Hill', icon: 'flame', text: 'Hold the Hill with 15 seconds a turn.', difficulty: 2, stars: 0,
+    rules: { winMode: 'hill', clock: { seconds: 15 } } },
+  { id: 'veterans-war', name: "Veteran's War", icon: 'sparkle', text: 'Pieces grow, Footsoldiers promote and spells return.', difficulty: 2, stars: 3,
+    rules: { growth: true, promotion: true, recharge: 8 } },
+  { id: 'sudden-sun', name: 'Sudden Sun', icon: 'sun', text: 'A swift day with the light running backward, on the Hill.', difficulty: 3, stars: 6,
+    rules: { winMode: 'hill', cycle: 'swift', reverse: true } },
+]
+
+export const presetById = (id: string) => PRESETS.find((p) => p.id === id)
+
+/** The rule fields of a setup in one comparable form, with absent values filled in. */
+export const normalRules = (r: Partial<PresetRules>) => ({
+  winMode: r.winMode ?? 'beacons',
+  events: !!r.events,
+  showdown: !!r.showdown,
+  cycle: r.cycle ?? 'standard',
+  reverse: !!r.reverse,
+  growth: !!r.growth,
+  promotion: !!r.promotion,
+  recharge: r.recharge ?? 0,
+  seconds: r.clock?.seconds ?? 0,
+  bank: !!r.clock?.bank,
+})
+
+/** True while a setup's rules are exactly the preset's. */
+export const matchesPreset = (choice: Partial<PresetRules>, preset: Preset) =>
+  JSON.stringify(normalRules(choice)) === JSON.stringify(normalRules(preset.rules))
+
 /** The AI court's choices that a skirmish needs beyond the seed. */
 export interface FoeChoice {
   roles?: readonly Role[]
