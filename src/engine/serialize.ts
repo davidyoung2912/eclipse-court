@@ -17,7 +17,7 @@ export const FORMAT_VERSION = 1
 type Overrides = Partial<Pick<GameState, 'pieces' | 'spells' | 'dir'>>
 
 /** Actions as short arrays: [0, piece, x, y, attackerHp?, defenderHp?, perk?, promotion?] (a gap is -1 / ''), [1, spell, piece?, x?, y?], [2]. */
-type Packed = (string | number)[]
+export type Packed = (string | number)[]
 
 interface Payload {
   v: number
@@ -28,7 +28,7 @@ interface Payload {
 
 const OVERRIDE_KEYS = ['pieces', 'spells', 'dir'] as const
 
-function pack(a: Action): Packed {
+export function pack(a: Action): Packed {
   if (a.type === 'pass') return [2]
   if (a.type === 'move') {
     const base: Packed = [0, a.pieceId, a.to.x, a.to.y]
@@ -43,7 +43,7 @@ function pack(a: Action): Packed {
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 const isStr = (v: unknown): v is string => typeof v === 'string'
 
-function unpack(p: unknown): Action | null {
+export function unpack(p: unknown): Action | null {
   if (!Array.isArray(p)) return null
   if (p[0] === 2) return { type: 'pass' }
   if (p[0] === 0 && isStr(p[1]) && isNum(p[2]) && isNum(p[3])) {
