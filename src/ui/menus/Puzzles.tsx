@@ -17,6 +17,8 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const isSolved = (id: string) => progress.puzzles.includes(id)
   const solved = PUZZLES.filter((p) => isSolved(p.id)).length
+  /** The tier to open: the first with a puzzle still unsolved. */
+  const current = PUZZLE_TIERS.find(({ tier }) => puzzlesIn(tier).some((p) => !isSolved(p.id)))?.tier
   return (
     <main className="app menu">
       <PageArt icon="puzzle" />
@@ -33,8 +35,8 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
         const list = puzzlesIn(tier)
         if (list.length === 0) return null
         return (
-          <section key={tier} aria-label={`${name} puzzles`}>
-            <h3>{name} ({list.filter((p) => isSolved(p.id)).length}/{list.length})</h3>
+          <details key={tier} className="tier-fold" open={tier === current}>
+            <summary><h3>{name} ({list.filter((p) => isSolved(p.id)).length}/{list.length})</h3></summary>
             <p className="tagline">{blurb}</p>
             <ol className="campaign">
               {list.map((p, i) => {
@@ -42,7 +44,7 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
                 return <li key={p.id}><PuzzleButton index={index} number={i + 1} solved={isSolved(p.id)} onPlay={() => onPlay(index, false)} /></li>
               })}
             </ol>
-          </section>
+          </details>
         )
       })}
       <div className="menu-buttons stacked">

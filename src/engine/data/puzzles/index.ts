@@ -2,6 +2,7 @@ import { dailySeed } from '../setups'
 import { BEGINNER } from './beginner'
 import { BEGINNER_MORE } from './beginner2'
 import { EXPERT } from './expert'
+import { EXPERT_MORE } from './expert2'
 import type { Puzzle, PuzzleTier } from './helpers'
 import { NORMAL } from './normal'
 import { NORMAL_MORE } from './normal2'
@@ -10,7 +11,7 @@ export type { Puzzle, PuzzleTier } from './helpers'
 export { PUZZLE_TIERS, type TierInfo } from './tiers'
 
 /** Every puzzle, easiest tier first; ids are what progress is saved against, so they never change. */
-export const PUZZLES: readonly Puzzle[] = [...BEGINNER, ...BEGINNER_MORE, ...NORMAL, ...NORMAL_MORE, ...EXPERT]
+export const PUZZLES: readonly Puzzle[] = [...BEGINNER, ...BEGINNER_MORE, ...NORMAL, ...NORMAL_MORE, ...EXPERT, ...EXPERT_MORE]
 
 export const puzzlesIn = (tier: PuzzleTier) => PUZZLES.filter((p) => p.tier === tier)
 

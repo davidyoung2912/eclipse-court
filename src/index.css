@@ -426,6 +426,11 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 }
 .menu h3 { display: flex; align-items: center; gap: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--solari-cream); }
 .menu h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--umbral-violet), transparent); }
+.tier-fold { display: flex; flex-direction: column; gap: 8px; }
+.tier-fold summary { cursor: pointer; list-style: none; }
+.tier-fold summary::-webkit-details-marker { display: none; }
+.tier-fold summary h3::before { content: '\25B8'; }
+.tier-fold[open] summary h3::before { content: '\25BE'; }
 .menu .choice {
   position: relative; background: linear-gradient(180deg, rgba(74, 58, 150, 0.35), rgba(43, 36, 104, 0.35));
   border-color: rgba(154, 124, 240, 0.35);

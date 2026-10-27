@@ -133,7 +133,7 @@ describe('puzzles', () => {
     }
     // Only meaningful once the packs are full.
     if (PUZZLES.length < TIER_SIZE * 3) return
-    expect([...roles].sort()).toEqual(['aura', 'bruiser', 'charger', 'flier', 'footsoldier', 'marksman'])
+    expect([...roles].sort()).toEqual(['aura', 'bruiser', 'charger', 'flier', 'footsoldier', 'leader', 'marksman'])
     expect([...spells].sort()).toEqual(spellPool('solari').sort())
   })
 

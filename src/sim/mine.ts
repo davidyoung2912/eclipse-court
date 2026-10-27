@@ -199,7 +199,7 @@ function evaluate(def: PuzzleDef): Found | null {
   let s = start
   for (const a of line) {
     // A plain step onto a square a rival piece held at the start only works because the AI chose to leave it.
-    if (a.type === 'move' && !a.duel && pieceAt(start, a.to)?.court === 'umbral' && !pieceAt(s, a.to)) return null
+    if ('to' in a && a.to && !(a.type === 'move' && a.duel) && pieceAt(start, a.to)?.court === 'umbral' && !pieceAt(s, a.to)) return null
     s = reduce(s, a)
     if (s.winner) break
     const r = rivalReply(s, p, 'ai')
