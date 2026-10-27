@@ -81,16 +81,22 @@ export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onSta
       <h1><span>Eclipse</span> Court</h1>
       <div className="divider" aria-hidden="true"><i /></div>
       <p className="tagline">Light and dark trade places. Every capture is a duel.</p>
+      {onResume && (
+        <div className="menu-buttons">
+          <button className="primary" onClick={onResume}><Icon name="play" />Resume Game</button>
+        </div>
+      )}
       <div className="menu-buttons">
-        {onResume && <button className="primary" onClick={onResume}><Icon name="play" />Resume game</button>}
         <button className={firstRun || onResume ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
+      </div>
+      <div className="menu-buttons">
         <button onClick={onGauntlet}><Icon name="flame" />Gauntlet</button>
         <button onClick={onPuzzles}><Icon name="puzzle" />Puzzles</button>
       </div>
       <div className="menu-buttons small">
-        <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily match</button>
-        <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily puzzle</button>
+        <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily Match</button>
+        <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
       </div>
       <div className="menu-buttons small">
         <button onClick={onPractice}><Icon name="target" />Practice</button>
@@ -98,9 +104,9 @@ export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onSta
         <button onClick={onSettings}><Icon name="gear" />Settings</button>
       </div>
       <div className="menu-buttons small">
-        <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to play</button>
-        <button onClick={onPaste}><Icon name="chain" />Paste code</button>
-        <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'on' : 'off'}</button>
+        <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to Play</button>
+        <button onClick={onPaste}><Icon name="chain" />Paste Code</button>
+        <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'On' : 'Off'}</button>
       </div>
     </main>
   )

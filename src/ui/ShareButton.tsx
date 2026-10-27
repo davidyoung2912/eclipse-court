@@ -11,7 +11,7 @@ interface Props {
   text?: string
 }
 
-const DONE = { shared: 'Shared', copied: 'Link copied', failed: 'Could not share' } as const
+const DONE = { shared: 'Shared', copied: 'Link Copied', failed: 'Could Not Share' } as const
 
 /** A button that shares a link through the system sheet, or copies it, and says which happened. */
 export function ShareButton({ label, link, title, text }: Props) {

@@ -46,3 +46,8 @@ export function Icon({ name }: { name: IconName }) {
     </svg>
   )
 }
+
+/** The bare path of an icon, for drawing it large inside another SVG. */
+export function IconShape({ name }: { name: IconName }) {
+  return <path d={PATHS[name]} />
+}

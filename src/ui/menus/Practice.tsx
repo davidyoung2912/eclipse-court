@@ -6,6 +6,7 @@ import { estimateOdds } from '../../engine/reducer'
 import type { Court, DuelOutcome, Piece, Role } from '../../engine/rules/types'
 import { DuelView } from '../duel/DuelView'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   onBack: () => void
@@ -57,7 +58,8 @@ export function Practice({ onBack }: Props) {
   )
   return (
     <main className="app menu">
-      <h2>Practice arena</h2>
+      <PageArt icon="target" />
+      <h2>Practice Arena</h2>
       <p className="tagline">Fight any piece against any other. Nothing is saved.</p>
       <h3>Your court</h3>
       <div className="row-pick">

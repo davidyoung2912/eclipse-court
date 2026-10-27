@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { parseShared, type Shared } from '../../share'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   onOpen: (shared: Shared) => void
@@ -13,7 +14,8 @@ export function PasteCode({ onOpen, onBack }: Props) {
   const [error, setError] = useState(false)
   return (
     <main className="app menu">
-      <h2>Paste a code</h2>
+      <PageArt icon="chain" />
+      <h2>Paste a Code</h2>
       <p className="tagline">Paste a challenge or replay link, or the code after the # sign.</p>
       <textarea className="code-box" rows={5} value={text} spellCheck={false} aria-label="Link or code"
         onChange={(e) => { setText(e.target.value); setError(false) }} />

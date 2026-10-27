@@ -1,5 +1,6 @@
 import type { Role } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
+import { IconShape, type IconName } from './icons'
 
 /** Deterministic scatter so the sky is the same on every visit. */
 const SKY = Array.from({ length: 28 }, (_, i) => ({
@@ -86,6 +87,22 @@ export function OpponentAvatar({ index, locked }: { index: number; locked: boole
   return (
     <svg className={`avatar${locked ? ' locked' : ''}`} viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true">
       <PieceArt role={AVATARS[index % AVATARS.length]} court="umbral" />
+    </svg>
+  )
+}
+
+/** The shared header scene for pages without a scene of their own: the night sky with one emblem and a low eclipse. */
+export function PageArt({ icon }: { icon: IconName }) {
+  const id = `pg-${icon}`
+  return (
+    <svg className="menu-art" viewBox="0 0 320 150" aria-hidden="true">
+      <Sky id={id} />
+      <circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} />
+      <circle cx="160" cy="150" r="46" fill="#ffe08a" opacity="0.9" />
+      <circle cx="170" cy="142" r="44" fill="#0d0a22" />
+      <g transform="translate(160 68) scale(3.6) translate(-12 -12)" fill="none" stroke="#fbf1d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <IconShape name={icon} />
+      </g>
     </svg>
   )
 }

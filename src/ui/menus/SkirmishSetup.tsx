@@ -112,11 +112,11 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
       <h3>Players</h3>
       <div className="choices row">
         <button className={`choice${!hotSeat ? ' on' : ''}`} onClick={() => setHotSeat(false)}>
-          <strong><Icon name="swords" />One player</strong>
+          <strong><Icon name="swords" />One Player</strong>
           <span>Play against the AI.</span>
         </button>
         <button className={`choice${hotSeat ? ' on' : ''}`} onClick={() => { setHotSeat(true); setSpellMode('classic'); if (mode === 'draft') setMode('classic') }}>
-          <strong><Icon name="banner" />Two players</strong>
+          <strong><Icon name="banner" />Two Players</strong>
           <span>Share this device, taking turns. Duels are settled automatically.</span>
         </button>
       </div>
@@ -222,7 +222,7 @@ export function SkirmishSetup({ progress, onStart, challengeLink, onBack }: Prop
       </div>
       <div className="menu-buttons stacked">
         <button className="primary" disabled={!ready} onClick={() => onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />Start</button>
-        {ready && <ShareButton title="Eclipse Court challenge" label="Copy challenge link" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
+        {ready && <ShareButton title="Eclipse Court challenge" label="Copy Challenge Link" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import { dailyPuzzleIndex, PUZZLES } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   progress: Progress
@@ -15,6 +16,7 @@ export function Puzzles({ progress, report, onPlay, onBack }: Props) {
   const solved = PUZZLES.filter((p) => progress.puzzles.includes(p.id)).length
   return (
     <main className="app menu">
+      <PageArt icon="puzzle" />
       <h2>Puzzles</h2>
       <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you.</p>
       {report && report.length > 0 && (

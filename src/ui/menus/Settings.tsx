@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   progress: Progress
@@ -14,6 +15,7 @@ export function Settings({ progress, onBack }: Props) {
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
     <main className="app menu">
+      <PageArt icon="gear" />
       <h2>Settings</h2>
       <h3>Look</h3>
       <div className="choices">

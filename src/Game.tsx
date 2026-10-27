@@ -399,8 +399,8 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
         <div className="confirm result" role="dialog" aria-label="Game over">
           <p className="confirm-title">{result}</p>
           <div className="buttons">
-            {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try again</button>}
-            {puzzleLimit === undefined && <ShareButton title="Eclipse Court replay" label="Copy replay link" link={() => replayLink(recordOf(history))} />}
+            {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
+            {puzzleLimit === undefined && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
             <button className="primary" onClick={() => onExit(state.winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>
@@ -440,7 +440,7 @@ export function Game({ controllers, record, puzzleLimit, onSave, onExit }: Props
         <div className="buttons">
           <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
           {!hotSeat && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint</button>}
-          <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End turn</button>
+          <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
         </div>
       </footer>

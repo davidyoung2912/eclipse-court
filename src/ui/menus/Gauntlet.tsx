@@ -10,6 +10,7 @@ import { totalStars, type Progress } from '../../progress'
 import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   progress: Progress
@@ -67,6 +68,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
   if (!run)
     return (
       <main className="app menu">
+        <PageArt icon="flame" />
         <h2>Gauntlet</h2>
         <p className="tagline">
           Eight opponents in a row with one army. Pieces keep what they earn, the fallen stay fallen, and a loss ends the run.
@@ -82,7 +84,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
         <h3>Starting army</h3>
         <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
         <div className="menu-buttons stacked">
-          <button className="primary" disabled={!!draftProblem(roles)} onClick={() => onStart(court, roles)}><Icon name="play" />Begin the run</button>
+          <button className="primary" disabled={!!draftProblem(roles)} onClick={() => onStart(court, roles)}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
       </main>
@@ -91,6 +93,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
   if (run.offers)
     return (
       <main className="app menu">
+        <PageArt icon="flame" />
         <h2>Spoils of stage {run.stage - 1}</h2>
         <p className="tagline">Take one reward. {REST_STAGES.includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
         {lines}
@@ -107,7 +110,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
         </div>
         <Army run={run} />
         <div className="menu-buttons stacked">
-          <button onClick={onAbandon}><Icon name="exit" />Abandon the run</button>
+          <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
           {back}
         </div>
       </main>
@@ -117,6 +120,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
   const personality = PERSONALITIES[foe.personality]
   return (
     <main className="app menu">
+      <PageArt icon="flame" />
       <h2>Stage {run.stage} of {GAUNTLET_STAGES}</h2>
       <p className="tagline">{foe.name}: {foe.difficulty}, {personality.name}.</p>
       {lines}
@@ -130,7 +134,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
       {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; a camp after stage {REST_STAGES.find((s) => s >= run.stage) ?? 'the last'} may restore one.</p>}
       <div className="menu-buttons stacked">
         <button className="primary" onClick={onFight}><Icon name="swords" />Fight</button>
-        <button onClick={onAbandon}><Icon name="exit" />Abandon the run</button>
+        <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
         {back}
       </div>
     </main>

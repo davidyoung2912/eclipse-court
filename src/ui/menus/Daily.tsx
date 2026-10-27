@@ -4,6 +4,7 @@ import { dailyResult, liveStreak, type Progress } from '../../progress'
 import { challengeLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   match: DailyMatch
@@ -28,7 +29,8 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   const streak = liveStreak(progress, match.date)
   return (
     <main className="app menu">
-      <h2>Daily match</h2>
+      <PageArt icon="sun" />
+      <h2>Daily Match</h2>
       <p className="tagline">{dateLabel(match.date)}. The same game for everyone today; your first finished attempt is the one that counts.</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
@@ -44,10 +46,10 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
       </dl>
       <div className="menu-buttons stacked">
         <button className={result ? undefined : 'primary'} onClick={onPlay}>
-          <Icon name="play" />{result ? 'Play again (not scored)' : 'Play today’s match'}
+          <Icon name="play" />{result ? 'Play Again (Not Scored)' : 'Play Today’s Match'}
         </button>
         {result && (
-          <ShareButton title="Eclipse Court daily" label="Share result" text={resultText(match, result.won, result.turns, result.lost)}
+          <ShareButton title="Eclipse Court daily" label="Share Result" text={resultText(match, result.won, result.turns, result.lost)}
             link={() => challengeLink({ config: match.config, side: DAILY_COURT })} />
         )}
         <button onClick={onBack}><Icon name="back" />Back</button>

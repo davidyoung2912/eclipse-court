@@ -3,6 +3,7 @@ import { CAMPAIGN } from '../../engine/data/campaign'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   progress: Progress
@@ -22,6 +23,7 @@ export function Stats({ progress, onReplay, onBack }: Props) {
   ]
   return (
     <main className="app menu">
+      <PageArt icon="trophy" />
       <h2>Stats</h2>
       <dl className="stats">
         {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
@@ -39,8 +41,8 @@ export function Stats({ progress, onReplay, onBack }: Props) {
         })}
       </ul>
       <div className="menu-buttons stacked">
-        {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay last game</button>}
-        {progress.last && <ShareButton title="Eclipse Court replay" label="Copy replay link" link={() => shareLink('r', progress.last!)} />}
+        {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay Last Game</button>}
+        {progress.last && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => shareLink('r', progress.last!)} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

@@ -5,6 +5,7 @@ import { describeConfig } from '../../share'
 import type { Court } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
+import { PageArt } from './MenuArt'
 
 interface Props {
   challenge: ChallengeCode
@@ -17,6 +18,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
   const [court, setCourt] = useState<Court>(challenge.side)
   return (
     <main className="app menu">
+      <PageArt icon="swords" />
       <h2>Challenge</h2>
       <p className="tagline">Someone sent you this match. Every game from this link begins from the same position.</p>
       <ul className="setup-card">
@@ -35,10 +37,10 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
       <div className="menu-buttons stacked">
         {DIFFICULTY_LIST.map((d) => (
           <button key={d} className={d === 'normal' ? 'primary' : undefined} onClick={() => onPlay(court, d, false)}>
-            <Icon name="swords" />Against the AI: {d}
+            <Icon name="swords" />Against the AI: {d[0].toUpperCase() + d.slice(1)}
           </button>
         ))}
-        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a friend on this device</button>
+        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a Friend on This Device</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>
