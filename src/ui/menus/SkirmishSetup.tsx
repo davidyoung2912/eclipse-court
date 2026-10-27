@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
-import { BOARDS, boardById } from '../../engine/data/boards'
+import { BOARDS, GRAND_BOARDS, boardById, grandBoardById } from '../../engine/data/boards'
 import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
 import { matchesPreset, presetById, PRESETS, RULESETS, rulesetById, SETUP_INFO, type Preset, type RuleGroup, type RulesetId, type PresetRules, type SetupChoice, type SetupMode } from '../../engine/data/setups'
 import { MODE_INFO } from '../../engine/rules/events'
@@ -16,7 +16,7 @@ import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
 import { TipCard } from '../tips/TipCard'
 import { SkirmishArt } from './MenuArt'
 import { PieceArt } from '../../art/PieceArt'
-import { BOARD_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
+import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
 
 interface Props {
@@ -65,6 +65,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
   const [hotSeat, setHotSeat] = useState(false)
   const [mode, setMode] = useState<SetupMode>('classic')
   const [boardId, setBoardId] = useState('classic')
+  const [grand, setGrand] = useState(false)
   const [roles, setRoles] = useState<Role[]>([...CLASSIC_ROLES])
   const [spellMode, setSpellMode] = useState<'classic' | 'loadout'>('classic')
   const [loadout, setLoadout] = useState<Spell[]>([])
@@ -82,7 +83,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
   const [rulesId, setRulesId] = useState<RulesetId>(initialTier)
   const tier = rulesetById(rulesId) ?? RULESETS[1]
   const open = (group: RuleGroup) => !tier.locks.includes(group)
-  const board = boardById(boardId)
+  const board = grand ? grandBoardById(boardId) : boardById(boardId)
   const problem: { text: string; section: SectionId } | null = mode === 'draft' && draftProblem(roles)
     ? { text: draftProblem(roles) as string, section: 'army' }
     : spellMode === 'loadout' && loadoutProblem(court, loadout)
@@ -92,7 +93,8 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({ army: false, spells: false, win: false, hazards: false, clock: false })
   const reveal = (...ids: SectionId[]) => setOpenSections((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, true])) }))
   const choice = (): SetupChoice => ({
-    mode, board: boardId, roles,
+    mode: grand ? 'classic' : mode, board: boardId, roles,
+    ...(grand ? { size: 9 as const } : {}),
     loadout: spellMode === 'loadout' ? loadout : undefined,
     recharge: recharge ? RECHARGE_ROUNDS : undefined,
     winMode, events, showdown, cycle, reverse, growth, promotion,
@@ -129,12 +131,12 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
   const chosenPreset = presetId ? presetById(presetId) : undefined
   const customised = !!chosenPreset && !matchesPreset(choice(), chosenPreset)
   const summary = {
-    classic: 'The standard 12-piece army for both courts.',
+    classic: grand ? 'The 16-piece Grand army for both courts, with longer reach for every piece.' : 'The standard 12-piece army for both courts.',
     draft: `Your drafted army: ${roles.length + 1} pieces for ${draftCost(roles)} points. The AI drafts its own.`,
     random: 'A fresh random army, the same for both courts.',
     daily: "Today's board and army, identical for every player today.",
   }[mode]
-  const boardLabel = mode === 'daily' ? 'the daily board' : `${board.name} board`
+  const boardLabel = !grand && mode === 'daily' ? 'the daily board' : `${board.name} board`
   const changed = new Set(changedSections({
     rules: {
       winMode, events, showdown, cycle, reverse, growth, promotion,
@@ -151,7 +153,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
     open('promotion') && promotion && 'Promotion',
   ].filter(Boolean)
   const summaries: Record<SectionId, string> = {
-    army: `${open('army') ? `${SETUP_INFO[mode].name} army · ` : ''}${mode === 'daily' ? 'Daily board' : `${board.name} board`}`,
+    army: `${open('army') && !grand ? `${SETUP_INFO[mode].name} army · ` : ''}${!grand && mode === 'daily' ? 'Daily board' : `${board.name} board`}`,
     spells: [spellMode === 'loadout' ? `Loadout ${loadout.length}/${LOADOUT_SIZE}` : 'Classic spells', recharge && open('recharge') && 'recharging'].filter(Boolean).join(' · '),
     win: [open('win') && MODE_INFO[winMode].name, open('cycle') && `${CYCLES.find((c) => c.id === cycle)?.name} day`, open('reverse') && reverse && 'reversed'].filter(Boolean).join(' · '),
     hazards: hazards.length ? hazards.join(' · ') : 'None',
@@ -170,11 +172,22 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
   const armies: SegOption<SetupMode>[] = (Object.keys(SETUP_INFO) as SetupMode[]).map((m) => ({
     value: m, label: SETUP_INFO[m].name, hint: SETUP_INFO[m].text, disabled: hotSeat && m === 'draft',
   }))
-  const boards: SegOption<string>[] = BOARDS.map((b) => ({
-    value: b.id, label: b.name, hint: b.text, locked: !boardUnlocked(progress, b.id), disabled: mode === 'daily' || !boardUnlocked(progress, b.id),
+  const shownBoards = grand ? GRAND_BOARDS : BOARDS
+  const boards: SegOption<string>[] = shownBoards.map((b) => ({
+    value: b.id, label: b.name, hint: b.text, locked: !boardUnlocked(progress, b.id), disabled: (!grand && mode === 'daily') || !boardUnlocked(progress, b.id),
   }))
-  const boardNote = mode === 'daily' ? 'The daily game picks its own board.'
-    : [board.text, ...BOARDS.filter((b) => !boardUnlocked(progress, b.id)).map((b) => `${b.name}: earn ${BOARD_STARS[b.id]} campaign stars to unlock.`)].join(' ')
+  const boardNote = !grand && mode === 'daily' ? 'The daily game picks its own board.'
+    : [board.text, ...shownBoards.filter((b) => !boardUnlocked(progress, b.id)).map((b) => `${b.name}: earn ${BOARD_STARS[b.id]} campaign stars to unlock.`)].join(' ')
+  const grandOpen = totalStars(progress) >= GRAND_STARS
+  const sizes: SegOption<'standard' | 'grand'>[] = [
+    { value: 'standard', label: 'Standard 7x7', hint: 'The classic board and 12-piece armies.' },
+    { value: 'grand', label: 'Grand 9x9', hint: 'A wider board with 16 pieces a side. Footsoldiers, Bruisers and Marksmen reach further, and the Leader teleports 5.', locked: !grandOpen, disabled: !grandOpen },
+  ]
+  const setSize = (v: 'standard' | 'grand') => {
+    setGrand(v === 'grand')
+    setBoardId(v === 'grand' ? GRAND_BOARDS[0].id : 'classic')
+    setMode('classic')
+  }
   const spellModes: SegOption<'classic' | 'loadout'>[] = [
     { value: 'classic', label: 'Classic', hint: 'The seven classic spells.' },
     { value: 'loadout', label: 'Loadout', hint: `Pick ${LOADOUT_SIZE} from the shared pool and your court's signatures.`, disabled: hotSeat },
@@ -190,7 +203,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
       <SkirmishArt />
       <h2>Skirmish</h2>
       <div className="setup-card">
-        <strong>{tier.name} rules · {SETUP_INFO[mode].name} army on {boardLabel} · {hotSeat ? 'Two players' : `${difficulty[0].toUpperCase() + difficulty.slice(1)} AI`}.</strong> {summary}
+        <strong>{tier.name} rules · {grand ? 'Grand' : SETUP_INFO[mode].name} army on {boardLabel} · {hotSeat ? 'Two players' : `${difficulty[0].toUpperCase() + difficulty.slice(1)} AI`}.</strong> {summary}
       </div>
       <h3>Players</h3>
       <Segmented label="Players" options={players} value={hotSeat ? 'two' : 'one'} onChange={(v) => {
@@ -225,9 +238,11 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, cha
       </div>}
       <h3>Options</h3>
       <Section title="Army & Board" {...sectionProps('army')}>
-        {open('army') && <Segmented label="Army" options={armies} value={mode} onChange={(m) => { setMode(m); if (m === 'draft') reveal('army') }}
+        <Segmented label="Board size" options={sizes} value={grand ? 'grand' : 'standard'} onChange={setSize}
+          note={grandOpen ? undefined : `Grand 9x9: earn ${GRAND_STARS} campaign stars to unlock.`} />
+        {open('army') && !grand && <Segmented label="Army" options={armies} value={mode} onChange={(m) => { setMode(m); if (m === 'draft') reveal('army') }}
           note={hotSeat ? `${SETUP_INFO[mode].text} Draft isn't available with two players.` : undefined} />}
-        {mode === 'draft' && open('army') && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
+        {!grand && mode === 'draft' && open('army') && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
         <Segmented label="Board" options={boards} value={boardId} onChange={setBoardId} note={boardNote} />
       </Section>
       {showSpells && <Section title="Spells" {...sectionProps('spells')}>

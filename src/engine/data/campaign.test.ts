@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { PERSONALITIES } from './personality'
 import { chooseAction } from '../../ai/strategy'
 import { reduce } from '../reducer'
-import { CAMPAIGN, battlesIn, campaignGame } from './campaign'
-import { boardById } from './boards'
+import { CAMPAIGN, battlesIn, campaignGame, grandBattles } from './campaign'
+import { boardById, grandBoardById } from './boards'
+import { skirmishConfig } from './setups'
+import { newGame } from '../reducer'
 import { draftProblem } from './draft'
 
 describe('campaign', () => {
@@ -28,7 +30,7 @@ describe('campaign', () => {
     expect(new Set(CAMPAIGN.map((o) => o.name)).size).toBe(CAMPAIGN.length)
     for (const o of CAMPAIGN) {
       expect(PERSONALITIES[o.personality], o.name).toBeDefined()
-      if (o.board) expect(boardById(o.board).id).toBe(o.board)
+      if (o.board) expect((o.size === 9 ? grandBoardById(o.board) : boardById(o.board)).id).toBe(o.board)
     }
     expect(new Set(CAMPAIGN.map((o) => o.personality)).size).toBeGreaterThanOrEqual(4)
     expect(CAMPAIGN.filter((o) => o.boss).length).toBeGreaterThanOrEqual(1)
@@ -39,7 +41,7 @@ describe('campaign', () => {
       const s = campaignGame(o, 50 + i)
       expect(s.turn, o.name).toBe('solari')
       expect(s.pieces.filter((p) => p.court === 'umbral' && p.role === 'leader'), o.name).toHaveLength(1)
-      expect(s.config.board).toBe(boardById(o.board).id)
+      expect(s.config.board).toBe((o.size === 9 ? grandBoardById(o.board) : boardById(o.board)).id)
       const squares = new Set(s.pieces.map((p) => `${p.pos.x},${p.pos.y}`))
       expect(squares.size).toBe(s.pieces.length)
       for (const b of s.config.blocked ?? []) expect(squares.has(`${b.x},${b.y}`), o.name).toBe(false)
@@ -71,5 +73,27 @@ describe('campaign', () => {
     const s = campaignGame(CAMPAIGN[0], 3)
     const picks = new Set(Object.keys(PERSONALITIES).map((id) => JSON.stringify(chooseAction(s, 'hard', 5, id as keyof typeof PERSONALITIES))))
     expect(picks.size).toBeGreaterThan(1)
+  })
+
+  it('has twelve Grand Court battles on the 9x9 board with sixteen pieces a side', () => {
+    const grand = grandBattles()
+    expect(grand).toHaveLength(12)
+    expect(new Set(grand.map((o) => o.personality)).size).toBe(5)
+    expect(grand.map((o) => o.difficulty)).toEqual([...grand.map((o) => o.difficulty)].sort((a, b) => ['easy', 'normal', 'hard'].indexOf(a) - ['easy', 'normal', 'hard'].indexOf(b)))
+    for (const o of grand) {
+      const s = campaignGame(o, 11)
+      expect(s.config.size, o.name).toBe(9)
+      expect(s.pieces.filter((p) => p.court === 'solari'), o.name).toHaveLength(16)
+      expect(s.pieces.filter((p) => p.court === 'umbral'), o.name).toHaveLength(16)
+      expect(battlesIn(o.difficulty), o.name).not.toContain(o)
+    }
+  })
+
+  it('plays a Skirmish on the Grand board with the Grand army, whatever army mode was chosen', () => {
+    const config = skirmishConfig({ mode: 'random', board: 'grand-pillars', size: 9, showdown: true }, 'solari', 4)
+    expect(config.size).toBe(9)
+    expect(config.board).toBe('grand-pillars')
+    expect(config.showdown).toBe(true)
+    expect(newGame(config).pieces).toHaveLength(32)
   })
 })

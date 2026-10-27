@@ -1,6 +1,6 @@
-import { boardById, BOARDS } from './boards'
+import { boardById, BOARDS, grandBoardById } from './boards'
 import { arrange, randomDraft } from './draft'
-import { DEFAULT_CONFIG } from './matchConfig'
+import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import { rngNext } from '../rng'
 import { DAYS, type CycleId } from '../rules/luminance'
 import type { Court, MatchConfig, MatchMode, Role, Spell, TurnClock } from '../rules/types'
@@ -24,6 +24,8 @@ export interface SetupChoice {
   mode: SetupMode
   /** Board variant id; ignored for the daily game, which picks its own. */
   board: string
+  /** 9 for the Grand board, which always has the classic Grand armies (the army modes and the daily game are 7x7 only); 7 when absent. */
+  size?: 9
   /** The human's drafted army, for `draft`. */
   roles?: readonly Role[]
   /** The human's chosen spells; the classic seven when absent. */
@@ -158,10 +160,13 @@ export interface FoeChoice {
  */
 export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foe: FoeChoice = {}, date = new Date()): MatchConfig {
   const foeRoles = foe.roles ?? []
-  const { mode } = choice
+  const grand = choice.size === 9
+  const mode = grand ? 'classic' : choice.mode
   const seeded = mode === 'daily' ? dailySeed(date) : seed
-  const board = boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
-  const base: MatchConfig = { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, cells: board.cells, setup: mode, board: board.id }
+  const board = grand ? grandBoardById(choice.board) : boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
+  const base: MatchConfig = grand
+    ? grandConfig({ seed: seeded, setup: mode }, board.id)
+    : { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, cells: board.cells, setup: mode, board: board.id }
   if (choice.spells) base.loadouts = { solari: choice.spells, umbral: choice.spells }
   else if (choice.loadout) {
     const mine = choice.loadout

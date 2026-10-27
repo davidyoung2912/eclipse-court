@@ -9,8 +9,10 @@ export interface Opponent {
   blurb: string
   difficulty: Difficulty
   personality: PersonalityId
-  /** Board variant id; classic when absent. */
+  /** Board variant id; classic when absent (the open Grand board on 9x9). */
   board?: string
+  /** 9 for a Grand Court battle on the 9x9 board with the sixteen-piece armies; the standard 7x7 when absent. */
+  size?: 9
   /** Match settings beyond the board (win condition, events, showdown, ...). */
   rules?: Partial<MatchConfig>
   /** The Umbral army when it is not the classic one. */

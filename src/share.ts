@@ -1,6 +1,6 @@
 import { decodeChallenge, encodeChallenge, type Challenge } from './engine/challenge'
 import type { GameRecord } from './engine/log'
-import { boardById } from './engine/data/boards'
+import { boardById, grandBoardById } from './engine/data/boards'
 import { SETUP_INFO, type SetupMode } from './engine/data/setups'
 import { modeOf, MODE_INFO, objectiveGoal } from './engine/rules/events'
 import { decodeRecord, encodeRecord } from './engine/serialize'
@@ -65,7 +65,7 @@ export async function shareOrCopy(title: string, url: string, text?: string): Pr
 /** The match's rules in a few words, for the screen that asks whether to accept. */
 export function describeConfig({ config }: Challenge): string[] {
   const out = [
-    `${SETUP_INFO[config.setup && config.setup in SETUP_INFO ? (config.setup as SetupMode) : 'classic'].name} army on the ${boardById(config.board).name} board`,
+    `${SETUP_INFO[config.setup && config.setup in SETUP_INFO ? (config.setup as SetupMode) : 'classic'].name} army on the ${(config.size === 9 ? grandBoardById(config.board) : boardById(config.board)).name} board`,
     `Win by: ${config.objective ? objectiveGoal(config.objective) : MODE_INFO[modeOf(config)].goal}`,
   ]
   if (config.day.length !== 8) out.push(`${config.day.length}-round day`)

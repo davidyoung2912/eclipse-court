@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { CAMPAIGN, battlesIn } from '../../engine/data/campaign'
-import { CAMPAIGN_TIERS } from '../../engine/data/tiers'
+import { CAMPAIGN, battlesIn, grandBattles } from '../../engine/data/campaign'
+import { CAMPAIGN_TIERS, GRAND_TIER } from '../../engine/data/tiers'
 import { SCENARIOS, scenariosIn } from '../../engine/data/scenarios'
 import { objectiveGoal } from '../../engine/rules/events'
-import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starCount, battleUnlocked, clearedCount, scenarioStars, totalStars, type Progress } from '../../progress'
+import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starCount, battleUnlocked, clearedCount, GRAND_STARS, scenarioStars, totalStars, type Progress } from '../../progress'
 import { Icon, type IconName } from './icons'
 import { ResetButton } from './ResetButton'
 import { TipCard } from '../tips/TipCard'
@@ -58,7 +58,8 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
   const [series, setSeries] = useState(false)
   const cleared = clearedCount(progress)
   /** The tier to open: the first with something still to win. */
-  const currentBattleTier = CAMPAIGN_TIERS.find(({ difficulty }) => battlesIn(difficulty).some((o) => !((progress.battles[o.id] ?? 0) & STAR_WIN)))?.difficulty
+  const currentBattleTier: string | undefined = CAMPAIGN_TIERS.find(({ difficulty }) => battlesIn(difficulty).some((o) => !((progress.battles[o.id] ?? 0) & STAR_WIN)))?.difficulty
+    ?? (totalStars(progress) >= GRAND_STARS && grandBattles().some((o) => !((progress.battles[o.id] ?? 0) & STAR_WIN)) ? 'grand' : undefined)
   const currentScenarioTier = CAMPAIGN_TIERS.find(({ difficulty }) => scenariosIn(difficulty).some((x) => !((progress.scenarios[x.id] ?? 0) & STAR_WIN)))?.difficulty
   return (
     <main className="app menu">
@@ -109,14 +110,14 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
       <label className="recharge">
         <input type="checkbox" checked={series} onChange={() => setSeries((s) => !s)} /> Tournament: best of three against one opponent (no stars; {progress.tournaments} won)
       </label>
-      {CAMPAIGN_TIERS.map(({ name, blurb, difficulty }) => {
-        const list = battlesIn(difficulty)
+      {[...CAMPAIGN_TIERS.map(({ name, blurb, difficulty }) => ({ key: difficulty as string, name, blurb, list: battlesIn(difficulty), note: '' })),
+        { key: 'grand', name: GRAND_TIER.name, blurb: GRAND_TIER.blurb, list: grandBattles(), note: totalStars(progress) < GRAND_STARS ? `Earn ${GRAND_STARS} campaign stars to open the Grand Court.` : '' }].map(({ key, name, blurb, list, note }) => {
         if (list.length === 0) return null
         const won = list.filter((o) => (progress.battles[o.id] ?? 0) & STAR_WIN).length
         return (
-          <details key={difficulty} className="tier-fold" open={difficulty === currentBattleTier}>
+          <details key={key} className="tier-fold" open={key === currentBattleTier}>
             <summary><h3>{name} ({won}/{list.length})</h3></summary>
-            <p className="tagline">{blurb}</p>
+            <p className="tagline">{blurb}{note && ` ${note}`}</p>
             <ol className="campaign">
               {list.map((o, n) => {
                 const i = CAMPAIGN.indexOf(o)
@@ -129,7 +130,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                       <strong>
                         <Icon name={locked ? 'lock' : bits & STAR_WIN ? 'check' : 'swords'} />{n + 1}. {o.name}
                       </strong>
-                      <Kind icon="swords" text="Battle" difficulty={o.difficulty} />
+                      <Kind icon="swords" text={o.size === 9 ? 'Battle · 9x9' : 'Battle'} difficulty={o.difficulty} />
                       <span>{o.blurb}</span>
                       {o.boss && <span className="boss">Boss rule: {o.boss}</span>}
                       {bits & STAR_WIN ? <Completed bits={bits} texts={STAR_TEXT.map((t) => t.text)} /> : null}

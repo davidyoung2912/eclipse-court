@@ -243,8 +243,21 @@ describe('battle unlocks', () => {
     expect(battleUnlocked(p, index('wall'))).toBe(false)
   })
 
+  it('opens the Grand Court at six stars and its battles in order', () => {
+    let p = emptyProgress()
+    const index = (id: string) => CAMPAIGN.findIndex((o) => o.id === id)
+    expect(battleUnlocked(p, index('grand-welcome'))).toBe(false)
+    p = { ...p, battles: { novice: STAR_WIN | STAR_FLAWLESS | STAR_SWIFT, archerless: STAR_WIN | STAR_FLAWLESS | STAR_SWIFT } }
+    expect(battleUnlocked(p, index('grand-welcome'))).toBe(true)
+    expect(battleUnlocked(p, index('grand-long-walk'))).toBe(false)
+    expect(boardUnlocked(p, 'grand-open')).toBe(true)
+    expect(boardUnlocked(p, 'grand-pillars')).toBe(false)
+  })
+
   it('keeps every battle of a tier together, in tier order', () => {
-    expect(CAMPAIGN.map((o) => firsts.indexOf(o.difficulty))).toEqual([...CAMPAIGN.map((o) => firsts.indexOf(o.difficulty))].sort())
+    const sevens = CAMPAIGN.filter((o) => o.size !== 9)
+    expect(sevens.map((o) => firsts.indexOf(o.difficulty))).toEqual([...sevens.map((o) => firsts.indexOf(o.difficulty))].sort())
+    expect(CAMPAIGN.slice(sevens.length).every((o) => o.size === 9)).toBe(true)
     expect(new Set(CAMPAIGN.map((o) => o.id)).size).toBe(CAMPAIGN.length)
   })
 })

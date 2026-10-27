@@ -8,7 +8,8 @@ import { mapFoe, withHp } from './campaignHelpers'
 import { BEGINNER_BATTLES } from './campaignBeginner'
 import { NORMAL_BATTLES } from './campaignNormal'
 import { EXPERT_BATTLES } from './campaignExpert'
-import { DEFAULT_CONFIG } from './matchConfig'
+import { GRAND_BATTLES } from './campaignGrand'
+import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import type { Opponent } from './campaignHelpers'
 
 export type { Opponent }
@@ -89,16 +90,26 @@ export const CAMPAIGN: readonly Opponent[] = [
     rules: { eclipseRound: 20, showdown: true, events: true },
     setup: (s, foe) => mapFoe(s, foe, (p) => withHp(p, 2)),
   },
+  ...GRAND_BATTLES,
 ]
 
-/** The battles of one tier, in play order. */
-export const battlesIn = (difficulty: Difficulty) => CAMPAIGN.filter((o) => o.difficulty === difficulty)
+/** The 7x7 battles of one tier, in play order; the Grand Court has its own list. */
+export const battlesIn = (difficulty: Difficulty) => CAMPAIGN.filter((o) => o.difficulty === difficulty && o.size !== 9)
+
+/** The 9x9 Grand Court battles, in play order. */
+export const grandBattles = () => CAMPAIGN.filter((o) => o.size === 9)
 
 /** The Umbral court is the opponent in every campaign battle. */
 export const CAMPAIGN_FOE: Court = 'umbral'
 
 /** The opening position of a campaign battle: the player is Solari with the classic army and spells. */
 export function campaignGame(opponent: Opponent, seed: number, setup = 'campaign'): GameState {
+  if (opponent.size === 9) {
+    const grand = grandConfig({ ...opponent.rules, seed, setup }, opponent.board)
+    if (opponent.army) grand.umbralLayout = arrange(opponent.army)
+    const state = newGame(grand)
+    return opponent.setup ? opponent.setup(state, CAMPAIGN_FOE) : state
+  }
   const board = boardById(opponent.board)
   const config: MatchConfig = {
     ...DEFAULT_CONFIG, ...opponent.rules, seed, beacons: opponent.rules?.beacons ?? board.beacons, blocked: board.blocked, cells: opponent.rules?.cells ?? board.cells, board: board.id, setup,

@@ -2,7 +2,7 @@ import type { Difficulty } from './engine/data/difficulty'
 import type { Summary } from './engine/data/summary'
 
 export type { Summary }
-import { CAMPAIGN, battlesIn } from './engine/data/campaign'
+import { CAMPAIGN, battlesIn, grandBattles } from './engine/data/campaign'
 import { PUZZLES, puzzlesIn, type PuzzleTier } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import { dayIndex, tierOfConfig } from './engine/data/setups'
@@ -104,11 +104,16 @@ export const totalStars = (p: Progress) => CAMPAIGN.reduce((n, o) => n + starCou
 /** Campaign battles won, in any tier. */
 export const clearedCount = (p: Progress) => CAMPAIGN.filter((o) => (p.battles[o.id] ?? 0) & STAR_WIN).length
 
-/** A tier opens its first battle at once; each later one opens when the battle before it, in the same tier, is won. */
+/** Campaign stars that open the Grand Court and the 9x9 Skirmish board. */
+export const GRAND_STARS = 6
+
+/** A tier opens its first battle at once (the Grand Court after `GRAND_STARS` stars); each later one opens when the battle before it, in the same tier, is won. */
 export function battleUnlocked(p: Progress, index: number): boolean {
   const o = CAMPAIGN[index]
-  const tier = battlesIn(o.difficulty)
+  const grand = o.size === 9
+  const tier = grand ? grandBattles() : battlesIn(o.difficulty)
   const at = tier.indexOf(o)
+  if (grand && totalStars(p) < GRAND_STARS) return false
   return at <= 0 || ((p.battles[tier[at - 1].id] ?? 0) & STAR_WIN) !== 0
 }
 
@@ -271,7 +276,7 @@ export function summarise(
 }
 
 /** Boards open up as stars are earned in the campaign; the classic board is always open. */
-export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, flanks: 4, ruins: 6, shrine: 8, crossroads: 10, sanctum: 12 }
+export const BOARD_STARS: Record<string, number> = { classic: 0, pillars: 2, flanks: 4, ruins: 6, shrine: 8, crossroads: 10, sanctum: 12, 'grand-open': GRAND_STARS, 'grand-pillars': 10, 'grand-shrine': 14 }
 
 export const boardUnlocked = (p: Progress, boardId: string) => totalStars(p) >= (BOARD_STARS[boardId] ?? 0)
 
