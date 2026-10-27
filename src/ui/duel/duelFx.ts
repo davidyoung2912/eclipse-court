@@ -28,6 +28,10 @@ export interface DuelLook {
   /** Cell effect under the attacker and the defender. */
   cells: [CellEffect | null, CellEffect | null]
   reduceMotion: boolean
+  /** The courts of the attacker and the defender. */
+  courts: [Court, Court]
+  /** The canvas is turned upside down for the defender; the light imagery stays at the bottom of the screen either way. */
+  flip: boolean
 }
 
 interface Theme {
@@ -74,6 +78,8 @@ export interface Fx {
   lastIcon: [HTMLImageElement | null, HTMLImageElement | null]
 }
 
+/** Width of the coloured side strips, in arena units. */
+const SIDE = 0.9
 const MAX_PARTICLES = 220
 const INTRO = 0.45
 
@@ -283,9 +289,9 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
   c.clip()
   const rand = seeded(look.luminance * 31 + 11)
   if (theme.kind === 'bright') {
-    const [ox, oy] = P(ARENA_W / 2, -1)
+    const [ox, oy] = P(ARENA_W / 2, look.flip ? -1 : ARENA_H + 1)
     for (let i = 0; i < 9; i++) {
-      const a = Math.PI / 2 + (i - 4) * 0.2
+      const a = (look.flip ? Math.PI / 2 : -Math.PI / 2) + (i - 4) * 0.2
       c.fillStyle = `rgba(255, 214, 120, ${look.luminance > 1 ? 0.1 : 0.07})`
       c.beginPath()
       c.moveTo(ox, oy)
@@ -294,7 +300,7 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
       c.fill()
     }
   } else if (theme.kind === 'dark') {
-    const [mx, my] = P(ARENA_W * 0.78, 1.4)
+    const [mx, my] = P(ARENA_W * 0.78, look.flip ? 1.4 : ARENA_H - 1.4)
     const halo = c.createRadialGradient(mx, my, 0, mx, my, 3.2 * scale)
     halo.addColorStop(0, 'rgba(190, 200, 255, 0.2)')
     halo.addColorStop(1, 'rgba(190, 200, 255, 0)')
@@ -337,7 +343,7 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
 
   // Court crests behind each fighter's starting end.
   ;([0, 1] as const).forEach((i) => {
-    const court: Court = i === 0 ? 'solari' : 'umbral'
+    const court = look.courts[i]
     const [cx, cy] = P(ARENA_W / 2, i === 0 ? ARENA_H - 0.9 : 0.9)
     c.fillStyle = court === 'solari' ? 'rgba(232, 182, 74, 0.2)' : 'rgba(150, 120, 230, 0.22)'
     c.strokeStyle = c.fillStyle
@@ -348,18 +354,18 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
 
   // Along each half's sides, boxes in the colours of that court's medallion panes, one per pane.
   ;([0, 1] as const).forEach((i) => {
-    const panes = PALETTE[i === 0 ? 'solari' : 'umbral'].panes
+    const panes = PALETTE[look.courts[i]].panes
     const half = ARENA_H / 2
     const size = half / 8
     for (let k = 0; k < 8; k++) {
       const y = (i === 0 ? half : 0) + k * size
-      for (const x of [0, ARENA_W - 0.3]) {
+      for (const x of [0, ARENA_W - SIDE]) {
         const [bx0, by0] = P(x, y)
         c.fillStyle = panes[k % 3]
-        c.fillRect(bx0, by0, 0.3 * scale, size * scale)
+        c.fillRect(bx0, by0, SIDE * scale, size * scale)
         c.strokeStyle = '#120d2a'
         c.lineWidth = Math.max(1, scale * 0.02)
-        c.strokeRect(bx0, by0, 0.3 * scale, size * scale)
+        c.strokeRect(bx0, by0, SIDE * scale, size * scale)
       }
     }
   })
