@@ -61,3 +61,43 @@ describe('strategy', () => {
     expect(performance.now() - t0).toBeLessThan(1500)
   })
 })
+
+describe('strategy with cells', () => {
+  type Fx = 'might' | 'hazard' | 'silence' | 'recovery'
+  const withCells = (cells: { pos: { x: number; y: number }; effect: Fx }[], pieces: Piece[]): GameState => {
+    const g = newGame(1)
+    return { ...g, config: { ...g.config, cells }, pieces }
+  }
+  const alone = [lone('l', 'solari', 'leader', 0, 0), lone('u', 'umbral', 'leader', 6, 6)]
+
+  it('values Hazard and Silence below an empty cell and Might above it', () => {
+    const at = (effect: Fx) => evaluate(withCells([{ pos: { x: 0, y: 0 }, effect }], alone), 'solari')
+    const plain = evaluate(withCells([], alone), 'solari')
+    expect(at('hazard')).toBeLessThan(plain)
+    expect(at('silence')).toBeLessThan(plain)
+    expect(at('might')).toBeGreaterThan(plain)
+  })
+
+  it('values Recovery more for a wounded piece', () => {
+    const hurt = { ...lone('f', 'solari', 'bruiser', 2, 0), hp: 2 }
+    const fit = lone('f', 'solari', 'bruiser', 2, 0)
+    const gain = (p: Piece) => {
+      const cells = [{ pos: { x: 2, y: 0 }, effect: 'recovery' as const }]
+      return evaluate(withCells(cells, [...alone, p]), 'solari') - evaluate(withCells([], [...alone, p]), 'solari')
+    }
+    expect(gain(hurt)).toBeGreaterThan(gain(fit))
+  })
+
+  it('stays legal and deterministic on every cell board', async () => {
+    const { BOARDS } = await import('../engine/data/boards')
+    for (const b of BOARDS.filter((x) => x.cells)) {
+      let s = newGame({ beacons: b.beacons, blocked: b.blocked, cells: b.cells })
+      for (let turn = 0; turn < 12 && !s.winner; turn++) {
+        const a = chooseAction(s, 'normal', turn)
+        expect(isLegal(s, a)).toBe(true)
+        expect(chooseAction(s, 'normal', turn)).toEqual(a)
+        s = reduce(s, a)
+      }
+    }
+  }, 60_000)
+})

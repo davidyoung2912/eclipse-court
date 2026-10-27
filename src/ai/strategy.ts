@@ -1,12 +1,12 @@
 import { reduceLegal, stubDuel } from '../engine/reducer'
 import { rngNext } from '../engine/rng'
-import { duelCells, type DuelCells } from '../engine/rules/cells'
+import { cellAt, duelCells, invincibleOn, type DuelCells } from '../engine/rules/cells'
 import { CENTER, chebyshev, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { modeOf, safeRadius } from '../engine/rules/events'
 import { squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spells'
-import type { Action, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
+import type { Action, CellEffect, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
 import { PERSONALITIES, type Personality, type PersonalityId } from '../engine/data/personality'
 import { DIFFICULTY, type Difficulty } from './profile'
@@ -44,6 +44,24 @@ export function duelBranches(attacker: Piece, defender: Piece, lum: number, cell
     ].filter((b) => b.weight > 0)
   }
   return ROLLS.map((r) => ({ duel: stubDuel(attacker, defender, lum, r, cells), weight: 1 / ROLLS.length }))
+}
+
+/**
+ * What standing on a cell is worth to a piece, in the same units as `VALUE`. Hazard is forgiven on a
+ * beacon, where the piece earns its keep; Silence only matters to a Leader, who is the one that casts.
+ * Duel effects are already priced into attacks by the search, so these terms only steer positioning.
+ */
+function cellScore(effect: CellEffect | null, p: Piece, onBeacon: boolean, round: number): number {
+  const v = VALUE[p.role]
+  switch (effect) {
+    case 'might': return v * 0.08
+    case 'ward': return v * 0.08
+    case 'recovery': return v * (0.04 + 0.2 * (1 - p.hp / p.maxHp))
+    case 'hazard': return -v * (onBeacon ? 0.08 : 0.25)
+    case 'silence': return p.role === 'leader' ? -3 : 0
+    case 'invincible': return invincibleOn(round) ? v * 0.1 : 0
+    default: return 0
+  }
 }
 
 /** Static score of a position for `court`; positive is good. */
@@ -102,6 +120,8 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
     }
     // A Footsoldier is worth more once it can cross the board and be promoted.
     if (state.config.promotion && p.role === 'footsoldier') score += sign * 0.3 * (p.court === 'solari' ? p.pos.x : 6 - p.pos.x)
+    const cell = cellAt(state.config, p.pos)
+    if (cell) score += sign * cellScore(cell, p, isBeacon(p.pos, state.config.beacons), state.round)
     // Standing in light that favours its court.
     const lum = squareLuminance(state, p.pos)
     score += sign * 0.3 * (p.court === 'solari' ? lum : -lum)
@@ -160,6 +180,9 @@ function moveHint(state: GameState, mover: Piece, to: Pos): number {
   if (target) h += 10 + VALUE[target.role] - 0.5 * VALUE[mover.role]
   if (isBeacon(to, state.config.beacons)) h += 6
   if (isBeacon(mover.pos, state.config.beacons)) h -= 3
+  const cell = cellAt(state.config, to)
+  if (cell === 'hazard') h -= 4
+  else if (cell === 'might' || cell === 'ward' || cell === 'recovery') h += 2
   return h
 }
 
