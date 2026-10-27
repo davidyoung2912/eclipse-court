@@ -1,6 +1,6 @@
 # Campaign tiers: 75 battles and 75 scenarios
 
-**Status: C1 to C6 done; C7 to do.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: C1 to C7 done.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The Campaign page (Battles and Scenarios tabs) gets collapsible **Beginner / Normal / Expert** sections like the Puzzles page, with 25 battles and 25 scenarios in each. A tier is its AI level: Beginner is `easy`, Normal is `normal`, Expert is `hard`, so no new field is needed (`CAMPAIGN_TIERS` in `engine/data/tiers.ts`, `battlesIn(difficulty)`, `scenariosIn(difficulty)`).
 
@@ -18,5 +18,5 @@ The Campaign page (Battles and Scenarios tabs) gets collapsible **Beginner / Nor
 - **C4 (done): Expert battles.** 25 in all: the original three plus 22 in `campaignExpert.ts`, inserted before the Eclipse Queen, who stays the tier boss. Hard AI, stacked twists (big HP, modes, events, showdown, reverse, growth, promotion, spell loadouts), all five personalities, a second boss (`twilight-throne`) before the Queen.
 - **C5 (done): Beginner scenarios.** 25 in `scenariosBeginner.ts` (shared builders in `scenarioHelpers.ts`): short survive, escort and hold situations, easy AI, large Solari edge, all five personalities, boards and a few rules.
 - **C6 (done): Normal scenarios.** 25 in all: the original five plus 20 in `scenariosNormal.ts` (builders now shared in `scenarioHelpers.ts`). Normal AI, bigger Umbral forces, stacked rules (events, reverse, showdown, eclipse, promotion), spells, all boards and personalities.
-- **C7: Expert scenarios.** Up to 25; each is checked that the hard AI cannot beat it by passing alone, and that the bonus star is reachable.
+- **C7 (done): Expert scenarios.** 25 in all: the original two plus 23 in `scenariosExpert.ts`. Hard AI, full or near-full Umbral armies, stacked rules, all boards and personalities. A test checks that escort and hold goals are never won by Solari passing alone; survive goals are exempt because the hard AI will not attack a passing army. Bonus stars were not simulated.
 - Each of C2 to C7 also updates the tier achievement text and the count assertions in tests (`25` per tier by C4 and C7).

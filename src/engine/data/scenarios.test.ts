@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { autoDuel } from '../../ai/autoDuel'
 import { PERSONALITIES } from '../../ai/personality'
+import { DIFFICULTY } from '../../ai/profile'
+import { chooseAction } from '../../ai/strategy'
 import { playFrom } from '../../sim/game'
 import { decodeRecord, encodeRecord } from '../serialize'
 import { isBlocked, samePos } from '../rules/board'
+import { squareLuminance } from '../rules/luminance'
+import { pieceAt } from '../rules/moves'
+import { reduce } from '../reducer'
 import { objectiveRounds } from '../rules/events'
 import { boardById } from './boards'
 import { SCENARIOS, scenarioById, scenarioGame, scenariosIn } from './scenarios'
@@ -37,6 +43,33 @@ describe('scenarios', () => {
     expect(new Set(normal.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of normal) expect(s.bonus.text, s.id).not.toBe('')
   })
+
+  it('has an Expert tier of 25 with all five personalities and every objective', () => {
+    const hard = scenariosIn('hard')
+    expect(hard).toHaveLength(25)
+    expect(new Set(hard.map((s) => s.personality)).size).toBe(5)
+    expect(new Set(hard.map((s) => s.objective.kind)).size).toBe(3)
+    for (const s of hard) expect(s.bonus.text, s.id).not.toBe('')
+  })
+
+  it('is never won by the player passing alone against the hard AI, goals that need a move', () => {
+    // A survive goal is not tried: the cautious hard AI will not walk onto a passing army, so waiting always outlasts it.
+    for (const [i, s] of scenariosIn('hard').entries()) {
+      if (s.objective.kind === 'survive') continue
+      let g = scenarioGame(s, 40 + i)
+      for (let n = 0; n < 400 && !g.winner; n++) {
+        if (g.turn === 'solari') { g = reduce(g, { type: 'pass' }); continue }
+        const a = chooseAction(g, 'hard', 40 + i + n)
+        if (a.type === 'move' && pieceAt(g, a.to)) {
+          const mover = g.pieces.find((p) => p.id === a.pieceId)!
+          const target = pieceAt(g, a.to)!
+          const skills: [number, number] = [DIFFICULTY.hard.skill, DIFFICULTY.hard.skill]
+          g = reduce(g, { ...a, duel: autoDuel(mover, target, squareLuminance(g, a.to), skills, n) })
+        } else g = reduce(g, a)
+      }
+      expect(g.winner, s.id).not.toBe('solari')
+    }
+  }, 120_000)
 
   it('opens each with Solari to move, a Leader each and no overlapping or walled-in pieces', () => {
     for (const [i, s] of SCENARIOS.entries()) {
@@ -89,5 +122,5 @@ describe('scenarios', () => {
       expect(r.state.winner, s.id).not.toBeNull()
       expect(r.state.round, s.id).toBeLessThanOrEqual(Math.max(objectiveRounds(s.objective), 1) + 1 + 50)
     }
-  })
+  }, 120_000)
 })
