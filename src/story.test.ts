@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CHAPTERS } from './engine/data/story'
-import { chapterRead, chapterUnlocked, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
+import { chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -64,5 +64,19 @@ describe('story progress', () => {
     expect(metCharacters(storySnapshot())).toEqual([])
     markChapterRead('meridian-road')
     expect(metCharacters(storySnapshot())).toEqual(expect.arrayContaining(['wren', 'voss']))
+  })
+
+  it('remembers the ending chosen, lets it be changed, and opens the clean-victory ending only without losses', () => {
+    const final = endingChapter()!
+    expect(storySnapshot().ending).toBeNull()
+    recordEnding('free')
+    expect(storySnapshot().ending).toBe('free')
+    recordEnding('solarch')
+    expect(storySnapshot().ending).toBe('solarch')
+    expect(cleanVictory(storySnapshot(), final.id)).toBe(true)
+    recordStoryLoss(final.id)
+    expect(cleanVictory(storySnapshot(), final.id)).toBe(false)
+    resetStory()
+    expect(storySnapshot().ending).toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
-import { characterState, chapterUnlocked, metCharacters, storySnapshot, subscribeStory } from '../../story'
+import { characterState, chapterUnlocked, endingChapter, metCharacters, storySnapshot, subscribeStory } from '../../story'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -8,13 +8,16 @@ import { TipCard } from '../tips/TipCard'
 
 interface Props {
   onOpen: (id: string) => void
+  /** Opens the choice that ends the story, once its chapter is read. */
+  onEnding?: (chapterId: string) => void
   onBack: () => void
 }
 
 /** The chapters of the tale of the two courts, opened in order. */
-export function Story({ onOpen, onBack }: Props) {
+export function Story({ onOpen, onEnding, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const read = story.read
+  const ending = endingChapter()
   const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
   return (
     <main className="app menu">
@@ -33,7 +36,14 @@ export function Story({ onOpen, onBack }: Props) {
           )
         })}
       </div>
-      <p className="tagline">More chapters are still to be told.</p>
+      {ending && read.has(ending.id) && (
+        <div className="menu-buttons stacked">
+          <button className="primary" onClick={() => onEnding?.(ending.id)}>
+            <Icon name="book" />{story.ending ? `Ending: ${ending.ending!.options.find((o) => o.id === story.ending)?.label}` : 'Choose who keeps the Hour'}
+          </button>
+        </div>
+      )}
+      {!ending && <p className="tagline">More chapters are still to be told.</p>}
       {company.length > 0 && (
         <section className="story-cast" aria-label="Company">
           <h3>Company</h3>

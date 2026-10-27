@@ -32,8 +32,9 @@ import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
-import { afterVictory, battleCourt, chapterById, scenarioOf, storyBattleGame } from './engine/data/story'
-import { markChapterRead, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
+import { afterVictory, battleCourt, chapterById, scenarioOf, storyBattleGame, type EndingId } from './engine/data/story'
+import { StoryEnding } from './ui/story/StoryEnding'
+import { markChapterRead, recordEnding, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
@@ -55,6 +56,9 @@ type Screen =
   | { name: 'chapter'; id: string }
   /** The scene after a chapter's battle. */
   | { name: 'aftermath'; id: string; won: boolean }
+  /** The choice that ends the story, and the epilogue read once it is made. */
+  | { name: 'ending'; id: string }
+  | { name: 'epilogue'; id: string; ending: EndingId }
   | { name: 'daily' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
@@ -201,7 +205,7 @@ export default function App() {
     )
 
   if (screen.name === 'story')
-    return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onEnding={(id) => setScreen({ name: 'ending', id })} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'chapter') {
     const chapter = chapterById(screen.id)
@@ -227,6 +231,26 @@ export default function App() {
     if (!chapter || !scene) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
     return (
       <StoryReader key={`${chapter.id}-${screen.won}`} chapter={chapter} beats={visibleBeats(scene, storySnapshot())}
+        onBack={() => setScreen({ name: 'story' })}
+        onDone={() => setScreen(screen.won && chapter.ending ? { name: 'ending', id: chapter.id } : { name: 'story' })} />
+    )
+  }
+
+  if (screen.name === 'ending') {
+    const chapter = chapterById(screen.id)
+    if (!chapter?.ending) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryEnding choice={chapter.ending} story={storySnapshot()} chapterId={chapter.id} onBack={() => setScreen({ name: 'story' })}
+        onChoose={(ending) => { recordEnding(ending); setScreen({ name: 'epilogue', id: chapter.id, ending }) }} />
+    )
+  }
+
+  if (screen.name === 'epilogue') {
+    const chapter = chapterById(screen.id)
+    const option = chapter?.ending?.options.find((o) => o.id === screen.ending)
+    if (!chapter || !option) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryReader key={`${chapter.id}-${option.id}`} chapter={chapter} beats={visibleBeats(option.beats, storySnapshot())}
         onBack={() => setScreen({ name: 'story' })} onDone={() => setScreen({ name: 'story' })} />
     )
   }

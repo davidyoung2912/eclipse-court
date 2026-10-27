@@ -1,4 +1,4 @@
-import { CHAPTERS, CHARACTERS, type Beat, type CharacterId, type CharacterState } from './engine/data/story'
+import { CHAPTERS, CHARACTERS, type Beat, type CharacterId, type CharacterState, type EndingId } from './engine/data/story'
 
 /** Which story chapters have been read and what became of the named characters; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:story'
@@ -14,16 +14,20 @@ export interface StoryState {
   characters: CharacterStates
   /** How many times each chapter's battle has been lost. */
   losses: Readonly<Record<string, number>>
+  /** Who keeps the Hour, once the player has chosen. */
+  ending: EndingId | null
 }
 
-const EMPTY: StoryState = { read: new Set(), characters: {}, losses: {} }
+const EMPTY: StoryState = { read: new Set(), characters: {}, losses: {}, ending: null }
+
+const ENDINGS: readonly string[] = ['solarch', 'duskmother', 'shared', 'free']
 
 const STATES: readonly string[] = ['ready', 'wounded', 'fallen']
 
 function parse(raw: unknown): StoryState {
   // The first version stored just the list of read chapters.
   if (Array.isArray(raw)) return { ...EMPTY, read: new Set(raw.filter((x): x is string => typeof x === 'string')) }
-  const o = (raw ?? {}) as Partial<Record<'read' | 'characters' | 'losses', unknown>>
+  const o = (raw ?? {}) as Partial<Record<'read' | 'characters' | 'losses' | 'ending', unknown>>
   const characters: CharacterStates = {}
   if (o.characters && typeof o.characters === 'object')
     for (const [id, state] of Object.entries(o.characters))
@@ -32,7 +36,8 @@ function parse(raw: unknown): StoryState {
   if (o.losses && typeof o.losses === 'object')
     for (const [id, n] of Object.entries(o.losses)) if (typeof n === 'number' && Number.isInteger(n) && n > 0) losses[id] = n
   const read = Array.isArray(o.read) ? o.read.filter((x): x is string => typeof x === 'string') : []
-  return { read: new Set(read), characters, losses }
+  const ending = typeof o.ending === 'string' && ENDINGS.includes(o.ending) ? (o.ending as EndingId) : null
+  return { read: new Set(read), characters, losses, ending }
 }
 
 function load(): StoryState {
@@ -49,7 +54,7 @@ let state = load()
 function commit(next: StoryState) {
   state = next
   try {
-    localStorage.setItem(KEY, JSON.stringify({ read: [...next.read], characters: next.characters, losses: next.losses }))
+    localStorage.setItem(KEY, JSON.stringify({ read: [...next.read], characters: next.characters, losses: next.losses, ending: next.ending }))
   } catch {
     // Without storage the story simply starts over next visit.
   }
@@ -71,6 +76,11 @@ export function recordStoryWin(id: string, characters: CharacterStates) {
 /** A lost battle changes no one's state, so losing and retrying can never leave the story stuck. */
 export function recordStoryLoss(id: string) {
   commit({ ...state, losses: { ...state.losses, [id]: (state.losses[id] ?? 0) + 1 } })
+}
+
+/** The player's choice at the end of the story; choosing again replaces it. */
+export function recordEnding(ending: EndingId) {
+  commit({ ...state, ending })
 }
 
 export function resetStory() {
@@ -120,6 +130,12 @@ export function metCharacters(s: StoryState): CharacterId[] {
 /** Chapters open in order: the first from the start, each other once the one before it has been read. */
 export const chapterUnlocked = (index: number, readIds: ReadonlySet<string>) =>
   index === 0 || readIds.has(CHAPTERS[index - 1].id)
+
+/** The chapter whose battle ends the story, with the choice that follows it. */
+export const endingChapter = () => CHAPTERS.find((c) => c.ending)
+
+/** Whether an ending that needs a clean victory is open: its chapter's battle was never lost. */
+export const cleanVictory = (s: Pick<StoryState, 'losses'>, chapterId: string) => (s.losses[chapterId] ?? 0) === 0
 
 /** The one line the main menu's Story card shows. */
 export const storySummary = (readIds: ReadonlySet<string>) => {

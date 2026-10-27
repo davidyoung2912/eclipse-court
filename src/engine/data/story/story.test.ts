@@ -106,9 +106,28 @@ describe('story data', () => {
     expect(storyBattleGame(battle, { tam: 'fallen' }, 1)!.pieces.some((p) => p.id === battle.bind.tam)).toBe(false)
   })
 
+  it('plays Act III as Solari with a real campaign finale and four endings, the shared one earned by a clean victory', () => {
+    const act3 = CHAPTERS.filter((c) => c.act === 3)
+    expect(act3.length).toBeGreaterThanOrEqual(3)
+    for (const c of act3) {
+      const game = storyBattleGame(c.battle!, {}, 1)!
+      expect(battleCourt(c.battle!)).toBe('solari')
+      for (const piece of Object.values(c.battle!.bind)) expect(game.pieces.some((p) => p.id === piece)).toBe(true)
+    }
+    const last = act3[act3.length - 1]
+    expect(last.battle!.scenario).toBe('eclipse-queen')
+    expect(CHAPTERS.filter((c) => c.ending)).toEqual([last])
+    expect(last.ending!.options.map((o) => o.id).sort()).toEqual(['duskmother', 'free', 'shared', 'solarch'])
+    expect(last.ending!.options.find((o) => o.id === 'shared')!.requires).toBe('clean')
+    for (const o of last.ending!.options) {
+      expect(o.beats.length).toBeGreaterThan(0)
+      for (const b of o.beats) if (b.kind === 'say') expect(CHARACTERS[b.who]).toBeDefined()
+    }
+  })
+
   it('answers every condition with a character in the cast and a chapter that exists', () => {
     for (const c of CHAPTERS)
-      for (const b of [...c.beats, ...(c.battle?.won ?? []), ...(c.battle?.lost ?? [])]) {
+      for (const b of [...c.beats, ...(c.battle?.won ?? []), ...(c.battle?.lost ?? []), ...(c.ending?.options.flatMap((o) => o.beats) ?? [])]) {
         if (!b.when) continue
         if ('character' in b.when) expect(CHARACTERS[b.when.character]).toBeDefined()
         else expect(chapterById(b.when.lostBefore)?.battle).toBeDefined()

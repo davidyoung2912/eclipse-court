@@ -48,6 +48,24 @@ export interface StoryBattle {
 
 export type Act = 'prologue' | 1 | 2 | 3
 
+export type EndingId = 'solarch' | 'duskmother' | 'shared' | 'free'
+
+/** One way the story can end: the player picks it after the last battle and then reads its epilogue. */
+export interface EndingOption {
+  id: EndingId
+  label: string
+  blurb: string
+  /** `clean` is open only if the chapter's battle was won without losing it first. */
+  requires?: 'clean'
+  beats: readonly Beat[]
+}
+
+/** The choice that closes the story, offered once its chapter's battle is won. */
+export interface EndingChoice {
+  prompt: string
+  options: readonly EndingOption[]
+}
+
 export interface Chapter {
   /** Stable key under which reading is remembered; never reuse one for a different chapter. */
   id: string
@@ -56,4 +74,5 @@ export interface Chapter {
   blurb: string
   beats: readonly Beat[]
   battle?: StoryBattle
+  ending?: EndingChoice
 }

@@ -1,5 +1,5 @@
 import { SCENARIOS, scenarioGame, type Scenario } from '../scenarios'
-import { campaignGame, type Opponent } from '../campaign'
+import { CAMPAIGN, campaignGame, type Opponent } from '../campaign'
 import type { Court, GameState } from '../../rules/types'
 import { umbralFightById } from './umbralFights'
 import type { CharacterId, CharacterState, StoryBattle } from './types'
@@ -8,9 +8,9 @@ type States = Partial<Record<CharacterId, CharacterState>>
 
 export const battleCourt = (battle: StoryBattle): Court => battle.court ?? 'solari'
 
-/** The scenario or Umbral fight a battle is built from. */
+/** The scenario, campaign battle or Umbral fight a battle is built from. */
 export const scenarioOf = (battle: StoryBattle): Scenario | Opponent | undefined =>
-  battle.court === 'umbral' ? umbralFightById(battle.scenario) : SCENARIOS.find((s) => s.id === battle.scenario)
+  battle.court === 'umbral' ? umbralFightById(battle.scenario) : SCENARIOS.find((s) => s.id === battle.scenario) ?? CAMPAIGN.find((o) => o.id === battle.scenario)
 
 /** Raised characters stand in their fight even though they fell in an earlier act. */
 const withRaised = (battle: StoryBattle, states: States): States => {
