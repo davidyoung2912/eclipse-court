@@ -108,11 +108,13 @@ describe('story data', () => {
 
   it('plays Act III as Solari with a real campaign finale and four endings, the shared one earned by a clean victory', () => {
     const act3 = CHAPTERS.filter((c) => c.act === 3)
-    expect(act3.length).toBeGreaterThanOrEqual(3)
+    expect(act3.map((c) => c.id)).toEqual(['sunwell-ledger', 'long-march', 'iron-oath', 'last-shrine', 'the-sanctum'])
+    expect(act3.filter((c) => c.battle!.scenario.startsWith('grand-')).map((c) => c.id)).toEqual(['long-march', 'last-shrine'])
     for (const c of act3) {
       const game = storyBattleGame(c.battle!, {}, 1)!
       expect(battleCourt(c.battle!)).toBe('solari')
       for (const piece of Object.values(c.battle!.bind)) expect(game.pieces.some((p) => p.id === piece)).toBe(true)
+      expect(game.config.size ?? 7).toBe(c.battle!.scenario.startsWith('grand-') ? 9 : 7)
     }
     const last = act3[act3.length - 1]
     expect(last.battle!.scenario).toBe('eclipse-queen')

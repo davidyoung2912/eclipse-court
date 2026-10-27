@@ -1,6 +1,6 @@
 # Grand board: an optional 9x9 board with its own pieces and movement rules
 
-**Status: G1, G2, G3 (decided: skipped) and G4 done; G5 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: G1 to G5 all done (G3 decided: skipped).** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 ## Decisions
 - **7x7 stays the default and stays untouched.** Nothing about the 150 campaign battles and scenarios, the puzzles, the tutorial or the existing boards changes. 9x9 is an extra, never a migration.
@@ -39,7 +39,7 @@ Sim targets (as in the growth work): side split within noise of 50/50 at 30 or m
 - **G2 (done): 9x9 rules and boards.** Size-dependent move ranges and the light bonus (a rules table keyed on size), a 16-piece layout, the Leader teleport range, and two or three 9x9 board variants (an open one, one with pillars, one with cells). Tune with AI-vs-AI sims. Add `npm run grand`.
 - **G3 (done, skipped): new 9x9 pieces (only if needed).** Candidates: Scout (up to 4 in a straight line, cannot capture, quick to take beacons), Warden (slow, damage-reducing aura for neighbours) and Siege (attacks from 3 or more squares). Each needs art for both courts, duel behaviour, `pieceInfo` text, AI values and matchup data. Available only when `size` is 9.
 - **G4 (done): Skirmish and the 9x9 campaign tier.** The Skirmish size option and star gating, the 9x9 battles with their own tier, progress and unlocks, and tip cards.
-- **G5: Story Act III extended.** Two new chapters between the existing ones (so the act reads as five steps, ending with the Sanctum), each with a 9x9 battle, new bound characters where needed, and updated tests for act lengths.
+- **G5 (done): Story Act III extended.** Two new chapters between the existing ones (so the act reads as five steps, ending with the Sanctum), each with a 9x9 battle, new bound characters where needed, and updated tests for act lengths.
 
 ## G1 notes
 - Functions that need the size take it as a final optional argument defaulting to 7 (`inBounds(p, size)`, `ringOf(p, size)`, `isCycling(p, size)`, `fixedCourt(p, size)`, `allSquares(size)`), and callers with a state or config pass `sizeOf(config)`.
@@ -64,3 +64,7 @@ Sim targets (as in the growth work): side split within noise of 50/50 at 30 or m
 - Skirmish: `SetupChoice.size?: 9` and a Board size row in Army & Board (Standard 7x7 / Grand 9x9). Grand always uses the Grand army (draft, random and daily are 7x7 only), shows the three Grand boards, and is locked until `GRAND_STARS` (6) campaign stars. Grand boards open at 6 (open), 10 (pillars) and 14 (shrine) stars via `BOARD_STARS`.
 - Campaign: `Opponent.size?: 9`; the twelve Grand Court battles live in `campaignGrand.ts` and are appended to `CAMPAIGN` (so indexes, stars, the story and replays work unchanged). `battlesIn(difficulty)` excludes them; `grandBattles()` lists them. The section opens at 6 stars, then battles unlock in order. They run easy, normal, hard with all five personalities and end with a boss (`grand-eclipse-sovereign`). Twists are HP, spells, modes and rules only; no `army` twists, since `arrange` builds 7x7 layouts.
 - Totals (`totalStars`, the stars line, Stats) now count 87 battles. No sim was run on the Grand battles; the Umbral lean from G3 still stands.
+
+## G5 notes
+- Act III now runs `sunwell-ledger`, `long-march`, `iron-oath`, `last-shrine`, `the-sanctum`. The two new chapters reuse Grand Court battles (`grand-long-walk`, `grand-spell-warden`) through the existing campaign fallback in `scenarioOf`, so no new fight data was needed. Wren, Tam and Voss are bound to `solari-flier-1`, `solari-footsoldier-1` and `solari-charger-1`, which exist in the sixteen-piece Grand army.
+- No new bound characters were needed. Story tests check the five-chapter order, which battles are 9x9, and that the Sanctum stays last with the ending.
