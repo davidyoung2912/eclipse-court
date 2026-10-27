@@ -1,9 +1,11 @@
 import { recordOf, replaySteps, type GameRecord } from './log'
 import { newGame } from './reducer'
-import type { Action, Court, GameState, MatchConfig, MatchMode, Pos, Role, Spell } from './rules/types'
+import type { Action, Court, GameState, MatchConfig, MatchMode, Perk, Pos, PromotionRole, Role, Spell } from './rules/types'
 import { ALL_SPELLS } from './rules/spells'
 
 const MODES: readonly MatchMode[] = ['beacons', 'leader', 'score', 'hill']
+const PERKS: readonly Perk[] = ['might', 'ward', 'vigour']
+const PROMOTED: readonly PromotionRole[] = ['charger', 'marksman']
 const ROLES: readonly Role[] = ['footsoldier', 'flier', 'marksman', 'bruiser', 'charger', 'aura', 'leader']
 
 /** Bumped whenever the encoding changes, so old saves and links are recognised and refused cleanly. */
@@ -12,7 +14,7 @@ export const FORMAT_VERSION = 1
 /** Parts of an opening position that a match config does not determine (campaign handicaps, say). */
 type Overrides = Partial<Pick<GameState, 'pieces' | 'spells' | 'dir'>>
 
-/** Actions as short arrays: [0, piece, x, y, attackerHp?, defenderHp?], [1, spell, piece?, x?, y?], [2]. */
+/** Actions as short arrays: [0, piece, x, y, attackerHp?, defenderHp?, perk?, promotion?] (a gap is -1 / ''), [1, spell, piece?, x?, y?], [2]. */
 type Packed = (string | number)[]
 
 interface Payload {
@@ -26,7 +28,13 @@ const OVERRIDE_KEYS = ['pieces', 'spells', 'dir'] as const
 
 function pack(a: Action): Packed {
   if (a.type === 'pass') return [2]
-  if (a.type === 'move') return a.duel ? [0, a.pieceId, a.to.x, a.to.y, a.duel.attackerHp, a.duel.defenderHp] : [0, a.pieceId, a.to.x, a.to.y]
+  if (a.type === 'move') {
+    const base: Packed = [0, a.pieceId, a.to.x, a.to.y]
+    if (a.duel) base.push(a.duel.attackerHp, a.duel.defenderHp)
+    else if (a.perk || a.promote) base.push(-1, -1)
+    if (a.perk || a.promote) base.push(a.perk ?? '', a.promote ?? '')
+    return base
+  }
   return a.to ? [1, a.spell, a.pieceId ?? '', a.to.x, a.to.y] : a.pieceId ? [1, a.spell, a.pieceId] : [1, a.spell]
 }
 
@@ -38,7 +46,9 @@ function unpack(p: unknown): Action | null {
   if (p[0] === 2) return { type: 'pass' }
   if (p[0] === 0 && isStr(p[1]) && isNum(p[2]) && isNum(p[3])) {
     const move: Action = { type: 'move', pieceId: p[1], to: { x: p[2], y: p[3] } }
-    if (isNum(p[4]) && isNum(p[5])) move.duel = { attackerHp: p[4], defenderHp: p[5] }
+    if (isNum(p[4]) && isNum(p[5]) && p[4] >= 0) move.duel = { attackerHp: p[4], defenderHp: p[5] }
+    if (isStr(p[6]) && (PERKS as readonly string[]).includes(p[6])) move.perk = p[6] as Perk
+    if (isStr(p[7]) && (PROMOTED as readonly string[]).includes(p[7])) move.promote = p[7] as PromotionRole
     return move
   }
   if (p[0] === 1 && isStr(p[1]) && (ALL_SPELLS as readonly string[]).includes(p[1])) {
@@ -94,7 +104,7 @@ const validConfig = (c: Partial<MatchConfig> | undefined): c is MatchConfig =>
   (c.loadouts === undefined || validLoadouts(c.loadouts)) &&
   (c.recharge === undefined || isNum(c.recharge)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
   (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) &&
-  (['events', 'showdown', 'reverse'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
+  (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */
 export function decodeRecord(code: string): GameRecord | null {

@@ -37,6 +37,10 @@ export interface SetupChoice {
   cycle?: CycleId
   /** The light starts out running the other way. */
   reverse?: boolean
+  /** Duel wins make Veterans and Elites. */
+  growth?: boolean
+  /** Footsoldiers that cross the board are promoted. */
+  promotion?: boolean
 }
 
 /** The AI court's choices that a skirmish needs beyond the seed. */
@@ -66,6 +70,8 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.showdown) base.showdown = true
   if (choice.cycle && choice.cycle !== 'standard') base.day = DAYS[choice.cycle]
   if (choice.reverse) base.reverse = true
+  if (choice.growth) base.growth = true
+  if (choice.promotion) base.promotion = true
   if (mode === 'classic') return base
   if (mode === 'draft') {
     const mine = arrange(choice.roles ?? [])

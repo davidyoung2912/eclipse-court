@@ -72,7 +72,8 @@ export function evaluate(state: GameState, court: Court): number {
 
   for (const p of state.pieces) {
     const sign = p.court === court ? 1 : -1
-    const value = mode === 'leader' && p.role === 'leader' ? 40 : VALUE[p.role]
+    // Veterans and Elites are worth more than recruits of the same role.
+    const value = (mode === 'leader' && p.role === 'leader' ? 40 : VALUE[p.role]) * (1 + ((p.wins ?? 0) >= 2 ? 0.1 : 0) + (p.perk ? 0.15 : 0))
     score += sign * value * (0.4 + 0.6 * (p.hp / p.maxHp))
     // Outside the closing safe zone a piece is about to be hurt, and the mover cannot save them all.
     if (radius !== null && chebyshev(p.pos, CENTER) > radius) score -= sign * VALUE[p.role] * 0.8
@@ -86,6 +87,8 @@ export function evaluate(state: GameState, court: Court): number {
       for (const b of open[p.court]) near = Math.min(near, Math.abs(b.x - p.pos.x) + Math.abs(b.y - p.pos.y))
       score += sign * 0.15 * (12 - near)
     }
+    // A Footsoldier is worth more once it can cross the board and be promoted.
+    if (state.config.promotion && p.role === 'footsoldier') score += sign * 0.3 * (p.court === 'solari' ? p.pos.x : 6 - p.pos.x)
     // Standing in light that favours its court.
     const lum = squareLuminance(state, p.pos)
     score += sign * 0.3 * (p.court === 'solari' ? lum : -lum)

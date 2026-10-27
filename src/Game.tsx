@@ -5,8 +5,10 @@ import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { describeHint, HINT_DIFFICULTY, type Hint } from './ai/hint'
 import { AUTO_DUEL_SKILL, DIFFICULTY, type Difficulty } from './ai/profile'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
+import { ROLE_NAMES } from './engine/data/roster'
 import { estimateOdds, reduce } from './engine/reducer'
 import { samePos } from './engine/rules/board'
+import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
 import { spellTargets } from './engine/rules/spells'
@@ -19,6 +21,7 @@ import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
 import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
+import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 
 interface Props {
   human: Court
@@ -62,6 +65,8 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   const [casting, setCasting] = useState<Spell | null>(null)
   /** The first ally chosen for Exchange, which takes two taps. */
   const [castFirst, setCastFirst] = useState<string | null>(null)
+  /** A growth decision (perk or promotion) the player must make before their move is played. */
+  const [asking, setAsking] = useState<{ action: Extract<Action, { type: 'move' }>; prompt: Prompt } | null>(null)
   const [aiFocus, setAiFocus] = useState<{ mover: string; target?: string } | null>(null)
   const [hint, setHint] = useState<Hint | 'thinking' | null>(null)
   const state = history[history.length - 1].state
@@ -123,6 +128,16 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     clearHint()
   }
 
+  /** Plays one of the human's moves, first asking about any perk or promotion it earns. */
+  const commit = (action: Extract<Action, { type: 'move' }>) => {
+    const choice = growthChoice(state, action)
+    const name = ROLE_NAMES[human][state.pieces.find((x) => x.id === action.pieceId)?.role ?? 'footsoldier']
+    if (choice.perks && !action.perk) return setAsking({ action, prompt: { kind: 'perk', options: choice.perks, name } })
+    if (choice.promote && !action.promote) return setAsking({ action, prompt: { kind: 'promote', court: human, name } })
+    setAsking(null)
+    play(action)
+  }
+
   /** Settle a capture: play it live, or let the duel AI play it out at the auto-duel skill. */
   const beginDuel = (p: Pending) => {
     if (duelMode === 'live') return setPending({ ...p, confirmed: true })
@@ -132,7 +147,9 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     const skills: [number, number] = p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
       p.byAi ? [foeAggression, 1] : [1, foeAggression])
-    play({ type: 'move', pieceId: p.pieceId, to: p.to, duel })
+    const move = { type: 'move' as const, pieceId: p.pieceId, to: p.to, duel }
+    if (p.byAi) play(move)
+    else commit(move)
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
@@ -192,7 +209,7 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
     }
     if (selected && moves.some((m) => samePos(m, p))) {
       if (pieceAt(state, p)) return setPending({ pieceId: selected.id, to: p, confirmed: false, byAi: false })
-      return play({ type: 'move', pieceId: selected.id, to: p })
+      return commit({ type: 'move', pieceId: selected.id, to: p })
     }
     clearHint()
     const occ = pieceAt(state, p)
@@ -214,7 +231,10 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
   }
 
   const finishDuel = (outcome: DuelOutcome) => {
-    if (pending) play({ type: 'move', pieceId: pending.pieceId, to: pending.to, duel: outcome })
+    if (!pending) return
+    const move = { type: 'move' as const, pieceId: pending.pieceId, to: pending.to, duel: outcome }
+    if (pending.byAi) play(move)
+    else commit(move)
   }
 
   const toggleSound = () => {
@@ -245,6 +265,11 @@ export function Game({ human, difficulty, record, onSave, onExit }: Props) {
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)}
           options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
           seed={state.rng + state.round} onDone={finishDuel} />
+      )}
+      {asking && (
+        <GrowthPrompt prompt={asking.prompt}
+          onPerk={(perk) => commit({ ...asking.action, perk })}
+          onPromote={(role) => commit({ ...asking.action, promote: role })} />
       )}
       {state.winner && (
         <div className="confirm result" role="dialog" aria-label="Game over">

@@ -1,6 +1,7 @@
 import { ROLE_INFO, courtFight, courtPassive } from '../../engine/data/pieceInfo'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { styleOf } from '../../engine/duel/sim'
+import { PERK_INFO, rankOf } from '../../engine/rules/growth'
 import { isBeacon } from '../../engine/rules/board'
 import { favouredCourt, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece } from '../../engine/rules/types'
@@ -31,6 +32,10 @@ export function PieceCard({ state, piece, human, hint }: Props) {
           : favoured === piece.court ? 'The light favours it here'
             : favoured ? 'The light works against it here' : ''
   const gift = state.config.passives ? courtPassive(piece.court, piece.role) : ''
+  const rank = rankOf(piece)
+  const record = state.config.growth
+    ? `${piece.wins ?? 0} duel win${piece.wins === 1 ? '' : 's'}${rank === 'recruit' ? '' : ` · ${rank === 'elite' ? 'Elite' : 'Veteran'}`}${piece.perk ? ` · ${PERK_INFO[piece.perk].name}: ${PERK_INFO[piece.perk].text}` : ''}`
+    : ''
   const duel = [info.fight, courtFight(piece.court, piece.role)].filter(Boolean).join(' · ')
   return (
     <section className={`piece-card ${piece.court}`} aria-live="polite">
@@ -42,6 +47,7 @@ export function PieceCard({ state, piece, human, hint }: Props) {
       <p><i>Moves</i>{info.move}</p>
       <p><i>Duel</i>{duel}</p>
       {gift && <p><i>Gift</i>{gift}</p>}
+      {record && <p><i>Record</i>{record}</p>}
       <p className="piece-stats">
         <i>Power</i><span className="dots">{stars(st.damage * 2)}</span>
         <i>Speed</i><span className="dots">{stars(st.speed * 1.2)}</span>

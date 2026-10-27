@@ -3,6 +3,7 @@ import { startingPieces } from './data/roster'
 import { rngNext } from './rng'
 import { CENTER, chebyshev, isBeacon, otherCourt, samePos } from './rules/board'
 import { eventAt, HILL_TURNS, modeOf, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
+import { isStock, perkMods, promote, recordWin } from './rules/growth'
 import { duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
 import type { Action, Court, DuelOutcome, GameState, MatchConfig, Piece } from './rules/types'
@@ -56,8 +57,10 @@ export function stubDuel(
 ): DuelOutcome {
   const aMods = duelMods(attacker.court, lum)
   const dMods = duelMods(defender.court, lum)
-  const aPower = ROLE_STATS[attacker.role].power * aMods.dealt * dMods.taken
-  const dPower = ROLE_STATS[defender.role].power * dMods.dealt * aMods.taken
+  const aPerk = perkMods(attacker)
+  const dPerk = perkMods(defender)
+  const aPower = ROLE_STATS[attacker.role].power * aMods.dealt * dMods.taken * aPerk.dealt * dPerk.taken
+  const dPower = ROLE_STATS[defender.role].power * dMods.dealt * aMods.taken * dPerk.dealt * aPerk.taken
   const luck = 0.75 + roll * 0.5
   const tAttackerKills = defender.hp / (aPower * luck)
   const tDefenderKills = attacker.hp / dPower
@@ -81,7 +84,7 @@ export interface Odds {
   other: number
 }
 
-const isFresh = (p: Piece) => p.hp === p.maxHp
+const isFresh = (p: Piece) => p.hp === p.maxHp && isStock(p)
 
 /**
  * Odds of a duel. Two full-health pieces use the simulated matchup table; if either is wounded the
@@ -144,6 +147,7 @@ function endRound(state: GameState): GameState {
       if (heals && rest % 2 === 0) hp += 1
     }
     if (heals && onBeacon) hp += 1
+    if (heals && p.perk === 'vigour') hp += 1
     // Umbral passive: the dark mends them while the light still cycles.
     if (heals && state.config.passives && p.court === 'umbral' && !eclipse && squareLuminance(state, p.pos) < 0) hp += 1
     hp = Math.min(hp, p.maxHp)
@@ -270,7 +274,7 @@ function applyMove(state: GameState, piece: Piece, action: Extract<Action, { typ
   const target = pieceAt(state, action.to)
   if (!target) {
     const pieces = state.pieces.map((p) =>
-      p.id === piece.id ? { ...p, pos: action.to, moved: true } : p,
+      p.id === piece.id ? promote(state.config, { ...p, pos: action.to, moved: true }, action.promote) : p,
     )
     return finishTurn({ ...state, pieces, lastDuel: null })
   }
@@ -284,6 +288,7 @@ function applyMove(state: GameState, piece: Piece, action: Extract<Action, { typ
     outcome = stubDuel(piece, target, lum, roll)
   }
   const { attackerHp, defenderHp } = outcome
+  const { config } = state
   const lastDuel = {
     attackerId: piece.id,
     defenderId: target.id,
@@ -297,16 +302,13 @@ function applyMove(state: GameState, piece: Piece, action: Extract<Action, { typ
   for (const p of state.pieces) {
     if (p.id === piece.id) {
       if (attackerHp <= 0) captured.push({ ...p, hp: 0 })
-      else
-        pieces.push({
-          ...p,
-          hp: attackerHp,
-          moved: true,
-          pos: defenderHp <= 0 ? action.to : p.pos,
-        })
+      else {
+        const moved = { ...p, hp: attackerHp, moved: true, pos: defenderHp <= 0 ? action.to : p.pos }
+        pieces.push(defenderHp <= 0 ? promote(config, recordWin(config, moved, action.perk), action.promote) : moved)
+      }
     } else if (p.id === target.id) {
       if (defenderHp <= 0) captured.push({ ...p, hp: 0 })
-      else pieces.push({ ...p, hp: defenderHp })
+      else pieces.push(attackerHp <= 0 ? recordWin(config, { ...p, hp: defenderHp }) : { ...p, hp: defenderHp })
     } else pieces.push(p)
   }
   return finishTurn({ ...state, pieces, captured, rng, lastDuel })

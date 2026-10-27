@@ -160,6 +160,8 @@ Delivers recommendations 5 and 6 and the pacing fix.
 
 ### E5. Piece growth (≈1–2 days)
 
+**Status: done.** Config toggles `growth` and `promotion` (both optional, off for old codes). Two duel wins make a Veteran (+1 max HP, healed); four make an Elite with a perk from a role-based pair: Might (+15% damage), Ward (−15% damage taken) or Vigour (+1 heal each round). The attacker picks; a defender, or the AI, takes the first perk. A Footsoldier that ends a move on the enemy home column becomes a Charger (default) or Marksman, keeping wounds, record and perk. Choices ride on the move action (`perk`, `promote`), so replays and codes carry them. UI: Skirmish toggles, a choice prompt, a Record line on the piece card. `npm run growth` (30 games per variant, showdown and events on): no growth Solari 14 / Umbral 16; veterancy 12/18, about 2.9 veterans and 0.3 elites per game; promotion 15/15 but only 0.1 promotions per game (the AI rarely crosses the board); both 18/12. Splits are within noise at 30 games; median round 37–38 throughout. Persistence across games was left out, as planned.
+
 - Veterancy: a piece with 2/4 duel wins gains +1 max HP, then a perk chosen from two. Promotion for Footsoldiers reaching the enemy home column (becomes a Charger or Marksman, rule toggle).
 - Piece state gains `wins`, `perks`; duel config reads perks. Persist nothing across games in this phase.
 - UI: piece card shows record and perk; a promotion chooser.

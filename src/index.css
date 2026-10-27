@@ -358,3 +358,5 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .draft-row .name small { display: block; opacity: 0.7; font-size: 0.75rem; }
 .draft-row button[aria-pressed='true'] { background: var(--solari-gold); color: #1b1740; }
 .recharge { display: block; margin: 10px 0; font-size: 0.9rem; }
+.confirm .buttons button b, .confirm .buttons button small { display: block; }
+.confirm .buttons button small { font-size: 0.7rem; opacity: 0.8; }

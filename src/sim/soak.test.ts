@@ -5,6 +5,7 @@ import { estimateOdds } from '../engine/reducer'
 import { courtGames, reportOn as courtReport, winShape } from './courts'
 import { modeGames, MODES, reportOn as modeReport } from './modes'
 import { draftGames, reportOn } from './draft'
+import { growthGames } from './growth'
 import { checkInvariants, playGame } from './game'
 import { COURTS } from '../engine/rules/board'
 import { fresh, LUMS, ROLES, roleStrength } from './matchups'
@@ -82,6 +83,14 @@ describe('loadout games', () => {
     const r = playGame(1, 'easy', 'easy')
     expect(['beacons', 'elimination', 'adjudication']).toContain(winShape(r.state))
   }, 60_000)
+})
+
+describe('piece growth', () => {
+  it('finishes games with veterancy and promotion on without breaking the board', () => {
+    const r = growthGames(3, { growth: true, promotion: true }, 5)
+    expect(r.problems).toEqual([])
+    expect(r.unfinished).toBe(0)
+  }, 240_000)
 })
 
 describe('match modes', () => {

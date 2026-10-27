@@ -18,6 +18,12 @@ export interface Pos {
   y: number
 }
 
+/** A gift an Elite piece picks after four duel wins. */
+export type Perk = 'might' | 'ward' | 'vigour'
+
+/** What a Footsoldier may become on reaching the enemy home column. */
+export type PromotionRole = 'charger' | 'marksman'
+
 export interface Piece {
   id: string
   court: Court
@@ -33,6 +39,9 @@ export interface Piece {
   bound: boolean
   /** Shrouded by its own court's spell: cannot be attacked or targeted until that court's next turn. */
   shrouded?: boolean
+  /** Duels won this game; two make a Veteran, four an Elite (only when the match has growth). */
+  wins?: number
+  perk?: Perk
 }
 
 /** Remaining HP of each fighter after a duel; 0 means dead. */
@@ -93,6 +102,10 @@ export interface MatchConfig {
   showdown?: boolean
   /** The light starts out running the other way round. */
   reverse?: boolean
+  /** Duel wins make Veterans (+1 max HP) and then Elites (a chosen perk). */
+  growth?: boolean
+  /** Footsoldiers reaching the enemy home column become Chargers or Marksmen. */
+  promotion?: boolean
 }
 
 /** A spell cast earlier, waiting to return to its Leader. */
@@ -131,6 +144,6 @@ export interface GameState {
 }
 
 export type Action =
-  | { type: 'move'; pieceId: string; to: Pos; duel?: DuelOutcome }
+  | { type: 'move'; pieceId: string; to: Pos; duel?: DuelOutcome; perk?: Perk; promote?: PromotionRole }
   | { type: 'cast'; spell: Spell; pieceId?: string; to?: Pos }
   | { type: 'pass' }

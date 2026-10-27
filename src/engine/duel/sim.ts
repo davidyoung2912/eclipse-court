@@ -1,3 +1,4 @@
+import { perkMods } from '../rules/growth'
 import { duelMods } from '../rules/luminance'
 import type { DuelOutcome, Piece, Role } from '../rules/types'
 import {
@@ -55,10 +56,11 @@ export const DEFAULT_CONFIG: DuelConfig = { aimCone: (50 * Math.PI) / 180 }
 
 export function createFighter(piece: Piece, pos: Vec, facing: number, lum: number): Fighter {
   const mods = duelMods(piece.court, lum)
+  const perk = perkMods(piece)
   return {
     court: piece.court, role: piece.role, pos, vel: { x: 0, y: 0 }, facing,
     hp: piece.hp, maxHp: piece.maxHp, radius: styleOf(piece.role).radius,
-    charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt, taken: mods.taken, wasHeld: false,
+    charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt * perk.dealt, taken: mods.taken * perk.taken, wasHeld: false,
   }
 }
 

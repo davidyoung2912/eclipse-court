@@ -52,6 +52,8 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
   const [showdown, setShowdown] = useState(true)
   const [cycle, setCycle] = useState<CycleId>('standard')
   const [reverse, setReverse] = useState(false)
+  const [growth, setGrowth] = useState(false)
+  const [promotion, setPromotion] = useState(false)
   const board = boardById(boardId)
   const ready = (mode !== 'draft' || draftProblem(roles) === null) && (spellMode === 'classic' || loadoutProblem(court, loadout) === null)
   const summary = {
@@ -126,6 +128,8 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={reverse} onChange={() => setReverse((r) => !r)} /> The light starts running the other way</label>
       <label className="recharge"><input type="checkbox" checked={events} onChange={() => setEvents((e) => !e)} /> Day events (Solar Flare, Gloaming, Fog, Blight)</label>
       <label className="recharge"><input type="checkbox" checked={showdown} onChange={() => setShowdown((d) => !d)} /> Eclipse showdown: the outer squares turn deadly, closing in on the centre</label>
+      <label className="recharge"><input type="checkbox" checked={growth} onChange={() => setGrowth((g) => !g)} /> Veterancy: 2 duel wins add 1 max HP, 4 earn a perk</label>
+      <label className="recharge"><input type="checkbox" checked={promotion} onChange={() => setPromotion((p) => !p)} /> Promotion: a Footsoldier reaching the far column becomes a Charger or Marksman</label>
       <h3>Board</h3>
       <div className="choices row">
         {BOARDS.map((b) => (
@@ -143,7 +147,7 @@ export function SkirmishSetup({ onStart, onBack }: Props) {
           mode, board: boardId, roles,
           loadout: spellMode === 'loadout' ? loadout : undefined,
           recharge: recharge ? RECHARGE_ROUNDS : undefined,
-          winMode, events, showdown, cycle, reverse,
+          winMode, events, showdown, cycle, reverse, growth, promotion,
         })}><Icon name="play" />Start</button>
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
