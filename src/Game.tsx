@@ -419,7 +419,12 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
         </button>
       )}
       {banner && !ended && !(hotSeat && passScreen) && (
-        <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status">
+        <div key={banner.court + history.length} className={`turn-banner ${hotSeat ? banner.court : human}`} role="status"
+          ref={(el) => {
+            // Centre on the board, not the screen.
+            const board = el?.parentElement?.querySelector('.board')?.getBoundingClientRect()
+            if (el && board) { el.style.left = `${board.left + board.width / 2}px`; el.style.top = `${board.top + board.height / 2}px` }
+          }}>
           {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
         </div>
       )}
