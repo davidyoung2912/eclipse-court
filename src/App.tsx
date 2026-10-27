@@ -28,6 +28,7 @@ import { Daily } from './ui/menus/Daily'
 import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { clearRun, loadRun, saveRun } from './run'
+import { Battle } from './ui/menus/Battle'
 import { Practice } from './ui/menus/Practice'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Settings } from './ui/menus/Settings'
@@ -39,6 +40,7 @@ import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
 type Screen =
   | { name: 'menu' }
+  | { name: 'battle' }
   | { name: 'skirmish' }
   | { name: 'campaign' }
   | { name: 'daily' }
@@ -176,14 +178,17 @@ export default function App() {
     )
   }
 
-  if (screen.name === 'practice') return <Practice onBack={() => setScreen({ name: 'menu' })} />
+  if (screen.name === 'battle')
+    return <Battle onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} />
+
+  if (screen.name === 'practice') return <Practice onBack={() => setScreen({ name: 'battle' })} />
 
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
 
   if (screen.name === 'paste')
-    return <PasteCode onBack={() => setScreen({ name: 'menu' })} onOpen={(shared) => setScreen(sharedScreen(shared))} />
+    return <PasteCode onBack={() => setScreen({ name: 'battle' })} onOpen={(shared) => setScreen(sharedScreen(shared))} />
 
   if (screen.name === 'challenge')
     return (
@@ -196,7 +201,7 @@ export default function App() {
     return (
       <SkirmishSetup
         progress={progress}
-        onBack={() => setScreen({ name: 'menu' })}
+        onBack={() => setScreen({ name: 'battle' })}
         challengeLink={(human, difficulty, setup, hotSeat) =>
           challengeLink({ config: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()).initial.config, side: otherCourt(human) })}
         onStart={(human, difficulty, setup, hotSeat) =>
@@ -399,7 +404,7 @@ export default function App() {
   }
 
   return (
-    <MainMenu firstRun={!seen}
+    <MainMenu firstRun={!seen} progress={progress} onBattle={() => setScreen({ name: 'battle' })}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
       onCampaign={() => { setReport([]); setCampaignTab('battles'); setScreen({ name: 'campaign' }) }} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }}
@@ -409,6 +414,6 @@ export default function App() {
         setReport([])
         setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty, record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily: true } })
       }}
-      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onSettings={() => setScreen({ name: 'settings' })} />
+      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onSettings={() => setScreen({ name: 'settings' })} />
   )
 }

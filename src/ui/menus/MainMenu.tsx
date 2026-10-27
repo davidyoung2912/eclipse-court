@@ -2,17 +2,19 @@ import { useState } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
 import { Icon } from './icons'
 import { PieceArt } from '../../art/PieceArt'
+import type { Progress } from '../../progress'
+import { primaryAction } from './menuModel'
 
 interface Props {
+  progress: Progress
   onSkirmish: () => void
+  onBattle: () => void
   onCampaign: () => void
   onGauntlet: () => void
   onTutorial: () => void
   onStats: () => void
   onPuzzles: () => void
-  onPractice: () => void
   onSettings: () => void
-  onPaste: () => void
   onDaily: () => void
   onDailyPuzzle: () => void
   /** Whether today's match and puzzle have been played and solved. */
@@ -73,21 +75,21 @@ function Hero() {
   )
 }
 
-export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onPractice, onSettings, onPaste, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
+  const primary = primaryAction(progress, !!onResume, firstRun)
+  const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
   return (
     <main className="app menu main-menu">
       <Hero />
       <h1><span>Eclipse</span> Court</h1>
       <div className="divider" aria-hidden="true"><i /></div>
       <p className="tagline">Light and dark trade places. Every capture is a duel.</p>
-      {onResume && (
-        <div className="menu-buttons">
-          <button className="primary" onClick={onResume}><Icon name="play" />Resume Game</button>
-        </div>
-      )}
       <div className="menu-buttons">
-        <button className={firstRun || onResume ? undefined : 'primary'} onClick={onSkirmish}><Icon name="swords" />Skirmish</button>
+        <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
+      </div>
+      <div className="menu-buttons">
+        <button onClick={onBattle}><Icon name="swords" />Battle</button>
         <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
       </div>
       <div className="menu-buttons">
@@ -99,13 +101,9 @@ export function MainMenu({ onSkirmish, onCampaign, onGauntlet, onTutorial, onSta
         <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
       </div>
       <div className="menu-buttons small">
-        <button onClick={onPractice}><Icon name="target" />Practice</button>
         <button onClick={onStats}><Icon name="trophy" />Stats</button>
         <button onClick={onSettings}><Icon name="gear" />Settings</button>
-      </div>
-      <div className="menu-buttons small">
-        <button className={firstRun ? 'primary' : undefined} onClick={onTutorial}><Icon name="book" />How to Play</button>
-        <button onClick={onPaste}><Icon name="chain" />Paste Code</button>
+        <button onClick={onTutorial}><Icon name="book" />How to Play</button>
         <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'On' : 'Off'}</button>
       </div>
     </main>
