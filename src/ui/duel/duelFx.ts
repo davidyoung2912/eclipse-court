@@ -1,4 +1,4 @@
-import { pieceArtSvg } from '../../art/pieceGeometry'
+import { lostPanes, PALETTE, pieceArtSvg } from '../../art/pieceGeometry'
 import { ARENA_H, ARENA_W, type DuelEvent, type DuelState, type Vec } from '../../engine/duel/types'
 import type { CellEffect, Court, Piece } from '../../engine/rules/types'
 
@@ -9,13 +9,13 @@ const CELL_COLORS: Record<CellEffect, string> = {
 }
 
 const icons = new Map<string, HTMLImageElement>()
-/** The board's medallion for a piece, rendered once per role and court. */
-function iconFor(role: Piece['role'], court: Piece['court']): HTMLImageElement {
-  const key = `${court}-${role}`
+/** The board's medallion for a piece, rendered once per role, court and set of greyed-out panes. */
+function iconFor(role: Piece['role'], court: Piece['court'], lost: ReadonlySet<number>): HTMLImageElement {
+  const key = `${court}-${role}-${[...lost].join('')}`
   let img = icons.get(key)
   if (!img) {
     img = new Image()
-    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(pieceArtSvg(role, court))}`
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(pieceArtSvg(role, court, lost))}`
     icons.set(key, img)
   }
   return img
@@ -70,6 +70,8 @@ export interface Fx {
   lobStart: WeakMap<object, number>
   floor: { canvas: HTMLCanvasElement; w: number; h: number; dpr: number } | null
   hatch: CanvasPattern | null
+  /** The last medallion that had finished loading for each fighter, shown while the next one loads. */
+  lastIcon: [HTMLImageElement | null, HTMLImageElement | null]
 }
 
 const MAX_PARTICLES = 220
@@ -86,7 +88,7 @@ export function createFx(look: DuelLook): Fx {
       ph: Math.random() * 6.28, r: 0.025 + Math.random() * 0.04,
     })
   }
-  return { look, theme, t: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null }
+  return { look, theme, t: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null] }
 }
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10)
@@ -344,15 +346,20 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
   })
   c.restore()
 
-  // Pennants of the two courts along the sides, where the stands would be.
+  // Along each half's sides, boxes in the colours of that court's medallion panes, one per pane.
   ;([0, 1] as const).forEach((i) => {
-    c.fillStyle = i === 0 ? 'rgba(232, 182, 74, 0.55)' : 'rgba(122, 92, 200, 0.7)'
-    for (let y = i === 0 ? ARENA_H / 2 + 0.75 : 0.75; y < (i === 0 ? ARENA_H : ARENA_H / 2); y += 1.5) {
-      for (const side of [-1, 1]) {
-        const [ex, ey] = P(side < 0 ? -0.06 : ARENA_W + 0.06, y)
-        c.beginPath()
-        c.moveTo(ex, ey - 0.22 * scale); c.lineTo(ex, ey + 0.22 * scale); c.lineTo(ex + side * 0.4 * scale, ey)
-        c.fill()
+    const panes = PALETTE[i === 0 ? 'solari' : 'umbral'].panes
+    const half = ARENA_H / 2
+    const size = half / 8
+    for (let k = 0; k < 8; k++) {
+      const y = (i === 0 ? half : 0) + k * size
+      for (const x of [0, ARENA_W - 0.3]) {
+        const [bx0, by0] = P(x, y)
+        c.fillStyle = panes[k % 3]
+        c.fillRect(bx0, by0, 0.3 * scale, size * scale)
+        c.strokeStyle = '#120d2a'
+        c.lineWidth = Math.max(1, scale * 0.02)
+        c.strokeRect(bx0, by0, 0.3 * scale, size * scale)
       }
     }
   })
@@ -536,8 +543,11 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     ctx.fillStyle = COLORS[f.court]
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
-    const icon = iconFor(f.role, f.court)
-    if (icon.complete && icon.naturalWidth) {
+    // The medallion greys out one pane per eighth of HP lost, as on the board.
+    const fresh = iconFor(f.role, f.court, lostPanes(f.hp, f.maxHp))
+    if (fresh.complete && fresh.naturalWidth) fx.lastIcon[i] = fresh
+    const icon = fx.lastIcon[i]
+    if (icon) {
       // Keep the medallion upright on screen when the whole canvas is turned for the defender.
       unflip(cx, cy, () => ctx.drawImage(icon, -r, -r, r * 2, r * 2))
     }

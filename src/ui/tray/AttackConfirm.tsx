@@ -39,7 +39,7 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, cells
       </p>
       <p className={`confirm-advice ${advice.tone}`}>{advice.text}</p>
       <div className="buttons">
-        <button onClick={onCancel}><Icon name="close" />Cancel</button>
+        <button onClick={onCancel}><Icon name="close" />Withdraw</button>
         <button className="primary" onClick={onConfirm}>{live ? <><Icon name="swords" />Attack</> : <><Icon name="bolt" />Auto-resolve</>}</button>
       </div>
     </div>

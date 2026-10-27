@@ -679,10 +679,11 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .campaign .completed { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); font-size: 0.8rem; }
 .campaign .completed .stars { margin: 0; }
 
-/* Reset and Hint buttons share one colour, Back buttons another, so each kind is easy to spot */
-.buttons button.reset, .menu-buttons button.reset, .buttons button.hint {
+/* Reset buttons are red, Hint buttons teal like the tip cards, Back buttons slate, so each kind is easy to spot */
+.buttons button.reset, .menu-buttons button.reset {
   background: var(--reset-bg); border-color: var(--reset-border); --glow: var(--reset-glow);
 }
+.buttons button.hint { background: var(--tip-bg); border-color: var(--tip-border); --glow: 79, 217, 200; }
 .buttons button.hint.on { border-color: #ffd45a; --glow: 255, 212, 90; }
 .buttons button.back, .menu-buttons button.back {
   background: var(--back-bg); border-color: var(--back-border); --glow: var(--back-glow);
@@ -756,3 +757,8 @@ body:has(.duel) .play-timer { display: none; }
 .confirm-advice.go { color: #6fe08a; }
 .confirm-advice.even { color: var(--solari-gold); }
 .confirm-advice.stop { color: #ff8088; }
+
+/* The attack summary sits in the tray, centred between the info card above and the screen bottom; the tray keeps its size underneath. */
+.tray { position: relative; }
+.tray.confirming > :not(.confirm) { visibility: hidden; }
+.tray > .confirm { position: absolute; top: calc(50% + var(--bottom-gap) / 2); bottom: auto; transform: translateY(-50%); }

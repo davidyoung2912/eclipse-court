@@ -377,6 +377,9 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
   /** One line on what this battle is for: a puzzle's first sentence, else the goal followed by where the game comes from. */
   const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
     : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label].filter(Boolean).join(' · ')
+  /** The attack summary is up: it takes over the tray, and the tray's own controls step aside. */
+  const confirming = !!pending && !pending.confirmed
+
   const retry = () => {
     turnClock.reset()
     setHistory((h) => h.slice(0, 1))
@@ -395,13 +398,6 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
-      {pending && !pending.confirmed && attacker && defender && (
-        <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
-          cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}
-          luminance={squareLuminance(state, pending.to)}
-          odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, duelCells(state, attacker, defender))}
-          onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
-      )}
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={duelCells(state, attacker, defender)}
           boardId={state.config.board} cellEffects={[cellAt(state.config, attacker.pos), cellAt(state.config, defender.pos)]}
@@ -458,7 +454,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
         <PieceCard state={state} human={human} piece={shown}
           hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
       )}
-      <footer className="tray">
+      <footer className={`tray${confirming ? ' confirming' : ''}`}>
         {clock && <div className={myTurn && !ended ? undefined : 'keep-space'} aria-hidden={!myTurn || ended}>
           <ClockRing clock={clock} elapsedMs={elapsed} bankMs={banks[state.turn]} court={state.turn} paused={!clockRunning} />
         </div>}
@@ -496,6 +492,13 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
+        {confirming && attacker && defender && (
+          <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
+            cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}
+            luminance={squareLuminance(state, pending.to)}
+            odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, duelCells(state, attacker, defender))}
+            onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
+        )}
       </footer>
       {briefing && puzzle && (
         <div className="puzzle-intro-backdrop">

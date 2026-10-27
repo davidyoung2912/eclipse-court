@@ -38,7 +38,7 @@ export function lostPanes(hp: number, maxHp: number): Set<number> {
 export const LOST_PANE = '#5d5d72'
 
 /** Pane, emblem and hub colours per court, mirroring the board's stylesheet for contexts without it. */
-const PALETTE = {
+export const PALETTE = {
   solari: { panes: ['#f2c55c', '#e8943a', '#fbe39a'], hub: '#fff4cf', emblem: '#3a2410' },
   umbral: { panes: ['#6a4cc0', '#3b2f8a', '#4aa6b8'], hub: '#1d1745', emblem: '#e4d8ff' },
 } as const
