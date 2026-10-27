@@ -4,7 +4,8 @@ import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
 import { PasteCode } from './ui/menus/PasteCode'
 import { unlockAudio } from './audio/synth'
-import { HOT_SEAT, versusAi } from './controllers'
+import { HOT_SEAT, versusAi, versusOnline } from './controllers'
+import type { Session } from './net/session'
 import type { Difficulty } from './ai/profile'
 import { aiDraft, aiLoadout } from './engine/data/aiDraft'
 import { otherCourt } from './engine/rules/board'
@@ -81,6 +82,8 @@ type Screen =
     name: 'game'; human: Court; difficulty: Difficulty; record: GameRecord; campaignIndex: number | null
     /** Two people share the device; `human` and `difficulty` are then unused. */
     hotSeat?: boolean
+    /** The other player is across an online connection; `human` is your court. */
+    online?: Session
     /** Set when the game is a puzzle: its index, whether it is the day's, and the turns allowed. */
     puzzle?: { index: number; daily: boolean }
     /** Set in a best-of-three: the opponent and the games won and lost so far. */
@@ -314,7 +317,12 @@ export default function App() {
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
 
   if (screen.name === 'lobby')
-    return <Lobby key={screen.offer ?? 'host'} challenge={screen.challenge} offer={screen.offer} onBack={() => setScreen({ name: 'online' })} />
+    return <Lobby key={screen.offer ?? 'host'} challenge={screen.challenge} offer={screen.offer}
+      onStart={(session) => {
+        const view = session.view()
+        setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online: session, record: { initial: view.state!, actions: [] }, campaignIndex: null })
+      }}
+      onBack={() => setScreen({ name: 'online' })} />
 
   if (screen.name === 'practice') return <Practice onPlaytime={addTime} onBack={() => setScreen({ name: 'battle' })} />
 
@@ -408,13 +416,13 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, gauntlet, scenario, story } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === DAILY_COURT
+    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === DAILY_COURT
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
-    const transient = !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
+    const transient = !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -501,9 +509,11 @@ export default function App() {
       <Game
         key={record.initial.rng}
         controllers={hotSeat ? HOT_SEAT
+          : online ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
           : versusAi(human, difficulty, daily ? today.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
+        session={online}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}
         onSave={(progress) => {
@@ -512,6 +522,11 @@ export default function App() {
           else clearSaved()
         }}
         onExit={(winner, finished) => {
+          if (online) {
+            // Games between people touch neither the record nor the saved game.
+            online.close()
+            return setScreen({ name: 'online' })
+          }
           if (gauntlet) return finishFight(winner, finished)
           if (story) return finishStory(story, winner, finished)
           if (puzzle) return finishPuzzle(winner)

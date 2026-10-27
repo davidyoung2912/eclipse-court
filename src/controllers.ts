@@ -3,8 +3,8 @@ import type { Difficulty } from './ai/profile'
 import { otherCourt } from './engine/rules/board'
 import type { Court } from './engine/rules/types'
 
-/** Who plays a court: a person at the screen, or the AI at a difficulty. */
-export type Controller = 'human' | { ai: Difficulty; personality?: PersonalityId }
+/** Who plays a court: a person at the screen, a person across an online connection, or the AI at a difficulty. */
+export type Controller = 'human' | 'online' | { ai: Difficulty; personality?: PersonalityId }
 
 export type Controllers = Record<Court, Controller>
 
@@ -14,10 +14,17 @@ export function versusAi(human: Court, difficulty: Difficulty, personality?: Per
   return { [human]: 'human', [otherCourt(human)]: foe } as Controllers
 }
 
+/** One person here against a person online, who plays `foe`'s court. */
+export function versusOnline(human: Court): Controllers {
+  return { [human]: 'human', [otherCourt(human)]: 'online' } as Controllers
+}
+
 /** Two people sharing the device. */
 export const HOT_SEAT: Controllers = { solari: 'human', umbral: 'human' }
 
 export const isHuman = (controllers: Controllers, court: Court) => controllers[court] === 'human'
+
+export const isOnline = (controllers: Controllers) => controllers.solari === 'online' || controllers.umbral === 'online'
 
 export const isHotSeat = (controllers: Controllers) => isHuman(controllers, 'solari') && isHuman(controllers, 'umbral')
 

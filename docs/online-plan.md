@@ -1,6 +1,6 @@
 # Online play: two players, peer to peer over WebRTC, no game server
 
-**Status: N1 to N3 done; N4 to N6 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
+**Status: N1 to N4 done; N5 and N6 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing (so the WebRTC glue is kept thin and the protocol is tested over a loopback transport).
 
 ## Decisions
 - **No backend.** A WebRTC `RTCDataChannel` carries the moves. Signaling (swapping the SDP offer/answer) is done by hand: the host shows a code or link, the guest pastes an answer code back. STUN only, using public servers. No TURN, so a minority of pairs behind symmetric NATs or corporate networks cannot connect; the lobby says so plainly and suggests another network.
@@ -26,13 +26,13 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - **N1 (done): protocol and session over an abstract transport (no UI, no WebRTC).** `src/net/`: `transport.ts` (interface and the loopback pair), `protocol.ts` (message types, encode and validate, checksum), `session.ts` (host and guest sides, applying and verifying actions, duel recomputation), with tests over the loopback: a full scripted game both sides agree on, rejection of an illegal move, a forged duel, a bad `n`, a tampered checksum, a version mismatch, resign and close.
 - **N2 (done): WebRTC transport and manual signaling.** `rtc.ts` wraps `RTCPeerConnection` and one data channel with public STUN, waits for ICE gathering to finish, and produces a single offer or answer blob. `signal.ts` squeezes the SDP into a short URL-safe code (keep ufrag, pwd, fingerprint and candidates; drop the rest) and rebuilds it, with round-trip tests on sample SDP. Links of the form `#j=<offer>` open the guest flow.
 - **N3 (done): lobby UI.** A Battle menu entry "Play online": host (pick the match with the Skirmish controls, show a code, link and QR-style copy button, paste the answer) or join (paste or open a link, show the answer code to send back). Connection states, a timeout, and a clear failed-to-connect message that explains the NAT limitation.
-- **N4: Game integration.** An `online` controller kind next to `human` and AI, so `Game` plays the remote court by feeding received actions through `play`, and sends the local court's actions. The turn banner, board orientation (your court at the bottom), auto-duel for captures with the result dialog, spells, growth choices (perk and promotion travel inside the move), and the game-over flow. Undo, hint and pass screen are hidden online. Saved games and stats record online games separately or not at all (decide here).
+- **N4 (done): Game integration.** An `online` controller kind next to `human` and AI, so `Game` plays the remote court by feeding received actions through `play`, and sends the local court's actions. The turn banner, board orientation (your court at the bottom), auto-duel for captures with the result dialog, spells, growth choices (perk and promotion travel inside the move), and the game-over flow. Undo, hint and pass screen are hidden online. Saved games and stats record online games separately or not at all (decide here).
 - **N5: resilience.** Disconnect detection (heartbeat), a reconnect flow that re-handshakes and resyncs from a record code and checks both sides agree, resign and "leave" messages, an opponent-left banner, and desync reporting with a copyable record for bug reports.
 - **N6 (optional): easier signaling and live duels.** A pluggable signaler (a short room code through PeerJS's public broker or a small Worker) so joining is one step, and, if wanted, a lockstep live duel where both peers exchange inputs per tick against the deterministic duel engine.
 
 ## Open questions
-- Whether online games count toward stars, stats and the daily streak (leaning: no, they are just games).
-- Whether to show a rematch button that swaps courts (leaning: yes, cheap once N4 exists).
+- Decided in N4: online games count toward nothing and are never saved (like hot-seat).
+- Rematch: not in N4, because the protocol has no way to start a second match on a live session; belongs with N5 (a `start` after `over`) or N6.
 
 ## N1 notes
 - Files in `src/net/`: `transport.ts` (`Transport`, `loopbackPair` with async in-order delivery and buffering until a handler is set), `protocol.ts` (messages, `decodeMessage`, `stateSum`, a canonical-JSON FNV-1a checksum), `session.ts` (`createSession`, `settleDuel`), `session.test.ts` (23 tests). `pack` and `unpack` in `serialize.ts` are now exported for the wire format.
@@ -49,4 +49,10 @@ JSON messages, one per data-channel message, each tagged with a protocol version
 - Battle menu has "Play Online" -> `Online.tsx` (Host / Join, disabled without `rtcSupported()`). Host opens Skirmish with an "Online" Players option (`onHost`; like hot seat it bars drafts and loadouts, hides Share and the AI picker, keeps the court choice) and then `Lobby`. Join opens `Lobby` with a paste box.
 - `Lobby.tsx`: host shows the offer code (copy, share link) and takes the answer; guest pastes the offer, shows the answer code and waits. Both then run `createSession`; the lobby shows the match and court once connected. `#j=` links open the guest lobby prefilled (`takeLinkScreen`).
 - `timeout.ts`: `withTimeout` (tested), `CONNECT_MS` (45 s host, 90 s guest wait), and `NAT_HELP` text shown on any failure. Leaving cancels the pending connection and closes the session.
-- Not yet: the lobby stops at "connected"; N4 starts the game from the session.
+- The lobby hands the session to the game (`onStart`) as soon as the guest has the match and the host has `ready`.
+
+## N4 notes
+- `controllers.ts`: a third controller kind `'online'`, `versusOnline(human)`, `isOnline`. `Session` gained `listen(fn)` (returns an unsubscribe).
+- `Lobby` calls `onStart(session)` once playing and then leaves the session open on unmount. `App` opens `game` with `online: session`, `human: view.me`, never saves it, never touches stats, and on exit closes the session and returns to the Online menu.
+- `Game` takes `session`. Local actions go through `session.play` (which settles any duel) and the settled action is what the history keeps. Remote actions are stepped in by an effect, one per render and only while no dialog is open; a remote capture shows the `DuelResult` dialog first. Duels are auto-settled with the hot-seat arguments, which match `settleDuel`.
+- Hidden online: undo, hint, Auto-duel. Quit becomes Resign mid-game. A resignation or a dropped connection ends the game ("Connection lost" if undecided). The AI hook is off online. Turn clocks stay local and advisory.

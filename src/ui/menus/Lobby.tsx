@@ -15,6 +15,8 @@ interface Props {
   challenge?: Challenge
   /** An offer code from a join link, for the guest. */
   offer?: string
+  /** Both players are connected and the match is known: play it. The game then owns the session. */
+  onStart: (session: Session) => void
   onBack: () => void
 }
 
@@ -32,7 +34,7 @@ type Step =
 const copy = (text: string) => navigator.clipboard?.writeText(text).catch(() => {})
 
 /** Where two players find each other: the host shows an offer and takes an answer, the guest does the reverse. */
-export function Lobby({ challenge, offer, onBack }: Props) {
+export function Lobby({ challenge, offer, onStart, onBack }: Props) {
   const host = !!challenge
   const [step, setStep] = useState<Step>(host ? { name: 'making' } : { name: 'paste' })
   const [text, setText] = useState(offer ?? '')
@@ -41,13 +43,19 @@ export function Lobby({ challenge, offer, onBack }: Props) {
   const session = useRef<Session | null>(null)
   /** Set on leaving, so a connection that finishes afterwards is closed rather than used. */
   const gone = useRef(false)
+  /** Set once the game has taken the session, which the lobby must then leave open. */
+  const started = useRef(false)
 
   const begin = (transport: Parameters<typeof createSession>[0]['transport']) => {
     if (gone.current) return transport.close()
     session.current = createSession({
       transport, role: host ? 'host' : 'guest', challenge,
       onChange: (view) => {
-        if (gone.current) return
+        if (gone.current || started.current) return
+        if (view.status === 'playing' && view.me && session.current) {
+          started.current = true
+          return onStart(session.current)
+        }
         if (view.status === 'over') setStep({ name: 'failed', text: failure(view) })
         else setStep({ name: 'connected', view })
       },
@@ -74,7 +82,7 @@ export function Lobby({ challenge, offer, onBack }: Props) {
     return () => {
       gone.current = true
       pending.current?.cancel()
-      session.current?.close()
+      if (!started.current) session.current?.close()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

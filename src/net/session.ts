@@ -47,6 +47,8 @@ export interface Session {
   /** Plays the local court's action, settling any capture, and sends it. False if the rules refuse it or it is not this player's turn. */
   play: (action: Action) => boolean
   resign: () => void
+  /** Calls `fn` with the view after every change; returns a function that stops listening. */
+  listen: (fn: (view: SessionView) => void) => () => void
   close: () => void
 }
 
@@ -102,7 +104,12 @@ export function createSession({ transport, role, challenge: offered, onChange }:
     status, reason, me, challenge, state, actions: [...actions],
     winner: resignedBy ? otherCourt(resignedBy) : state?.winner ?? null,
   })
-  const changed = () => onChange?.(view())
+  const listeners = new Set<(view: SessionView) => void>()
+  const changed = () => {
+    const v = view()
+    onChange?.(v)
+    listeners.forEach((fn) => fn(v))
+  }
   const send = (message: Message) => transport.send(encodeMessage(message))
 
   const end = (why: EndReason) => {
@@ -189,6 +196,10 @@ export function createSession({ transport, role, challenge: offered, onChange }:
       resignedBy = me
       send({ t: 'resign' })
       end('resigned')
+    },
+    listen: (fn) => {
+      listeners.add(fn)
+      return () => void listeners.delete(fn)
     },
     close: () => {
       if (status === 'over') return transport.close()

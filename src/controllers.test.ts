@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOT_SEAT, humanCourt, isHotSeat, isHuman, versusAi } from './controllers'
+import { HOT_SEAT, humanCourt, isHotSeat, isHuman, isOnline, versusAi, versusOnline } from './controllers'
 import { loadSaved, saveGame } from './saved'
 import { newGame } from './engine/reducer'
 import { matchConfig } from './engine/data/matchConfig'
@@ -16,6 +16,16 @@ describe('controllers', () => {
 
   it('leaves the personality out when none is given', () => {
     expect(versusAi('solari', 'easy').umbral).toEqual({ ai: 'easy' })
+  })
+
+  it('has one human and one online player in an online game', () => {
+    const c = versusOnline('umbral')
+    expect(c).toEqual({ umbral: 'human', solari: 'online' })
+    expect(isOnline(c)).toBe(true)
+    expect(isOnline(HOT_SEAT) || isOnline(versusAi('solari', 'easy'))).toBe(false)
+    expect(isHotSeat(c)).toBe(false)
+    expect(humanCourt(c)).toBe('umbral')
+    expect(humanCourt(versusOnline('solari'))).toBe('solari')
   })
 
   it('has two humans in hot-seat', () => {

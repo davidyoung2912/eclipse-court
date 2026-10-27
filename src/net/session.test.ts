@@ -280,4 +280,17 @@ describe('protocol', () => {
     expect(stateSum({ ...s })).toBe(stateSum(s))
     expect(stateSum(reduce(s, { type: 'pass' }))).not.toBe(stateSum(s))
   })
+
+  it('tells listeners about every change until they stop', async () => {
+    const { host, guest } = await connected()
+    const seen: number[] = []
+    const stop = guest.listen((v) => seen.push(v.actions.length))
+    host.play(firstMove(host.view().state!))
+    await settle()
+    expect(seen).toEqual([1])
+    stop()
+    guest.play(firstMove(guest.view().state!))
+    await settle()
+    expect(seen).toEqual([1])
+  })
 })

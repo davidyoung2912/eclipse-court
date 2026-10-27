@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
-import { humanCourt, isHotSeat, isHuman, type Controllers } from './controllers'
+import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
+import type { Session } from './net/session'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
 import { estimateOdds, reduce } from './engine/reducer'
@@ -41,6 +42,8 @@ interface Props {
   controllers: Controllers
   /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
   record: GameRecord
+  /** The connection to the other player, for an online game. */
+  session?: Session
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
@@ -73,8 +76,10 @@ function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
 }
 
-export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onExit }: Props) {
+export function Game({ controllers, record, session, puzzleLimit, puzzleHelp, onSave, onExit }: Props) {
   const hotSeat = isHotSeat(controllers)
+  const online = isOnline(controllers) && !!session
+  const [net, setNet] = useState(() => session?.view() ?? null)
   const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
@@ -104,16 +109,23 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   const human = hotSeat ? state.turn : humanCourt(controllers)
   const foe = otherCourt(human)
   const foeController = controllers[foe]
-  const difficulty = foeController === 'human' ? 'normal' : foeController.ai
-  const personality = foeController === 'human' ? undefined : foeController.personality
+  const aiFoe = typeof foeController === 'object' ? foeController : null
+  const difficulty = aiFoe ? aiFoe.ai : 'normal'
+  const personality = aiFoe?.personality
   const foeSkill = DIFFICULTY[difficulty].skill
   const foeAggression = DIFFICULTY[difficulty].aggression
-  /** Hot-seat duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
-  const settleAuto = hotSeat || duelMode === 'auto'
+  /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
+  const even = hotSeat || online
+  const settleAuto = even || duelMode === 'auto'
   /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
   const failed = puzzleLimit !== undefined && !state.winner && turnsTaken >= puzzleLimit
-  const ended = !!state.winner || failed
+  /** Online, a resignation ends the game without the board showing a winner. */
+  const resigned = net?.reason === 'resigned' || net?.reason === 'opponent-resigned'
+  const winner = state.winner ?? (resigned ? net?.winner ?? null : null)
+  /** The connection broke, or the other build disagreed, before the game was decided. */
+  const dropped = !!net && net.status === 'over' && net.reason !== 'finished' && !winner
+  const ended = !!winner || failed || dropped
   const selected = state.pieces.find((p) => p.id === selectedId && p.court === human) ?? null
   const shown = state.pieces.find((p) => p.id === (selected?.id ?? inspectId)) ?? null
   const targets = useMemo(
@@ -142,12 +154,15 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
 
   // Each court's bell rings as its turn begins.
   useEffect(() => {
-    if (state.winner) {
-      if (hotSeat ? state.winner !== 'draw' : state.winner === human) sfx.win()
+    if (winner) {
+      if (hotSeat ? winner !== 'draw' : winner === human) sfx.win()
       else sfx.lose()
     } else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
-  }, [state, human, hotSeat])
+  }, [state, winner, human, hotSeat])
+
+  // Follows the connection: the other player's actions arrive through it.
+  useEffect(() => session?.listen(setNet), [session])
 
   // The turn announcement fades after a second and then lets play go on.
   useEffect(() => {
@@ -165,7 +180,13 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   }, [history])
 
   /** Plays an action: the one place the game moves forward, so the history doubles as the game's log. */
-  const play = (action: Action) => {
+  const play = (given: Action, remote = false) => {
+    let action = given
+    if (online && !remote) {
+      // The session settles any capture and sends the action; the game keeps what it settled.
+      if (!session!.play(given)) return
+      action = session!.view().actions.at(-1)!
+    }
     const s = reduce(state, action)
     if (s === state) return
     if (action.type === 'cast') sfx.cast()
@@ -197,7 +218,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
   /** Plays the move a finished duel decided, once its result has been seen. */
   const applyDuel = ({ pending: p, outcome }: { pending: Pending; outcome: DuelOutcome }) => {
     const move = { type: 'move' as const, pieceId: p.pieceId, to: p.to, duel: outcome }
-    if (p.byAi) play(move)
+    if (p.byAi) play(move, online)
     else commit(move)
   }
 
@@ -207,16 +228,16 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     const attacker = state.pieces.find((x) => x.id === p.pieceId)
     const defender = pieceAt(state, p.to)
     if (!attacker || !defender) return
-    const skills: [number, number] = hotSeat ? [AUTO_DUEL_SKILL, AUTO_DUEL_SKILL] : p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
+    const skills: [number, number] = even ? [AUTO_DUEL_SKILL, AUTO_DUEL_SKILL] : p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
-      hotSeat ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression], duelCells(state, attacker, defender))
+      even ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression], duelCells(state, attacker, defender))
     setPending({ ...p, confirmed: true })
     setSettled({ pending: p, outcome: duel })
   }
 
   // The AI court takes its turn after a short pause, searching off the main thread.
   const aiFocus = useAiTurn({
-    state, active: !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
+    state, active: !online && !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
     onAct: (action) => {
       if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
       else play(action)
@@ -260,6 +281,20 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     setInspectId(occ ? occ.id : null)
     setInspectSq(occ ? null : p)
   })
+
+  // The other player's actions are played as they arrive; a capture shows its settled duel first.
+  useEffect(() => {
+    if (!net || settled || pending || asking) return
+    const next = net.actions[history.length - 1]
+    if (!next) return
+    if (next.type === 'move' && next.duel && pieceAt(state, next.to)) {
+      const p: Pending = { pieceId: next.pieceId, to: next.to, confirmed: true, byAi: true }
+      setPending(p)
+      setSettled({ pending: p, outcome: next.duel })
+    } else play(next, true)
+    // play is read fresh; only a new action or a cleared dialog should step the game.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [net, history, settled, pending, asking])
 
   const undo = () => {
     turnClock.reset()
@@ -306,10 +341,11 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
     [hinted],
   )
   const result = puzzleLimit !== undefined
-    ? state.winner === human ? 'Solved' : 'Not solved'
-    : state.winner === 'draw' ? 'Draw'
-    : hotSeat ? `${COURT_NAME[state.winner ?? 'solari']} wins`
-    : state.winner === human ? 'Victory' : 'Defeat'
+    ? winner === human ? 'Solved' : 'Not solved'
+    : dropped ? 'Connection lost'
+    : winner === 'draw' ? 'Draw'
+    : hotSeat ? `${COURT_NAME[winner ?? 'solari']} wins`
+    : winner === human ? 'Victory' : 'Defeat'
   const retry = () => {
     turnClock.reset()
     setHistory((h) => h.slice(0, 1))
@@ -355,7 +391,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
       )}
       {banner && !ended && !(hotSeat && passScreen) && (
         <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status">
-          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : 'AI Turn'}
+          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
         </div>
       )}
       {ended && (
@@ -363,8 +399,8 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
           <p className="confirm-title">{result}</p>
           <div className="buttons">
             {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
-            {puzzleLimit === undefined && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
-            <button className="primary" onClick={() => onExit(state.winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
+            {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
+            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
           </div>
         </div>
       )}
@@ -382,7 +418,7 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
               <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>
               <label><input type="checkbox" checked={flipBoard} onChange={() => setFlipBoard((v) => !v)} /> Face the player</label>
             </>
-          ) : (
+          ) : online ? null : (
             <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
           )}
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
@@ -396,16 +432,16 @@ export function Game({ controllers, record, puzzleLimit, puzzleHelp, onSave, onE
             : puzzleLimit !== undefined && myTurn
               ? `Turn ${turnsTaken + 1} of ${puzzleLimit}`
               : !myTurn
-              ? 'Opponent is thinking…'
+              ? online ? 'Waiting for your opponent…' : 'Opponent is thinking…'
               : duel
                 ? `Last duel: ${describeDuel(duel)}`
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">
-          <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>
-          {!hotSeat && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
+          {!online && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {!hotSeat && !online && <button className={hint ? 'on' : ''} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
-          <button onClick={() => onExit(null, recordOf(history))}><Icon name="exit" />Quit</button>
+          <button onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
       </footer>
       <TipCard float hidden={!!banner || !!pending || !!settled || !!asking || ended}
