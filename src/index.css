@@ -413,10 +413,6 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .campaign .stars i { font-style: normal; opacity: 0.25; }
 .campaign .stars i.got { opacity: 1; color: var(--solari-gold); }
 .campaign .boss { color: var(--solari-gold); opacity: 1; }
-.stats { margin: 0 0 8px; display: flex; flex-direction: column; gap: 4px; }
-.stats div { display: flex; justify-content: space-between; gap: 12px; }
-.stats dt { opacity: 0.75; }
-.stats dd { margin: 0; font-weight: 600; }
 .achievements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .achievements li { display: flex; flex-direction: column; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; opacity: 0.5; }
 .achievements li.got { opacity: 1; border-color: var(--solari-gold); }
@@ -718,3 +714,27 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-size: 1rem; font-weight: 700;
   background: var(--solari-gold); color: #1b1740; border: 1px solid var(--solari-cream);
 }
+
+/* Stats page */
+.stat-overall { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.stat-overall strong { font-family: var(--display); font-size: 2.2rem; color: var(--solari-gold); line-height: 1; }
+.stat-overall span { font-size: 0.78rem; opacity: 0.75; }
+.bar { width: 100%; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.bar.thin { height: 4px; grid-column: 1 / -1; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--umbral-violet), var(--solari-gold)); }
+.stat-tiles { width: 100%; max-width: 420px; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.stat-tiles div { display: flex; flex-direction: column-reverse; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); text-align: center; }
+.stat-tiles dd { margin: 0; font-weight: 700; font-size: 1.05rem; color: var(--solari-cream); }
+.stat-tiles dt { font-size: 0.66rem; opacity: 0.7; line-height: 1.2; }
+.stat-section { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(154, 124, 240, 0.4); background: rgba(29, 23, 69, 0.55); }
+.stat-section summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
+.stat-section summary::-webkit-details-marker { display: none; }
+.stat-section summary h3 { display: flex; align-items: center; gap: 8px; margin: 0; opacity: 1; color: var(--solari-cream); }
+.stat-section summary em { font-style: normal; font-weight: 700; color: var(--solari-gold); }
+.stat-rows { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.stat-rows div { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 3px; font-size: 0.85rem; }
+.stat-rows dt { opacity: 0.75; }
+.stat-rows dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* Mode cards: a second line and a slim progress bar stay inside the card's height budget */
+.mode-card .bar.thin { margin-top: 2px; }

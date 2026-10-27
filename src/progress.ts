@@ -43,6 +43,28 @@ export interface Stats {
   playSeconds: number
 }
 
+/** Games won, lost and drawn in one part of the game. */
+export interface Tally {
+  games: number
+  wins: number
+  losses: number
+  draws: number
+}
+
+/** The places a game can be played that keep their own record. */
+export type PlayArea = 'skirmish' | 'campaign' | 'scenario' | 'daily' | 'practice' | 'hotseat' | 'online'
+export const PLAY_AREAS: readonly PlayArea[] = ['skirmish', 'campaign', 'scenario', 'daily', 'practice', 'hotseat', 'online']
+
+const noTally = (): Tally => ({ games: 0, wins: 0, losses: 0, draws: 0 })
+
+/** The tally with one more result: a win, a draw, or otherwise a loss. */
+const tallied = (t: Tally, result: 'win' | 'draw' | 'loss'): Tally => ({
+  games: t.games + 1,
+  wins: t.wins + (result === 'win' ? 1 : 0),
+  losses: t.losses + (result === 'loss' ? 1 : 0),
+  draws: t.draws + (result === 'draw' ? 1 : 0),
+})
+
 /** What the roguelike gauntlet has shown so far. */
 export interface Gauntlet {
   /** Runs begun, and runs won. */
@@ -83,6 +105,10 @@ export interface Progress {
   daily: Daily
   /** Star bits earned in each scenario, by scenario id. */
   scenarios: Record<string, number>
+  /** A record for each place games are played: practice duels count here, and hot-seat games only as played. */
+  areas: Record<PlayArea, Tally>
+  /** Games against the AI by its difficulty. */
+  byDifficulty: Record<Difficulty, Tally>
   /** The finished game most recently played, as a record code for the replay viewer. */
   last: string | null
 }
@@ -97,8 +123,14 @@ export const emptyProgress = (): Progress => ({
   gauntlet: { runs: 0, won: 0, best: 0 },
   daily: { last: null, streak: 0, best: 0 },
   scenarios: {},
+  areas: emptyAreas(),
+  byDifficulty: { easy: noTally(), normal: noTally(), hard: noTally() },
   last: null,
 })
+
+function emptyAreas(): Record<PlayArea, Tally> {
+  return Object.fromEntries(PLAY_AREAS.map((a) => [a, noTally()])) as Record<PlayArea, Tally>
+}
 
 export const starCount = (bits: number) => [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].filter((b) => bits & b).length
 export const totalStars = (p: Progress) => CAMPAIGN.reduce((n, o) => n + starCount(p.battles[o.id] ?? 0), 0)
@@ -268,7 +300,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
 ]
 
 /** The progress after one finished game, and the achievements it newly earned. */
-export function recordGame(p: Progress, s: Summary, replay: string | null): { progress: Progress; earned: Achievement[] } {
+export function recordGame(p: Progress, s: Summary, replay: string | null, area: PlayArea = 'skirmish'): { progress: Progress; earned: Achievement[] } {
   const stats: Stats = {
     ...p.stats,
     games: p.stats.games + 1,
@@ -281,7 +313,12 @@ export function recordGame(p: Progress, s: Summary, replay: string | null): { pr
   const battles = { ...p.battles }
   const id = s.campaignIndex === null ? undefined : CAMPAIGN[s.campaignIndex]?.id
   if (id && s.won) battles[id] = (battles[id] ?? 0) | starsEarned(s)
-  const next: Progress = { ...p, battles, stats, last: replay ?? p.last }
+  const result = s.won ? 'win' : s.draw ? 'draw' : 'loss'
+  const next: Progress = {
+    ...p, battles, stats, last: replay ?? p.last,
+    areas: { ...p.areas, [area]: tallied(p.areas[area], result) },
+    byDifficulty: { ...p.byDifficulty, [s.difficulty]: tallied(p.byDifficulty[s.difficulty], result) },
+  }
   return award(next, s, p)
 }
 
@@ -301,6 +338,17 @@ function award(next: Progress, s: Summary, before: Progress): { progress: Progre
     have = [...have, ...fresh.map((a) => a.id)]
   }
   return { progress: { ...next, achievements: have }, earned }
+}
+
+/** The progress after a practice duel; the player attacks, so a win needs the defender down and the attacker standing. */
+export function recordPractice(p: Progress, outcome: { attackerHp: number; defenderHp: number }): Progress {
+  const result = outcome.defenderHp <= 0 && outcome.attackerHp > 0 ? 'win' : outcome.attackerHp <= 0 && outcome.defenderHp > 0 ? 'loss' : 'draw'
+  return { ...p, areas: { ...p.areas, practice: tallied(p.areas.practice, result) } }
+}
+
+/** The progress after a game against another person; `won` is null for a draw. They touch no other record. */
+export function recordVersus(p: Progress, area: 'hotseat' | 'online', won: boolean | null): Progress {
+  return { ...p, areas: { ...p.areas, [area]: tallied(p.areas[area], won === null ? 'draw' : won ? 'win' : 'loss') } }
 }
 
 /** The progress after a puzzle is solved; `daily` marks the day's puzzle. */
@@ -326,7 +374,7 @@ export const addPlaytime = (p: Progress, seconds: number): Progress =>
 /** Clears the counters, the gauntlet record, the achievements and the last replay; campaign, puzzle and scenario progress have their own resets. */
 export const resetStats = (p: Progress): Progress => {
   const fresh = emptyProgress()
-  return { ...p, stats: fresh.stats, gauntlet: fresh.gauntlet, achievements: [], tournaments: 0, last: null }
+  return { ...p, stats: fresh.stats, gauntlet: fresh.gauntlet, achievements: [], tournaments: 0, areas: fresh.areas, byDifficulty: fresh.byDifficulty, last: null }
 }
 
 export const resetPuzzles = (p: Progress): Progress => ({ ...p, puzzles: [] })
@@ -445,6 +493,15 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     const bits = (o.scenarios as Record<string, unknown> | undefined)?.[x.id]
     if (isInt(bits) && (bits & 7) !== 0) scenarios[x.id] = bits & 7
   }
+  const tally = (raw: unknown): Tally => {
+    const t = (raw && typeof raw === 'object' ? raw : {}) as Partial<Tally>
+    return { games: isInt(t.games) ? t.games : 0, wins: isInt(t.wins) ? t.wins : 0, losses: isInt(t.losses) ? t.losses : 0, draws: isInt(t.draws) ? t.draws : 0 }
+  }
+  const areas = emptyAreas()
+  for (const a of PLAY_AREAS) areas[a] = tally((o.areas as Record<string, unknown> | undefined)?.[a])
+  const byDifficulty = {
+    easy: tally(o.byDifficulty?.easy), normal: tally(o.byDifficulty?.normal), hard: tally(o.byDifficulty?.hard),
+  }
   return {
     v: PROGRESS_VERSION,
     battles,
@@ -455,6 +512,8 @@ export function migrate(raw: unknown, legacyCleared = 0): Progress {
     gauntlet,
     daily,
     scenarios,
+    areas,
+    byDifficulty,
     last: typeof o.last === 'string' ? o.last : null,
   }
 }

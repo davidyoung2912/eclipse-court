@@ -1,5 +1,9 @@
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, clearedCount, totalStars, type Progress } from '../../progress'
-import { CAMPAIGN } from '../../engine/data/campaign'
+import { useSyncExternalStore } from 'react'
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, type Progress } from '../../progress'
+import { dailySeed } from '../../engine/data/setups'
+import { overall, percent, sections, totals } from '../../statsModel'
+import { storySnapshot, subscribeStory } from '../../story'
+import { Bar } from './Bar'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { ResetButton } from './ResetButton'
@@ -17,23 +21,40 @@ interface Props {
 }
 
 export function Stats({ progress, onReplay, onReset, onBack }: Props) {
-  const { stats } = progress
-  const rows: [string, number | string][] = [
-    ['Games played', stats.games],
-    ['Won / lost / drawn', `${stats.wins} / ${stats.losses} / ${stats.draws}`],
-    ['Enemy pieces taken', stats.captures],
-    ['Own pieces lost', stats.piecesLost],
-    ['Gauntlet', `${progress.gauntlet.won} won of ${progress.gauntlet.runs} runs, furthest stage ${progress.gauntlet.best}`],
-    ['Campaign', `${clearedCount(progress)} of ${CAMPAIGN.length} beaten, ${totalStars(progress)} stars`],
-    ['Total time played', formatTime(stats.playSeconds)],
-  ]
+  const story = useSyncExternalStore(subscribeStory, storySnapshot)
+  const list = sections(progress, story, dailySeed())
+  const done = overall(list)
+  const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) }]
   return (
     <main className="app menu">
       <PageArt icon="trophy" />
       <h2>Stats</h2>
-      <dl className="stats">
-        {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+      <div className="stat-overall" role="group" aria-label="Overall completion">
+        <strong>{percent(done)}</strong>
+        <span>complete across the campaign, scenarios, puzzles, gauntlet, story and achievements</span>
+        <Bar fraction={done} />
+      </div>
+      <dl className="stat-tiles">
+        {tiles.map(({ label, value }) => <div key={label}><dd>{value}</dd><dt>{label}</dt></div>)}
       </dl>
+      {list.map((section) => (
+        <details key={section.id} className="stat-section" open>
+          <summary>
+            <h3><Icon name={section.icon} />{section.title}</h3>
+            {section.fraction !== null && <em>{percent(section.fraction)}</em>}
+          </summary>
+          {section.fraction !== null && <Bar fraction={section.fraction} />}
+          <dl className="stat-rows">
+            {section.rows.map((r) => (
+              <div key={r.label}>
+                <dt>{r.label}</dt>
+                <dd>{r.value}</dd>
+                {r.fraction !== undefined && <Bar fraction={r.fraction} thin />}
+              </div>
+            ))}
+          </dl>
+        </details>
+      ))}
       <h3>Achievements ({progress.achievements.length} of {ACHIEVEMENTS.length})</h3>
       {ACHIEVEMENT_CATEGORIES.map((category) => {
         const list = ACHIEVEMENTS.filter((a) => a.category === category)

@@ -13,6 +13,8 @@ import { BackButton } from './BackButton'
 
 interface Props {
   onPlaytime: (seconds: number) => void
+  /** A duel fought to its end, for the practice record. */
+  onDuel: (outcome: DuelOutcome) => void
   onBack: () => void
 }
 
@@ -27,7 +29,7 @@ const fighter = (court: Court, role: Role): Piece => ({
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
 /** A duel between any two roles, with the odds card: for learning how pieces fight without a game riding on it. */
-export function Practice({ onPlaytime, onBack }: Props) {
+export function Practice({ onPlaytime, onDuel, onBack }: Props) {
   const [mine, setMine] = useState<Role>('footsoldier')
   const [theirs, setTheirs] = useState<Role>('footsoldier')
   const [court, setCourt] = useState<Court>('solari')
@@ -48,7 +50,7 @@ export function Practice({ onPlaytime, onBack }: Props) {
         <PlayTimer onFlush={onPlaytime} />
         <DuelView attacker={attacker} defender={defender} luminance={light} options={{ mirror: false, aimAssist: true, haptics: true }}
           opponentSkill={skill} opponentAggression={aggression} seed={seed}
-          onDone={(o) => { setOutcome(o); setFighting(false) }} />
+          onDone={(o) => { setOutcome(o); setFighting(false); onDuel(o) }} />
       </>
     )
 

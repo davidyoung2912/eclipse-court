@@ -1,7 +1,11 @@
 import { CAMPAIGN } from '../../engine/data/campaign'
 import { PUZZLES } from '../../engine/data/puzzles'
 import { normalRules, type PresetRules } from '../../engine/data/setups'
-import { clearedCount, liveStreak, totalStars, type Progress } from '../../progress'
+import { GAUNTLET_STAGES } from '../../engine/data/gauntlet'
+import { SCENARIOS } from '../../engine/data/scenarios'
+import { BONDS, CHAPTERS } from '../../engine/data/story'
+import { clearedCount, liveStreak, STAR_WIN, totalStars, type Progress } from '../../progress'
+import { achievements as storyAchievements, bondRead, storySummary, type StoryState } from '../../story'
 
 export type PrimaryKind = 'resume' | 'learn' | 'campaign' | 'skirmish'
 
@@ -20,21 +24,60 @@ export function primaryAction(progress: Progress, hasSaved: boolean, firstRun: b
   return { kind: 'skirmish', label: 'Play Skirmish' }
 }
 
+/** What a mode card shows: up to two short lines and, where the mode has a goal, how far along it is (0 to 1). */
+export interface CardInfo {
+  lines: string[]
+  fraction: number | null
+}
+
 export interface CardSummaries {
-  campaign: string
-  gauntlet: string
-  puzzles: string
+  battle: CardInfo
+  campaign: CardInfo
+  gauntlet: CardInfo
+  puzzles: CardInfo
+  story: CardInfo
   /** Days in a row with a daily match, still alive on `today`. */
   streak: number
 }
 
-/** The one line of progress each mode card shows. */
-export function cardSummaries(progress: Progress, today: number): CardSummaries {
-  const { best, runs } = progress.gauntlet
+const share = (n: number, of: number) => (of === 0 ? 0 : Math.min(1, n / of))
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+/** The lines of progress each mode card shows. */
+export function cardSummaries(progress: Progress, today: number, story: StoryState): CardSummaries {
+  const { best, runs, won } = progress.gauntlet
+  const { skirmish, practice, online, hotseat } = progress.areas
+  const stars = totalStars(progress)
+  const solved = progress.puzzles.length
+  const scenarios = SCENARIOS.filter((x) => (progress.scenarios[x.id] ?? 0) & STAR_WIN).length
+  const chapters = CHAPTERS.filter((c) => story.read.has(c.id)).length
+  const bonds = BONDS.filter((b) => bondRead(story, b.id)).length
+  const medals = storyAchievements(story).filter((m) => m.earned).length
+  const friends = online.games + hotseat.games
   return {
-    campaign: `${totalStars(progress)} of ${CAMPAIGN.length * 3} stars`,
-    gauntlet: runs === 0 ? 'No runs yet' : `Best: stage ${best}`,
-    puzzles: `${progress.puzzles.length} of ${PUZZLES.length} solved`,
+    battle: {
+      lines: [
+        skirmish.games === 0 ? 'Skirmish · Practice · Codes' : `${plural(skirmish.games, 'skirmish', 'skirmishes')} · ${Math.round((skirmish.wins / skirmish.games) * 100)}% won`,
+        `${plural(practice.games, 'duel')} · ${plural(friends, 'friend game')}`,
+      ],
+      fraction: null,
+    },
+    campaign: {
+      lines: [`${clearedCount(progress)} of ${CAMPAIGN.length} beaten · ${stars}★`, `${scenarios} of ${SCENARIOS.length} scenarios`],
+      fraction: share(stars, CAMPAIGN.length * 3),
+    },
+    gauntlet: {
+      lines: runs === 0 ? ['No runs yet', 'Eight foes, one army'] : [`Best: stage ${Math.min(best, GAUNTLET_STAGES)} of ${GAUNTLET_STAGES}`, `${plural(won, 'win')} in ${plural(runs, 'run')}`],
+      fraction: share(best, GAUNTLET_STAGES),
+    },
+    puzzles: {
+      lines: [`${solved} of ${PUZZLES.length} solved`, `${Math.round(share(solved, PUZZLES.length) * 100)}% complete`],
+      fraction: share(solved, PUZZLES.length),
+    },
+    story: {
+      lines: [storySummary(story.read), `${plural(bonds, 'bond scene')} · ${medals} of ${storyAchievements(story).length} story achievements`],
+      fraction: share(chapters + bonds, CHAPTERS.length + BONDS.length),
+    },
     streak: liveStreak(progress, today),
   }
 }

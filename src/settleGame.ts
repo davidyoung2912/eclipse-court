@@ -6,7 +6,7 @@ import type { GameRecord } from './engine/log'
 import type { Court, GameState } from './engine/rules/types'
 import {
   recordDaily, recordGame, recordScenario, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise,
-  type Progress,
+  type PlayArea, type Progress,
 } from './progress'
 import type { Summary } from './engine/data/summary'
 
@@ -37,7 +37,8 @@ export function settleGame(progress: Progress, c: Context): Settled {
   const { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats } = c
   const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
   if (!summary) return { summary: null, lines: [], progress }
-  const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished))
+  const area: PlayArea = scenario !== undefined ? 'scenario' : stats && daily ? 'daily' : campaignIndex !== null ? 'campaign' : 'skirmish'
+  const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished), area)
   const stars = starsEarned(summary)
   const scored = stats && daily
     ? recordDaily(played, { date: today.date, won: summary.won, turns: summary.turns, lost: summary.lost })

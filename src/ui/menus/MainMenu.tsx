@@ -4,9 +4,10 @@ import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
 import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
+import { Bar } from './Bar'
 import { TipCard } from '../tips/TipCard'
-import { cardSummaries, primaryAction } from './menuModel'
-import { storySnapshot, storySummary, subscribeStory } from '../../story'
+import { cardSummaries, primaryAction, type CardInfo } from './menuModel'
+import { storySnapshot, subscribeStory } from '../../story'
 
 interface Props {
   progress: Progress
@@ -82,7 +83,7 @@ function Hero() {
 interface Card {
   icon: IconName
   title: string
-  line: string
+  info: CardInfo
   onClick: () => void
   /** Spans both columns. */
   wide?: boolean
@@ -92,14 +93,14 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
-  const summary = cardSummaries(progress, dailySeed())
   const storyRead = useSyncExternalStore(subscribeStory, storySnapshot)
+  const summary = cardSummaries(progress, dailySeed(), storyRead)
   const cards: Card[] = [
-    { icon: 'swords', title: 'Battle', line: 'Skirmish · Practice · Codes', onClick: onBattle },
-    { icon: 'banner', title: 'Campaign', line: summary.campaign, onClick: onCampaign },
-    { icon: 'flame', title: 'Gauntlet', line: summary.gauntlet, onClick: onGauntlet },
-    { icon: 'puzzle', title: 'Puzzles', line: summary.puzzles, onClick: onPuzzles },
-    { icon: 'book', title: 'Story', line: storySummary(storyRead.read), onClick: onStory, wide: true },
+    { icon: 'swords', title: 'Battle', info: summary.battle, onClick: onBattle },
+    { icon: 'banner', title: 'Campaign', info: summary.campaign, onClick: onCampaign },
+    { icon: 'flame', title: 'Gauntlet', info: summary.gauntlet, onClick: onGauntlet },
+    { icon: 'puzzle', title: 'Puzzles', info: summary.puzzles, onClick: onPuzzles },
+    { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
   ]
   return (
     <main className="app menu main-menu">
@@ -120,7 +121,8 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
         {cards.map((c) => (
           <button key={c.title} className={`mode-card${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
             <strong><Icon name={c.icon} />{c.title}</strong>
-            <span>{c.line}</span>
+            {c.info.lines.map((line) => <span key={line}>{line}</span>)}
+            {c.info.fraction !== null && <Bar fraction={c.info.fraction} thin />}
           </button>
         ))}
       </div>

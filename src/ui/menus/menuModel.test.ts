@@ -27,23 +27,32 @@ describe('primaryAction', () => {
 })
 
 describe('cardSummaries', () => {
+  const story = { read: new Set<string>(), characters: {}, losses: {}, ending: null }
+
   it('reads empty progress', () => {
-    expect(cardSummaries(emptyProgress(), 20260101)).toEqual({
-      campaign: `0 of ${CAMPAIGN.length * 3} stars`,
-      gauntlet: 'No runs yet',
-      puzzles: `0 of ${PUZZLES.length} solved`,
-      streak: 0,
-    })
+    const s = cardSummaries(emptyProgress(), 20260101, story)
+    expect(s.battle.lines[0]).toBe('Skirmish · Practice · Codes')
+    expect(s.campaign.lines[0]).toBe(`0 of ${CAMPAIGN.length} beaten · 0★`)
+    expect(s.gauntlet.lines[0]).toBe('No runs yet')
+    expect(s.puzzles.lines[0]).toBe(`0 of ${PUZZLES.length} solved`)
+    expect(s.puzzles.fraction).toBe(0)
+    expect(s.streak).toBe(0)
   })
 
   it('counts solved puzzles, the best gauntlet stage and a live daily streak', () => {
     let p = recordPuzzle(emptyProgress(), PUZZLES[0].id, false).progress
     p = { ...p, gauntlet: { runs: 2, won: 0, best: 4 } }
     p = recordDaily(p, { date: 20260101, won: true, turns: 9, lost: 1 }).progress
-    const s = cardSummaries(p, 20260101)
-    expect(s.puzzles).toBe(`1 of ${PUZZLES.length} solved`)
-    expect(s.gauntlet).toBe('Best: stage 4')
+    const s = cardSummaries(p, 20260101, story)
+    expect(s.puzzles.lines[0]).toBe(`1 of ${PUZZLES.length} solved`)
+    expect(s.gauntlet.lines).toEqual(['Best: stage 4 of 8', '0 wins in 2 runs'])
+    expect(s.gauntlet.fraction).toBe(0.5)
     expect(s.streak).toBe(1)
+  })
+
+  it('summarises skirmishes, practice and friend games on the Battle card', () => {
+    const p = { ...emptyProgress(), areas: { ...emptyProgress().areas, skirmish: { games: 4, wins: 3, losses: 1, draws: 0 }, practice: { games: 1, wins: 1, losses: 0, draws: 0 } } }
+    expect(cardSummaries(p, 20260101, story).battle.lines).toEqual(['4 skirmishes · 75% won', '1 duel · 0 friend games'])
   })
 })
 

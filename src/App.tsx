@@ -19,7 +19,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
-import { addPlaytime, dailyResult, loadProgress, recordPuzzle, recordRun, recordTournament, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
+import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { settleGame } from './settleGame'
 import type { Court, GameState } from './engine/rules/types'
@@ -317,7 +317,7 @@ export default function App() {
       }}
       onBack={() => setScreen({ name: 'online' })} />
 
-  if (screen.name === 'practice') return <Practice onPlaytime={addTime} onBack={() => setScreen({ name: 'battle' })} />
+  if (screen.name === 'practice') return <Practice onPlaytime={addTime} onDuel={(o) => { const next = recordPractice(progressRef.current, o); progressRef.current = next; setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'battle' })} />
 
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
@@ -527,7 +527,8 @@ export default function App() {
         }}
         onExit={(winner, finished) => {
           if (online) {
-            // Games between people touch neither the record nor the saved game.
+            // Games between people touch neither the record nor the saved game; they are only counted as played.
+            if (winner) { const next = recordVersus(progress, 'online', winner === 'draw' ? null : winner === human); setProgress(next); saveProgress(next) }
             online.close()
             return setScreen({ name: 'online' })
           }
@@ -538,7 +539,10 @@ export default function App() {
           clearSaved()
           setSaved(null)
           // Games between two people say nothing about the player's own record.
-          if (hotSeat) return setScreen({ name: 'menu' })
+          if (hotSeat) {
+            if (winner) { const next = recordVersus(progress, 'hotseat', winner === 'draw' ? null : winner === 'solari'); setProgress(next); saveProgress(next) }
+            return setScreen({ name: 'menu' })
+          }
           const done = finishGame(winner, finished, true)
           setProgress(done.progress)
           if (done.summary) saveProgress(done.progress)

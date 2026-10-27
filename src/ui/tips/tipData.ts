@@ -91,6 +91,8 @@ const DATA = {
   stats: [
     { id: 'stats-intro', icon: 'trophy', title: 'Your record',
       text: 'This page keeps every number about your play: games, wins and losses, pieces taken and lost, Gauntlet runs, campaign progress and total time played. Games against a friend on one device are never counted. It all stays on this device.' },
+    { id: 'stats-sections', icon: 'grid', title: 'Progress by play area',
+      text: 'The percentage at the top is how much of the game you have completed, averaged over the campaign, scenarios, puzzles, Gauntlet, Story and achievements. Below the totals, each play area has its own card with a bar, a breakdown by tier, and your record there, including Skirmish, the Practice Arena, the daily match and games with friends. Tap a card heading to fold it away. Records for Skirmish, Practice and friends start counting from this update, so older games appear only in the overall totals.' },
     { id: 'stats-achievements', icon: 'star', title: 'Achievements and replays',
       text: 'Achievements you have earned shine with a trophy, and locked ones show a padlock and the goal. Replay Last Game plays your most recent match back move by move, and Copy Replay Link lets you share it. Reset Stats clears your records and achievements but keeps campaign, puzzle and scenario progress.' },
     { id: 'stats-categories', icon: 'trophy', title: 'Achievement categories',
