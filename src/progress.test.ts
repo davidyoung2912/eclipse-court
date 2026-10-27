@@ -3,6 +3,9 @@ import { CAMPAIGN } from './engine/data/campaign'
 import { PUZZLES } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
 import {
+  resetCampaign,
+  resetPuzzles,
+  resetScenarios,
   ACHIEVEMENTS, boardUnlocked, dailyResult, emptyProgress, liveStreak, migrate, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, starCount, starsEarned, STAR_FLAWLESS, STAR_SWIFT, STAR_WIN,
   totalStars, type Progress, type Summary,
 } from './progress'
@@ -163,5 +166,24 @@ describe('scenario progress', () => {
     const id = SCENARIOS[0].id
     expect(migrate({ v: 5, scenarios: { [id]: 15, nope: 7 } }).scenarios).toEqual({ [id]: 7 })
     expect(migrate({ v: 5, scenarios: { [id]: 'x' } }).scenarios).toEqual({})
+  })
+})
+
+describe('resets', () => {
+  const played = { ...emptyProgress(), cleared: 3, stars: [7, 3, 1, 0, 0, 0, 0, 0].slice(0, emptyProgress().stars.length), puzzles: ['a', 'b'], scenarios: { x: 7 }, achievements: ['k'] }
+
+  it('clears puzzles only', () => {
+    expect(resetPuzzles(played)).toEqual({ ...played, puzzles: [] })
+  })
+
+  it('clears scenarios only', () => {
+    expect(resetScenarios(played)).toEqual({ ...played, scenarios: {} })
+  })
+
+  it('clears the campaign battles only', () => {
+    const after = resetCampaign(played)
+    expect(after.cleared).toBe(0)
+    expect(after.stars).toEqual(emptyProgress().stars)
+    expect(after.puzzles).toEqual(played.puzzles)
   })
 })

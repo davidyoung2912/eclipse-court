@@ -1,6 +1,7 @@
 import { dailyPuzzleIndex, PUZZLES } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
 import { Icon } from './icons'
+import { ResetButton } from './ResetButton'
 import { PageArt } from './MenuArt'
 
 interface Props {
@@ -8,10 +9,11 @@ interface Props {
   /** Lines about the puzzle just played, such as an achievement. */
   report?: string[]
   onPlay: (index: number, daily: boolean) => void
+  onReset: () => void
   onBack: () => void
 }
 
-export function Puzzles({ progress, report, onPlay, onBack }: Props) {
+export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const solved = PUZZLES.filter((p) => progress.puzzles.includes(p.id)).length
   return (
@@ -32,7 +34,8 @@ export function Puzzles({ progress, report, onPlay, onBack }: Props) {
           <li key={p.id}><PuzzleButton index={i} solved={progress.puzzles.includes(p.id)} onPlay={() => onPlay(i, false)} /></li>
         ))}
       </ol>
-      <div className="menu-buttons">
+      <div className="menu-buttons stacked">
+        {solved > 0 && <ResetButton label="Reset Puzzles" warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>

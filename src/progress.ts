@@ -197,6 +197,15 @@ export function recordScenario(p: Progress, id: string, bits: number) {
   return award({ ...p, scenarios: { ...p.scenarios, [id]: (p.scenarios[id] ?? 0) | bits } }, NO_GAME, p)
 }
 
+/** The progress with every puzzle unsolved again. */
+export const resetPuzzles = (p: Progress): Progress => ({ ...p, puzzles: [] })
+
+/** The progress with every scenario unplayed again. */
+export const resetScenarios = (p: Progress): Progress => ({ ...p, scenarios: {} })
+
+/** The progress with the campaign battles unbeaten and unstarred; boards and themes gated on stars lock again. */
+export const resetCampaign = (p: Progress): Progress => ({ ...p, cleared: 0, stars: CAMPAIGN.map(() => 0) })
+
 export const scenarioStars = (p: Progress) => SCENARIOS.reduce((n, x) => n + starCount(p.scenarios[x.id] ?? 0), 0)
 
 /** The progress after a gauntlet run ends at `stage` (the stage lost, or one past the last when won). */

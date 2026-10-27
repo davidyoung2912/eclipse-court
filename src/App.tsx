@@ -19,7 +19,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './ai/personality'
-import { dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
+import { dailyResult, loadProgress, recordDaily, recordGame, recordPuzzle, recordRun, recordScenario, recordTournament, resetCampaign, resetPuzzles, resetScenarios, saveProgress, STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, starsEarned, summarise } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
@@ -153,7 +153,9 @@ export default function App() {
 
   if (screen.name === 'puzzles')
     return (
-      <Puzzles progress={progress} report={report} onBack={() => setScreen({ name: 'menu' })}
+      <Puzzles progress={progress} report={report}
+        onReset={() => { const next = resetPuzzles(progress); setProgress(next); saveProgress(next) }}
+        onBack={() => setScreen({ name: 'menu' })}
         onPlay={(index, daily) => {
           setReport([])
           setScreen({
@@ -238,6 +240,7 @@ export default function App() {
         report={report}
         tab={campaignTab}
         onTab={setCampaignTab}
+        onReset={(tab) => { const next = tab === 'scenarios' ? resetScenarios(progress) : resetCampaign(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
         onPlayScenario={(i) => {
           setReport([])

@@ -5,6 +5,7 @@ import { SCENARIOS } from '../../engine/data/scenarios'
 import { objectiveGoal } from '../../engine/rules/events'
 import { STAR_FLAWLESS, STAR_SWIFT, STAR_TEXT, STAR_WIN, scenarioStars, starCount, totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
+import { ResetButton } from './ResetButton'
 import { CampaignArt, OpponentAvatar } from './MenuArt'
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   /** The tab to open on, such as the scenarios after one was played. */
   tab?: Tab
   onTab?: (tab: Tab) => void
+  /** Clears the progress of the tab shown. */
+  onReset: (tab: Tab) => void
   onBack: () => void
 }
 
@@ -25,7 +28,7 @@ export type Tab = 'battles' | 'scenarios'
 
 const STARS = [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT]
 
-export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'battles', onTab, onBack }: Props) {
+export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'battles', onTab, onReset, onBack }: Props) {
   const { cleared, stars } = progress
   const [series, setSeries] = useState(false)
   return (
@@ -92,7 +95,10 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
       </ol>
       </>
       )}
-      <div className="menu-buttons">
+      <div className="menu-buttons stacked">
+        {tab === 'scenarios'
+          ? scenarioStars(progress) > 0 && <ResetButton label="Reset Scenarios" warning="Clear every scenario star so you can retry them all?" onReset={() => onReset('scenarios')} />
+          : (cleared > 0 || totalStars(progress) > 0) && <ResetButton label="Reset Campaign" warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
         <button onClick={onBack}><Icon name="back" />Back</button>
       </div>
     </main>
