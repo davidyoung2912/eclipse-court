@@ -1,4 +1,4 @@
-import { BEACONS } from '../rules/board'
+import { BEACONS, defaultBeacons } from '../rules/board'
 import type { CellSquare, Pos } from '../rules/types'
 
 /** A board layout: where the beacons are, which squares are walled off and which carry a cell effect. All mirror-symmetric. */
@@ -63,3 +63,25 @@ export const BOARDS: readonly BoardVariant[] = [
 ]
 
 export const boardById = (id: string | undefined) => BOARDS.find((b) => b.id === id) ?? BOARDS[0]
+
+/** The 9x9 boards. Walls and cells stay in columns 2 to 6, clear of the starting armies. */
+export const GRAND_BOARDS: readonly BoardVariant[] = [
+  { id: 'grand-open', name: 'Grand Open', text: 'The open 9x9 board.', beacons: defaultBeacons(9), blocked: [] },
+  {
+    id: 'grand-pillars',
+    name: 'Grand Pillars',
+    text: 'Four pillars in the middle ring and two on the long edges block movement and shots.',
+    beacons: defaultBeacons(9),
+    blocked: [{ x: 3, y: 3 }, { x: 5, y: 3 }, { x: 3, y: 5 }, { x: 5, y: 5 }, { x: 4, y: 2 }, { x: 4, y: 6 }],
+  },
+  {
+    id: 'grand-shrine',
+    name: 'Grand Shrine',
+    text: 'Might cells north and south of the centre, Ward cells beside it, Recovery cells in the far corners of the middle.',
+    beacons: defaultBeacons(9),
+    blocked: [],
+    cells: [...cell('might', [4, 2], [4, 6]), ...cell('ward', [3, 4], [5, 4]), ...cell('recovery', [3, 0], [5, 0], [3, 8], [5, 8])],
+  },
+]
+
+export const grandBoardById = (id: string | undefined) => GRAND_BOARDS.find((b) => b.id === id) ?? GRAND_BOARDS[0]

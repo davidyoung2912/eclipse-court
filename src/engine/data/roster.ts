@@ -49,6 +49,26 @@ export const DEFAULT_LAYOUT: readonly Placement[] = [
   { role: 'footsoldier', x: 1, y: 5 },
 ]
 
+/** The 9x9 army: sixteen pieces, with two more Footsoldiers on the flanks, and a second Charger. */
+export const GRAND_LAYOUT: readonly Placement[] = [
+  { role: 'flier', x: 0, y: 1 },
+  { role: 'marksman', x: 0, y: 2 },
+  { role: 'aura', x: 0, y: 3 },
+  { role: 'leader', x: 0, y: 4 },
+  { role: 'bruiser', x: 0, y: 5 },
+  { role: 'marksman', x: 0, y: 6 },
+  { role: 'flier', x: 0, y: 7 },
+  { role: 'footsoldier', x: 1, y: 0 },
+  { role: 'footsoldier', x: 1, y: 1 },
+  { role: 'footsoldier', x: 1, y: 2 },
+  { role: 'charger', x: 1, y: 3 },
+  { role: 'footsoldier', x: 1, y: 4 },
+  { role: 'charger', x: 1, y: 5 },
+  { role: 'footsoldier', x: 1, y: 6 },
+  { role: 'footsoldier', x: 1, y: 7 },
+  { role: 'footsoldier', x: 1, y: 8 },
+]
+
 export function startingPieces(
   layout: readonly Placement[] = DEFAULT_LAYOUT,
   umbralLayout: readonly Placement[] = layout,

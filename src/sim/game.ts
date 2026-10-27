@@ -2,6 +2,7 @@ import { autoDuel } from '../ai/autoDuel'
 import { DIFFICULTY, type Difficulty } from '../ai/profile'
 import { chooseAction } from '../ai/strategy'
 import { newGame, reduce } from '../engine/reducer'
+import { inBounds, sizeOf } from '../engine/rules/board'
 import { duelCells } from '../engine/rules/cells'
 import { squareLuminance } from '../engine/rules/luminance'
 import { pieceAt } from '../engine/rules/moves'
@@ -23,7 +24,7 @@ export function checkInvariants(state: GameState): string[] {
     const key = `${p.pos.x},${p.pos.y}`
     if (seen.has(key)) problems.push(`two pieces on ${key}`)
     seen.add(key)
-    if (p.pos.x < 0 || p.pos.x > 6 || p.pos.y < 0 || p.pos.y > 6) problems.push(`${p.id} off the board`)
+    if (!inBounds(p.pos, sizeOf(state.config))) problems.push(`${p.id} off the board`)
     if (!(p.hp > 0 && p.hp <= p.maxHp)) problems.push(`${p.id} has ${p.hp}/${p.maxHp} HP`)
   }
   for (const c of ['solari', 'umbral'] as Court[])

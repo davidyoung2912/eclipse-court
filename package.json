@@ -16,6 +16,7 @@
     "courts": "node scripts/run-sim.mjs courts",
     "modes": "node scripts/run-sim.mjs modes",
     "growth": "node scripts/run-sim.mjs growth",
+    "grand": "node scripts/run-sim.mjs grand",
     "puzzles": "node scripts/run-sim.mjs puzzles",
     "mine": "node scripts/run-sim.mjs mine",
     "show": "node scripts/run-sim.mjs show"
