@@ -240,6 +240,8 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 
 .menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-top: max(env(safe-area-inset-top), 12px); }
+/* Pages opening with an art box all start at the same height as the long Story page. */
+.menu:has(> .menu-art:first-child) { justify-content: flex-start; }
 .menu h1 { margin: 0; text-align: center; font-size: 2.2rem; color: var(--solari-gold); }
 
 /* Title screen */
