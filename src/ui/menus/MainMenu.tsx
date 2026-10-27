@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
-import { Icon } from './icons'
+import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
 import type { Progress } from '../../progress'
-import { primaryAction } from './menuModel'
+import { dailySeed } from '../../engine/data/setups'
+import { cardSummaries, primaryAction } from './menuModel'
 
 interface Props {
   progress: Progress
@@ -75,37 +76,55 @@ function Hero() {
   )
 }
 
+interface Card {
+  icon: IconName
+  title: string
+  line: string
+  onClick: () => void
+}
+
 export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
+  const summary = cardSummaries(progress, dailySeed())
+  const cards: Card[] = [
+    { icon: 'swords', title: 'Battle', line: 'Skirmish · Practice · Codes', onClick: onBattle },
+    { icon: 'banner', title: 'Campaign', line: summary.campaign, onClick: onCampaign },
+    { icon: 'flame', title: 'Gauntlet', line: summary.gauntlet, onClick: onGauntlet },
+    { icon: 'puzzle', title: 'Puzzles', line: summary.puzzles, onClick: onPuzzles },
+  ]
   return (
     <main className="app menu main-menu">
       <Hero />
       <h1><span>Eclipse</span> Court</h1>
       <div className="divider" aria-hidden="true"><i /></div>
-      <p className="tagline">Light and dark trade places. Every capture is a duel.</p>
       <div className="menu-buttons">
         <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
       </div>
-      <div className="menu-buttons">
-        <button onClick={onBattle}><Icon name="swords" />Battle</button>
-        <button onClick={onCampaign}><Icon name="banner" />Campaign</button>
+      <section className="today" aria-label="Today">
+        <h3>Today{summary.streak > 0 && <span className="streak"><Icon name="flame" />{summary.streak} day streak</span>}</h3>
+        <div className="today-row">
+          <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily Match</button>
+          <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
+        </div>
+      </section>
+      <div className="mode-cards">
+        {cards.map((c) => (
+          <button key={c.title} className="mode-card" onClick={c.onClick}>
+            <strong><Icon name={c.icon} />{c.title}</strong>
+            <span>{c.line}</span>
+          </button>
+        ))}
       </div>
-      <div className="menu-buttons">
-        <button onClick={onGauntlet}><Icon name="flame" />Gauntlet</button>
-        <button onClick={onPuzzles}><Icon name="puzzle" />Puzzles</button>
-      </div>
-      <div className="menu-buttons small">
-        <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily Match</button>
-        <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
-      </div>
-      <div className="menu-buttons small">
-        <button onClick={onStats}><Icon name="trophy" />Stats</button>
-        <button onClick={onSettings}><Icon name="gear" />Settings</button>
-        <button onClick={onTutorial}><Icon name="book" />How to Play</button>
-        <button onClick={() => { setMuted(sound); setSound(!sound) }}><Icon name={sound ? 'speakerOn' : 'speakerOff'} />Sound: {sound ? 'On' : 'Off'}</button>
-      </div>
+      <nav className="utility" aria-label="More">
+        <button onClick={onStats}><Icon name="trophy" /><span>Stats</span></button>
+        <button onClick={onSettings}><Icon name="gear" /><span>Settings</span></button>
+        <button onClick={onTutorial}><Icon name="book" /><span>How to Play</span></button>
+        <button onClick={() => { setMuted(sound); setSound(!sound) }} aria-pressed={sound}>
+          <Icon name={sound ? 'speakerOn' : 'speakerOff'} /><span>Sound {sound ? 'On' : 'Off'}</span>
+        </button>
+      </nav>
     </main>
   )
 }
