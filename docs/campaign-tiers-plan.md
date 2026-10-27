@@ -1,6 +1,6 @@
 # Campaign tiers: 75 battles and 75 scenarios
 
-**Status: C1 done; C2 to C7 to do.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: C1 and C2 done; C3 to C7 to do.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 The Campaign page (Battles and Scenarios tabs) gets collapsible **Beginner / Normal / Expert** sections like the Puzzles page, with 25 battles and 25 scenarios in each. A tier is its AI level: Beginner is `easy`, Normal is `normal`, Expert is `hard`, so no new field is needed (`CAMPAIGN_TIERS` in `engine/data/tiers.ts`, `battlesIn(difficulty)`, `scenariosIn(difficulty)`).
 
@@ -13,7 +13,7 @@ The Campaign page (Battles and Scenarios tabs) gets collapsible **Beginner / Nor
 
 ## Phases
 - **C1 (done): structure.** Tier table, ids, `battles` progress with migration and `battleUnlocked`, tier sections on both tabs (a tier with no entries is hidden), tests. The 8 existing battles and 7 scenarios are sorted into tiers by their AI level.
-- **C2: Beginner battles.** Up to 25. Easy AI, gentle twists (HP, army, board, one rule), personalities spread over the five. Tests: distinct ids and names, legal openings, every personality plays legal moves, soak.
+- **C2 (done): Beginner battles.** 25 in all: the original two plus 23 in `campaignBeginner.ts` (helpers in `campaignHelpers.ts`). Easy AI, gentle twists (HP, army, board, one rule), personalities spread over the five. Tests: distinct ids and names, legal openings, every personality plays legal moves, soak.
 - **C3: Normal battles.** Up to 25, with the rule modes, events and showdown.
 - **C4: Expert battles.** Up to 25, with stacked rules and a boss at the end of the tier.
 - **C5: Beginner scenarios.** Up to 25: short survive, escort and hold situations, large Solari edge.

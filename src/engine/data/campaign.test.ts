@@ -2,10 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { PERSONALITIES } from '../../ai/personality'
 import { chooseAction } from '../../ai/strategy'
 import { reduce } from '../reducer'
-import { CAMPAIGN, campaignGame } from './campaign'
+import { CAMPAIGN, battlesIn, campaignGame } from './campaign'
 import { boardById } from './boards'
+import { draftProblem } from './draft'
 
 describe('campaign', () => {
+  it('has distinct ids and a full Beginner tier of 25', () => {
+    expect(new Set(CAMPAIGN.map((o) => o.id)).size).toBe(CAMPAIGN.length)
+    expect(battlesIn('easy')).toHaveLength(25)
+  })
+
+  it('gives every Beginner battle a legal draft and a spread of personalities', () => {
+    const easy = battlesIn('easy')
+    for (const o of easy) if (o.army) expect(draftProblem(o.army), o.name).toBeNull()
+    expect(new Set(easy.map((o) => o.personality)).size).toBe(5)
+    for (const o of easy) {
+      for (const p of campaignGame(o, 5).pieces) expect(p.hp, o.name).toBeGreaterThan(0)
+    }
+  })
+
   it('has distinct opponents with known boards and personalities', () => {
     expect(new Set(CAMPAIGN.map((o) => o.name)).size).toBe(CAMPAIGN.length)
     for (const o of CAMPAIGN) {

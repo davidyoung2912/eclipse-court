@@ -1,36 +1,15 @@
-import type { PersonalityId } from '../../ai/personality'
 import type { Difficulty } from '../../ai/profile'
 import { newGame } from '../reducer'
 import { CLASSIC_SPELLS } from '../rules/spells'
-import type { Court, GameState, MatchConfig, Piece, Role } from '../rules/types'
+import type { Court, GameState, MatchConfig } from '../rules/types'
 import { boardById } from './boards'
 import { arrange } from './draft'
+import { mapFoe, withHp } from './campaignHelpers'
+import { BEGINNER_BATTLES } from './campaignBeginner'
 import { DEFAULT_CONFIG } from './matchConfig'
+import type { Opponent } from './campaignHelpers'
 
-export interface Opponent {
-  /** Stable key for saved progress; unique among battles. */
-  id: string
-  name: string
-  blurb: string
-  difficulty: Difficulty
-  personality: PersonalityId
-  /** Board variant id; classic when absent. */
-  board?: string
-  /** Match settings beyond the board (win condition, events, showdown, ...). */
-  rules?: Partial<MatchConfig>
-  /** The Umbral army when it is not the classic one. */
-  army?: readonly Role[]
-  /** Rewrites the opening position; `foe` is the court the AI plays. */
-  setup?: (state: GameState, foe: Court) => GameState
-  /** A rule only this opponent plays by; the config and setup above already carry it out. */
-  boss?: string
-}
-
-const mapFoe = (s: GameState, foe: Court, f: (p: Piece) => Piece): GameState => ({
-  ...s,
-  pieces: s.pieces.map((p) => (p.court === foe ? f(p) : p)),
-})
-const withHp = (p: Piece, delta: number): Piece => ({ ...p, hp: p.hp + delta, maxHp: p.maxHp + delta })
+export type { Opponent }
 
 /** Opponents grouped by tier, easiest tier first (the tier is the AI level: easy, normal, hard); each bends the rules, the board or the army in a different way. */
 export const CAMPAIGN: readonly Opponent[] = [
@@ -50,6 +29,7 @@ export const CAMPAIGN: readonly Opponent[] = [
     personality: 'rusher',
     army: ['footsoldier', 'footsoldier', 'footsoldier', 'footsoldier', 'flier', 'flier', 'bruiser', 'charger', 'charger', 'aura'],
   },
+  ...BEGINNER_BATTLES,
   {
     id: 'tongue-tied',
     name: 'The Tongue-Tied',
