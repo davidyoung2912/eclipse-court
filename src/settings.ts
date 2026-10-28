@@ -88,6 +88,8 @@ export interface Settings {
   lastMove: boolean
   /** Mark each square that will grow lighter or darker next round, and the odds shift for a selected piece's attacks. */
   forecast: boolean
+  /** Ask before a move that steps into an enemy's reach on bad odds, or leaves the Leader exposed. */
+  blunderCheck: boolean
   /** Show a chip by the dial counting the rounds until the Eclipse falls. */
   eclipseChip: boolean
   /** How fast live duels play: Normal is the slowed pace, Fast is full speed, Instant settles every duel without playing it. */
@@ -111,7 +113,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -129,6 +131,7 @@ export function parseSettings(raw: unknown): Settings {
     lastMove: o.lastMove === true,
     forecast: o.forecast === true,
     eclipseChip: o.eclipseChip === true,
+    blunderCheck: o.blunderCheck === true,
     duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,
     haptics: o.haptics !== false,
     fightDifficulty: FIGHT_LEVELS.includes(o.fightDifficulty as FightLevel) ? (o.fightDifficulty as FightLevel) : DEFAULT_SETTINGS.fightDifficulty,

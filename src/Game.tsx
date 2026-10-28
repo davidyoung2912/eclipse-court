@@ -4,8 +4,9 @@ import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, updateSettings } from './settings'
+import { t } from './i18n'
 import { explainMove } from './ai/why'
-import { attackOdds, lastMoveOf, nextAttackOdds, nextLightState, threatenedIds } from './ui/board/aids'
+import { attackOdds, blunderOf, lastMoveOf, nextAttackOdds, nextLightState, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { coopPlayer } from './engine/data/coop'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
@@ -223,6 +224,10 @@ export function Game({ controllers, opening, record, session, context, coach, pu
 
   const trail = useMemo(() => (getSettings().lastMove && !state.config.fog && !ended ? lastMoveOf(history) ?? undefined : undefined), [history, state.config.fog, ended])
   const chipOn = getSettings().eclipseChip && !ended
+  /** The blunder check gives advice, so it is off under fog and in scored, daily and puzzle games. */
+  const blunderOn = getSettings().blunderCheck && !state.config.fog && !online && !puzzleHelp && puzzleLimit === undefined && context?.kind !== 'daily' && !context?.scored
+  const [blunder, setBlunder] = useState<{ action: Extract<Action, { type: 'move' }>; text: string } | null>(null)
+  const [blunderSkip, setBlunderSkip] = useState(false)
   const forecastOn = getSettings().forecast && !state.config.fog && !ended
   const nextLight = useMemo(() => (forecastOn ? nextLightState(state) : undefined), [forecastOn, state])
   const [aids, setAids] = useState(() => getSettings().aids)
@@ -366,6 +371,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     setCasting(null)
     setCastFirst(null)
     setPending(null)
+    setBlunder(null)
     clearHint()
   }
 
@@ -419,7 +425,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   }
 
   const onSquare = useLatest((p: Pos) => {
-    if (ended || pending || banner) return
+    if (ended || pending || banner || blunder) return
     if (!myTurn) {
       // Off-turn taps only look at pieces.
       const occ = pieceAt(state, p)
@@ -438,7 +444,10 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     }
     if (selected && moves.some((m) => samePos(m, p))) {
       if (pieceAt(state, p)) return setPending({ pieceId: selected.id, to: p, confirmed: false, byAi: false })
-      return commit({ type: 'move', pieceId: selected.id, to: p })
+      const action = { type: 'move' as const, pieceId: selected.id, to: p }
+      const warn = blunderOn && !blunderSkip ? blunderOf(state, selected.id, p) : null
+      if (warn) return setBlunder({ action, text: warn.kind === 'piece' ? t('blunder.piece', { odds: warn.odds }) : t('blunder.leader') })
+      return commit(action)
     }
     clearHint()
     const occ = pieceAt(state, p)
@@ -727,6 +736,16 @@ export function Game({ controllers, opening, record, session, context, coach, pu
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
+        {blunder && !pending && (
+          <div className="confirm" role="dialog" aria-label="Confirm move">
+            <p className="confirm-title">{blunder.text}</p>
+            <label className="recharge"><input type="checkbox" checked={blunderSkip} onChange={() => setBlunderSkip(!blunderSkip)} /> {t('blunder.skip')}</label>
+            <div className="buttons">
+              <button onClick={() => setBlunder(null)}><Icon name="close" />Rethink</button>
+              <button className="primary" onClick={() => { const { action } = blunder; setBlunder(null); commit(action) }}><Icon name="check" />Move anyway</button>
+            </div>
+          </div>
+        )}
         {confirming && attacker && defender && (
           <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
             cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}

@@ -3,7 +3,7 @@ import { newGame } from '../../engine/reducer'
 import { legalMoves } from '../../engine/rules/moves'
 import type { GameState, Piece } from '../../engine/rules/types'
 import { squareLuminance } from '../../engine/rules/luminance'
-import { attackOdds, eclipseIn, lastMoveOf, nextLightState, threatenedIds } from './aids'
+import { attackOdds, blunderOf, eclipseIn, lastMoveOf, nextLightState, threatenedIds } from './aids'
 
 const piece = (id: string, court: Piece['court'], role: Piece['role'], x: number, y: number): Piece => ({
   id, court, role, hp: 4, maxHp: 4, pos: { x, y }, rest: 0, moved: false, bound: false,
@@ -70,5 +70,23 @@ describe('eclipseIn', () => {
   })
   it('is null once the Eclipse has fallen', () => {
     expect(eclipseIn(at(5, true))).toBeNull()
+  })
+})
+
+describe('blunderOf', () => {
+  it('warns about a step into an enemy\'s reach', () => {
+    const state = world([piece('a', 'solari', 'footsoldier', 3, 1), piece('e', 'umbral', 'bruiser', 3, 4)])
+    const warn = blunderOf(state, 'a', { x: 3, y: 3 })
+    expect(warn?.kind).toBe('piece')
+  })
+  it('stays quiet on a safe square and on captures', () => {
+    const state = world([piece('a', 'solari', 'footsoldier', 3, 1), piece('e', 'umbral', 'footsoldier', 6, 6)])
+    expect(blunderOf(state, 'a', { x: 3, y: 2 })).toBeNull()
+    const fight = world([piece('a', 'solari', 'footsoldier', 3, 3), piece('e', 'umbral', 'footsoldier', 3, 4)])
+    expect(blunderOf(fight, 'a', { x: 3, y: 4 })).toBeNull()
+  })
+  it('flags a Leader left in reach', () => {
+    const state = world([piece('l', 'solari', 'leader', 3, 0), piece('g', 'solari', 'footsoldier', 3, 1), piece('e', 'umbral', 'marksman', 3, 2)])
+    expect(blunderOf(state, 'g', { x: 5, y: 1 })).toEqual({ kind: 'leader' })
   })
 })
