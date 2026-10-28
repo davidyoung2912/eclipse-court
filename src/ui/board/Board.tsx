@@ -17,6 +17,7 @@ import { CAPTURE_FX } from '../../engine/data/cosmetics'
 import { equippedId } from '../../shop'
 import { stepCursor } from './cursor'
 import { describeSquare } from '../../narrate'
+import { cascadeDelay, lungeOffset, turnGlow } from '../../boardMotion'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
 const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
@@ -93,11 +94,16 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   const [falls, setFalls] = useState<{ key: string; pos: Pos; role: Piece['role']; court: Court }[]>([])
   // A piece that changed square settles on arrival; the counter restarts the animation on each landing.
   const [landings, setLandings] = useState<Record<string, number>>({})
+  // The latest moves, each with a comet trail from its start, an arrival puff and, on a capture, a lunge past the landing.
+  const [moves_, setMoves_] = useState<{ key: string; id: string; court: Court; from: Pos; to: Pos }[]>([])
+  const [lunges, setLunges] = useState<Record<string, { dx: number; dy: number }>>({})
   if (seen !== state.pieces) {
     setSeen(state.pieces)
     const moved = state.pieces.filter((q) => { const old = seen.find((p) => p.id === q.id); return old && !samePos(old.pos, q.pos) })
     if (moved.length > 0) setLandings((l) => Object.fromEntries([...Object.entries(l), ...moved.map((q) => [q.id, (l[q.id] ?? 0) + 1] as const)]))
     const gone = seen.filter((p) => !state.pieces.some((q) => q.id === p.id))
+    setMoves_(moved.map((q) => ({ key: `${q.id}-${seen.length}-${state.pieces.length}`, id: q.id, court: q.court, from: seen.find((p) => p.id === q.id)!.pos, to: q.pos })))
+    setLunges(gone.length > 0 ? Object.fromEntries(moved.map((q) => [q.id, lungeOffset(seen.find((p) => p.id === q.id)!.pos, q.pos)])) : {})
     if (gone.length > 0 && gone.length <= 2) setFalls(gone.map((p) => ({ key: `${p.id}-${seen.length}`, pos: p.pos, role: p.role, court: p.court })))
     else if (falls.length > 0) setFalls([])
   }
@@ -117,8 +123,9 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   return (
     <>
     <p className="sr-only" role="status" aria-live="polite">{cursor ? describeSquare(state, cursor) : ''}</p>
-    <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
+    <svg className="board" style={{ ['--turn-glow' as string]: turnGlow(state.turn) }} viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
       <BoardDefs />
+      <rect x={-0.06} y={-0.06} width={size + 0.12} height={size + 0.12} rx={0.06} className="board-glow" />
       <rect x={-0.06} y={-0.06} width={size + 0.12} height={size + 0.12} rx={0.06} className="board-frame" />
       {allSquares(size).map((p) => {
         const { cx, cy } = toScreen(p, flip, size)
@@ -163,8 +170,12 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             {radius !== null && chebyshev(p, center) > radius && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="doom" />}
             {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
             {reach?.some((b) => samePos(b, p)) && <circle cx={cx} cy={cy} r={0.47} className="beacon-reach" />}
-            {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
-            {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
+            {target && (
+              <g key={selected?.id} className="move-pop" style={{ animationDelay: `${cascadeDelay(selected?.pos, p)}ms` }}>
+                <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />
+                <circle cx={cx} cy={cy} r={0.16} className="move-dot" />
+              </g>
+            )}
             {isThreat(p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#threat-glow)" className="move-glow" />}
             {isThreat(p) && <circle cx={cx} cy={cy} r={0.16} className="move-dot threat-dot" />}
             {hint?.square && samePos(hint.square, p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow hint-square" />}
@@ -173,6 +184,16 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
       })}
       <rect width={size} height={size} filter="url(#stone-grain)" className="board-grain" />
       <rect width={size} height={size} fill="url(#hour-wash)" className={`hour-wash ${state.eclipse ? 'eclipse' : state.dir > 0 ? 'rising' : 'waning'}`} />
+      {!fogFor && moves_.map(({ key, court, from, to }) => {
+        const a = toScreen(from, flip, size)
+        const b = toScreen(to, flip, size)
+        return (
+          <g key={key} className={`move-fx ${court}`} pointerEvents="none">
+            <line className="comet" x1={a.cx} y1={a.cy} x2={b.cx} y2={b.cy} pathLength={1} />
+            <circle className="puff" cx={b.cx} cy={b.cy} r={0.3} />
+          </g>
+        )
+      })}
       {state.pieces.filter((pc) => !fogFor || visibleTo(state, fogFor, pc)).map((pc) => {
         const { cx, cy } = toScreen(pc.pos, flip, size)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id) || isThreat(pc.pos)
@@ -182,7 +203,8 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             
             <ellipse className="ground-shadow" cx={0.03} cy={0.3} rx={0.3} ry={0.1} />
             <g className="piece-lift">
-              <g key={landings[pc.id] ?? 0} className={landings[pc.id] ? 'piece-settle' : undefined}>
+              <g key={landings[pc.id] ?? 0} className={landings[pc.id] ? `piece-settle${lunges[pc.id] ? ' lunge' : ''}` : undefined}
+                style={lunges[pc.id] ? { ['--lx' as string]: `${lunges[pc.id].dx.toFixed(3)}px`, ['--ly' as string]: `${lunges[pc.id].dy.toFixed(3)}px` } : undefined}>
                 <circle className="halo" r={0.4} />
                 <circle className="ring" r={0.4} />
                 <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />

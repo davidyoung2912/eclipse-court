@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-2 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-3 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -37,6 +37,8 @@ Phase 2 notes: pure numbers are in `src/duelPresentation.ts`. Lob shots already 
 - Arrival puff (dust or ring) when a piece lands, triggered from the settle animation.
 - Tactile selection: idle wobble and stronger shadow on a lifted piece; legal-move dots pop in with a 20ms cascade from the piece; capture targets pulse.
 - Turn handoff: the turn indicator swings or slides between sides and the ambient board glow tints to the active court.
+
+Phase 3 notes: pure numbers are in `src/boardMotion.ts`. Effects are CSS animations driven from `Board.tsx` state, so reduce motion (which cancels all animations) covers them. The lunge fires only when the mover itself lands on a square after a capture; an attacker that holds its square does not lunge.
 
 ## Phase 4: Board capture drama
 

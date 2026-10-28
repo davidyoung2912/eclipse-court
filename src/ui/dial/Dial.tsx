@@ -16,7 +16,7 @@ export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip
     <header className="hud">
       <div className="hud-round">
         {state.eclipse ? 'Eclipse' : `Round ${Math.min(state.round, state.config.eclipseRound)} / ${state.config.eclipseRound}`}
-        <span className={`turn turn-${state.turn}`}>{state.turn === 'solari' ? 'Solari' : 'Umbral'} to move</span>
+        <span key={state.turn} className={`turn turn-${state.turn}`}>{state.turn === 'solari' ? 'Solari' : 'Umbral'} to move</span>
         {left !== null && <span className={`eclipse-chip${left === 1 ? ' soon' : ''}`} role="status" aria-live="polite">{left === 1 ? t('eclipse.chipNext') : t('eclipse.chip', { count: left })}</span>}
         {notes.length > 0 && <span className="hud-note">{notes.join(' · ')}</span>}
       </div>
