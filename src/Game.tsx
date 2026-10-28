@@ -36,6 +36,7 @@ import { newBanter, speak, triggerFor, type BanterState } from './banter'
 import { personaById } from './engine/data/personas'
 import type { LineCategory } from './engine/data/personaLines'
 import { PersonaBubble } from './ui/tray/PersonaBubble'
+import { farewellLine, menuLine } from './personaMenu'
 import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
 import { useHint } from './hooks/useHint'
@@ -58,6 +59,8 @@ import { ResultBanner, type ResultStat, type ResultTone } from './ui/tray/Result
 interface Props {
   /** Who plays each court: a person at the screen, or the AI. Two people make a hot-seat game. */
   controllers: Controllers
+  /** What a named opponent says before the first move, when the menu has a better line than the default briefing. */
+  opening?: string
   /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
   record: GameRecord
   /** The connection to the other player, for an online game. */
@@ -116,7 +119,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, opening, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const coop = !!context?.coop
@@ -145,7 +148,12 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     return last.winner ? null : { court: last.turn }
   })
   /** The AI's reason for its latest move, shown while it is the player's turn (hidden once undone past it). */
-  const [bubble, setBubble] = useState<string | null>(null)
+  const [bubble, setBubble] = useState<string | null>(() => {
+    const named = [controllers.solari, controllers.umbral].find((c) => typeof c === 'object' && c.persona)
+    const id = typeof named === 'object' ? named.persona : undefined
+    if (!id || !personaById(id) || record.actions.length > 0) return null
+    return opening ?? menuLine(id, 'briefing', String(record.initial.config.seed))
+  })
   const banter = useRef<BanterState>(newBanter(record.initial.config.seed))
   const [aiWhy, setAiWhy] = useState<{ at: number; text: string } | null>(null)
   /** The puzzle briefing waits for Got It! before play can begin; a resumed puzzle has been briefed already. */
@@ -563,6 +571,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     // oxlint-disable-next-line react/exhaustive-deps
   }, [persona, even, myTurn, ended, banner, history.length])
 
+  const farewell = persona && ended ? farewellLine(persona.id, state.winner, human, String(record.initial.config.seed)) : null
   const [coaching, setCoaching] = useState(false)
   const dusk = musicLevel(state)
   const eclipseFallen = state.eclipse && !state.winner
@@ -572,7 +581,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
-      {persona && bubble && !even && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
+      {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
@@ -632,6 +641,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
         <div className="confirm result" role="dialog" aria-label="Game over">
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
           <ResultBanner title={result} tone={resultTone} stats={resultStats} />
+          {persona && !even && farewell && <p className="persona-farewell"><b>{persona.name}</b> “{farewell}”</p>}
           <div className="buttons">
             {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
             {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}

@@ -27,6 +27,8 @@ import { dailySeed } from '../../engine/data/setups'
 import { BackButton } from './BackButton'
 import { type Legacy } from '../../engine/data/legacy'
 import { loadLegacy } from '../../legacy'
+import { PERSONAS, personaById } from '../../engine/data/personas'
+import { menuLine, PERSONA_CHOICES, type PersonaChoice } from '../../personaMenu'
 import { VETERAN_WINS } from '../../engine/rules/growth'
 import { bool, list, loadChoices, oneOf, saveChoices } from '../../lastChoices'
 import { MAX_NAME, MAX_SAVED_PRESETS, deletePreset, loadPresets, savePreset, type SavedPreset } from '../../savedPresets'
@@ -36,7 +38,7 @@ interface Props {
   /** The Rules tier the screen opens on; Classic for a player fresh from the tutorial. */
   initialTier?: RulesetId
   /** `hotSeat` means a second person takes the other court; the difficulty is then unused. */
-  onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => void
+  onStart: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean, persona: PersonaChoice) => void
   /** Hosts an online game: the court is the host's own and the match is the one set up. */
   onHost?: (human: Court, setup: SetupChoice) => void
   /** Hosting starts a game played by passing links, not a live connection. */
@@ -84,6 +86,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const startPreset = typeof saved.presetId === 'string' ? presetById(saved.presetId) : undefined
   const [court, setCourt] = useState<Court>(() => oneOf<Court>(saved.court, ['solari', 'umbral'], 'solari'))
   const [difficulty, setDifficulty] = useState<Difficulty>(() => oneOf(saved.difficulty, DIFFICULTY_LIST, 'normal'))
+  const [persona, setPersona] = useState<PersonaChoice>(() => oneOf<PersonaChoice>(saved.persona, PERSONA_CHOICES, 'none'))
   const [twoPlayers, setTwoPlayers] = useState(startTwo)
   const [online, setOnline] = useState(!!onHost)
   /** Hot seat and online both pit two people, so neither can draft an army or pick a loadout; the AI is not used. */
@@ -139,7 +142,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     ...(mayhem.length ? { mayhem } : {}),
   })
   const remember = () => saveChoices('skirmish', {
-    court, difficulty, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
+    court, difficulty, persona, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
     clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, presetId, rulesId,
   })
   const [mine, setMine] = useState<SavedPreset[]>(loadPresets)
@@ -262,6 +265,14 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     { value: 'two', label: 'Two Players', icon: 'versus', hint: 'Share this device, taking turns. Duels are settled automatically.' },
   ]
   const opponents: SegOption<Difficulty>[] = DIFFICULTY_LIST.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1), icon: LEVEL_ICON[d], hint: LEVEL_TEXT[d] }))
+  const voices: SegOption<PersonaChoice>[] = [
+    { value: 'none', label: 'Nameless', hint: 'No voice: just the AI.' },
+    { value: 'random', label: 'Random', hint: 'A named opponent chosen when the game starts.' },
+    ...PERSONAS.map((p) => ({ value: p.id, label: p.name, hint: `${p.fullName}, ${p.title}` })),
+  ]
+  const voiceNote = persona === 'none' ? 'No voice: just the AI.'
+    : persona === 'random' ? 'A named opponent chosen when the game starts.'
+    : `${personaById(persona)!.fullName}, ${personaById(persona)!.title}. “${menuLine(persona, 'picked', 'skirmish')}”`
   const tiers: SegOption<RulesetId>[] = RULESETS.map((t) => ({ value: t.id, label: t.name, icon: t.icon, hint: t.text }))
   const armies: SegOption<SetupMode>[] = (Object.keys(SETUP_INFO) as SetupMode[]).map((m) => ({
     value: m, label: SETUP_INFO[m].name, hint: SETUP_INFO[m].text, disabled: (hotSeat && (m === 'draft' || m === 'legacy')) || (m === 'legacy' && !legacy),
@@ -320,6 +331,8 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
       {!twoPlayers && <CourtPicker value={court} onChange={(c) => { setCourt(c); setLoadout([]) }} />}
       {!hotSeat && <h3>Opponent</h3>}
       {!hotSeat && <Segmented label="Opponent" options={opponents} value={difficulty} onChange={setDifficulty} />}
+      {!hotSeat && <h3>Named opponent</h3>}
+      {!hotSeat && <Segmented label="Named opponent" options={voices} value={persona} onChange={setPersona} note={voiceNote} />}
       <h3>Rules</h3>
       <Segmented label="Rules" options={tiers} value={rulesId} onChange={applyTier} />
       {tier.presets && <h3>Presets{customised && <small> · customised</small>}</h3>}
@@ -402,7 +415,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         <div className="menu-buttons">
           <BackButton onClick={onBack} />
           {ready && !online && <ShareButton title="Eclipse Court challenge" label="Share" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
-          <button className="primary" disabled={!ready} onClick={() => { remember(); if (online) onHost?.(court, choice()); else onStart(court, difficulty, choice(), hotSeat) }}><Icon name="play" />{online && !byLink ? 'Host' : 'Start'}</button>
+          <button className="primary" disabled={!ready} onClick={() => { remember(); if (online) onHost?.(court, choice()); else onStart(court, difficulty, choice(), hotSeat, persona) }}><Icon name="play" />{online && !byLink ? 'Host' : 'Start'}</button>
         </div>
       </div>
     </main>

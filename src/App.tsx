@@ -26,7 +26,7 @@ import { dailySeed } from './engine/data/setups'
 import { isWeeklyMatch, weeklyGame, weeklyMatch, weeklyScore, WEEKLY_COURT } from './engine/data/weekly'
 import { forWeek, recordWeekly, weeklySnapshot } from './weekly'
 import { foeById, ladderGame, LADDER_COURT } from './engine/data/ladder'
-import { recordLadder } from './ladder'
+import { ladderSnapshot, recordLadder } from './ladder'
 import { adviceFor, isFirstBattle, onboardingSnapshot, recordAiGame } from './onboarding'
 import { Ladder } from './ui/menus/Ladder'
 import type { GameRecord } from './engine/log'
@@ -34,6 +34,8 @@ import { newGame } from './engine/reducer'
 import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
+import { personaById, type PersonaId } from './engine/data/personas'
+import { ladderVoice, resolvePersona, rivalLine } from './personaMenu'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
@@ -136,6 +138,8 @@ type Screen =
     story?: string
     /** A ranked ladder game: the id of the opponent; not resumable. */
     ladder?: string
+    /** A named opponent whose voice speaks in the fight. */
+    persona?: PersonaId
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
     /** A try-out from a position in a reviewed game: nothing is recorded and Back returns to the menu. */
@@ -422,7 +426,7 @@ export default function App() {
           const foe = foeById(id)
           if (!foe) return
           setReport([])
-          setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007, foe), actions: [] }, campaignIndex: null, ladder: id })
+          setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007, foe), actions: [] }, campaignIndex: null, ladder: id, persona: ladderVoice(foe.personality) })
         }} />
     )
 
@@ -515,9 +519,10 @@ export default function App() {
         }) : undefined}
         challengeLink={(human, difficulty, setup, hotSeat) =>
           challengeLink({ config: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()).initial.config, side: otherCourt(human) })}
-        onStart={(human, difficulty, setup, hotSeat) => {
+        onStart={(human, difficulty, setup, hotSeat, voice) => {
           setClassicNext(false)
-          setScreen({ name: 'game', human, difficulty, hotSeat, record: skirmishRecord(setup, human, difficulty, hotSeat, Date.now()), campaignIndex: null })
+          const seed = Date.now()
+          setScreen({ name: 'game', human, difficulty, hotSeat, persona: hotSeat ? undefined : resolvePersona(voice, seed), record: skirmishRecord(setup, human, difficulty, hotSeat, seed), campaignIndex: null })
         }}
       />
     )
@@ -756,7 +761,8 @@ export default function App() {
         controllers={hotSeat ? HOT_SEAT
           : online || mail ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
-          : versusAi(human, ladder ? foeById(ladder)?.level ?? difficulty : difficulty, ladder ? foeById(ladder)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
+          : versusAi(human, ladder ? foeById(ladder)?.level ?? difficulty : difficulty, ladder ? foeById(ladder)?.personality : screen.persona ? personaById(screen.persona)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId), screen.persona)}
+        opening={ladder && screen.persona ? rivalLine(screen.persona, ladder, ladderSnapshot().rivals[ladder]) : undefined}
         record={record}
         session={online}
         mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}
@@ -772,7 +778,7 @@ export default function App() {
           if (puzzle?.endless) return clearPuzzle()
           if (puzzle) return progress ? savePuzzle({ index: puzzle.index, daily: puzzle.daily, rush: puzzle.rush, record: progress }) : clearPuzzle()
           if (transient) return
-          if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })
+          if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, persona: screen.persona, record: progress })
           else clearSaved()
         }}
         onExit={(winner, finished, review) => {

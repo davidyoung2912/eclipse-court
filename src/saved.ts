@@ -1,6 +1,7 @@
 import type { Difficulty } from './ai/profile'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 import type { GameRecord } from './engine/log'
+import type { PersonaId } from './engine/data/personas'
 import type { Court } from './engine/rules/types'
 
 const SAVE_KEY = 'eclipse-court:saved'
@@ -12,6 +13,8 @@ interface Saved {
   campaignIndex: number | null
   /** Two people shared the device; absent in saves from before hot-seat. */
   hotSeat?: boolean
+  /** A named opponent, absent in saves from before personas. */
+  persona?: PersonaId
   code: string
 }
 
@@ -20,6 +23,7 @@ export interface Resumable {
   difficulty: Difficulty
   campaignIndex: number | null
   hotSeat?: boolean
+  persona?: PersonaId
   record: GameRecord
 }
 

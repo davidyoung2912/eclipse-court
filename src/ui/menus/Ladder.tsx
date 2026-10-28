@@ -1,13 +1,15 @@
 import { useState, useSyncExternalStore } from 'react'
 import { BOSS_UNLOCK } from '../../engine/data/bosses'
 import { foeById, LADDER_BOSSES, LADDER_FOES, rankOf, RANKS, suggestFoe } from '../../engine/data/ladder'
+import { ladderVoice, rivalLine } from '../../personaMenu'
+import { personaById } from '../../engine/data/personas'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { canStartSeason, ladderSnapshot, seasonHistory, seasonReward, startSeason, subscribeLadder, type SeasonReward } from '../../ladder'
 import { earnShards } from '../../shop'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { Portrait } from '../../art/Portrait'
-import { bossPortrait } from '../../art/portraits'
+import { bossPortrait, personaPortrait } from '../../art/portraits'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
 
@@ -32,6 +34,8 @@ export function Ladder({ report, onPlay, onBack }: Props) {
   const seasons = seasonHistory(store)
   const lastSeason = seasons[seasons.length - 1]
   const foe = foeById(chosen ?? suggested.id) ?? suggested
+  const voice = ladderVoice(foe.personality)
+  const voiced = voice ? personaById(voice) : undefined
   const next = RANKS.find((r) => r.from > store.rating)
   /** Opponents grouped under the rank their rating sits in, weakest first. */
   const groups = LADDER_FOES.reduce<{ rank: string; foes: (typeof LADDER_FOES)[number][] }[]>((out, f) => {
@@ -60,6 +64,12 @@ export function Ladder({ report, onPlay, onBack }: Props) {
       {paid && <div className="setup-card" role="status">Season {paid.season} ended at {paid.peak} ({paid.rank}): +{paid.shards} Shards and the {paid.rank} banner.</div>}
       {lastSeason && <p className="season-banner" data-rank={rankOf(lastSeason.peak)}><Icon name={RANK_ICONS[lastSeason.rank] ?? 'swords'} />Season {lastSeason.season} banner · {lastSeason.rank}</p>}
       {next && <p className="tagline">{next.from - store.rating} points to {next.title}.</p>}
+      {voiced && (
+        <aside className="persona-greet" aria-label={`${voiced.name} on ${foe.name}`}>
+          <Portrait id={personaPortrait(voiced.id)} className="persona-bubble-face" />
+          <p><b>{voiced.name}</b>{rivalLine(voiced.id, foe.id, store.rivals[foe.id])}</p>
+        </aside>
+      )}
       {groups.map(({ rank, foes }) => (
         <details key={rank} className="tier-fold" open={rank === openRank}>
           <summary><h3><Icon name={RANK_ICONS[rank] ?? 'swords'} />{rank}{rank === rankOf(store.rating) ? ' · your rank' : ''} ({foes.length})</h3></summary>

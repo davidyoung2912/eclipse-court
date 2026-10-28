@@ -11,6 +11,9 @@ import { cardSummaries, primaryAction, suggestions, type CardInfo, type Suggesti
 import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
 import { t } from '../../i18n'
+import { Portrait } from '../../art/Portrait'
+import { personaPortrait } from '../../art/portraits'
+import { menuLine, personaOfTheDay } from '../../personaMenu'
 
 interface Props {
   progress: Progress
@@ -116,6 +119,8 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const onboarding = useSyncExternalStore(subscribeOnboarding, onboardingSnapshot)
   const steps = checklist(progress, !firstRun)
   const advice = adviceFor(onboarding)
+  const seed = dailySeed()
+  const greeter = personaOfTheDay(seed)
   const summary = cardSummaries(progress, dailySeed(), storyRead)
   const next = firstRun ? [] : suggestions(progress, dailyDone)
   const go: Record<SuggestionTarget, () => void> = { daily: onDaily, dailyPuzzle: onDailyPuzzle, weekly: onWeekly, puzzles: onPuzzles, campaign: onCampaign }
@@ -152,6 +157,12 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       </div>
       <div className="menu-main">
+      {!firstRun && (
+        <aside className="persona-greet" aria-label={`${greeter.name} says hello`}>
+          <Portrait id={personaPortrait(greeter.id)} className="persona-bubble-face" />
+          <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>
+        </aside>
+      )}
       {advice && (
         <aside className="coach-card" role="note" aria-label={t('menu.suggestion')}>
           <Icon name="bulb" />
