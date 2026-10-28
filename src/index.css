@@ -285,7 +285,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 body:has(.main-menu) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
-    radial-gradient(ellipse at center, #34296e, #1d1745 75%);
+    radial-gradient(ellipse at center, #231b52, #0f0b26 75%);
   background-attachment: fixed;
 }
 
