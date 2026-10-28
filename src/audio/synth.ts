@@ -212,7 +212,12 @@ export const sfx = {
     tone(55, 1.8, { gain: 0.3, to: 36 })
     tone(110, 1.8, { type: 'triangle', gain: 0.12, to: 73 })
     noise(1.2, { gain: 0.08, freq: 300 })
+    // The boom, as the dark disc closes over the sun.
+    tone(42, 1.2, { gain: 0.4, to: 28, delay: 0.9 })
+    noise(0.6, { gain: 0.14, freq: 120, delay: 0.9 })
   },
+  /** A pickup chime as a beacon's light flies to the HUD. */
+  beaconFly: () => [0, 1].forEach((i) => tone(1046.5 * Math.pow(1.5, i), 0.16, { type: 'triangle', gain: 0.08, delay: 0.5 + i * 0.07 })),
   /** The shared effect vocabulary: confirm, deny, reward and danger. */
   confirm: () => [0, 1].forEach((i) => tone(587.33 * Math.pow(1.5, i), 0.12, { type: 'triangle', gain: 0.1, delay: i * 0.07 })),
   deny: () => {

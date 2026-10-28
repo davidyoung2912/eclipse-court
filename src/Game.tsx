@@ -4,6 +4,9 @@ import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { HEARTBEAT_S, leaderInDanger, leaderStopMs, streaksOf, winningSquares } from './boardDrama'
 import { StreakMeter } from './ui/board/StreakMeter'
+import { EclipseCinematic } from './ui/board/EclipseCinematic'
+import { flyBeacon } from './ui/board/flyBeacon'
+import { beaconPickups, castPath, eclipseCinemaMs, type CastFx } from './spellFx'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
@@ -145,6 +148,9 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   const [asking, setAsking] = useState<{ action: Extract<Action, { type: 'move' }>; prompt: Prompt } | null>(null)
   /** A duel that has been fought, shown in a dialog before its result is played. */
   const [settled, setSettled] = useState<{ pending: Pending; outcome: DuelOutcome } | null>(null)
+  /** The latest spell's effect on the board, and the Eclipse cinematic while it plays. */
+  const [castFx, setCastFx] = useState<CastFx | null>(null)
+  const [cinema, setCinema] = useState(false)
   /** The side whose turn is being announced; play waits until it clears. */
   const [banner, setBanner] = useState<{ court: Court } | null>(() => {
     const last = history[history.length - 1].state
@@ -321,7 +327,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       }
     } else if (state.eclipse && !wasEclipse.current) {
       sfx.eclipse()
-      haptic('danger')
+      haptic('rumble')
     }
     else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
@@ -376,6 +382,20 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     }
   }
 
+  /** Spell effects, the Eclipse cinematic and beacon pickups: all show-only, and all skipped when motion is reduced. */
+  const spectacle = (action: Action, to: GameState) => {
+    if (getSettings().reduceMotion) return
+    if (action.type === 'cast') {
+      const path = castPath(state, state.turn, action.spell, action.pieceId, action.to)
+      if (path) setCastFx({ key: history.length, spell: action.spell, ...path })
+    }
+    if (eclipseCinemaMs(false) && to.eclipse && !state.eclipse && !to.winner) setCinema(true)
+    const flip = human === 'umbral' && (!hotSeat || flipBoard)
+    const picks = beaconPickups(state, to).filter((p) => !state.config.fog || hotSeat || p.court === human)
+    picks.forEach((p) => flyBeacon(p.pos, p.court, flip, sizeOf(state.config)))
+    if (picks.length > 0 && sound) sfx.beaconFly()
+  }
+
   /** Plays an action: the one place the game moves forward, so the history doubles as the game's log. */
   const play = (given: Action, remote = false) => {
     let action = given
@@ -397,6 +417,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       haptic('move')
     }
     turnClock.spend()
+    spectacle(action, s)
     const steps = [...history, { state: s, action }]
     setHistory(steps)
     celebrate(steps, state, s)
@@ -640,7 +661,8 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} nextOdds={nextOdds} nextLight={nextLight} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
-        focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} />
+        focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} cast={castFx} />
+      {cinema && <EclipseCinematic onDone={() => setCinema(false)} />}
       {!ended && <StreakMeter court={meterCourt} count={streaks[meterCourt]} />}
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (

@@ -19,10 +19,7 @@ import { stepCursor } from './cursor'
 import { describeSquare } from '../../narrate'
 import { cascadeDelay, lungeOffset, turnGlow } from '../../boardMotion'
 import { rayDelay, slashEnds } from '../../boardDrama'
-
-/** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
-const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
-  flip ? { cx: size - y - 0.5, cy: x + 0.5 } : { cx: y + 0.5, cy: size - x - 0.5 }
+import { BLOOM_MS, CHARGE_MS, impactDelayMs, SPELL_FX, toScreen, TRAVEL_MS, type CastFx } from '../../spellFx'
 
 interface Props {
   state: GameState
@@ -55,6 +52,8 @@ interface Props {
   fogFor?: Court
   /** Empty squares the player could step onto to win at once: they shimmer gold. */
   winAt?: Pos[]
+  /** The latest spell cast: it charges at the caster, crosses the board and blooms where it lands. */
+  cast?: CastFx | null
 }
 
 /** Pause on the start square, then the same slide a real move makes, then a pause on arrival. */
@@ -82,7 +81,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, reach, flip = false, fogFor, winAt = [] }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, reach, flip = false, fogFor, winAt = [], cast }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -266,6 +265,27 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
           </g>
         )
       })}
+      {!fogFor && cast && (() => {
+        const { style, hue } = SPELL_FX[cast.spell]
+        const a = toScreen(cast.from, flip, size)
+        const b = toScreen(cast.to, flip, size)
+        const hit = impactDelayMs(style)
+        const travels = style !== 'bloom' && !samePos(cast.from, cast.to)
+        return (
+          <g key={cast.key} className={`spell-fx spell-${style}`} style={{ color: hue }} pointerEvents="none">
+            <circle className="spell-charge" cx={a.cx} cy={a.cy} r={0.5} style={{ animationDuration: `${CHARGE_MS}ms` }} />
+            {travels && style === 'bolt' && (
+              <circle className="spell-bolt" cx={a.cx} cy={a.cy} r={0.12}
+                style={{ ['--sx' as string]: `${b.cx - a.cx}px`, ['--sy' as string]: `${b.cy - a.cy}px`, animationDelay: `${CHARGE_MS}ms`, animationDuration: `${TRAVEL_MS}ms` }} />
+            )}
+            {travels && style === 'beam' && (
+              <line className="spell-beam" x1={a.cx} y1={a.cy} x2={b.cx} y2={b.cy} pathLength={1} style={{ animationDelay: `${CHARGE_MS}ms`, animationDuration: `${TRAVEL_MS + 220}ms` }} />
+            )}
+            <circle className="spell-bloom" cx={b.cx} cy={b.cy} r={0.55} style={{ animationDelay: `${hit}ms`, animationDuration: `${BLOOM_MS}ms` }} />
+            <circle className="spell-ring" cx={b.cx} cy={b.cy} r={0.3} style={{ animationDelay: `${hit}ms`, animationDuration: `${BLOOM_MS}ms` }} />
+          </g>
+        )
+      })()}
       {hint?.from && hint.to && hint.pieceId && (() => {
         const piece = state.pieces.find((x) => x.id === hint.pieceId)
         return piece && <HintGhost piece={piece} from={hint.from} to={hint.to} flip={flip} size={size} />

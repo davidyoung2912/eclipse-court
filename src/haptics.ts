@@ -9,6 +9,7 @@ export const HAPTIC_PATTERNS = {
   deny: [40, 50, 40],
   reward: [12, 40, 12, 40, 24],
   danger: [50, 60, 50],
+  rumble: [40, 30, 60, 30, 80, 30, 100, 30, 120],
 } as const
 
 export type HapticKind = keyof typeof HAPTIC_PATTERNS

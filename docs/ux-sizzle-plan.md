@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-4 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-5 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -54,6 +54,8 @@ Phase 4 notes: pure numbers are in `src/boardDrama.ts`. The slash runs along the
 - Eclipse cinematic: the screen dims, a dark disc slides across a sun glyph, low boom and rumble haptic.
 - Per-spell signature effects: caster charge-up, projectile or beam, impact bloom.
 - Beacon pickups fly to the HUD with a trail.
+
+Phase 5 notes: pure numbers are in `src/spellFx.ts`. The Eclipse cinematic (`EclipseCinematic.tsx`) dims the screen as a dark disc crosses a sun glyph, with a deeper boom in `sfx.eclipse` and a new `rumble` haptic. Every spell has a signature look (bolt, beam or bloom in its own hue) drawn on the board from the caster's Leader to the target. Beacon pickups fly as a trail of light to the objective line (`flyBeacon.ts`), with a chime; under fog only your own pickups show. All of it is skipped under reduce motion and is drawn from the played action only, so engine and replays are unchanged.
 
 ## Phase 6: Kill-cam replay
 
