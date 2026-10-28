@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
 import { getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
@@ -9,6 +9,7 @@ import { TipCard } from '../tips/TipCard'
 import { resetTips } from '../../tips'
 import { resetOnboarding } from '../../onboarding'
 import { BackButton } from './BackButton'
+import { downloadSave, importSave } from '../../backup'
 
 interface Props {
   progress: Progress
@@ -20,6 +21,17 @@ export function Settings({ progress, onBack }: Props) {
   const stars = totalStars(progress)
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const themes = THEMES.filter((t) => !t.cost || (findCosmetic('theme', t.id) && owns(findCosmetic('theme', t.id)!, shop)))
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [note, setNote] = useState('')
+  const restore = async (file: File | undefined) => {
+    if (!file) return
+    const n = importSave(await file.text())
+    if (n === null) setNote('That file is not an Eclipse Court save.')
+    else {
+      setNote(`Restored ${n} records. Reloading…`)
+      setTimeout(() => location.reload(), 600)
+    }
+  }
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
     <main className="app menu">
@@ -49,6 +61,14 @@ export function Settings({ progress, onBack }: Props) {
       <div className="menu-buttons">
         <button onClick={() => { resetTips(); resetOnboarding() }}><Icon name="bulb" />Show Tips Again</button>
       </div>
+      <h3>Your save</h3>
+      <p className="setup-hint">Progress lives in this browser only. Keep a backup file in case it is cleared.</p>
+      <div className="menu-buttons">
+        <button onClick={() => { if (!downloadSave()) setNote('This browser cannot save files.') }}><Icon name="chain" />Export Save</button>
+        <button onClick={() => fileRef.current?.click()}><Icon name="rise" />Import Save</button>
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void restore(e.target.files?.[0])} />
+      </div>
+      {note && <p role="status">{note}</p>}
       <div className="menu-buttons">
         <BackButton onClick={onBack} />
       </div>
