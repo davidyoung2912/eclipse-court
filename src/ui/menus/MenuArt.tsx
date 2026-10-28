@@ -122,7 +122,7 @@ export function SkirmishArt() {
       <path d="M0,112H320" stroke="#9a7cf0" strokeOpacity="0.6" />
       <g transform="translate(62 82) scale(96)"><g className="art-bob" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="solari" /></g></g>
       <g transform="translate(258 82) scale(96)"><g className="art-bob art-late" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="umbral" /></g></g>
-      <g className="art-dim" style={{ ['--dim' as string]: 0.3 }}><g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g></g>
+      <g className="art-dim" style={{ ['--dim' as string]: 0.1 }}><g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g></g>
       <circle cx="160" cy="76" r="14" fill="#fff1b8" />
       <circle cx="160" cy="76" r="12.5" fill="#14102b" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(23)} />
       <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" className="art-spin" />

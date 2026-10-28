@@ -651,13 +651,13 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu-art .art-spin { animation-duration: 18s; }
 .menu-art .art-star { animation-duration: 1.9s; }
 @keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
-/* A moon that slides back and forth across the sun while the glow dims as it is covered and rises as it clears; both share one clock and one pause at each end. */
+/* A moon that slides back and forth across the sun while the glow dims as it is covered and rises as it clears; both share one clock and turn straight round at each end. */
 .art-moon-slide, .art-dim { animation-duration: 18s; animation-timing-function: linear; animation-iteration-count: infinite; animation-direction: alternate; }
 .art-moon-slide { animation-name: art-moon-slide; }
 .art-dim { animation-name: art-eclipse-dim; }
 .hero-moon, .hero-dim { animation-duration: 26s; }
-@keyframes art-moon-slide { 0%, 6% { transform: translateX(calc(var(--reach) * -1)); } 94%, 100% { transform: translateX(var(--reach)); } }
-@keyframes art-eclipse-dim { 0%, 6%, 94%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.3); } }
+@keyframes art-moon-slide { 0% { transform: translateX(calc(var(--reach) * -1)); } 100% { transform: translateX(var(--reach)); } }
+@keyframes art-eclipse-dim { 0%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.12); } }
 /* The joke satellite: a slow crossing near the top, with a blinking light */
 .menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20s linear both; }
 .menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
