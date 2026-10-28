@@ -5,6 +5,7 @@ export type { Summary }
 import { CAMPAIGN, battlesIn, grandBattles } from './engine/data/campaign'
 import { PUZZLES, puzzlesIn, type PuzzleTier } from './engine/data/puzzles'
 import { SCENARIOS } from './engine/data/scenarios'
+import { COOP_SCENARIOS } from './engine/data/coop'
 import { dayIndex, tierOfConfig } from './engine/data/setups'
 import { replaySteps, type GameRecord } from './engine/log'
 import { sizeOf } from './engine/rules/board'
@@ -416,7 +417,13 @@ export const resetStats = (p: Progress): Progress => {
 export const resetPuzzles = (p: Progress): Progress => ({ ...p, puzzles: [] })
 
 /** The progress with every scenario unplayed again. */
-export const resetScenarios = (p: Progress): Progress => ({ ...p, scenarios: {} })
+export const resetScenarios = (p: Progress): Progress => ({ ...p, scenarios: Object.fromEntries(Object.entries(p.scenarios).filter(([id]) => id.startsWith('coop-'))) })
+
+/** The progress with every co-op scenario unplayed again (they share the scenario stars table, under `coop-` ids). */
+export const resetCoop = (p: Progress): Progress => ({ ...p, scenarios: Object.fromEntries(Object.entries(p.scenarios).filter(([id]) => !id.startsWith('coop-'))) })
+
+/** Stars earned in the co-op scenarios. */
+export const coopStars = (p: Progress) => COOP_SCENARIOS.reduce((n, x) => n + starCount(p.scenarios[x.id] ?? 0), 0)
 
 /** The progress with the campaign battles unbeaten and unstarred; boards and themes gated on stars lock again. */
 export const resetCampaign = (p: Progress): Progress => ({ ...p, battles: {} })

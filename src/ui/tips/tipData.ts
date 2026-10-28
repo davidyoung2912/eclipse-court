@@ -124,6 +124,10 @@ const DATA = {
     { id: 'campaign-scenarios-stars', icon: 'star', title: 'Three Stars Each',
       text: 'The stars are: win the scenario, win without losing a piece, and a bonus objective unique to that scenario. Read the goal line carefully, since scenarios have round limits. Some boards also use cell effects, so tap empty squares during play to read what they do.' },
   ],
+  'campaign-coop': [
+    { id: 'campaign-coop-intro', icon: 'target', title: 'Two on One Side',
+      text: 'Co-op scenarios are for two people on one device. You share the Solari court against the AI: the first player takes the moves on odd rounds and the second on even ones, so talk it over. The stars work as in any scenario.' },
+  ],
   daily: [
     { id: 'daily-intro', icon: 'sun', title: 'The Same Game for Everyone',
       text: 'Today\'s match uses the same board, army, rules and opponent for every player. The list shows what is special today, who you face and which court you play, which can change from day to day. Only your first finished attempt is scored, so make it count. Undo is switched off.' },

@@ -1,5 +1,6 @@
 import { encodeRecord } from './engine/serialize'
 import { SCENARIOS } from './engine/data/scenarios'
+import { COOP_SCENARIOS } from './engine/data/coop'
 import type { Difficulty } from './engine/data/difficulty'
 import type { DailyMatch } from './engine/data/daily'
 import type { GameRecord } from './engine/log'
@@ -30,6 +31,8 @@ interface Context {
   campaignIndex: number | null
   /** A scenario of the campaign's second tab: its index. */
   scenario: number | undefined
+  /** A co-op scenario of the campaign's third tab: its index. */
+  coop?: number
   /** The game is today's daily match. */
   daily: boolean
   today: Pick<DailyMatch, 'date'>
@@ -39,10 +42,11 @@ interface Context {
 
 /** Records a finished game against the player's progress and returns the lines to show about it. */
 export function settleGame(progress: Progress, c: Context): Settled {
-  const { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats } = c
+  const { winner, finished, human, difficulty, campaignIndex, daily, today, stats } = c
+  const set = c.scenario !== undefined ? SCENARIOS[c.scenario] : c.coop !== undefined ? COOP_SCENARIOS[c.coop] : undefined
   const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
   if (!summary) return { summary: null, lines: [], progress, shards: 0 }
-  const area: PlayArea = scenario !== undefined ? 'scenario' : stats && daily ? 'daily' : campaignIndex !== null ? 'campaign' : 'skirmish'
+  const area: PlayArea = set ? 'scenario' : stats && daily ? 'daily' : campaignIndex !== null ? 'campaign' : 'skirmish'
   const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished), area)
   const stars = starsEarned(summary)
   const scored = stats && daily
@@ -51,10 +55,10 @@ export function settleGame(progress: Progress, c: Context): Settled {
   let next = scored?.progress ?? played
   const lines: string[] = []
   const battle = campaignIndex !== null ? CAMPAIGN[campaignIndex] : null
-  const firstClear = battle ? !((progress.battles[battle.id] ?? 0) & STAR_WIN) : scenario !== undefined && !((progress.scenarios[SCENARIOS[scenario].id] ?? 0) & STAR_WIN)
+  const firstClear = battle ? !((progress.battles[battle.id] ?? 0) & STAR_WIN) : !!set && !((progress.scenarios[set.id] ?? 0) & STAR_WIN)
   let scenarioAchievements = 0
-  if (scenario !== undefined && summary.won) {
-    const x = SCENARIOS[scenario]
+  if (set && summary.won) {
+    const x = set
     const bits = STAR_WIN | (summary.lost === 0 ? STAR_FLAWLESS : 0) | (x.bonus.met(summary) ? STAR_SWIFT : 0)
     const result = recordScenario(next, x.id, bits)
     next = result.progress
@@ -62,7 +66,7 @@ export function settleGame(progress: Progress, c: Context): Settled {
     lines.push(`Stars: Win${bits & STAR_FLAWLESS ? ', no pieces lost' : ''}${bits & STAR_SWIFT ? `, ${x.bonus.text.toLowerCase()}` : ''}.`, ...result.earned.map((a) => `Achievement: ${a.name}`))
   }
   const shards = shardsForGame({
-    won: summary.won, draw: summary.draw, difficulty, firstClear, campaign: campaignIndex !== null, scenario: scenario !== undefined,
+    won: summary.won, draw: summary.draw, difficulty, firstClear, campaign: campaignIndex !== null, scenario: !!set,
     dailyScored: !!scored?.scored, multiplier: shardMultiplier(finished.initial.config, human), achievements: earned.length + (scored?.earned.length ?? 0) + scenarioAchievements,
   })
   return {

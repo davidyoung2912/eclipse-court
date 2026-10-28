@@ -32,7 +32,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
-import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
+import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
 import { settleGame } from './settleGame'
@@ -44,6 +44,7 @@ import type { SideSummary } from './ai/review'
 import { loadChoices, oneOf, saveChoices } from './lastChoices'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
 import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
+import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
@@ -123,6 +124,8 @@ type Screen =
     gauntlet?: boolean
     /** A scenario of the campaign's second tab: its index. */
     scenario?: number
+    /** A co-op scenario of the campaign's third tab: its index. Two people share Solari. */
+    coop?: number
     /** A chapter of the story whose battle this is; story games are not resumable and touch no campaign progress. */
     story?: string
     /** A ranked ladder game: the id of the opponent; not resumable. */
@@ -235,7 +238,7 @@ export default function App() {
     setProgress(next)
     saveProgress(next)
   }
-  const [campaignTab, setCampaignTab] = useState<CampaignTab>(() => oneOf<CampaignTab>(loadChoices('campaign').tab, ['battles', 'scenarios'], 'battles'))
+  const [campaignTab, setCampaignTab] = useState<CampaignTab>(() => oneOf<CampaignTab>(loadChoices('campaign').tab, ['battles', 'scenarios', 'coop'], 'battles'))
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
@@ -535,8 +538,15 @@ export default function App() {
         report={report}
         tab={campaignTab}
         onTab={(t) => { setCampaignTab(t); saveChoices('campaign', { tab: t }) }}
-        onReset={(tab) => { const next = tab === 'scenarios' ? resetScenarios(progress) : resetCampaign(progress); setProgress(next); saveProgress(next) }}
+        onReset={(tab) => { const next = tab === 'coop' ? resetCoop(progress) : tab === 'scenarios' ? resetScenarios(progress) : resetCampaign(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
+        onPlayCoop={(i) => {
+          setReport([])
+          setScreen({
+            name: 'game', human: 'solari', difficulty: COOP_SCENARIOS[i].difficulty,
+            record: { initial: coopGame(COOP_SCENARIOS[i], Date.now()), actions: [] }, campaignIndex: null, coop: i,
+          })
+        }}
         onPlayScenario={(i) => {
           setReport([])
           setScreen({
@@ -557,18 +567,18 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor, tryout, mail } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === today.court
+    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === today.court
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
     const weeklyToday = weeklyMatch()
-    const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === WEEKLY_COURT
+    const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === WEEKLY_COURT
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
     const custom = !!editor || !!tryout || isCustom(record.initial.config)
-    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
+    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -598,7 +608,7 @@ export default function App() {
 
     /** Records a finished game and returns the lines to show about it. */
     const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
-      const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
+      const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, coop, daily, today, stats })
       if (settled.summary) rememberCourt(human)
       if (settled.summary && stats) recordGameResult(settled.summary)
       let extra: ReturnType<typeof recordWeekly> | null = null
@@ -610,7 +620,7 @@ export default function App() {
         return { ...settled, lines: [...rated.lines, ...settled.lines] }
       }
       // Side goals pay only in plain skirmishes against an AI that is not the easiest.
-      const bounties = stats && settled.summary && scenario === undefined && campaignIndex === null && !daily && !weekly && !custom && difficulty !== 'easy'
+      const bounties = stats && settled.summary && scenario === undefined && coop === undefined && campaignIndex === null && !daily && !weekly && !custom && difficulty !== 'easy'
         ? claimBounties(settled.summary) : []
       const bountyShards = bounties.reduce((n, b) => n + b.shards, 0)
       earnShards(settled.shards + (extra?.shards ?? 0) + bountyShards)
@@ -689,6 +699,7 @@ export default function App() {
       mail ? { label: 'By link', kind: 'skirmish' }
       : story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
       : gauntlet ? { label: `Gauntlet stage ${run?.stage ?? ''}`.trim(), kind: 'gauntlet' }
+      : coop !== undefined ? { label: `Co-op: ${COOP_SCENARIOS[coop].name}`, kind: 'scenario', coop: true }
       : scenario !== undefined ? { label: `Scenario: ${SCENARIOS[scenario].name}`, kind: 'scenario' }
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
       : daily ? { label: 'Daily match', kind: 'daily' }
@@ -762,8 +773,9 @@ export default function App() {
           }
           setReport(lines)
           if (scenario !== undefined) { setCampaignTab('scenarios'); saveChoices('campaign', { tab: 'scenarios' }) }
+          if (coop !== undefined) { setCampaignTab('coop'); saveChoices('campaign', { tab: 'coop' }) }
           if (review) return setScreen({ name: 'replay', record: finished, own: true })
-          setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
+          setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
       </>

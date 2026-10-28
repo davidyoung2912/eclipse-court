@@ -6,6 +6,7 @@ import { getSettings, updateSettings } from './settings'
 import { explainMove } from './ai/why'
 import { attackOdds, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
+import { coopPlayer } from './engine/data/coop'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
 import type { EndReason, Session } from './net/session'
 import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
@@ -55,7 +56,7 @@ interface Props {
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
   /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
-  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean; /** Which scored mode this is, for its guidance card. */ flavour?: 'weekly' | 'ladder' }
+  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean; /** Two people share the Solari court and alternate by round. */ coop?: boolean; /** Which scored mode this is, for its guidance card. */ flavour?: 'weekly' | 'ladder' }
   /** The player's first campaign battle: a line of coaching sits above the board's cards. */
   coach?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
@@ -106,6 +107,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
 export function Game({ controllers, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
+  const coop = !!context?.coop
   const [net, setNet] = useState(() => session?.view() ?? null)
   const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -147,6 +149,10 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const foeAggression = DIFFICULTY[difficulty].aggression
   /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
   const even = hotSeat || online || !!mail
+  /** The person at the screen for Solari's turn in a co-op game: the first on odd rounds. */
+  const coopTurn = coopPlayer(state.round)
+  /** The device changes hands: hot-seat before every turn, co-op before each of Solari's. */
+  const handover = (hotSeat || (coop && banner?.court === 'solari')) && passScreen
   const settleAuto = even || duelMode === 'auto' || getSettings().duelSpeed === 'instant'
   /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
@@ -238,10 +244,10 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
 
   // The turn announcement fades after a second and then lets play go on.
   useEffect(() => {
-    if (!banner || (hotSeat && passScreen)) return
+    if (!banner || handover) return
     const timer = setTimeout(() => setBanner(null), TURN_BANNER_MS)
     return () => clearTimeout(timer)
-  }, [banner, hotSeat, passScreen])
+  }, [banner, handover])
 
   // Keeps the unfinished game saved so it can be resumed after leaving.
   useEffect(() => {
@@ -453,7 +459,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     : winner === human ? 'Victory' : 'Defeat'
   /** One line on what this battle is for: a puzzle's first sentence, else the goal followed by where the game comes from. */
   const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
-    : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label].filter(Boolean).join(' · ')
+    : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label, coop && state.turn === 'solari' ? `Player ${coopTurn}` : null].filter(Boolean).join(' · ')
   /** The attack summary is up: it takes over the tray, and the tray's own controls step aside. */
   /** Pieces of the side to move that an enemy Bind has frozen for this turn. */
   const bound = state.pieces.filter((p) => p.court === state.turn && p.bound)
@@ -493,20 +499,20 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           onPerk={(perk) => commit({ ...asking.action, perk })}
           onPromote={(role) => commit({ ...asking.action, promote: role })} />
       )}
-      {banner && !ended && hotSeat && passScreen && (
+      {banner && !ended && handover && (
         <button key={banner.court + history.length} className={`pass-screen ${banner.court}`} onClick={() => setBanner(null)}>
-          <strong>{COURT_NAME[banner.court]} to move</strong>
+          <strong>{coop ? `Player ${coopTurn} to move` : `${COURT_NAME[banner.court]} to move`}</strong>
           <span>Hand over the device, then tap to begin</span>
         </button>
       )}
-      {banner && !ended && !(hotSeat && passScreen) && (
+      {banner && !ended && !handover && (
         <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status"
           ref={(el) => {
             // Centre on the board, not the screen.
             const board = el?.parentElement?.querySelector('.board')?.getBoundingClientRect()
             if (el && board) { el.style.left = `${board.left + board.width / 2}px`; el.style.top = `${board.top + board.height / 2}px` }
           }}>
-          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
+          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : coop && banner.court === human ? `Player ${coopTurn} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
         </div>
       )}
       {combo && !ended && <div key={combo.key} className={`combo ${hotSeat ? combo.court : combo.court === human ? 'mine' : 'theirs'}`} role="status">{combo.label}</div>}
@@ -574,9 +580,10 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
               <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>
               <label><input type="checkbox" checked={flipBoard} onChange={() => setFlipBoard((v) => !v)} /> Face the player</label>
             </>
-          ) : online ? null : (
+          ) : online ? null : (<>
+            {coop && <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>}
             <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
-          )}
+          </>)}
           <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
           <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> Aim assist</label>
           <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> Haptics</label>
