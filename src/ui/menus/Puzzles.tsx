@@ -1,5 +1,6 @@
 import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzlesIn } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
+import { loadEndless } from '../../endless'
 import { rushBest } from '../../rush'
 import { Icon } from './icons'
 import { ResetButton } from './ResetButton'
@@ -15,11 +16,12 @@ interface Props {
   resume?: { name: string; rush: boolean; onResume: () => void }
   onPlay: (index: number, daily: boolean) => void
   onRush: () => void
+  onEndless: () => void
   onReset: () => void
   onBack: () => void
 }
 
-export function Puzzles({ progress, report, resume, onPlay, onRush, onReset, onBack }: Props) {
+export function Puzzles({ progress, report, resume, onPlay, onRush, onEndless, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const isSolved = (id: string) => progress.puzzles.includes(id)
   const solved = PUZZLES.filter((p) => isSolved(p.id)).length
@@ -46,6 +48,13 @@ export function Puzzles({ progress, report, resume, onPlay, onRush, onReset, onB
         <button className="choice" onClick={onRush}>
           <strong><Icon name="bolt" />Start a Rush <span className="pill">best {rushBest()}</span></strong>
           <span>Puzzle after puzzle, easy to hard, in a random order. One failed puzzle ends the run.</span>
+        </button>
+      </div>
+      <h3>Endless</h3>
+      <div className="choices">
+        <button className="choice" onClick={onEndless}>
+          <strong><Icon name="puzzle" />Endless Puzzles <span className="pill">rated {loadEndless().rating}</span></strong>
+          <span>Fresh puzzles made for you, with a rating that climbs as you solve.</span>
         </button>
       </div>
       <h3>Puzzle of the day</h3>

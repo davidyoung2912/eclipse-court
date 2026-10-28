@@ -14,7 +14,9 @@ import { aiDraft, aiLoadout } from './engine/data/aiDraft'
 import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
-import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
+import { dailyPuzzleIndex, PUZZLES, type Puzzle } from './engine/data/puzzles'
+import { applyResult, bandFor, endlessPuzzle, loadEndless, puzzleRating, requestEndless, resetEndless, saveEndless, SHARDS_ENDLESS } from './endless'
+import { Endless } from './ui/menus/Endless'
 import { recordGameResult } from './records'
 import { claimBounties } from './bounties'
 import { recordRush, rushOrder, RUSH_SHARD_CAP } from './rush'
@@ -96,6 +98,7 @@ type Screen =
   | { name: 'tutorial' }
   | { name: 'stats' }
   | { name: 'puzzles' }
+  | { name: 'endless' }
   | { name: 'practice' }
   | { name: 'settings' }
   | { name: 'collection' }
@@ -117,7 +120,7 @@ type Screen =
     /** The other player is across an online connection; `human` is your court. */
     online?: Session
     /** Set when the game is a puzzle: its index, whether it is the day's, and the turns allowed. */
-    puzzle?: { index: number; daily: boolean; /** A Puzzle Rush run: its order and the puzzles solved so far. */ rush?: { order: number[]; score: number } }
+    puzzle?: { index: number; daily: boolean; /** An Endless puzzle: the puzzle itself, and the rating it was served against. */ endless?: { puzzle: Puzzle; number: number; rating: number }; /** A Puzzle Rush run: its order and the puzzles solved so far. */ rush?: { order: number[]; score: number } }
     /** Set in a best-of-three: the opponent and the games won and lost so far. */
     series?: { wins: number; losses: number }
     /** A fight of the gauntlet run; the run itself is kept apart from the saved game. */
@@ -352,6 +355,7 @@ export default function App() {
         } } : undefined}
         onReset={() => { const next = resetPuzzles(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
+        onEndless={() => { setReport([]); setScreen({ name: 'endless' }) }}
         onRush={() => {
           const order = rushOrder(Date.now() % 1000000007)
           const index = order[0]
@@ -364,6 +368,21 @@ export default function App() {
             name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty,
             record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily },
           })
+        }} />
+    )
+  }
+
+  if (screen.name === 'endless') {
+    return (
+      <Endless report={report}
+        onReset={resetEndless}
+        onBack={() => setScreen({ name: 'puzzles' })}
+        onStart={(g, rec) => {
+          const p = endlessPuzzle(g, rec.n + 1)
+          setReport([])
+          // The next one is searched for while this one is played.
+          void requestEndless(rec.n + 1, bandFor(rec.rating))
+          setScreen({ name: 'game', human: 'solari', difficulty: p.difficulty, record: { initial: p.build(), actions: [] }, campaignIndex: null, puzzle: { index: 0, daily: false, endless: { puzzle: p, number: rec.n + 1, rating: puzzleRating(g) } } })
         }} />
     )
   }
@@ -580,8 +599,21 @@ export default function App() {
     const custom = !!editor || !!tryout || isCustom(record.initial.config)
     const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story
 
+    const current = puzzle && (puzzle.endless?.puzzle ?? PUZZLES[puzzle.index])
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
+      if (puzzle!.endless) {
+        const before = loadEndless()
+        const after = { ...applyResult(before, puzzle!.endless.rating, solved), n: puzzle!.endless.number }
+        saveEndless(after)
+        if (solved) earnShards(SHARDS_ENDLESS)
+        const change = after.rating - before.rating
+        setReport([
+          `${solved ? 'Solved' : 'Missed'}: rating ${after.rating} (${change >= 0 ? '+' : ''}${change}).`,
+          ...(solved ? [`Shards: +${SHARDS_ENDLESS}.`] : []),
+        ])
+        return setScreen({ name: 'endless' })
+      }
       if (puzzle!.rush) {
         const { order, score } = puzzle!.rush
         const next = solved ? score + 1 : score
@@ -721,13 +753,14 @@ export default function App() {
         mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}
         context={context}
         coach={!series && isFirstBattle(progress, campaignIndex)}
-        puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text, rush: !!puzzle.rush }}
+        puzzle={puzzle && { name: current!.name, text: current!.text, rush: !!puzzle.rush || !!puzzle.endless }}
         onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
-        puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
-        puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}
+        puzzleLimit={current?.limit}
+        puzzleHelp={current && { hints: current.hints, solution: current.solution }}
         onSave={(progress) => {
           if (gauntlet && run) return progress ? saveFight({ seed: run.seed, stage: run.stage, record: progress }) : clearFight()
+          if (puzzle?.endless) return clearPuzzle()
           if (puzzle) return progress ? savePuzzle({ index: puzzle.index, daily: puzzle.daily, rush: puzzle.rush, record: progress }) : clearPuzzle()
           if (transient) return
           if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })
