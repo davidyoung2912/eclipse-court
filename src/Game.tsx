@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { autoDuel } from './ai/autoDuel'
-import { isMuted, setMuted, sfx, turnBell } from './audio/synth'
+import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
+import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
+import { getSettings } from './settings'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
 import type { EndReason, Session } from './net/session'
@@ -37,6 +39,7 @@ import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
+import { WinBurst } from './ui/tray/WinBurst'
 
 interface Props {
   /** Who plays each court: a person at the screen, or the AI. Two people make a hot-seat game. */
@@ -172,15 +175,41 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
   const { elapsed, banks } = turnClock
 
   const [sound, setSound] = useState(() => !isMuted())
+  const [music, setMusic] = useState(isMusicOn)
+  /** The capture streak just made, shown for a moment; the key restarts the animation. */
+  const [combo, setCombo] = useState<{ key: number; label: string; court: Court } | null>(null)
   const lastTurn = useRef(state.turn)
+  const wasEclipse = useRef(state.eclipse)
+  const musicRef = useRef<ReturnType<typeof startMusic> | null>(null)
+
+  // The music bed plays while sound and music are on, and builds toward the Eclipse.
+  useEffect(() => {
+    if (!sound || !music) return
+    const bed = startMusic()
+    musicRef.current = bed
+    return () => {
+      bed.stop()
+      musicRef.current = null
+    }
+  }, [sound, music])
+  useEffect(() => musicRef.current?.setLevel(musicLevel(state)), [state, sound, music])
+
+  // The streak label clears itself.
+  useEffect(() => {
+    if (!combo) return
+    const timer = setTimeout(() => setCombo(null), 1600)
+    return () => clearTimeout(timer)
+  }, [combo])
 
   // Each court's bell rings as its turn begins.
   useEffect(() => {
     if (winner) {
       if (hotSeat ? winner !== 'draw' : winner === human) sfx.win()
       else sfx.lose()
-    } else if (state.turn !== lastTurn.current) turnBell(state.turn)
+    } else if (state.eclipse && !wasEclipse.current) sfx.eclipse()
+    else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
+    wasEclipse.current = state.eclipse
   }, [state, winner, human, hotSeat])
 
   // Follows the connection: the other player's actions arrive through it.
@@ -201,6 +230,28 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
     // oxlint-disable-next-line react/exhaustive-deps
   }, [history])
 
+  /** Capture feedback: the board shakes, and a run of captures by one court is named and sounded. */
+  const celebrate = (steps: Step[], from: GameState, to: GameState) => {
+    const lost = piecesLost(from, to)
+    if (lost === 0) return
+    const leaderFell = from.pieces.some((p) => p.role === 'leader' && !to.pieces.some((q) => q.id === p.id))
+    const shake = shakeFor(lost, leaderFell, getSettings().reduceMotion)
+    const board = document.querySelector('.board')
+    if (shake && board?.animate) {
+      const { px } = shake
+      board.animate(
+        [{ translate: '0 0' }, { translate: `${-px}px ${px / 3}px` }, { translate: `${px}px ${-px / 3}px` }, { translate: `${-px / 2}px 0` }, { translate: '0 0' }],
+        { duration: shake.ms, easing: 'ease-out' },
+      )
+    }
+    const streak = streakAfter(steps)
+    const label = streak && streakLabel(streak.count)
+    if (streak && label) {
+      sfx.streak(streak.count)
+      setCombo({ key: steps.length, label: `${label} ×${streak.count}`, court: streak.court })
+    }
+  }
+
   /** Plays an action: the one place the game moves forward, so the history doubles as the game's log. */
   const play = (given: Action, remote = false) => {
     let action = given
@@ -215,7 +266,9 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
     else if (s.lastDuel) sfx.hit(2)
     else sfx.move()
     turnClock.spend()
-    setHistory((h) => [...h, { state: s, action }])
+    const steps = [...history, { state: s, action }]
+    setHistory(steps)
+    celebrate(steps, state, s)
     if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
     setSettled(null)
     setSelectedId(null)
@@ -430,6 +483,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
           {hotSeat ? `${COURT_NAME[banner.court]} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
         </div>
       )}
+      {combo && !ended && <div key={combo.key} className={`combo ${hotSeat ? combo.court : combo.court === human ? 'mine' : 'theirs'}`} role="status">{combo.label}</div>}
       {lost && (
         <div className="confirm result" role="dialog" aria-label="Connection lost">
           <p className="confirm-title">Connection lost</p>
@@ -442,6 +496,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
       )}
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
+          {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
           <p className="confirm-title">{result}</p>
           <div className="buttons">
             {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
@@ -481,6 +536,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
           <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> Aim assist</label>
           <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> Haptics</label>
           <label><input type="checkbox" checked={sound} onChange={toggleSound} /> Sound</label>
+          <label><input type="checkbox" checked={music} onChange={() => { setMusicOn(!music); setMusic(!music) }} /> Music</label>
         </div>
         <p className="status">
           {ended

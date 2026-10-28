@@ -859,3 +859,35 @@ body:has(.duel) .play-timer { display: none; }
 .ed-numbers { display: flex; gap: 12px; flex-wrap: wrap; }
 .ed-numbers .ed-field { flex: 1 1 40%; }
 .ed-problems { color: #ffb3b3; }
+
+/* Juice: capture streaks and the win burst; both vanish with reduced motion */
+.combo {
+  position: fixed; left: 50%; top: 22%; z-index: 24; pointer-events: none; transform: translateX(-50%); white-space: nowrap;
+  font-family: var(--display); font-size: 1.5rem; letter-spacing: 0.08em; text-transform: uppercase; animation: combo-pop 1.6s ease-out forwards;
+}
+.combo.mine, .combo.solari { color: var(--solari-gold); text-shadow: 0 0 14px rgba(232, 182, 74, 0.8), 0 2px 0 #1b1740; }
+.combo.theirs, .combo.umbral { color: #d9ccff; text-shadow: 0 0 14px rgba(122, 92, 200, 0.9), 0 2px 0 #1b1740; }
+@keyframes combo-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+  30%, 75% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-18px) scale(1); }
+}
+.confirm.result { overflow: visible; }
+.win-burst { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
+.win-halo {
+  position: absolute; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 197, 92, 0.55), transparent 70%); animation: win-halo 1.4s ease-out both;
+}
+.win-spark {
+  position: absolute; width: 6px; height: 14px; margin: -7px 0 0 -3px; border-radius: 3px; background: var(--solari-gold);
+  box-shadow: 0 0 8px rgba(232, 182, 74, 0.9); animation: win-spark 1.1s ease-out both;
+}
+.win-spark:nth-child(3n) { background: var(--solari-cream); }
+@keyframes win-halo { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes win-spark {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)); }
+}
+:root[data-motion='reduced'] .win-burst { display: none; }
+@media (prefers-reduced-motion: reduce) { .win-burst { display: none; } .combo { animation: none; } }

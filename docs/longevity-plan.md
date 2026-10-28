@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L8 done; L9 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L9 done; L10 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -43,7 +43,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L6 (done): ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
 - **L7 (done): Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
 - **L8 (done): editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
-- **L9: juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
+- **L9 (done): juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
 - **L10: onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
 - **L11: shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
 - **L12: async play-by-link.** Play a game by passing a link back and forth, one move at a time, using the existing action-log encoding. Each link carries the whole record, so no server is needed; the app checks that the pasted record extends the one it holds.
@@ -95,3 +95,8 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/editor.ts`: draft store `eclipse-court:editor`, held in memory too.
 - `src/ui/menus/Editor.tsx`, reached from Battle: tools, board, goal, problems list, Test It, Copy Challenge Link and a code box. Sharing reuses `encodeChallenge`, so no new format and no `FORMAT_VERSION` bump; `describeConfig` calls such boards "Custom".
 - `src/App.tsx`: `editor` screen; a game with `editor: true` or a custom board is transient and unscored (no stats, Shards or saved game), and Back from an editor test returns to the editor. A challenge for a custom board offers "Open in the Editor".
+
+## L9 file map
+- `src/juice.ts` (+ `juice.test.ts`): pure rules. `streakAfter(steps)` counts a court's consecutive capturing turns, `streakLabel` names runs of two or more, `shakeFor(lost, leaderFell, reduceMotion)` gives the board shake (none when motion is reduced), `musicLevel(state)` runs 0 to 0.9 through the day and 1 at the Eclipse.
+- `src/audio/synth.ts`: `startMusic()` is a drone, a fifth, a breathing shimmer and a pulse from the halfway mark, driven by `setLevel`; `isMusicOn`/`setMusicOn` (key `eclipse-court:music`, on by default, heard only while sound is on); new `sfx.streak` and `sfx.eclipse`.
+- `src/Game.tsx`: `celebrate` (shake via the Web Animations API on `.board`, streak sound and the `.combo` label), music effects, the Music checkbox beside Sound, the Eclipse sting, and `WinBurst` (`ui/tray/WinBurst.tsx`) in the result dialog on a win. Styles at the end of `index.css`; reduced motion hides the burst and the shake never runs.

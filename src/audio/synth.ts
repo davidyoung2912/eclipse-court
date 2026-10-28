@@ -125,6 +125,15 @@ export const sfx = {
     tone(160 + damage * 20, 0.18, { type: 'square', gain: 0.18, to: 70 })
     noise(0.1, { gain: 0.15 + Math.min(0.15, damage * 0.04), freq: 1200 })
   },
+  /** A rising sting for the n-th capture in a row. */
+  streak: (count: number) =>
+    [0, 1, 2].forEach((i) => tone(440 * Math.pow(1.122, Math.min(count, 6) * 2 + i * 4), 0.3, { type: 'triangle', gain: 0.12, delay: i * 0.06 })),
+  /** The Eclipse falls: a deep swell and a hush. */
+  eclipse: () => {
+    tone(55, 1.8, { gain: 0.3, to: 36 })
+    tone(110, 1.8, { type: 'triangle', gain: 0.12, to: 73 })
+    noise(1.2, { gain: 0.08, freq: 300 })
+  },
   win: () => [523.25, 659.25, 783.99, 1046.5].forEach((n, i) => tone(n, 0.8, { gain: 0.14, delay: i * 0.12 })),
   lose: () => [329.63, 261.63, 196, 130.81].forEach((n, i) => tone(n, 1, { type: 'triangle', gain: 0.16, delay: i * 0.18 })),
 }
@@ -142,5 +151,92 @@ export function startDuelDrums(): { setIntensity: (n: number) => void; stop: () 
   return {
     setIntensity: (n) => { intensity = Math.min(1, Math.max(0, n)) },
     stop: () => window.clearTimeout(timer),
+  }
+}
+
+const MUSIC_KEY = 'eclipse-court:music'
+
+let music = readMusic()
+
+/** Music plays whenever sound is on, unless the player has turned it off. */
+function readMusic(): boolean {
+  try {
+    return localStorage.getItem(MUSIC_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+export const isMusicOn = () => music
+
+export function setMusicOn(value: boolean) {
+  music = value
+  try {
+    localStorage.setItem(MUSIC_KEY, value ? '1' : '0')
+  } catch {
+    // The preference only lasts for this session if storage is unavailable.
+  }
+}
+
+/**
+ * A quiet bed of layers that builds as `setLevel` rises from 0 to 1: a drone, a fifth above it, a shimmer, and a
+ * pulse that appears at the halfway mark and quickens toward the Eclipse. Returns a stop function.
+ */
+export function startMusic(): { setLevel: (n: number) => void; stop: () => void } {
+  const c = audio()
+  if (!c || !master || !music) return { setLevel: () => {}, stop: () => {} }
+  const bus = c.createGain()
+  bus.gain.value = 0
+  bus.gain.setTargetAtTime(1, c.currentTime, 1.5)
+  bus.connect(master)
+  const layer = (freq: number, type: OscillatorType, base: number) => {
+    const o = c.createOscillator()
+    const g = c.createGain()
+    o.type = type
+    o.frequency.value = freq
+    g.gain.value = 0
+    o.connect(g).connect(bus)
+    o.start()
+    return { o, g, base }
+  }
+  const drone = layer(55, 'sine', 0.05)
+  const fifth = layer(82.41, 'triangle', 0.035)
+  const shimmer = layer(659.25, 'sine', 0.018)
+  // The shimmer breathes slowly.
+  const lfo = c.createOscillator()
+  const depth = c.createGain()
+  depth.gain.value = 0.012
+  lfo.frequency.value = 0.2
+  lfo.connect(depth).connect(shimmer.g.gain)
+  lfo.start()
+  let level = 0
+  let timer = 0
+  const apply = () => {
+    const t = c.currentTime
+    drone.g.gain.setTargetAtTime(drone.base * (0.6 + level * 0.8), t, 0.8)
+    fifth.g.gain.setTargetAtTime(fifth.base * Math.min(1, level * 2), t, 0.8)
+    shimmer.g.gain.setTargetAtTime(shimmer.base * Math.max(0, level * 1.6 - 0.2), t, 0.8)
+    drone.o.frequency.setTargetAtTime(55 * (1 - level * 0.12), t, 2)
+  }
+  const pulse = () => {
+    if (level > 0.5 && !muted) tone(55, 0.3, { gain: 0.08 + level * 0.08, to: 40 })
+    timer = window.setTimeout(pulse, 1100 - level * 500)
+  }
+  apply()
+  pulse()
+  return {
+    setLevel: (n) => {
+      level = Math.min(1, Math.max(0, n))
+      apply()
+    },
+    stop: () => {
+      window.clearTimeout(timer)
+      bus.gain.setTargetAtTime(0, c.currentTime, 0.3)
+      window.setTimeout(() => {
+        for (const l of [drone, fifth, shimmer]) l.o.stop()
+        lfo.stop()
+        bus.disconnect()
+      }, 1500)
+    },
   }
 }
