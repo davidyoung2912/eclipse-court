@@ -41,9 +41,9 @@ const STARS = Array.from({ length: 36 }, (_, i) => ({
   delay: (i % 7) * 0.6,
 }))
 
-/** Opening sequence stages: sun and moon alone, a pause, the whole title centred, then it rises into place. */
-type Intro = 'sun' | 'pause' | 'centred' | 'rise' | 'done'
-const INTRO_STEPS: [Intro, number][] = [['pause', 1000], ['centred', 1500], ['rise', 3200], ['done', 4200]]
+/** Opening sequence stages: the whole title centred, a pause, then it rises into place. */
+type Intro = 'centred' | 'rise' | 'done'
+const INTRO_STEPS: [Intro, number][] = [['rise', 1200], ['done', 1700]]
 let introPlayed = false
 
 const RAYS = Array.from({ length: 24 }, (_, i) => i * 15)
@@ -103,7 +103,7 @@ interface Card {
 }
 
 export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
-  const [intro, setIntro] = useState<Intro>(() => (introPlayed || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'done' : 'sun'))
+  const [intro, setIntro] = useState<Intro>(() => (introPlayed || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'done' : 'centred'))
   const menuRef = useRef<HTMLElement>(null)
   const brandRef = useRef<HTMLDivElement>(null)
   const [sound, setSound] = useState(() => !isMuted())
@@ -126,13 +126,9 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
     introPlayed = true
     const menu = menuRef.current
     const brand = brandRef.current
-    const hero = brand?.querySelector<SVGElement>('.hero')
-    if (!menu || !brand || !hero) return
-    // Offsets are layout-based so they ignore the transform already applied.
+    if (!menu || !brand) return
+    // The offset is layout-based so it ignores the transform already applied.
     const middle = menu.clientHeight / 2
-    const heroBox = hero.getBoundingClientRect()
-    const sunY = brand.offsetTop + (heroBox.top - brand.getBoundingClientRect().top) + heroBox.height * (110 / 250)
-    menu.style.setProperty('--intro-sun', `${middle - sunY}px`)
     menu.style.setProperty('--intro-all', `${middle - (brand.offsetTop + brand.offsetHeight / 2)}px`)
     const timers = INTRO_STEPS.map(([step, at]) => window.setTimeout(() => setIntro(step), at))
     return () => timers.forEach(window.clearTimeout)
