@@ -18,6 +18,7 @@ import { LEVEL_ICON } from './levels'
 import { changedSections, type SectionId } from './menuModel'
 import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
 import { TipCard } from '../tips/TipCard'
+import { PersonaFace } from '../../art/PersonaFace'
 import { SkirmishArt } from './MenuArt'
 import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Mayhem, Role, Spell } from '../../engine/rules/types'
@@ -268,7 +269,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const voices: SegOption<PersonaChoice>[] = [
     { value: 'none', label: 'Nameless', hint: 'No voice: just the AI.' },
     { value: 'random', label: 'Random', hint: 'A named opponent chosen when the game starts.' },
-    ...PERSONAS.map((p) => ({ value: p.id, label: p.name, hint: `${p.fullName}, ${p.title}` })),
+    ...PERSONAS.map((p) => ({ value: p.id, label: p.name, face: <PersonaFace id={p.id} />, hint: `${p.fullName}, ${p.title}` })),
   ]
   const voiceNote = persona === 'none' ? 'No voice: just the AI.'
     : persona === 'random' ? 'A named opponent chosen when the game starts.'

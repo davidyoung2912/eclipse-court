@@ -3,6 +3,9 @@ import { PieceArt } from '../../art/PieceArt'
 import { IconShape, type IconName } from './icons'
 
 /** Deterministic scatter so the sky is the same on every visit. */
+/** Drifting motes, each with its own lane, speed and size. */
+const MOTES = Array.from({ length: 12 }, (_, i) => ({ x: (i * 53.7) % 320, y: 20 + ((i * 37) % 110), r: 0.8 + (i % 3) * 0.5, d: 5 + (i % 5) * 1.6, o: -(i * 0.9) }))
+
 const SKY = Array.from({ length: 28 }, (_, i) => ({
   x: (i * 47.3) % 320,
   y: (i * 29.1 + (i % 4) * 9) % 96,
@@ -28,6 +31,9 @@ function Sky({ id }: { id: string }) {
       </defs>
       <rect width="320" height="150" fill={`url(#${id}-sky)`} />
       {SKY.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fbf1d4" opacity="0.5" className={i % 2 ? 'art-star' : undefined} style={i % 2 ? { animationDelay: `${(i * 0.37) % 3}s` } : undefined} />)}
+      {MOTES.map((m, i) => <circle key={`m${i}`} cx={m.x} cy={m.y} r={m.r} fill={i % 2 ? '#c9b6ff' : '#ffd77a'} className="art-mote" style={{ animationDuration: `${m.d}s`, animationDelay: `${m.o}s` }} />)}
+      <path d="M-20,0L20,8" stroke="#fbf1d4" strokeWidth="1.4" strokeLinecap="round" className="art-shoot" />
+      <path d="M-20,0L20,8" stroke="#fbf1d4" strokeWidth="1.4" strokeLinecap="round" className="art-shoot art-shoot-b" />
     </>
   )
 }

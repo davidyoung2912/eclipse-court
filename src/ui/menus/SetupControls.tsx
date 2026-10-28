@@ -5,6 +5,8 @@ export interface SegOption<T extends string | number> {
   value: T
   label: string
   icon?: IconName
+  /** A small round picture shown in place of the icon, such as an opponent's face. */
+  face?: ReactNode
   /** One line shown under the control while this option is selected. */
   hint?: string
   disabled?: boolean
@@ -29,7 +31,7 @@ export function Segmented<T extends string | number>({ label, options, value, on
         {options.map((o) => (
           <button key={o.value} type="button" role="radio" aria-checked={o.value === value} disabled={o.disabled}
             className={o.value === value ? 'on' : ''} title={o.hint} onClick={() => onChange(o.value)}>
-            {o.locked ? <Icon name="lock" /> : o.icon && <Icon name={o.icon} />}{o.label}
+            {o.locked ? <Icon name="lock" /> : o.face ? <span className="seg-face">{o.face}</span> : o.icon && <Icon name={o.icon} />}{o.label}
           </button>
         ))}
       </div>

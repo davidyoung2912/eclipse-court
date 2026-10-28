@@ -137,6 +137,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   const coop = !!context?.coop
   const [net, setNet] = useState(() => session?.view() ?? null)
   const [history, setHistory] = useState<Step[]>(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }])
+  const [quitAsk, setQuitAsk] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [options, setOptions] = useState<DuelOptions>({ mirror: false, aimAssist: true, haptics: true })
   const [duelMode, setDuelMode] = useState<DuelMode>('live')
@@ -814,8 +815,17 @@ export function Game({ controllers, opening, record, session, context, coach, fi
           {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />Danger</button>}
           {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{hintMode === 'three' ? ` (${hintsLeft} left)` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
-          <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
+          <button className="back" onClick={() => { if (ended) onExit(null, recordOf(history)); else setQuitAsk(true) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
+        {quitAsk && !ended && (
+          <div className="confirm" role="dialog" aria-label={online ? 'Confirm resign' : 'Confirm quit'}>
+            <p className="confirm-title">{online ? 'Resign this game? Your opponent wins.' : 'Quit this game? Your progress is kept only as an unfinished game.'}</p>
+            <div className="buttons">
+              <button onClick={() => setQuitAsk(false)}><Icon name="close" />Keep Playing</button>
+              <button className="primary" onClick={() => { setQuitAsk(false); if (online) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online ? 'Resign' : 'Quit'}</button>
+            </div>
+          </div>
+        )}
         {blunder && !pending && (
           <div className="confirm" role="dialog" aria-label="Confirm move">
             <p className="confirm-title">{blunder.text}</p>

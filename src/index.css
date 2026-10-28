@@ -642,6 +642,20 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-turn { to { transform: rotate(360deg); } }
 @keyframes art-march { to { stroke-dashoffset: -20; } }
 @keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
+/* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
+.menu-art .art-mote { animation: art-mote 7s ease-in-out infinite; }
+.menu-art .art-shoot { opacity: 0; animation: art-shoot 7s ease-in infinite; }
+.menu-art .art-shoot-b { animation-delay: -3.6s; animation-duration: 9s; }
+.menu-art .art-glow { animation-duration: 3.4s; }
+.menu-art .art-bob { animation-name: art-bob, art-sway; animation-duration: 2.6s, 5.2s; }
+.menu-art .art-burst { animation-name: art-pulse, art-flicker; animation-duration: 1.4s, 0.9s; }
+.menu-art .art-spin { animation-duration: 18s; }
+.menu-art .art-star { animation-duration: 1.9s; }
+@keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
+@keyframes art-shoot { 0% { transform: translate(-30px, -10px); opacity: 0; } 4% { opacity: 1; } 14% { transform: translate(340px, 80px); opacity: 0; } 100% { transform: translate(340px, 80px); opacity: 0; } }
+@keyframes art-sway { 50% { rotate: 2.5deg; } }
+@keyframes art-flicker { 50% { opacity: 0.7; } }
+.menu-art .art-shoot, .menu-art .art-mote { transform-box: view-box; }
 [data-motion='reduced'] .menu-art * { animation: none; }
 @media (prefers-reduced-motion: reduce) { .menu-art * { animation: none; } }
 .menu h2 {
@@ -788,6 +802,8 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   border-radius: 10px; border: 1px solid rgba(154, 124, 240, 0.35); color: var(--fg); font-size: 0.95rem;
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.9), rgba(43, 36, 104, 0.9));
 }
+.setup-seg .seg-face { width: 30px; height: 30px; flex: none; border-radius: 50%; overflow: hidden; border: 1px solid rgba(251, 241, 212, 0.5); display: inline-flex; background: #120d2a; }
+.setup-seg .seg-face > * { width: 100%; height: 100%; object-fit: cover; }
 .setup-seg button.on { border-color: var(--solari-gold); background: linear-gradient(180deg, rgba(232, 182, 74, 0.34), rgba(232, 182, 74, 0.12)), rgb(26, 20, 62); font-weight: 700; }
 .setup-seg button:disabled { opacity: 0.35; }
 .setup-hint { margin: 0; font-size: 0.8rem; line-height: 1.4; opacity: 0.75; }
