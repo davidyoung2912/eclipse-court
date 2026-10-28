@@ -72,6 +72,8 @@ export interface Fx {
   theme: Theme
   /** Seconds since the duel opened, running even while the simulation is frozen. */
   t: number
+  /** Seconds since the fight began, which is after the countdown; the opening call keys off this. */
+  call: number
   particles: Particle[]
   motes: Mote[]
   flash: [number, number]
@@ -99,7 +101,7 @@ export function createFx(look: DuelLook): Fx {
       ph: Math.random() * 6.28, r: 0.025 + Math.random() * 0.04,
     })
   }
-  return { look, theme, t: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null] }
+  return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null] }
 }
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10)
@@ -770,8 +772,8 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   vg.addColorStop(1, 'rgba(0, 0, 0, 0.6)')
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
-  if (t > 0.1 && t < 1) {
-    const k = (t - 0.1) / 0.9
+  if (fx.call > 0.1 && fx.call < 1) {
+    const k = (fx.call - 0.1) / 0.9
     ctx.globalAlpha = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8
     unflip(w / 2, h / 2, () => {
       const pop = calm ? 1 : 1.4 - 0.4 * Math.min(1, k * 5)

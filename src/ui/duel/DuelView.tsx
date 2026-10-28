@@ -211,6 +211,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       }
       drums.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
+      if (started.current) fx.call += dt
       updateFx(fx, state, dt, events)
       drawDuel(ctx, fx, state, w, h, dpr, shake, flip)
       hudTick += dt
