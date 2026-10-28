@@ -1150,3 +1150,26 @@ svg.board:focus { outline: none; }
 .gauntlet-menu .draft { background: rgba(32, 26, 78, 0.94); border: 1px solid rgba(154, 124, 240, 0.4); }
 
 .role-goals { margin-bottom: 10px; }
+
+/* Wide screens (tablets, desktops, phones on their side): the board sits beside the tray instead of above it. */
+@media (min-width: 900px) and (min-height: 480px) and (orientation: landscape) {
+  .app.timed {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    grid-auto-rows: min-content;
+    align-content: start;
+    column-gap: 20px;
+    max-width: 1180px;
+    overflow-y: auto;
+  }
+  .app.timed > * { grid-column: 2; }
+  .app.timed > .board {
+    grid-column: 1;
+    grid-row: 1 / span 24;
+    align-self: center;
+    justify-self: center;
+    width: min(100%, calc(100vh - 24px - var(--bottom-gap)));
+    max-height: none;
+  }
+  .app.timed > .tray { margin-top: 0; }
+}
