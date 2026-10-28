@@ -5,6 +5,8 @@ import { overall, percent, sections, totals } from '../../statsModel'
 import { storySnapshot, subscribeStory } from '../../story'
 import { claimMastery, levelReward, masterySnapshot, SHOWCASE_SLOTS, standings, subscribeMastery, togglePin } from '../../mastery'
 import { ladderSnapshot, subscribeLadder } from '../../ladder'
+import { recordsSnapshot, subscribeRecords } from '../../records'
+import { rushBest } from '../../rush'
 import { rankOf } from '../../engine/data/ladder'
 import { Bar } from './Bar'
 import { shareLink } from '../../share'
@@ -27,6 +29,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
   const ladder = useSyncExternalStore(subscribeLadder, ladderSnapshot)
+  const records = useSyncExternalStore(subscribeRecords, recordsSnapshot)
   const [claimed, setClaimed] = useState<number | null>(null)
   const tracks = standings(progress, mastery)
   const owed = tracks.reduce((n, t) => n + t.owed, 0)
@@ -35,6 +38,16 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const done = overall(list)
   const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) },
     ...(ladder.games > 0 ? [{ label: `Ladder rating (${rankOf(ladder.rating)})`, value: String(ladder.rating) }] : [])]
+  const bests = [
+    ...(ladder.games > 0 ? [{ label: 'Ladder peak', value: String(ladder.peak) }] : []),
+    ...(progress.daily.best > 0 ? [{ label: 'Longest daily streak', value: `${progress.daily.best} days` }] : []),
+    ...(records.bestStreak > 0 ? [{ label: 'Longest win streak', value: String(records.bestStreak) }] : []),
+    ...(records.fastestWin > 0 ? [{ label: 'Fastest win', value: `${records.fastestWin} rounds` }] : []),
+    ...(records.flawless > 0 ? [{ label: 'Flawless wins', value: String(records.flawless) }] : []),
+    ...(records.mostTaken > 0 ? [{ label: 'Most pieces taken in a game', value: String(records.mostTaken) }] : []),
+    ...(progress.gauntlet.best > 0 ? [{ label: 'Furthest gauntlet stage', value: String(progress.gauntlet.best) }] : []),
+    ...(rushBest() > 0 ? [{ label: 'Puzzle Rush best', value: String(rushBest()) }] : []),
+  ]
   return (
     <main className="app menu">
       <PageArt icon="trophy" />
@@ -53,6 +66,12 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
       <dl className="stat-tiles">
         {tiles.map(({ label, value }) => <div key={label}><dd>{value}</dd><dt>{label}</dt></div>)}
       </dl>
+      {bests.length > 0 && (
+        <details className="stat-section" open>
+          <summary><h3><Icon name="trophy" />Personal bests</h3></summary>
+          <dl className="stat-rows">{bests.map((b) => <div key={b.label}><dt>{b.label}</dt><dd>{b.value}</dd></div>)}</dl>
+        </details>
+      )}
       {list.map((section) => (
         <details key={section.id} className="stat-section" open>
           <summary>

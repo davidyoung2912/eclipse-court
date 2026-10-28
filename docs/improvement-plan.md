@@ -13,3 +13,13 @@ Verification per phase: `npm run test`, `npm run lint`, `npx tsc -b`, `npm run b
 9. **Rivals** – head-to-head record against each ladder foe, shown on the ladder.
 10. **Online quick-chat + draw offer** – two new protocol messages.
 11. **Personal records** – best ladder peak, fastest win, best streaks on the Stats screen.
+
+## Status
+
+All eleven phases are implemented, each in its own commit. Notes on scope:
+- Phase 3: take-backs already existed offline; they are now locked in the daily, weekly and ladder games.
+- Phase 4: "Review Game" on the game-over dialog and "Play On From Here" in the replay (an unrecorded try-out).
+- Phase 5: the daily court alternates by day; results share as a symbol grid.
+- Phase 6: puzzle codes were already covered by challenge codes and the editor, so only Puzzle Rush was added.
+- Phase 7: no promotion series; seasons soft-reset the rating halfway and keep each season's peak.
+- Phase 10: protocol version bumped to 2 (old builds are refused as a version mismatch).

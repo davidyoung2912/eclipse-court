@@ -15,6 +15,7 @@ import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
+import { recordGameResult } from './records'
 import { claimBounties } from './bounties'
 import { recordRush, rushOrder, RUSH_SHARD_CAP } from './rush'
 import { CLASSIC_ROLES } from './engine/data/draft'
@@ -578,6 +579,7 @@ export default function App() {
     const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
       const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
       if (settled.summary) rememberCourt(human)
+      if (settled.summary && stats) recordGameResult(settled.summary)
       let extra: ReturnType<typeof recordWeekly> | null = null
       if (weekly && stats && settled.summary) extra = recordWeekly(weeklyToday.week, weeklyScore(settled.summary), settled.summary.won)
       const foe = ladder ? foeById(ladder) : undefined
