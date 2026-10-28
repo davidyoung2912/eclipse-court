@@ -4,15 +4,17 @@ import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import { rngNext } from '../rng'
 import { otherCourt } from '../rules/board'
 import { DAYS, type CycleId } from '../rules/luminance'
+import { legacyLoadout, legacyRoles, legacyRules, type Legacy } from './legacy'
 import type { Court, MatchConfig, MatchMode, Mayhem, Role, Spell, TurnClock } from '../rules/types'
 
-export type SetupMode = 'classic' | 'draft' | 'random' | 'daily'
+export type SetupMode = 'classic' | 'draft' | 'random' | 'daily' | 'legacy'
 
 export const SETUP_INFO: Record<SetupMode, { name: string; text: string }> = {
   classic: { name: 'Classic', text: 'The standard army, mirrored.' },
   draft: { name: 'Draft', text: 'Spend a budget on your own army; the AI drafts its own.' },
   random: { name: 'Random', text: 'A random army, the same for both courts.' },
   daily: { name: 'Daily', text: "Today's board and army, the same for everyone." },
+  legacy: { name: 'Legacy', text: 'The veterans, perks, spells and relics of your last Gauntlet run; the AI drafts its own.' },
 }
 
 /** The day number of a `dailySeed`, counted the same way everywhere so that consecutive days differ by one. */
@@ -29,6 +31,8 @@ export interface SetupChoice {
   size?: 9
   /** The human's drafted army, for `draft`. */
   roles?: readonly Role[]
+  /** The army a Gauntlet run left behind, for `legacy`. */
+  legacy?: Legacy
   /** The human's chosen spells; the classic seven when absent. */
   loadout?: readonly Spell[]
   /** Spells return to their Leader after this many rounds; one-use when absent. */
@@ -170,16 +174,24 @@ export interface FoeChoice {
 export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, foe: FoeChoice = {}, date = new Date()): MatchConfig {
   const foeRoles = foe.roles ?? []
   const grand = choice.size === 9
-  const mode = grand ? 'classic' : choice.mode
+  // A Legacy setup without a Legacy to bring is a classic one.
+  const mode = grand || (choice.mode === 'legacy' && !choice.legacy) ? 'classic' : choice.mode
   const seeded = mode === 'daily' ? dailySeed(date) : seed
   const board = grand ? grandBoardById(choice.board) : boardById(mode === 'daily' ? BOARDS[Math.floor(rngNext(seeded)[0] * BOARDS.length)].id : choice.board)
   const base: MatchConfig = grand
     ? grandConfig({ seed: seeded, setup: mode }, board.id)
     : { ...DEFAULT_CONFIG, seed: seeded, beacons: board.beacons, blocked: board.blocked, cells: board.cells, setup: mode, board: board.id }
+  const legacy = mode === 'legacy' ? choice.legacy : undefined
+  if (legacy) Object.assign(base, legacyRules(legacy), { growth: true })
   if (choice.spells) base.loadouts = { solari: choice.spells, umbral: choice.spells }
   else if (choice.loadout) {
     const mine = choice.loadout
     const theirs = foe.loadout ?? choice.loadout
+    base.loadouts = human === 'solari' ? { solari: mine, umbral: theirs } : { solari: theirs, umbral: mine }
+  }
+  else if (legacy) {
+    const mine = legacyLoadout(legacy, human)
+    const theirs = foe.loadout ?? mine
     base.loadouts = human === 'solari' ? { solari: mine, umbral: theirs } : { solari: theirs, umbral: mine }
   }
   if (choice.recharge) base.recharge = choice.recharge
@@ -197,8 +209,8 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.mayhem?.length) base.mayhem = choice.mayhem
   if (choice.passives === false) base.passives = false
   if (mode === 'classic') return base
-  if (mode === 'draft') {
-    const mine = arrange(choice.roles ?? [])
+  if (mode === 'draft' || legacy) {
+    const mine = arrange(legacy ? legacyRoles(legacy) : choice.roles ?? [])
     const theirs = arrange(foeRoles)
     return { ...base, layout: human === 'solari' ? mine : theirs, umbralLayout: human === 'solari' ? theirs : mine }
   }

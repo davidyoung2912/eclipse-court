@@ -53,6 +53,8 @@ import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { recordAscension } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
+import { saveLegacy } from './legacy'
+import { legacyOf, withLegacy } from './engine/data/legacy'
 import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
 import { Story } from './ui/menus/Story'
@@ -209,9 +211,10 @@ function takeLinkScreen(): Screen | null {
 function skirmishRecord(setup: SetupChoice, human: Court, difficulty: Difficulty, hotSeat: boolean, seed: number): GameRecord {
   const config = skirmishConfig(setup, human, seed, hotSeat ? {} : {
     roles: aiDraft(seed, difficulty),
-    loadout: setup.loadout && aiLoadout(seed, otherCourt(human)),
+    loadout: (setup.loadout || setup.legacy) && aiLoadout(seed, otherCourt(human)),
   })
-  return { initial: newGame(config), actions: [] }
+  const initial = newGame(config)
+  return { initial: config.setup === 'legacy' && setup.legacy ? withLegacy(initial, setup.legacy, human) : initial, actions: [] }
 }
 
 export default function App() {
@@ -229,6 +232,8 @@ export default function App() {
   const closeRun = (ended: Run, stage: number, won: boolean) => {
     const out = recordAscension(ended, stage, won)
     earnShards(out.shards)
+    const legacy = legacyOf(ended)
+    if (legacy && saveLegacy(legacy)) out.lines.push('Your army is kept as a Legacy: pick Legacy under Army in Skirmish to field it.')
     setRunText(runSummary(ended, stage, won))
     return out.lines
   }

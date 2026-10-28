@@ -10,13 +10,13 @@ const PERKS: readonly Perk[] = ['might', 'ward', 'vigour']
 
 const isInt = (v: unknown, max = 1e9): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max
 
-function piece(v: unknown): RunPiece | null {
+export function piece(v: unknown): RunPiece | null {
   const o = v as Partial<RunPiece> | null
   if (!o || !ROLES.includes(o.role as Role) || !isInt(o.wins, 99) || !isInt(o.bonus, 9)) return null
   return { role: o.role!, wins: o.wins, bonus: o.bonus, ...(PERKS.includes(o.perk as Perk) ? { perk: o.perk } : {}) }
 }
 
-function pieces(v: unknown, max: number): RunPiece[] | null {
+export function pieces(v: unknown, max: number): RunPiece[] | null {
   if (!Array.isArray(v) || v.length > max) return null
   const out = v.map(piece)
   return out.every((p) => p !== null) ? (out as RunPiece[]) : null

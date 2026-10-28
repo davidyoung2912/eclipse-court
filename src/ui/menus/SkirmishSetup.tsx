@@ -25,6 +25,9 @@ import { bountiesFor } from '../../engine/data/bounties'
 import { claimedOn } from '../../bounties'
 import { dailySeed } from '../../engine/data/setups'
 import { BackButton } from './BackButton'
+import { type Legacy } from '../../engine/data/legacy'
+import { loadLegacy } from '../../legacy'
+import { VETERAN_WINS } from '../../engine/rules/growth'
 import { bool, list, loadChoices, oneOf, saveChoices } from '../../lastChoices'
 import { MAX_NAME, MAX_SAVED_PRESETS, deletePreset, loadPresets, savePreset, type SavedPreset } from '../../savedPresets'
 
@@ -42,6 +45,8 @@ interface Props {
   challengeLink: (human: Court, difficulty: Difficulty, setup: SetupChoice, hotSeat: boolean) => string
   onBack: () => void
 }
+
+const legacyVeterans = (l: Legacy) => [l.leader, ...l.army].filter((p) => p.wins >= VETERAN_WINS).length
 
 /** Rounds before a cast spell returns, when recharging is on. */
 const RECHARGE_ROUNDS = 8
@@ -74,6 +79,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const startBoard = oneOf(saved.boardId, startBoards.map((b) => b.id).filter((id) => boardUnlocked(progress, id)), startGrand ? GRAND_BOARDS[0].id : 'classic')
   const startTwo = !onHost && bool(saved.twoPlayers, false)
   const startMode = oneOf(saved.mode, Object.keys(SETUP_INFO) as SetupMode[], 'classic')
+  const [legacy] = useState<Legacy | null>(loadLegacy)
   const startRoles = list(saved.roles, DRAFT_ROLES)
   const startPreset = typeof saved.presetId === 'string' ? presetById(saved.presetId) : undefined
   const [court, setCourt] = useState<Court>(() => oneOf<Court>(saved.court, ['solari', 'umbral'], 'solari'))
@@ -82,7 +88,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const [online, setOnline] = useState(!!onHost)
   /** Hot seat and online both pit two people, so neither can draft an army or pick a loadout; the AI is not used. */
   const hotSeat = twoPlayers || online
-  const [mode, setMode] = useState<SetupMode>(() => (startGrand ? 'classic' : startMode === 'draft' && (startTwo || onHost) ? 'classic' : startMode))
+  const [mode, setMode] = useState<SetupMode>(() => (startGrand ? 'classic' : (startMode === 'draft' || startMode === 'legacy') && (startTwo || onHost) ? 'classic' : startMode === 'legacy' && !legacy ? 'classic' : startMode))
   const [boardId, setBoardId] = useState(startBoard)
   const [grand, setGrand] = useState(startGrand)
   const [roles, setRoles] = useState<Role[]>(() => (startRoles && !draftProblem(startRoles) ? startRoles : [...CLASSIC_ROLES]))
@@ -121,6 +127,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const reveal = (...ids: SectionId[]) => setOpenSections((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, true])) }))
   const choice = (): SetupChoice => ({
     mode: grand ? 'classic' : mode, board: boardId, roles,
+    ...(mode === 'legacy' && legacy ? { legacy } : {}),
     ...(grand ? { size: 9 as const } : {}),
     loadout: spellMode === 'loadout' ? loadout : undefined,
     recharge: recharge ? RECHARGE_ROUNDS : undefined,
@@ -151,7 +158,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     const wantMode = oneOf(c.mode, Object.keys(SETUP_INFO) as SetupMode[], 'classic')
     setGrand(wantGrand)
     setBoardId(oneOf(c.boardId, boards.map((b) => b.id).filter((id) => boardUnlocked(progress, id)), wantGrand ? GRAND_BOARDS[0].id : 'classic'))
-    setMode(wantGrand || (wantMode === 'draft' && hotSeat) ? 'classic' : wantMode)
+    setMode(wantGrand || ((wantMode === 'draft' || wantMode === 'legacy') && hotSeat) || (wantMode === 'legacy' && !legacy) ? 'classic' : wantMode)
     setRoles(picked && !draftProblem(picked) ? picked : [...CLASSIC_ROLES])
     const wantLoadout = list(c.loadout, spellPool(court))
     const useLoadout = !hotSeat && c.spellMode === 'loadout' && !!wantLoadout && wantLoadout.length <= LOADOUT_SIZE
@@ -215,6 +222,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     draft: `Your drafted army: ${roles.length + 1} pieces for ${draftCost(roles)} points. The AI drafts its own.`,
     random: 'A fresh random army, the same for both courts.',
     daily: "Today's board and army, identical for every player today.",
+    legacy: legacy ? `Your Gauntlet army: ${legacy.army.length + 1} pieces, ${legacyVeterans(legacy)} veterans, ${legacy.relics.length} relics. Pieces keep their rank and perks, and growth is on.` : 'Finish a Gauntlet run with a veteran to field its army here.',
   }[mode]
   const boardLabel = !grand && mode === 'daily' ? 'the daily board' : `${board.name} board`
   const changed = new Set(changedSections({
@@ -256,7 +264,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const opponents: SegOption<Difficulty>[] = DIFFICULTY_LIST.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1), icon: LEVEL_ICON[d], hint: LEVEL_TEXT[d] }))
   const tiers: SegOption<RulesetId>[] = RULESETS.map((t) => ({ value: t.id, label: t.name, icon: t.icon, hint: t.text }))
   const armies: SegOption<SetupMode>[] = (Object.keys(SETUP_INFO) as SetupMode[]).map((m) => ({
-    value: m, label: SETUP_INFO[m].name, hint: SETUP_INFO[m].text, disabled: hotSeat && m === 'draft',
+    value: m, label: SETUP_INFO[m].name, hint: SETUP_INFO[m].text, disabled: (hotSeat && (m === 'draft' || m === 'legacy')) || (m === 'legacy' && !legacy),
   }))
   const shownBoards = grand ? GRAND_BOARDS : BOARDS
   const boards: SegOption<string>[] = shownBoards.map((b) => ({
@@ -306,7 +314,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
       <Segmented label="Players" options={players} value={online ? 'online' : twoPlayers ? 'two' : 'one'} onChange={(v) => {
         setTwoPlayers(v === 'two')
         setOnline(v === 'online')
-        if (v === 'two') { setSpellMode('classic'); if (mode === 'draft') setMode('classic') }
+        if (v === 'two') { setSpellMode('classic'); if (mode === 'draft' || mode === 'legacy') setMode('classic') }
       }} />
       {!twoPlayers && <h3>Your court</h3>}
       {!twoPlayers && <CourtPicker value={court} onChange={(c) => { setCourt(c); setLoadout([]) }} />}
@@ -346,7 +354,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         <Segmented label="Board size" options={sizes} value={grand ? 'grand' : 'standard'} onChange={setSize}
           note={grandOpen ? undefined : `Grand 9x9: earn ${GRAND_STARS} campaign stars to unlock.`} />
         {open('army') && !grand && <Segmented label="Army" options={armies} value={mode} onChange={(m) => { setMode(m); if (m === 'draft') reveal('army') }}
-          note={hotSeat ? `${SETUP_INFO[mode].text} Draft isn't available with two players.` : undefined} />}
+          note={hotSeat ? `${SETUP_INFO[mode].text} Draft and Legacy aren't available with two players.` : !legacy ? `${SETUP_INFO[mode].text} Legacy opens once a Gauntlet run leaves a veteran.` : undefined} />}
         {!grand && mode === 'draft' && open('army') && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
         <Segmented label="Board" options={boards} value={boardId} onChange={setBoardId} note={boardNote} />
       </Section>
