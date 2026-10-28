@@ -32,6 +32,10 @@ import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import { narrate } from './narrate'
+import { newBanter, speak, triggerFor, type BanterState } from './banter'
+import { personaById } from './engine/data/personas'
+import type { LineCategory } from './engine/data/personaLines'
+import { PersonaBubble } from './ui/tray/PersonaBubble'
 import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
 import { useHint } from './hooks/useHint'
@@ -97,6 +101,9 @@ const COURT_NAME: Record<Court, string> = { solari: 'Solari', umbral: 'Umbral' }
 /** How long "Your Turn" / "AI Turn" stays up between players. */
 const TURN_BANNER_MS = 1000
 
+/** How long the player may think before a named opponent says something. */
+const IDLE_MS = 45_000
+
 function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
   if (defenderHp <= 0) return attackerHp > 0 ? 'attacker won' : 'both fell'
   return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
@@ -138,6 +145,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     return last.winner ? null : { court: last.turn }
   })
   /** The AI's reason for its latest move, shown while it is the player's turn (hidden once undone past it). */
+  const [bubble, setBubble] = useState<string | null>(null)
+  const banter = useRef<BanterState>(newBanter(record.initial.config.seed))
   const [aiWhy, setAiWhy] = useState<{ at: number; text: string } | null>(null)
   /** The puzzle briefing waits for Got It! before play can begin; a resumed puzzle has been briefed already. */
   const [briefing, setBriefing] = useState(!!puzzle && record.actions.length === 0)
@@ -150,6 +159,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const aiFoe = typeof foeController === 'object' ? foeController : null
   const difficulty = aiFoe ? aiFoe.ai : 'normal'
   const personality = aiFoe?.personality
+  /** The named opponent whose voice speaks in the fight, if the foe has one. */
+  const persona = aiFoe?.persona ? personaById(aiFoe.persona) : undefined
   /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
   const even = hotSeat || online || !!mail
   /** The fight-difficulty setting only tunes fights against the AI; games between people stay even. */
@@ -332,6 +343,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     const steps = [...history, { state: s, action }]
     setHistory(steps)
     celebrate(steps, state, s)
+    say(steps, state, action, s)
     if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
     setSettled(null)
     setSelectedId(null)
@@ -450,6 +462,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
 
   const undo = () => {
     turnClock.reset()
+    setBubble(null)
     if (hotSeat) {
       // Take back the last move, whoever made it.
       const earlier = history.slice(0, -1)
@@ -525,6 +538,31 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     clearHint()
   }
 
+  /** The named opponent reacts to what just happened, if there is one and it is not a game between people. */
+  function say(steps: Step[], before: GameState, action: Action, after: GameState) {
+    if (!persona || even) return
+    const side = foe
+    const first = !steps.slice(0, -2).some((s) => s.state.turn === side)
+    const category = triggerFor(before, action, after, side, first)
+    if (category) talk(category, steps.length - 1)
+  }
+  function talk(category: LineCategory, ply: number) {
+    if (!persona) return
+    const said = speak(banter.current, persona.id, category, ply)
+    if (!said) return
+    banter.current = said.banter
+    setBubble(said.line)
+  }
+
+  // A long think earns a nudge, once per turn.
+  useEffect(() => {
+    if (!persona || even || !myTurn || ended || banner || history.length < 2) return
+    const timer = setTimeout(() => talk('idle', history.length - 1), IDLE_MS)
+    return () => clearTimeout(timer)
+    // talk is read fresh; only a new turn should restart the wait.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [persona, even, myTurn, ended, banner, history.length])
+
   const [coaching, setCoaching] = useState(false)
   const dusk = musicLevel(state)
   const eclipseFallen = state.eclipse && !state.winner
@@ -534,6 +572,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
+      {persona && bubble && !even && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />

@@ -1,16 +1,17 @@
 import type { PersonalityId } from './engine/data/personality'
+import type { PersonaId } from './engine/data/personas'
 import type { AiLevel } from './ai/profile'
 import { otherCourt } from './engine/rules/board'
 import type { Court } from './engine/rules/types'
 
 /** Who plays a court: a person at the screen, a person across an online connection, or the AI at a difficulty. */
-export type Controller = 'human' | 'online' | { ai: AiLevel; personality?: PersonalityId }
+export type Controller = 'human' | 'online' | { ai: AiLevel; personality?: PersonalityId; /** A named opponent whose voice speaks in the fight. */ persona?: PersonaId }
 
 export type Controllers = Record<Court, Controller>
 
 /** One person against the AI. */
-export function versusAi(human: Court, difficulty: AiLevel, personality?: PersonalityId): Controllers {
-  const foe: Controller = personality ? { ai: difficulty, personality } : { ai: difficulty }
+export function versusAi(human: Court, difficulty: AiLevel, personality?: PersonalityId, persona?: PersonaId): Controllers {
+  const foe: Controller = { ai: difficulty, ...(personality && { personality }), ...(persona && { persona }) }
   return { [human]: 'human', [otherCourt(human)]: foe } as Controllers
 }
 
