@@ -196,7 +196,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   font-size: 2.4rem; font-weight: 800; text-shadow: 0 2px 12px #000;
 }
 .duel-controls { flex: 0 0 auto; }
-.duel-info { flex: 0 0 auto; padding: 10px 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
+.duel-info { flex: 0 0 auto; padding: 10px 14px; border-radius: 10px; background: rgb(33, 26, 78); border: 1px solid rgba(255, 255, 255, 0.14); }
 .duel-info h3 { margin: 0 0 4px; font-family: var(--display); font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .duel-info ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5; opacity: 0.9; }
 .duel-countdown {
@@ -456,7 +456,7 @@ body:has(.puzzles-menu) {
 .campaign .choice { width: 100%; }
 .result { z-index: 20; }
 
-.lesson { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(122, 92, 200, 0.22); }
+.lesson { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(rgba(122, 92, 200, 0.22), rgba(122, 92, 200, 0.22)), rgb(26, 20, 62); }
 .lesson { display: grid; }
 .lesson > * { grid-area: 1 / 1; }
 .lesson-hidden { visibility: hidden; }
@@ -504,7 +504,7 @@ body:has(.puzzles-menu) {
 .wall rect { fill: #2a2347; stroke: #5b4f8f; stroke-width: 0.04; }
 .wall path { fill: none; stroke: #5b4f8f; stroke-width: 0.03; }
 
-.draft { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: rgba(122, 92, 200, 0.17); }
+.draft { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: linear-gradient(rgba(122, 92, 200, 0.2), rgba(122, 92, 200, 0.2)), rgb(26, 20, 62); }
 .draft-head { display: flex; justify-content: space-between; font-size: 0.85rem; }
 .draft-head .over { color: #ff8a8a; }
 .draft-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
@@ -650,7 +650,7 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .pass-screen.umbral strong { color: #d9ccff; }
 .pass-screen span { font-size: 1rem; opacity: 0.8; }
 
-.code-box { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.35); color: inherit; font: 0.8rem monospace; word-break: break-all; }
+.code-box { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgb(14, 10, 34); color: inherit; font: 0.8rem monospace; word-break: break-all; }
 ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -695,7 +695,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .setup-seg button:disabled { opacity: 0.35; }
 .setup-hint { margin: 0; font-size: 0.8rem; line-height: 1.4; opacity: 0.75; }
 .setup-presets .choice { flex: 1 1 45%; }
-.setup-section { border-radius: 10px; border: 1px solid rgba(154, 124, 240, 0.35); background: rgba(43, 36, 104, 0.4); }
+.setup-section { border-radius: 10px; border: 1px solid rgba(154, 124, 240, 0.35); background: rgb(33, 26, 78); }
 .setup-section summary {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; cursor: pointer; list-style: none;
 }
@@ -879,10 +879,10 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .bar.thin { height: 4px; grid-column: 1 / -1; }
 .bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--umbral-violet), var(--solari-gold)); }
 .stat-tiles { width: 100%; max-width: 420px; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.stat-tiles div { display: flex; flex-direction: column-reverse; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); text-align: center; }
+.stat-tiles div { display: flex; flex-direction: column-reverse; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgb(36, 28, 84); text-align: center; }
 .stat-tiles dd { margin: 0; font-weight: 700; font-size: 1.05rem; color: var(--solari-cream); }
 .stat-tiles dt { font-size: 0.66rem; opacity: 0.7; line-height: 1.2; }
-.stat-section { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(154, 124, 240, 0.4); background: rgba(29, 23, 69, 0.64); }
+.stat-section { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(154, 124, 240, 0.4); background: rgb(28, 22, 66); }
 .stat-section summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
 .stat-section summary::-webkit-details-marker { display: none; }
 .stat-section summary h3 { display: flex; align-items: center; gap: 8px; margin: 0; opacity: 1; color: var(--solari-cream); }
@@ -1042,7 +1042,7 @@ body:has(.duel) .play-timer { display: none; }
 /* Onboarding: coaching line in the first battle, advice after losses, first-steps list. */
 .coach-line { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 12px; border-radius: 12px; font-size: 0.85rem; background: rgba(255, 212, 90, 0.14); border: 1px solid rgba(255, 212, 90, 0.6); }
 .coach-line svg { flex: none; width: 1.1em; height: 1.1em; color: #ffd45a; margin-top: 2px; }
-.coach-card, .first-steps { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgba(43, 36, 104, 0.68); border: 1px solid rgba(154, 124, 240, 0.5); font-size: 0.85rem; }
+.coach-card, .first-steps { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgb(33, 26, 78); border: 1px solid rgba(154, 124, 240, 0.5); font-size: 0.85rem; }
 .coach-card p { margin: 0; }
 .coach-card button { align-self: flex-end; }
 .first-steps { position: relative; background: linear-gradient(160deg, rgba(8, 72, 70, 0.97), rgba(4, 42, 44, 0.97)); border-color: rgba(79, 217, 200, 0.55); }
