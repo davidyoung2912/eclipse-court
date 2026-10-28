@@ -22,6 +22,8 @@ import type { PersonalityId } from './engine/data/personality'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { settleGame } from './settleGame'
+import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
+import { Collection } from './ui/menus/Collection'
 import type { Court, GameState } from './engine/rules/types'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
 import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
@@ -71,6 +73,7 @@ type Screen =
   | { name: 'puzzles' }
   | { name: 'practice' }
   | { name: 'settings' }
+  | { name: 'collection' }
   | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
@@ -319,6 +322,8 @@ export default function App() {
 
   if (screen.name === 'practice') return <Practice onPlaytime={addTime} onDuel={(o) => { const next = recordPractice(progressRef.current, o); progressRef.current = next; setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'battle' })} />
 
+  if (screen.name === 'collection') return <Collection onBack={() => setScreen({ name: 'menu' })} />
+
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
@@ -423,14 +428,19 @@ export default function App() {
         const { progress: next, earned } = recordPuzzle(progress, PUZZLES[puzzle!.index].id, puzzle!.daily && puzzle!.index === dailyPuzzleIndex())
         setProgress(next)
         saveProgress(next)
-        setReport(earned.map((a) => `Achievement: ${a.name}`))
+        const shards = (puzzle!.daily && puzzle!.index === dailyPuzzleIndex() ? SHARDS_DAILY_PUZZLE : SHARDS_PUZZLE) + earned.length * 10
+        earnShards(shards)
+        setReport([`Shards: +${shards}.`, ...earned.map((a) => `Achievement: ${a.name}`)])
       } else setReport([])
       setScreen({ name: 'puzzles' })
     }
 
     /** Records a finished game and returns the lines to show about it. */
-    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) =>
-      settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
+    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
+      const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
+      earnShards(settled.shards)
+      return settled
+    }
 
     const finishSeries = (winner: GameState['winner'], finished: GameRecord) => {
       const opponent = CAMPAIGN[campaignIndex!]
@@ -475,12 +485,15 @@ export default function App() {
         const result = recordRun(progress, next.stage, true)
         setProgress(result.progress)
         saveProgress(result.progress)
-        setReport(['The Eclipse Tyrant falls. The run is won!', ...result.earned.map((a) => `Achievement: ${a.name}`)])
+        const shards = SHARDS_GAUNTLET_STAGE + SHARDS_GAUNTLET_WIN + result.earned.length * 10
+        earnShards(shards)
+        setReport(['The Eclipse Tyrant falls. The run is won!', `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)])
         setRun(null)
         clearRun()
         return
       }
-      setReport([`Stage ${run.stage} cleared.`])
+      earnShards(SHARDS_GAUNTLET_STAGE)
+      setReport([`Stage ${run.stage} cleared.`, `Shards: +${SHARDS_GAUNTLET_STAGE}.`])
       setRun(next)
       saveRun(next)
     }
@@ -566,6 +579,6 @@ export default function App() {
         setReport([])
         setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty, record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily: true } })
       }}
-      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onSettings={() => setScreen({ name: 'settings' })} />
+      onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onSettings={() => setScreen({ name: 'settings' })} onCollection={() => setScreen({ name: 'collection' })} />
   )
 }

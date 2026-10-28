@@ -44,9 +44,19 @@ export function unlockAudio() {
   if (c && c.state === 'suspended') void c.resume()
 }
 
+/** The equipped sound pack: a pitch ratio and a wave that replaces the plain tones'. */
+let voice: { pitch: number; wave?: OscillatorType } = { pitch: 1 }
+
+export function setVoice(v: { pitch: number; wave?: OscillatorType }) {
+  voice = v
+}
+
 function tone(freq: number, dur: number, opts: { type?: OscillatorType; gain?: number; delay?: number; to?: number } = {}) {
   const c = audio()
   if (!c || !master || muted) return
+  freq *= voice.pitch
+  if (opts.to) opts = { ...opts, to: opts.to * voice.pitch }
+  if (voice.wave && opts.type !== 'sawtooth') opts = { ...opts, type: voice.wave }
   const t = c.currentTime + (opts.delay ?? 0)
   const o = c.createOscillator()
   const g = c.createGain()

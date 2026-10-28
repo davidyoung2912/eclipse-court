@@ -20,6 +20,7 @@ interface Props {
   onStats: () => void
   onPuzzles: () => void
   onSettings: () => void
+  onCollection: () => void
   onDaily: () => void
   onDailyPuzzle: () => void
   /** Whether today's match and puzzle have been played and solved. */
@@ -89,7 +90,7 @@ interface Card {
   wide?: boolean
 }
 
-export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
@@ -128,6 +129,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       <nav className="utility" aria-label="More">
         <button onClick={onStats}><Icon name="trophy" /><span>Stats</span></button>
+        <button onClick={onCollection}><Icon name="star" /><span>Collection</span></button>
         <button onClick={onSettings}><Icon name="gear" /><span>Settings</span></button>
         <button onClick={onTutorial}><Icon name="book" /><span>How to Play</span></button>
         <button onClick={() => { setMuted(sound); setSound(!sound) }} aria-pressed={sound}>

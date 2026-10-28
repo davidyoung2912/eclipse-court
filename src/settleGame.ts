@@ -9,12 +9,16 @@ import {
   type PlayArea, type Progress,
 } from './progress'
 import type { Summary } from './engine/data/summary'
+import { CAMPAIGN } from './engine/data/campaign'
+import { shardsForGame } from './shop'
 
 export interface Settled {
   summary: Summary | null
   progress: Progress
   /** What to tell the player about the game: stars, achievements, the daily's result. */
   lines: string[]
+  /** Shards earned by the game; the caller adds them to the wallet. */
+  shards: number
 }
 
 interface Context {
@@ -36,7 +40,7 @@ interface Context {
 export function settleGame(progress: Progress, c: Context): Settled {
   const { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats } = c
   const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
-  if (!summary) return { summary: null, lines: [], progress }
+  if (!summary) return { summary: null, lines: [], progress, shards: 0 }
   const area: PlayArea = scenario !== undefined ? 'scenario' : stats && daily ? 'daily' : campaignIndex !== null ? 'campaign' : 'skirmish'
   const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished), area)
   const stars = starsEarned(summary)
@@ -45,17 +49,27 @@ export function settleGame(progress: Progress, c: Context): Settled {
     : null
   let next = scored?.progress ?? played
   const lines: string[] = []
+  const battle = campaignIndex !== null ? CAMPAIGN[campaignIndex] : null
+  const firstClear = battle ? !((progress.battles[battle.id] ?? 0) & STAR_WIN) : scenario !== undefined && !((progress.scenarios[SCENARIOS[scenario].id] ?? 0) & STAR_WIN)
+  let scenarioAchievements = 0
   if (scenario !== undefined && summary.won) {
     const x = SCENARIOS[scenario]
     const bits = STAR_WIN | (summary.lost === 0 ? STAR_FLAWLESS : 0) | (x.bonus.met(summary) ? STAR_SWIFT : 0)
     const result = recordScenario(next, x.id, bits)
     next = result.progress
+    scenarioAchievements = result.earned.length
     lines.push(`Stars: Win${bits & STAR_FLAWLESS ? ', no pieces lost' : ''}${bits & STAR_SWIFT ? `, ${x.bonus.text.toLowerCase()}` : ''}.`, ...result.earned.map((a) => `Achievement: ${a.name}`))
   }
+  const shards = shardsForGame({
+    won: summary.won, draw: summary.draw, difficulty, firstClear, campaign: campaignIndex !== null, scenario: scenario !== undefined,
+    dailyScored: !!scored?.scored, achievements: earned.length + (scored?.earned.length ?? 0) + scenarioAchievements,
+  })
   return {
     summary,
     progress: next,
+    shards,
     lines: [
+      `Shards: +${shards}.`,
       ...(scored?.scored ? [`Daily match scored: ${summary.won ? 'won' : 'lost'} in ${summary.turns} rounds.`] : daily && stats ? ['Daily match: replays are not scored.'] : []),
       ...(scored?.earned ?? []).map((a) => `Achievement: ${a.name}`),
       ...(stats && campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),

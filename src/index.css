@@ -790,3 +790,42 @@ body:has(.duel) .play-timer { display: none; }
 .review-note.grade-best strong, .review-note.grade-good strong { color: #6fe08a; }
 .review-note .link { background: none; border: none; padding: 0; color: var(--solari-gold); text-decoration: underline; font: inherit; cursor: pointer; }
 .review-summary { margin: 6px 0; }
+
+/* Collection: wallet, cost lines and the equipped cosmetics */
+.shard-wallet { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0 8px; font-size: 1.05rem; }
+.shard-wallet .btn-icon { color: var(--solari-gold); }
+.shard-wallet small { opacity: 0.65; margin-left: 6px; }
+.collection-kind h3 { margin: 14px 0 6px; }
+.choice .cost { font-weight: 700; color: var(--solari-gold); opacity: 1; }
+
+/* Capture effect where a piece fell */
+.fall { pointer-events: none; }
+.fall-ring { fill: none; stroke: currentColor; stroke-width: 0.06; transform-origin: center; animation: fall-ring 0.7s ease-out both; }
+.fall-part { stroke: currentColor; stroke-width: 0.05; stroke-linecap: round; animation: fall-part 0.8s ease-out both; }
+@keyframes fall-ring { 0% { opacity: 0.9; transform: scale(0.4); } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes fall-part { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: calc(var(--reach, 0.5) * 0.9px) 0; } }
+:root[data-motion='reduced'] .fall { display: none; }
+
+/* Piece sets: recolour the medallions over the theme */
+:root[data-pieces='gilded'] .art-solari .pane-0, :root[data-pieces='gilded'] .art-umbral .pane-0 { fill: #f3d27a; }
+:root[data-pieces='gilded'] .art-solari .pane-1 { fill: #c8962e; }
+:root[data-pieces='gilded'] .art-solari .pane-2 { fill: #fff4d6; }
+:root[data-pieces='gilded'] .art-umbral .pane-1 { fill: #6e5a2a; }
+:root[data-pieces='gilded'] .art-umbral .pane-2 { fill: #d8c9a0; }
+:root[data-pieces='jade'] .art-solari .pane-0 { fill: #a8e8c4; }
+:root[data-pieces='jade'] .art-solari .pane-1 { fill: #48b884; }
+:root[data-pieces='jade'] .art-solari .pane-2 { fill: #e4fff0; }
+:root[data-pieces='jade'] .art-umbral .pane-0 { fill: #2e7a60; }
+:root[data-pieces='jade'] .art-umbral .pane-1 { fill: #123c30; }
+:root[data-pieces='jade'] .art-umbral .pane-2 { fill: #5ab8a0; }
+:root[data-pieces='mono'] .art-solari .pane-0 { fill: #f2efe6; }
+:root[data-pieces='mono'] .art-solari .pane-1 { fill: #cfc9b8; }
+:root[data-pieces='mono'] .art-solari .pane-2 { fill: #ffffff; }
+:root[data-pieces='mono'] .art-umbral .pane-0 { fill: #3a3a42; }
+:root[data-pieces='mono'] .art-umbral .pane-1 { fill: #16161c; }
+:root[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
+
+/* Codex frames on the story scenes */
+:root[data-codex='gilt'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 0 0 18px rgba(232, 182, 74, 0.3); }
+:root[data-codex='moon'] .story-stage { border-color: #9ec8f0; box-shadow: 0 0 0 2px rgba(158, 200, 240, 0.5), 0 0 18px rgba(158, 200, 240, 0.35); }
+:root[data-codex='ember'] .story-stage { border-color: #f07a4a; box-shadow: 0 0 0 2px rgba(240, 122, 74, 0.5), 0 0 18px rgba(240, 122, 74, 0.35); }

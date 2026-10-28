@@ -5,6 +5,8 @@ export interface Theme {
   id: string
   name: string
   stars: number
+  /** Shards to buy it in the Collection; themes without a cost are free (or open with stars). */
+  cost?: number
   /** CSS custom properties set on the page. */
   vars: Record<string, string>
 }
@@ -33,6 +35,30 @@ export const THEMES: readonly Theme[] = [
       '--solari-gold': '#b8d860', '--solari-cream': '#f2f8d8', '--umbral-indigo': '#16301e', '--umbral-violet': '#4aa878',
       '--bg': '#0d1c12', '--pane-s0': '#c8e070', '--pane-s1': '#7ab648', '--pane-s2': '#eef6b8',
       '--pane-u0': '#388a5c', '--pane-u1': '#1c4a30', '--pane-u2': '#c8a050',
+    },
+  },
+  {
+    id: 'obsidian', name: 'Obsidian', stars: 0, cost: 120,
+    vars: {
+      '--solari-gold': '#e8ecf2', '--solari-cream': '#ffffff', '--umbral-indigo': '#101014', '--umbral-violet': '#7c8296',
+      '--bg': '#07070a', '--pane-s0': '#f4f6fa', '--pane-s1': '#aab2c2', '--pane-s2': '#ffffff',
+      '--pane-u0': '#5c6274', '--pane-u1': '#20222c', '--pane-u2': '#8a92a8',
+    },
+  },
+  {
+    id: 'rosegold', name: 'Rose Gold', stars: 0, cost: 150,
+    vars: {
+      '--solari-gold': '#f0b8a0', '--solari-cream': '#fff0e8', '--umbral-indigo': '#2a1230', '--umbral-violet': '#b0609c',
+      '--bg': '#170a1c', '--pane-s0': '#f8cdb8', '--pane-s1': '#d8907c', '--pane-s2': '#fff0e4',
+      '--pane-u0': '#9a4c88', '--pane-u1': '#4a1c58', '--pane-u2': '#d89ac0',
+    },
+  },
+  {
+    id: 'sandstorm', name: 'Sandstorm', stars: 0, cost: 150,
+    vars: {
+      '--solari-gold': '#e0b860', '--solari-cream': '#fbf0d0', '--umbral-indigo': '#0e2c34', '--umbral-violet': '#2c9aa0',
+      '--bg': '#0a1c22', '--pane-s0': '#ecc878', '--pane-s1': '#c08c3c', '--pane-s2': '#fcefc4',
+      '--pane-u0': '#24848c', '--pane-u1': '#0e4450', '--pane-u2': '#d8a860',
     },
   },
 ]

@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
+import { owns, shopSnapshot, subscribeShop } from '../../shop'
+import { findCosmetic } from '../../engine/data/cosmetics'
 import { getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
@@ -15,6 +17,8 @@ interface Props {
 export function Settings({ progress, onBack }: Props) {
   const [settings, setSettings] = useState(getSettings)
   const stars = totalStars(progress)
+  const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
+  const themes = THEMES.filter((t) => !t.cost || (findCosmetic('theme', t.id) && owns(findCosmetic('theme', t.id)!, shop)))
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
     <main className="app menu">
@@ -22,7 +26,7 @@ export function Settings({ progress, onBack }: Props) {
       <h2>Settings</h2>
       <h3>Look</h3>
       <div className="choices">
-        {THEMES.map((t) => {
+        {themes.map((t) => {
           const open = themeUnlocked(t, stars)
           return (
             <button key={t.id} className={`choice${settings.theme === t.id ? ' on' : ''}`} disabled={!open} onClick={() => change({ theme: t.id })}>
