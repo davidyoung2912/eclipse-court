@@ -264,8 +264,8 @@ describe('battle unlocks', () => {
 
 describe('achievement catalogue', () => {
   it('has 100 unique achievements, each in a known category', () => {
-    expect(ACHIEVEMENTS).toHaveLength(100)
-    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(100)
+    expect(ACHIEVEMENTS).toHaveLength(125)
+    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(125)
     expect(ACHIEVEMENTS.every((a) => ACHIEVEMENT_CATEGORIES.includes(a.category))).toBe(true)
     expect(ACHIEVEMENT_CATEGORIES.every((c) => ACHIEVEMENTS.some((a) => a.category === c))).toBe(true)
   })

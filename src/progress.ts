@@ -159,7 +159,7 @@ export function starsEarned(s: Summary): number {
 
 /** The groups the Stats page folds achievements into. */
 export const ACHIEVEMENT_CATEGORIES = [
-  'Milestones', 'Battle Craft', 'Conquest', 'Campaign', 'Boards and Rules', 'Scenarios', 'Puzzles', 'Gauntlet', 'Daily and Tournaments', 'Mastery',
+  'Milestones', 'Battle Craft', 'Conquest', 'Campaign', 'Boards and Rules', 'Scenarios', 'Puzzles', 'Gauntlet', 'Daily and Tournaments', 'Mastery', 'Insight',
 ] as const
 
 export type AchievementCategory = (typeof ACHIEVEMENT_CATEGORIES)[number]
@@ -182,6 +182,8 @@ const battleWon = (p: Progress, o: { id: string }) => ((p.battles[o.id] ?? 0) & 
 const tierWon = (p: Progress, list: readonly { id: string }[]) => list.length > 0 && list.every((o) => battleWon(p, o))
 const scenariosCleared = (p: Progress) => SCENARIOS.filter((x) => (p.scenarios[x.id] ?? 0) & STAR_WIN).length
 const perfectScenarios = (p: Progress) => SCENARIOS.filter((x) => starCount(p.scenarios[x.id] ?? 0) === 3).length
+const flawlessTier = (p: Progress, list: readonly { id: string }[]) => list.length > 0 && list.every((o) => ((p.battles[o.id] ?? 0) & STAR_FLAWLESS) !== 0)
+const starsOf = (p: Progress, bit: number) => CAMPAIGN.filter((o) => (p.battles[o.id] ?? 0) & bit).length
 const hours = (p: Progress, h: number) => p.stats.playSeconds >= h * 3600
 
 const def = (category: AchievementCategory, id: string, name: string, text: string, earned: Achievement['earned']): Achievement => ({ id, category, name, text, earned })
@@ -287,6 +289,35 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   def('Daily and Tournaments', 'tournaments-5', 'Tournament Terror', 'Win 5 tournaments.', (p) => p.tournaments >= 5),
   def('Daily and Tournaments', 'tournaments-10', 'Grand Champion', 'Win 10 tournaments.', (p) => p.tournaments >= 10),
   // Mastery
+  // Insight: the post-game review
+  def('Insight', 'review-first', 'Second Look', 'Review one of your games.', (_, s) => !!s.review),
+  def('Insight', 'review-clean', 'Without a Slip', 'Play a game of 8 or more moves with no mistakes or blunders.', (_, s) => !!s.review && s.review.moves >= 8 && s.review.mistakes === 0),
+  def('Insight', 'review-sharp', 'Sharp Mind', 'Review a game with 90% accuracy or better.', (_, s) => !!s.review && s.review.moves >= 8 && s.review.accuracy >= 90),
+  def('Insight', 'review-perfect', 'Engine Room', 'Review a game with 98% accuracy or better.', (_, s) => !!s.review && s.review.moves >= 8 && s.review.accuracy >= 98),
+  def('Insight', 'review-win-clean', 'Flawless Reading', 'Win a game you reviewed with no mistakes or blunders.', (_, s) => !!s.review && s.review.won && s.review.moves >= 8 && s.review.mistakes === 0),
+
+  // Clean sweeps and speed
+  def('Campaign', 'flawless-beginner', 'Spotless Beginner', 'Win every Beginner battle without losing a piece.', (p) => flawlessTier(p, battlesIn('easy'))),
+  def('Campaign', 'flawless-normal', 'Spotless Normal', 'Win every Normal battle without losing a piece.', (p) => flawlessTier(p, battlesIn('normal'))),
+  def('Campaign', 'flawless-expert', 'Spotless Expert', 'Win every Expert battle without losing a piece.', (p) => flawlessTier(p, battlesIn('hard'))),
+  def('Campaign', 'flawless-grand', 'Spotless Grand Court', 'Win every Grand Court battle without losing a piece.', (p) => flawlessTier(p, grandBattles())),
+  def('Campaign', 'grand-half', 'Grand Ascent', 'Beat half the Grand Court battles.', (p) => grandBattles().filter((o) => battleWon(p, o)).length * 2 >= grandBattles().length),
+  def('Campaign', 'stars-100', 'Starfield', 'Earn 100 campaign stars.', (p) => totalStars(p) >= 100),
+  def('Campaign', 'swift-stars-10', 'Quick March', 'Earn the Before the Eclipse star in 10 battles.', (p) => starsOf(p, STAR_SWIFT) >= 10),
+  def('Campaign', 'swift-stars-25', 'Forced March', 'Earn the Before the Eclipse star in 25 battles.', (p) => starsOf(p, STAR_SWIFT) >= 25),
+  def('Campaign', 'flawless-stars-10', 'Clean Hands', 'Win 10 battles without losing a piece.', (p) => starsOf(p, STAR_FLAWLESS) >= 10),
+  def('Battle Craft', 'speed-6', 'Lightning Court', 'Win in 6 rounds or fewer.', (_, s) => s.won && s.turns <= 6),
+  def('Battle Craft', 'speed-hard', 'Swift Reckoning', 'Win against a hard opponent in 12 rounds or fewer.', (_, s) => s.won && s.difficulty === 'hard' && s.turns <= 12),
+  def('Battle Craft', 'silent-hard', 'Unspoken', 'Win against a hard opponent without casting a spell.', (_, s) => s.won && s.difficulty === 'hard' && s.spellsCast === 0 && !s.classic),
+  def('Conquest', 'hard-wins-10', 'Tide Turner', 'Win 10 games against hard opponents.', (p) => p.byDifficulty.hard.wins >= 10),
+  def('Conquest', 'hard-wins-25', 'Tide Breaker', 'Win 25 games against hard opponents.', (p) => p.byDifficulty.hard.wins >= 25),
+  def('Conquest', 'skirmish-wins-25', 'Skirmish Veteran', 'Win 25 Skirmish games.', (p) => p.areas.skirmish.wins >= 25),
+  def('Conquest', 'practice-25', 'Arena Regular', 'Fight 25 practice duels.', (p) => p.areas.practice.games >= 25),
+  def('Daily and Tournaments', 'daily-wins-7', 'Daily Habit', 'Win 7 daily matches.', (p) => p.areas.daily.wins >= 7),
+  def('Daily and Tournaments', 'daily-wins-30', 'Daily Devotion', 'Win 30 daily matches.', (p) => p.areas.daily.wins >= 30),
+  def('Daily and Tournaments', 'online-win', 'Across the Wire', 'Win an online game.', (p) => p.areas.online.wins >= 1),
+  def('Daily and Tournaments', 'online-10', 'Online Rival', 'Win 10 online games.', (p) => p.areas.online.wins >= 10),
+
   def('Mastery', 'time-1', 'An Hour Well Spent', 'Play for 1 hour.', (p) => hours(p, 1)),
   def('Mastery', 'time-5', 'Dedicated', 'Play for 5 hours.', (p) => hours(p, 5)),
   def('Mastery', 'time-10', 'Devoted', 'Play for 10 hours.', (p) => hours(p, 10)),
@@ -338,6 +369,11 @@ function award(next: Progress, s: Summary, before: Progress): { progress: Progre
     have = [...have, ...fresh.map((a) => a.id)]
   }
   return { progress: { ...next, achievements: have }, earned }
+}
+
+/** The progress after the player's post-game review of one of their games finishes. */
+export function recordReview(p: Progress, review: NonNullable<Summary['review']>) {
+  return award(p, { ...NO_GAME, review }, p)
 }
 
 /** The progress after a practice duel; the player attacks, so a win needs the defender down and the attacker standing. */

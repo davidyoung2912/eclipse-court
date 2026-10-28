@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 and L2 done; L3 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L3 done; L4 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -37,7 +37,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 ## Phases
 - **L1 (done): post-game review.** Analyse a finished game move by move with the strategy search: for each move, the value of the move played against the best move, classified as best, inaccuracy, mistake or blunder (luck in duels is ignored; only the decision is judged). The Replay viewer gets a Review button: an evaluation bar over the game (click to jump), the flagged move with the better one described and shown on the board, previous/next key moment buttons, and a per-side summary with an accuracy figure. Analysis runs in the AI worker with progress and can be cancelled. Open from Stats ("Replay Last Game") and from shared replay links. No new saved state. Done when the review is correct on known positions (tests) and the build is clean.
 - **L2 (done): shards and cosmetics shop.** A wallet (`eclipse-court:shop`) of Shards, earned from finished games (more for harder opponents and first clears), achievements and daily/weekly play. A Collection page spends them on cosmetics: board themes (the four star-locked themes stay free unlocks), piece sets, capture effects, sound packs and Story codex art. Equip state is saved. Cosmetics are CSS variables, art variants and synth settings only.
-- **L3: mastery and achievements.** Per-area mastery tracks (Campaign, Scenarios, Puzzles, Gauntlet, Grand board, Online) with levels that pay Shards. About 25 new achievements, including review-based ones ("a game with no mistakes"), a no-loss tier clear, and speed goals. Three pinnable showcase badges on the Stats page. Needs L1 and L2.
+- **L3 (done): mastery and achievements.** Per-area mastery tracks (Campaign, Scenarios, Puzzles, Gauntlet, Grand board, Online) with levels that pay Shards. About 25 new achievements, including review-based ones ("a game with no mistakes"), a no-loss tier clear, and speed goals. Three pinnable showcase badges on the Stats page. Needs L1 and L2.
 - **L4: weekly challenge.** A seeded modifier-of-the-week match (for example "every square is a Hazard") reusing the daily plumbing, with a best-score board on the device and a shard reward. Needs L2.
 - **L5: modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
 - **L6: ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
@@ -61,3 +61,9 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/cosmetics.ts`: applies equipped piece set, codex frame and sound voice. Paid themes are in `settings.ts` with a `cost`; the Collection sets them through the settings.
 - `src/ui/menus/Collection.tsx`, reached from the main menu's utility row. Capture bursts are drawn in `ui/board/Board.tsx`; styles in `index.css`.
 - Not yet: weekly-play Shards (arrive with L4) and mastery payouts (L3).
+
+## L3 file map
+- `src/mastery.ts` (+ test): store `eclipse-court:mastery` (paid levels, three showcase pins, the side taken in the last game). Six tracks score points from `Progress`; eight levels (`LEVEL_POINTS`) pay `20 x level` Shards, claimed from Stats with `claimMastery`.
+- `src/progress.ts`: 25 new achievements (100 to 125), including the new `Insight` category fed by `recordReview`; `Summary.review` carries the result of a review.
+- `src/ui/menus/Replay.tsx`: `onReviewed` fires when a review of the player's own last game finishes (App passes it only for "Replay Last Game") and the earned lines show under the summary.
+- `src/ui/menus/Stats.tsx`: Showcase, Mastery section with Claim button, Pin buttons on earned achievements.

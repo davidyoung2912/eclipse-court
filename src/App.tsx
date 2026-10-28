@@ -19,12 +19,14 @@ import { newGame } from './engine/reducer'
 import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
-import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
+import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { settleGame } from './settleGame'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
+import { rememberCourt, masterySnapshot } from './mastery'
 import { Collection } from './ui/menus/Collection'
 import type { Court, GameState } from './engine/rules/types'
+import type { SideSummary } from './ai/review'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
 import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
 import { Daily } from './ui/menus/Daily'
@@ -74,7 +76,7 @@ type Screen =
   | { name: 'practice' }
   | { name: 'settings' }
   | { name: 'collection' }
-  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' }
+  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu'; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
   /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
@@ -214,7 +216,7 @@ export default function App() {
       <Stats progress={progress} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
         onReplay={progress.last ? () => {
           const record = decodeRecord(progress.last!)
-          if (record) setScreen({ name: 'replay', record })
+          if (record) setScreen({ name: 'replay', record, own: true })
         } : undefined} />
     )
 
@@ -326,7 +328,22 @@ export default function App() {
 
   if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
 
-  if (screen.name === 'replay') return <Replay record={screen.record} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
+  if (screen.name === 'replay') {
+    /** A review of the player's own last game can earn achievements. */
+    const reviewed = (sides: Record<Court, SideSummary>, winner: Court | 'draw' | null) => {
+      const court = masterySnapshot().lastCourt
+      if (!court) return []
+      const side = sides[court]
+      const result = recordReview(progress, { moves: side.moves, accuracy: side.accuracy, mistakes: side.counts.mistake + side.counts.blunder, won: winner === court })
+      if (result.earned.length === 0) return []
+      const shards = result.earned.length * 10
+      earnShards(shards)
+      setProgress(result.progress)
+      saveProgress(result.progress)
+      return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
+    }
+    return <Replay record={screen.record} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
+  }
 
   if (screen.name === 'paste')
     return <PasteCode onBack={() => setScreen({ name: 'battle' })} onOpen={(shared) => setScreen(sharedScreen(shared))} />
@@ -438,6 +455,7 @@ export default function App() {
     /** Records a finished game and returns the lines to show about it. */
     const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
       const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, daily, today, stats })
+      if (settled.summary) rememberCourt(human)
       earnShards(settled.shards)
       return settled
     }

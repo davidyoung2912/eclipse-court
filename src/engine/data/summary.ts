@@ -28,4 +28,6 @@ export interface Summary {
   clock?: boolean
   growth?: boolean
   promotion?: boolean
+  /** A finished post-game review of the player's side. */
+  review?: { moves: number; accuracy: number; mistakes: number; won: boolean }
 }

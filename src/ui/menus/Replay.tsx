@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { requestJudgement } from '../../ai/client'
 import { describeHint } from '../../ai/hint'
-import { EVAL_CAP, finalEval, GRADE_TEXT, keyMoments, reviewGame, summarise, type MoveReview } from '../../ai/review'
+import { EVAL_CAP, finalEval, GRADE_TEXT, keyMoments, reviewGame, summarise, type MoveReview, type SideSummary } from '../../ai/review'
 import type { GameRecord } from '../../engine/log'
 import { replaySteps } from '../../engine/log'
 import type { Court } from '../../engine/rules/types'
@@ -13,6 +13,8 @@ import { TipCard } from '../tips/TipCard'
 interface Props {
   record: GameRecord
   onBack: () => void
+  /** Called once when a review finishes, with each side's summary and the winner, if there was one. */
+  onReviewed?: (sides: Record<Court, SideSummary>, winner: Court | 'draw' | null) => string[]
 }
 
 const STEP_MS = 900
@@ -40,7 +42,7 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
 }
 
 /** A finished game played back from its action log, one position at a time. */
-export function Replay({ record, onBack }: Props) {
+export function Replay({ record, onBack, onReviewed }: Props) {
   const steps = useMemo(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }], [record])
   const last = steps.length - 1
   const [at, setAt] = useState(0)
@@ -48,6 +50,7 @@ export function Replay({ record, onBack }: Props) {
   const [reviews, setReviews] = useState<(MoveReview | null)[]>([])
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle')
   const [better, setBetter] = useState(false)
+  const [notes, setNotes] = useState<string[]>([])
   const stop = useRef(false)
   useEffect(() => () => { stop.current = true }, [])
 
@@ -58,9 +61,13 @@ export function Replay({ record, onBack }: Props) {
     setPlaying(false)
     void reviewGame(steps, (state, played) => requestJudgement(state, played, REVIEW_DIFFICULTY), (i, r) => {
       if (!stop.current) setReviews((prev) => prev.map((x, k) => (k === i ? r : x)))
-    }, () => stop.current).then(() => { if (!stop.current) setPhase('done') })
+    }, () => stop.current).then((done) => {
+      if (stop.current) return
+      setPhase('done')
+      setNotes(onReviewed?.({ solari: summarise(done, 'solari'), umbral: summarise(done, 'umbral') }, steps[last].state.winner) ?? [])
+    })
   }
-  const cancel = () => { stop.current = true; setPhase('idle'); setReviews([]); setBetter(false) }
+  const cancel = () => { stop.current = true; setPhase('idle'); setReviews([]); setNotes([]); setBetter(false) }
 
   const running = playing && at < last
   useEffect(() => {
@@ -107,6 +114,7 @@ export function Replay({ record, onBack }: Props) {
       )}
       {phase !== 'idle' && <EvalBar values={evals} at={at} onPick={(i) => { setPlaying(false); setBetter(false); setAt(i) }} />}
       {phase === 'running' && <p className="status" role="status">Reviewing: move {reviews.filter(Boolean).length} of {last}.</p>}
+      {notes.length > 0 && <div className="setup-card" role="status">{notes.map((line) => <div key={line}>{line}</div>)}</div>}
       {sides && (
         <div className="setup-card review-summary">
           {sides.map((side) => (

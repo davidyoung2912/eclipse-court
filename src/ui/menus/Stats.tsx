@@ -1,8 +1,9 @@
-import { useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, type Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { overall, percent, sections, totals } from '../../statsModel'
 import { storySnapshot, subscribeStory } from '../../story'
+import { claimMastery, levelReward, masterySnapshot, SHOWCASE_SLOTS, standings, subscribeMastery, togglePin } from '../../mastery'
 import { Bar } from './Bar'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
@@ -22,6 +23,11 @@ interface Props {
 
 export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
+  const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
+  const [claimed, setClaimed] = useState<number | null>(null)
+  const tracks = standings(progress, mastery)
+  const owed = tracks.reduce((n, t) => n + t.owed, 0)
+  const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
   const list = sections(progress, story, dailySeed())
   const done = overall(list)
   const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) }]
@@ -34,6 +40,12 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
         <span>complete across the campaign, scenarios, puzzles, gauntlet, story and achievements</span>
         <Bar fraction={done} />
       </div>
+      <section className="showcase" aria-label="Showcase">
+        <h3>Showcase</h3>
+        {showcase.length === 0
+          ? <p className="tagline">Pin up to {SHOWCASE_SLOTS} earned achievements below to show them here.</p>
+          : <ul className="achievements">{showcase.map((a) => <li key={a.id} className="got"><strong><Icon name="trophy" />{a.name}</strong><span>{a.text}</span></li>)}</ul>}
+      </section>
       <dl className="stat-tiles">
         {tiles.map(({ label, value }) => <div key={label}><dd>{value}</dd><dt>{label}</dt></div>)}
       </dl>
@@ -55,6 +67,22 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
           </dl>
         </details>
       ))}
+      <details className="stat-section" open>
+        <summary><h3><Icon name="star" />Mastery</h3></summary>
+        <ul className="mastery-tracks">
+          {tracks.map((t) => (
+            <li key={t.track.id}>
+              <strong>{t.track.title}</strong> level {t.level}
+              <Bar fraction={t.next === null ? 1 : t.points / t.next} thin />
+              <small>{t.points}{t.next === null ? '' : ` of ${t.next}`} {t.track.unit}{t.next === null ? ' · top level' : ` · level ${t.level + 1} pays ${levelReward(t.level + 1)} Shards`}</small>
+            </li>
+          ))}
+        </ul>
+        <button className="primary" disabled={owed === 0} onClick={() => setClaimed(claimMastery(progress))}>
+          <Icon name="star" />{owed > 0 ? `Claim ${owed} Shards` : 'No Shards to claim'}
+        </button>
+        {claimed !== null && claimed > 0 && <p className="status" role="status">Shards: +{claimed}.</p>}
+      </details>
       <h3>Achievements ({progress.achievements.length} of {ACHIEVEMENTS.length})</h3>
       {ACHIEVEMENT_CATEGORIES.map((category) => {
         const list = ACHIEVEMENTS.filter((a) => a.category === category)
@@ -69,6 +97,9 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
                   <li key={a.id} className={got ? 'got' : undefined}>
                     <strong><Icon name={got ? 'trophy' : 'lock'} />{a.name}</strong>
                     <span>{a.text}</span>
+                    {got && <button className="link" aria-pressed={mastery.showcase.includes(a.id)} onClick={() => togglePin(a.id)}>
+                      {mastery.showcase.includes(a.id) ? 'Unpin' : mastery.showcase.length >= SHOWCASE_SLOTS ? 'Showcase full' : 'Pin'}
+                    </button>}
                   </li>
                 )
               })}
