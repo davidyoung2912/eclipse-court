@@ -4,6 +4,7 @@ import '@fontsource/nunito/600.css'
 import '@fontsource/nunito/700.css'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './ErrorBoundary'
 import { applySettings } from './settings'
 import { applyCosmetics } from './cosmetics'
 
@@ -18,8 +19,10 @@ const fontReady = Promise.race([
 
 void fontReady.then(() => createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Suspense fallback={<main className="app"><p className="status">Loading…</p></main>}>
-      <App />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<main className="app"><p className="status">Loading…</p></main>}>
+        <App />
+      </Suspense>
+    </ErrorBoundary>
   </StrictMode>,
 ))
