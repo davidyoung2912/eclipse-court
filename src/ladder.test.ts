@@ -5,10 +5,10 @@ import {
 import { parseLadder, recordLadder, ladderSnapshot, SEASON_MIN_GAMES, SEASON_SHARDS, seasonHistory, seasonReward, seasonStart, startSeason, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
 
 describe('ladder maths', () => {
-  it('has five distinct foes in every rank, weakest first', () => {
-    expect(LADDER_FOES).toHaveLength(RANKS.length * 5)
+  it('has seven distinct foes in every rank, weakest first', () => {
+    expect(LADDER_FOES).toHaveLength(RANKS.length * 7)
     expect(new Set(LADDER_FOES.map((f) => f.id)).size).toBe(LADDER_FOES.length)
-    for (const r of RANKS) expect(LADDER_FOES.filter((f) => rankOf(f.rating) === r.title)).toHaveLength(5)
+    for (const r of RANKS) expect(LADDER_FOES.filter((f) => rankOf(f.rating) === r.title)).toHaveLength(7)
     const ratings = LADDER_FOES.map((f) => f.rating)
     expect(ratings).toEqual([...ratings].sort((a, b) => a - b))
   })

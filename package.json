@@ -19,7 +19,8 @@
     "grand": "node scripts/run-sim.mjs grand",
     "puzzles": "node scripts/run-sim.mjs puzzles",
     "mine": "node scripts/run-sim.mjs mine",
-    "show": "node scripts/run-sim.mjs show"
+    "show": "node scripts/run-sim.mjs show",
+    "styles": "node scripts/run-sim.mjs styles"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.3.0",

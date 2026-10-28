@@ -4,6 +4,7 @@ import { ROLE_STATS } from '../engine/data/roster'
 import type { GameState, Piece } from '../engine/rules/types'
 import { legalMoves } from '../engine/rules/moves'
 import { chooseAction, evaluate } from './strategy'
+import { PERSONALITIES, temper } from '../engine/data/personality'
 import { DIFFICULTY_LIST } from './profile'
 
 const isLegal = (s: GameState, a: ReturnType<typeof chooseAction>) => {
@@ -100,4 +101,14 @@ describe('strategy with cells', () => {
       }
     }
   }, 60_000)
+})
+
+describe('character', () => {
+  it('tempers a Grandmaster\'s style and still returns legal actions for the new personalities', () => {
+    const s = newGame(3)
+    for (const id of ['baiter', 'guardian'] as const)
+      for (const level of ['normal', 'grandmaster'] as const) expect(chooseAction(s, level, 7, id).type).toMatch(/move|cast|pass/)
+    expect(temper(PERSONALITIES.rusher, 1)).toMatchObject({ attack: 1, guard: 1, beacon: 1 })
+    expect(temper(PERSONALITIES.rusher, 0).attack).toBe(PERSONALITIES.rusher.attack)
+  })
 })

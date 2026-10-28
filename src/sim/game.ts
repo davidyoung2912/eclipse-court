@@ -6,6 +6,7 @@ import { inBounds, sizeOf } from '../engine/rules/board'
 import { duelCells } from '../engine/rules/cells'
 import { squareLuminance } from '../engine/rules/luminance'
 import { pieceAt } from '../engine/rules/moves'
+import type { PersonalityId } from '../engine/data/personality'
 import type { Court, GameState, MatchConfig } from '../engine/rules/types'
 
 export interface GameResult {
@@ -36,19 +37,19 @@ export function checkInvariants(state: GameState): string[] {
  * Plays one AI-vs-AI game to the end. Captures are settled by real duels between duel AIs at each
  * side's difficulty skill. Gives up (winner stays null) after `maxActions`.
  */
-export function playGame(seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400, config: Partial<MatchConfig> = {}): GameResult {
-  return playFrom(newGame({ ...config, seed }), seed, solari, umbral, maxActions)
+export function playGame(seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400, config: Partial<MatchConfig> = {}, styles: Partial<Record<Court, PersonalityId>> = {}): GameResult {
+  return playFrom(newGame({ ...config, seed }), seed, solari, umbral, maxActions, styles)
 }
 
 /** Plays a game on from a given position, in the same way as `playGame`. */
-export function playFrom(start: GameState, seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400): GameResult {
+export function playFrom(start: GameState, seed: number, solari: Difficulty, umbral: Difficulty, maxActions = 400, styles: Partial<Record<Court, PersonalityId>> = {}): GameResult {
   const level: Record<Court, Difficulty> = { solari, umbral }
   let state = start
   let actions = 0
   let duels = 0
   const problems: string[] = []
   while (!state.winner && actions < maxActions) {
-    const action = chooseAction(state, level[state.turn], seed * 1009 + actions)
+    const action = chooseAction(state, level[state.turn], seed * 1009 + actions, styles[state.turn])
     let next = action
     if (action.type === 'move') {
       const target = pieceAt(state, action.to)

@@ -3,12 +3,12 @@ import { rngNext } from '../engine/rng'
 import { cellAt, duelCells, invincibleOn, type DuelCells } from '../engine/rules/cells'
 import { centerOf, chebyshev, sizeOf, COURTS, isBeacon, otherCourt } from '../engine/rules/board'
 import { modeOf, safeRadius } from '../engine/rules/events'
-import { squareLuminance } from '../engine/rules/luminance'
+import { favouredCourt, squareLuminance } from '../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../engine/rules/moves'
 import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spells'
 import type { Action, CellEffect, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
-import { PERSONALITIES, type Personality, type PersonalityId } from '../engine/data/personality'
+import { PERSONALITIES, temper, type Personality, type PersonalityId } from '../engine/data/personality'
 import { DIFFICULTY, type AiLevel } from './profile'
 
 const NEUTRAL = PERSONALITIES.balanced
@@ -122,6 +122,11 @@ export function evaluate(state: GameState, court: Court, w: Personality = NEUTRA
     if (state.config.promotion && p.role === 'footsoldier') score += sign * 0.3 * (p.court === 'solari' ? p.pos.x : sizeOf(state.config) - 1 - p.pos.x)
     const cell = cellAt(state.config, p.pos)
     if (cell) score += sign * cellScore(cell, p, isBeacon(p.pos, state.config.beacons), state.round)
+    // A Leader with friends close by is hard to take: the screen counts pieces within two squares.
+    if (sign > 0 && w.screen && p.role !== 'leader') {
+      const lead = leaderOf(state, court)
+      if (lead && chebyshev(lead.pos, p.pos) <= 2) score += w.screen * VALUE[p.role] * 0.15
+    }
     // Standing in light that favours its court.
     const lum = squareLuminance(state, p.pos)
     score += sign * 0.3 * (p.court === 'solari' ? lum : -lum)
@@ -171,6 +176,23 @@ function spellActions(state: GameState, court: Court): Action[] {
     // Swap and Exchange are left to human players.
   }
   return out
+}
+
+/** Squares that some piece of `court` could move onto next turn. */
+function attackedSquares(state: GameState, court: Court): Set<number> {
+  const size = sizeOf(state.config)
+  const out = new Set<number>()
+  for (const p of state.pieces) if (p.court === court) for (const to of legalMoves(state, p)) out.add(to.y * size + to.x)
+  return out
+}
+
+/** The worth of a quiet move that leaves a healthy piece in light that favours it where the foe can reach it. */
+function lure(state: GameState, a: Action, reach: Set<number>, bait: number): number {
+  if (a.type !== 'move' || pieceAt(state, a.to)) return 0
+  const mover = state.pieces.find((p) => p.id === a.pieceId)!
+  if (mover.hp < mover.maxHp || mover.role === 'leader') return 0
+  if (favouredCourt(squareLuminance(state, a.to)) !== mover.court) return 0
+  return reach.has(a.to.y * sizeOf(state.config) + a.to.x) ? bait * VALUE[mover.role] * 0.12 : 0
 }
 
 /** Cheap ordering so the beam keeps captures, beacon grabs and big pieces first. */
@@ -249,8 +271,10 @@ function search(state: GameState, court: Court, depth: number, beam: number, w: 
  */
 export function chooseAction(state: GameState, difficulty: AiLevel, seed: number, personality: PersonalityId = 'balanced'): Action {
   const { depth, beam, noise } = DIFFICULTY[difficulty]
-  const w = PERSONALITIES[personality]
+  // A Grandmaster plays its style loosely: half of it, and the rest is what the position asks for.
+  const w = difficulty === 'grandmaster' ? temper(PERSONALITIES[personality], 0.5) : PERSONALITIES[personality]
   const court = state.turn
+  const reach = w.bait ? attackedSquares(state, otherCourt(court)) : null
   const candidates = [...moveActions(state, court), ...spellActions(state, court), { type: 'pass' } as Action]
   // Noise is drawn per candidate in generation order, so the choice does not depend on search order.
   let rng = seed >>> 0
@@ -265,7 +289,7 @@ export function chooseAction(state: GameState, difficulty: AiLevel, seed: number
   let bestScore = -Infinity
   for (const [i] of order) {
     const a = candidates[i]
-    const bonus = a.type === 'cast' ? w.spells : 0
+    const bonus = (a.type === 'cast' ? w.spells : 0) + (reach ? lure(state, a, reach, w.bait) : 0)
     // Only a score above the best so far can win, so the search may stop once this move is shown to fall short of it.
     const floor = bestScore - bonus - jitters[i] - 1e-6
     let score = valueOf(state, a, court, depth, beam, w, floor, Infinity) + bonus

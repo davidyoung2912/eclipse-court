@@ -17,6 +17,8 @@ const TASTE: Record<PersonalityId, string> = {
   turtle: 'It keeps its pieces safe.',
   grabber: 'It is racing for the beacons.',
   caster: 'It wants its Leader casting.',
+  baiter: 'It leaves a lure in good light.',
+  guardian: 'It keeps its Leader screened.',
 }
 
 /** Whether any piece of the side not on move could attack `at` next turn. */

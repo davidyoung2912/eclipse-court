@@ -35,11 +35,11 @@ const RUNGS: readonly { id: string; title: string; level: AiLevel; difficulty: D
   { id: 'grandmaster', title: 'Grandmaster', level: 'grandmaster', difficulty: 'hard', base: 1575 },
 ]
 /** Taste shifts the rating a little: the aggressive and guarded styles are harder to play against than the greedy ones. */
-const STYLE: Record<PersonalityId, number> = { balanced: 0, rusher: 30, turtle: 20, grabber: -30, caster: -10 }
+const STYLE: Record<PersonalityId, number> = { balanced: 0, rusher: 30, turtle: 20, grabber: -30, caster: -10, baiter: 25, guardian: 15 }
 
 const PERSONALITY_IDS = Object.keys(PERSONALITIES) as PersonalityId[]
 
-/** Every opponent, weakest first: five in each rank. */
+/** Every opponent, weakest first: seven in each rank. */
 export const LADDER_FOES: readonly LadderFoe[] = RUNGS
   .flatMap((rung) => PERSONALITY_IDS.map((personality) => ({
     id: `${rung.id}-${personality}`,
