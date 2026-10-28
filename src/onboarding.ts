@@ -119,9 +119,9 @@ export function checklist(progress: Progress, learned: boolean): Step[] {
   ]
 }
 
-/** Whether the checklist is worth showing: the player has begun, has things left, and has not put it away. */
+/** Whether the checklist is worth showing: there are things left and the player has not put it away. It shows before the rules are learned too, as "Learn the rules" is its first step. */
 export const showChecklist = (steps: readonly Step[], o: Onboarding) =>
-  !o.listHidden && steps[0].done && steps.some((s) => !s.done)
+  !o.listHidden && steps.some((s) => !s.done)
 
 /** The player has never cleared a campaign battle, so the first one comes with coaching. */
 export const isFirstBattle = (progress: Progress, campaignIndex: number | null) =>

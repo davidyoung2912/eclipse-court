@@ -118,14 +118,16 @@ function Hero() {
         <Satellite />
       </g>
       <g transform="translate(160 110) scale(0.9)" className="hero-core">
-        <circle r="112" fill="url(#hero-corona)" className="corona" />
-        <g className="rays">
-          {RAYS.map((r) => (
-            <path key={r.a} d={`M-3,-62L0,-${r.tip}L3,-62Z`} transform={`rotate(${r.a})`} className="ray" style={{ opacity: r.o }} />
-          ))}
+        <g className="art-dim hero-dim" style={{ ['--dim' as string]: 0.18 }}>
+          <circle r="112" fill="url(#hero-corona)" className="corona" />
+          <g className="rays">
+            {RAYS.map((r) => (
+              <path key={r.a} d={`M-3,-62L0,-${r.tip}L3,-62Z`} transform={`rotate(${r.a})`} className="ray" style={{ opacity: r.o }} />
+            ))}
+          </g>
         </g>
         <circle r="56" fill="url(#hero-sun)" />
-        <g className="moon">
+        <g className="moon art-moon-slide hero-moon" style={{ ['--reach' as string]: '112px' }}>
           <circle r="54" fill="url(#hero-moon)" />
           <circle r="54" fill="url(#hero-earthshine)" />
           <circle cx="-18" cy="-14" r="7" fill="#000" opacity="0.18" />
@@ -205,7 +207,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       </div>
       <div className="menu-main">
-      {!firstRun && getSettings().banter !== 'off' && (
+      {getSettings().banter !== 'off' && (
         <aside className="persona-greet" aria-label={`${greeter.name} says hello`}>
           <PersonaFace id={greeter.id} className="persona-bubble-face" />
           <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>

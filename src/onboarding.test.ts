@@ -30,9 +30,9 @@ describe('onboarding', () => {
     expect(adviceFor(onboardingSnapshot())?.to).toBe('easy')
   })
 
-  it('lists first steps once the rules are learned, until all are done or put away', () => {
+  it('lists first steps, even before the rules are learned, until all are done or put away', () => {
     const p = emptyProgress()
-    expect(showChecklist(checklist(p, false), onboardingSnapshot())).toBe(false)
+    expect(showChecklist(checklist(p, false), onboardingSnapshot())).toBe(true)
     const steps = checklist(p, true)
     expect(steps.map((s) => s.done)).toEqual([true, false, false, false, false])
     expect(showChecklist(steps, onboardingSnapshot())).toBe(true)

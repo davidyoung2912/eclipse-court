@@ -7,7 +7,7 @@ import { samePos } from '../rules/board'
 
 describe('co-op scenarios', () => {
   it('has distinct, known scenarios that stay out of the solo list', () => {
-    expect(COOP_SCENARIOS.length).toBeGreaterThanOrEqual(6)
+    expect(COOP_SCENARIOS).toHaveLength(25)
     expect(new Set(COOP_SCENARIOS.map((s) => s.id)).size).toBe(COOP_SCENARIOS.length)
     expect(new Set(COOP_SCENARIOS.map((s) => s.objective.kind)).size).toBe(3)
     for (const s of COOP_SCENARIOS) {
@@ -29,6 +29,19 @@ describe('co-op scenarios', () => {
       expect(squares.every((p, n) => squares.findIndex((q) => samePos(p, q)) === n), s.id).toBe(true)
       expect(g.pieces.filter((p) => p.court === 'solari').length, s.id).toBeGreaterThanOrEqual(8)
     }
+  })
+
+  it('starts every piece on a free square of its board', () => {
+    for (const [i, s] of COOP_SCENARIOS.entries()) {
+      const blocked = boardById(s.board).blocked
+      for (const p of coopGame(s, i).pieces) expect(blocked.some((b) => samePos(b, p.pos)), `${s.id} ${p.id}`).toBe(false)
+    }
+  })
+
+  it('orders the scenarios from easy to hard', () => {
+    const rank = { easy: 0, normal: 1, hard: 2 }
+    const ranks = COOP_SCENARIOS.map((s) => rank[s.difficulty])
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
   })
 
   it('alternates the two players by round', () => {

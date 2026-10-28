@@ -395,7 +395,6 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .ray { fill: #ffd77a; }
 .hero-halo { animation: breathe 5.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .hero-halo-late { animation-delay: -2.6s; }
-.moon { animation: drift 7.83s ease-in-out infinite alternate; }
 .main-menu h1 {
   font-family: var(--display); font-weight: 700; font-size: 2.1rem; letter-spacing: 0.2em;
   text-transform: uppercase; margin: 0; padding-left: 0.2em; line-height: 1.1;
@@ -485,10 +484,9 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 @keyframes twinkle { 50% { opacity: 0.95; } }
 @keyframes breathe { 50% { opacity: 0.7; transform: scale(1.04); } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes drift { from { transform: translate(-16px, 4px); } to { transform: translate(15px, -3px); } }
 @keyframes glow { 50% { box-shadow: 0 0 22px rgba(232, 182, 74, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); } }
 @media (prefers-reduced-motion: reduce) {
-  .star, .corona, .rays, .moon, .hero-halo, .main-menu .menu-buttons button.primary { animation: none; }
+  .star, .corona, .rays, .moon, .art-moon-slide, .art-dim, .hero-halo, .main-menu .menu-buttons button.primary { animation: none; }
 }
 
 .menu h2, .menu h3 { margin: 0; }
@@ -653,6 +651,13 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu-art .art-spin { animation-duration: 18s; }
 .menu-art .art-star { animation-duration: 1.9s; }
 @keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
+/* A moon that slides back and forth across the sun while the glow dims as it is covered and rises as it clears; both share one clock and one pause at each end. */
+.art-moon-slide, .art-dim { animation-duration: 18s; animation-timing-function: linear; animation-iteration-count: infinite; animation-direction: alternate; }
+.art-moon-slide { animation-name: art-moon-slide; }
+.art-dim { animation-name: art-eclipse-dim; }
+.hero-moon, .hero-dim { animation-duration: 26s; }
+@keyframes art-moon-slide { 0%, 6% { transform: translateX(calc(var(--reach) * -1)); } 94%, 100% { transform: translateX(var(--reach)); } }
+@keyframes art-eclipse-dim { 0%, 6%, 94%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.3); } }
 /* The joke satellite: a slow crossing near the top, with a blinking light */
 .menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20s linear both; }
 .menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
@@ -662,8 +667,8 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink { animation: none; }
-@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-sat, .hero .art-sat-blink { animation: none; } }
+[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;

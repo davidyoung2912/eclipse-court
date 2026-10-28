@@ -72,6 +72,9 @@ export function Satellite() {
   )
 }
 
+/** The moon's travel for an eclipse that slides back and forth: it starts clear of the sun, covers it, and clears the far side. */
+const reach = (px: number) => ({ ['--reach' as string]: `${px}px` })
+
 function Sky({ id }: { id: string }) {
   return (
     <>
@@ -119,9 +122,9 @@ export function SkirmishArt() {
       <path d="M0,112H320" stroke="#9a7cf0" strokeOpacity="0.6" />
       <g transform="translate(62 82) scale(96)"><g className="art-bob" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="solari" /></g></g>
       <g transform="translate(258 82) scale(96)"><g className="art-bob art-late" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="umbral" /></g></g>
-      <g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g>
+      <g className="art-dim" style={{ ['--dim' as string]: 0.3 }}><g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g></g>
       <circle cx="160" cy="76" r="14" fill="#fff1b8" />
-      <circle cx="166" cy="72" r="13" fill="#14102b" />
+      <circle cx="166" cy="72" r="13" fill="#14102b" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(34)} />
       <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" className="art-spin" />
     </svg>
   )
@@ -133,9 +136,9 @@ export function CampaignArt() {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" role="img" aria-label="The road to the Eclipse Court">
       <Sky id="cp" />
-      <circle cx="262" cy="34" r="46" fill="url(#cp-sun)" className="art-glow" />
+      <g className="art-dim"><circle cx="262" cy="34" r="46" fill="url(#cp-sun)" className="art-glow" /></g>
       <circle cx="262" cy="34" r="19" fill="#ffe08a" />
-      <circle cx="268" cy="31" r="18" fill="#0d0a22" />
+      <circle cx="268" cy="31" r="18" fill="#0d0a22" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(46)} />
       <path d="M0,150V104L38,78L74,104L120,66L170,108L214,76L260,104L320,70V150Z" fill="#241d58" />
       <path d="M0,150V124L50,102L96,124L150,92L206,124L258,98L320,118V150Z" fill="#1a1442" />
       <path d="M-4,140C60,150 80,100 130,118S190,96 232,100 276,92 290,66" fill="none" stroke="#e8b64a" strokeWidth="5" strokeOpacity="0.75" strokeLinecap="round" strokeDasharray="1 9" className="art-road" />
@@ -170,9 +173,9 @@ export function PageArt({ icon }: { icon: IconName }) {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" aria-hidden="true">
       <Sky id={id} />
-      <circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} className="art-glow" />
+      <g className="art-dim"><circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} className="art-glow" /></g>
       <circle cx="160" cy="150" r="46" fill="#ffe08a" opacity="0.9" />
-      <circle cx="170" cy="142" r="44" fill="#0d0a22" />
+      <circle cx="170" cy="142" r="44" fill="#0d0a22" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(98)} />
       <g transform="translate(160 68) scale(3.6) translate(-12 -12)">
         <g className="art-bob" style={{ ['--bob' as string]: '-0.6px' }} fill="none" stroke="#fbf1d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <IconShape name={icon} />
