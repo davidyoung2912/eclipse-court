@@ -3,7 +3,7 @@ import { CAMPAIGN } from '../../engine/data/campaign'
 import { PUZZLES } from '../../engine/data/puzzles'
 import { emptyProgress, recordDaily, recordPuzzle } from '../../progress'
 import { rulesetById } from '../../engine/data/setups'
-import { cardSummaries, changedRuleSections, changedSections, primaryAction, suggestions } from './menuModel'
+import { cardSummaries, changedRuleSections, changedSections, nextUpSlot, primaryAction, suggestions } from './menuModel'
 
 describe('primaryAction', () => {
   it('puts an unfinished game before everything else', () => {
@@ -100,5 +100,20 @@ describe('suggestions', () => {
   it('drops the puzzle row once every puzzle is solved', () => {
     const p = { ...emptyProgress(), puzzles: PUZZLES.map((x) => x.id) }
     expect(suggestions(p, all).map((x) => x.target)).toEqual(['campaign'])
+  })
+})
+
+describe('nextUpSlot', () => {
+  const all = { advice: true, steps: true, suggestions: true, greeting: true }
+
+  it('picks advice, then first steps, then a suggestion, then the greeting', () => {
+    expect(nextUpSlot(all)).toBe('advice')
+    expect(nextUpSlot({ ...all, advice: false })).toBe('steps')
+    expect(nextUpSlot({ ...all, advice: false, steps: false })).toBe('suggestion')
+    expect(nextUpSlot({ ...all, advice: false, steps: false, suggestions: false })).toBe('greeting')
+  })
+
+  it('is empty when nothing is left to show', () => {
+    expect(nextUpSlot({ advice: false, steps: false, suggestions: false, greeting: false })).toBeNull()
   })
 })

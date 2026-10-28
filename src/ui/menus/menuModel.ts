@@ -106,6 +106,17 @@ export function suggestions(progress: Progress, done: { match: boolean; puzzle: 
   return list.slice(0, 3)
 }
 
+export type NextUpSlot = 'advice' | 'steps' | 'suggestion' | 'greeting'
+
+/** What the main menu's "Next up" card holds: advice first, then the first-steps list, then suggestions, then the greeting; none when all are empty. */
+export function nextUpSlot(has: { advice: boolean; steps: boolean; suggestions: boolean; greeting: boolean }): NextUpSlot | null {
+  if (has.advice) return 'advice'
+  if (has.steps) return 'steps'
+  if (has.suggestions) return 'suggestion'
+  if (has.greeting) return 'greeting'
+  return null
+}
+
 export type SectionId = 'army' | 'spells' | 'win' | 'hazards' | 'clock' | 'twists'
 
 /** The rule fields (as `normalRules` spells them) each collapsible section of the setup screen holds. */

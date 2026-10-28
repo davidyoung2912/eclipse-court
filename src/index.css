@@ -433,14 +433,6 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .today h3::after { display: none; }
 .streak { display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.04em; text-transform: none; color: var(--solari-gold); }
 .today-row { display: flex; gap: 8px; }
-.suggested { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-.suggested h3 { margin: 0; }
-.suggested ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.suggested button {
-  width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left;
-  border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg); font-size: var(--fs-sm);
-  background: linear-gradient(180deg, rgb(74, 58, 150), rgb(43, 36, 104));
-}
 .today-row button, .mode-card, .utility button {
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg);
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.88), rgba(43, 36, 104, 0.88));
@@ -914,7 +906,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .tip-body p { margin: 0; font-size: var(--fs-sm); line-height: 1.42; }
 .tip-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .tip-foot small { margin-right: auto; opacity: 0.6; font-size: var(--fs-xs); }
-.tip-foot button, .first-steps button, .coach-card button {
+.tip-foot button, .next-up-body > button {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: var(--fs-sm); font-weight: 700;
   background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6;
 }
@@ -1226,19 +1218,30 @@ body:has(.duel) .play-timer { display: none; }
 /* Onboarding: coaching line in the first battle, advice after losses, first-steps list. */
 .coach-line { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 12px; border-radius: 12px; font-size: var(--fs-sm); background: rgba(255, 212, 90, 0.14); border: 1px solid rgba(255, 212, 90, 0.6); }
 .coach-line svg { flex: none; width: 1.1em; height: 1.1em; color: #ffd45a; margin-top: 2px; }
-.coach-card, .first-steps { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgb(33, 26, 78); border: 1px solid rgba(154, 124, 240, 0.5); font-size: var(--fs-sm); }
-.coach-card p { margin: 0; }
-.coach-card button { align-self: flex-end; }
-.first-steps { position: relative; background: linear-gradient(160deg, rgba(8, 72, 70, 0.97), rgba(4, 42, 44, 0.97)); border-color: rgba(79, 217, 200, 0.55); }
-.first-steps h3 em { display: inline-flex; align-items: center; gap: 8px; font-style: normal; }
-.first-steps button { position: absolute; right: 12px; bottom: 10px; }
-.first-steps li:last-child { padding-right: 96px; }
-.first-steps h3 { display: flex; justify-content: space-between; margin: 0; }
-.first-steps h3::after { display: none; }
-.first-steps h3 span { text-transform: none; letter-spacing: 0.04em; color: var(--solari-gold); }
-.first-steps ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.first-steps li { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
-.first-steps li.done { opacity: 0.55; text-decoration: line-through; }
+/* The main menu's single "Next up" card: the persona face beside whichever of advice, first steps, suggestions or greeting ranks highest. */
+.next-up { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgb(33, 26, 78); border: 1px solid rgba(154, 124, 240, 0.5); font-size: var(--fs-sm); line-height: 1.3; color: #e9e3ff; }
+.next-up[data-slot='steps'] { background: linear-gradient(160deg, rgba(8, 72, 70, 0.97), rgba(4, 42, 44, 0.97)); border-color: rgba(79, 217, 200, 0.55); }
+.next-up[data-slot='greeting'] { align-items: center; background: rgba(30, 22, 64, 0.6); border-color: rgba(205, 191, 255, 0.35); }
+.next-up-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.next-up-body p { margin: 0; }
+.next-up-body p b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
+.next-up-body > button { align-self: flex-end; }
+.next-up h3 { display: flex; justify-content: space-between; margin: 0; }
+.next-up h3::after { display: none; }
+.next-up h3 em { display: inline-flex; align-items: center; gap: 8px; font-style: normal; }
+.next-up h3 span { text-transform: none; letter-spacing: 0.04em; color: var(--solari-gold); }
+.next-up ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.next-up-steps li { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
+.next-up-steps li.done { opacity: 0.55; text-decoration: line-through; }
+.next-up-list { gap: 6px; }
+.next-up-list li { animation: rise-in var(--t-slow) var(--ease) backwards; }
+.next-up-list li:nth-child(2) { animation-delay: 45ms; }
+.next-up-list li:nth-child(3) { animation-delay: 90ms; }
+.next-up-list button {
+  width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left;
+  border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg); font-size: var(--fs-sm);
+  background: linear-gradient(180deg, rgb(74, 58, 150), rgb(43, 36, 104));
+}
 
 /* Last move trail: a soft outline on the square just left, a stronger one on the square reached. */
 .trail { fill: none; pointer-events: none; stroke: #fff6c0; stroke-width: 0.06; }
@@ -1582,7 +1585,7 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 
 /* Lists rise in one after another. */
 @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
-.mode-cards > *, .suggested li, main.app:not(.main-menu) .choices > * { animation: rise-in var(--t-slow) var(--ease) backwards; }
+.mode-cards > *, main.app:not(.main-menu) .choices > * { animation: rise-in var(--t-slow) var(--ease) backwards; }
 .mode-cards > *:nth-child(1) { animation-delay: 0ms; }
 .mode-cards > *:nth-child(2) { animation-delay: 45ms; }
 .mode-cards > *:nth-child(3) { animation-delay: 90ms; }
@@ -1591,14 +1594,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .mode-cards > *:nth-child(6) { animation-delay: 225ms; }
 .mode-cards > *:nth-child(7) { animation-delay: 270ms; }
 .mode-cards > *:nth-child(8) { animation-delay: 315ms; }
-.suggested li:nth-child(1) { animation-delay: 0ms; }
-.suggested li:nth-child(2) { animation-delay: 45ms; }
-.suggested li:nth-child(3) { animation-delay: 90ms; }
-.suggested li:nth-child(4) { animation-delay: 135ms; }
-.suggested li:nth-child(5) { animation-delay: 180ms; }
-.suggested li:nth-child(6) { animation-delay: 225ms; }
-.suggested li:nth-child(7) { animation-delay: 270ms; }
-.suggested li:nth-child(8) { animation-delay: 315ms; }
 main.app:not(.main-menu) .choices > *:nth-child(1) { animation-delay: 0ms; }
 main.app:not(.main-menu) .choices > *:nth-child(2) { animation-delay: 45ms; }
 main.app:not(.main-menu) .choices > *:nth-child(3) { animation-delay: 90ms; }
@@ -1656,4 +1651,4 @@ body:has(.main-menu)::before {
 
 /* Numbers that change (dial, clocks, wallet, costs, counts, scores) keep a fixed width so they never jitter. */
 .dial span, .hud-round, .duel-timer, .clock-ring span, .play-timer, .shard-wallet, .shard-toast, .choice .cost, .draft-row .cost, .draft-row .count,
-.stat-tiles dd, .stat-overall strong, .result-stat b, .eclipse-chip, .streak, .odds-tag, .duel-countdown, .piece-stats, .first-steps h3 span { font-variant-numeric: tabular-nums; }
+.stat-tiles dd, .stat-overall strong, .result-stat b, .eclipse-chip, .streak, .odds-tag, .duel-countdown, .piece-stats, .next-up h3 span { font-variant-numeric: tabular-nums; }

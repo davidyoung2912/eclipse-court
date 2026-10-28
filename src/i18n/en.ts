@@ -134,6 +134,7 @@ export const en = {
   'menu.gauntlet': 'Gauntlet',
   'menu.puzzles': 'Puzzles',
   'menu.suggestion': 'A suggestion',
+  'menu.nextUp': 'Next up',
   'menu.thanks': 'Thanks',
   'menu.firstSteps': 'First steps',
   'menu.stepsDone': '{done} of {total}',

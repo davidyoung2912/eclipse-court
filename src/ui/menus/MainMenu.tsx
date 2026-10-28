@@ -8,7 +8,7 @@ import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
 import { TipCard } from '../tips/TipCard'
-import { cardSummaries, primaryAction, suggestions, type CardInfo, type SuggestionTarget } from './menuModel'
+import { cardSummaries, nextUpSlot, primaryAction, suggestions, type CardInfo, type SuggestionTarget } from './menuModel'
 import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
 import { t } from '../../i18n'
@@ -174,6 +174,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const greeter = personaOfTheDay(seed)
   const summary = cardSummaries(progress, dailySeed(), storyRead)
   const next = firstRun ? [] : suggestions(progress, dailyDone)
+  const slot = nextUpSlot({ advice: !!advice, steps: showChecklist(steps, onboarding), suggestions: next.length > 0, greeting: getSettings().banter !== 'off' })
   const go: Record<SuggestionTarget, () => void> = { daily: onDaily, dailyPuzzle: onDailyPuzzle, weekly: onWeekly, puzzles: onPuzzles, campaign: onCampaign }
   const cards: Card[] = [
     { icon: 'book', id: 'story', title: t('menu.story'), info: summary.story, onClick: onStory, wide: true },
@@ -208,35 +209,36 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       </div>
       <div className="menu-main">
-      {getSettings().banter !== 'off' && (
-        <aside className="persona-greet" aria-label={`${greeter.name} says hello`}>
+      {slot && (
+        <aside className="next-up" data-slot={slot} aria-label={t('menu.nextUp')}>
           <PersonaFace id={greeter.id} className="persona-bubble-face" />
-          <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>
+          <div className="next-up-body">
+            {slot === 'advice' && advice && (
+              <>
+                <p>{advice.text}</p>
+                <button className="primary" onClick={hideAdvice}><Icon name="check" />{t('menu.thanks')}</button>
+              </>
+            )}
+            {slot === 'steps' && (
+              <>
+                <h3><em><Icon name="checklist" />{t('menu.firstSteps')}</em><span>{t('menu.stepsDone', { done: steps.filter((s) => s.done).length, total: steps.length })}</span></h3>
+                <ul className="next-up-steps">
+                  {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
+                </ul>
+                <button className="primary" onClick={hideChecklist}><Icon name="check" />{t('menu.hide')}</button>
+              </>
+            )}
+            {slot === 'suggestion' && (
+              <>
+                <h3>{t('menu.suggested')}</h3>
+                <ul className="next-up-list">
+                  {next.map((x) => <li key={x.target}><button onClick={go[x.target]}><Icon name={x.icon} />{x.text}</button></li>)}
+                </ul>
+              </>
+            )}
+            {slot === 'greeting' && <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>}
+          </div>
         </aside>
-      )}
-      {advice && (
-        <aside className="coach-card" role="note" aria-label={t('menu.suggestion')}>
-          <Icon name="bulb" />
-          <p>{advice.text}</p>
-          <button className="primary" onClick={hideAdvice}><Icon name="check" />{t('menu.thanks')}</button>
-        </aside>
-      )}
-      {showChecklist(steps, onboarding) && (
-        <section className="first-steps" aria-label={t('menu.firstSteps')}>
-          <h3><em><Icon name="checklist" />{t('menu.firstSteps')}</em><span>{t('menu.stepsDone', { done: steps.filter((s) => s.done).length, total: steps.length })}</span></h3>
-          <ul>
-            {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
-          </ul>
-          <button className="primary" onClick={hideChecklist}><Icon name="check" />{t('menu.hide')}</button>
-        </section>
-      )}
-      {next.length > 0 && !showChecklist(steps, onboarding) && (
-        <section className="suggested" aria-label={t('menu.suggested')}>
-          <h3>{t('menu.suggested')}</h3>
-          <ul>
-            {next.map((x) => <li key={x.target}><button onClick={go[x.target]}><Icon name={x.icon} />{x.text}</button></li>)}
-          </ul>
-        </section>
       )}
       <section className="today" aria-label={t('menu.today')}>
         <h3>{t('menu.today')}{summary.streak > 0 && <span className="streak"><Icon name="flame" />{t('menu.dayStreak', { count: summary.streak })}</span>}</h3>
