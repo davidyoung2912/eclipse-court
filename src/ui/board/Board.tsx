@@ -3,7 +3,8 @@ import { ROLE_NAMES } from '../../engine/data/roster'
 import { allSquares, centerOf, chebyshev, isBeacon, isBlocked, isCycling, ringOf, samePos, sizeOf } from '../../engine/rules/board'
 import { safeRadius } from '../../engine/rules/events'
 import { squareLuminance } from '../../engine/rules/luminance'
-import type { GameState, Piece, Pos } from '../../engine/rules/types'
+import type { Court, GameState, Piece, Pos } from '../../engine/rules/types'
+import { visibleTo } from '../../engine/data/modifiers'
 import { PieceArt } from '../../art/PieceArt'
 import { BoardDefs } from '../../art/Tile'
 import { getSettings } from '../../settings'
@@ -31,6 +32,8 @@ interface Props {
   hint?: { from?: Pos; to?: Pos; square?: Pos; pieceId?: string }
   /** Turn the board half a turn so the Umbral edge is at the bottom. */
   flip?: boolean
+  /** Hide the enemy pieces this court cannot see under fog of war. */
+  fogFor?: Court
 }
 
 /** Pause on the start square, then the same slide a real move makes, then a pause on arrival. */
@@ -58,7 +61,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false }: Props) {
+export const Board = memo(function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const radius = safeRadius(state)
@@ -120,7 +123,7 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
           </g>
         )
       })}
-      {state.pieces.map((pc) => {
+      {state.pieces.filter((pc) => !fogFor || visibleTo(state, fogFor, pc)).map((pc) => {
         const { cx, cy } = toScreen(pc.pos, flip, size)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id)
         return (

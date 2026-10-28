@@ -82,7 +82,7 @@ export function cardSummaries(progress: Progress, today: number, story: StorySta
   }
 }
 
-export type SectionId = 'army' | 'spells' | 'win' | 'hazards' | 'clock'
+export type SectionId = 'army' | 'spells' | 'win' | 'hazards' | 'clock' | 'twists'
 
 /** The rule fields (as `normalRules` spells them) each collapsible section of the setup screen holds. */
 const SECTION_FIELDS: Record<SectionId, readonly (keyof ReturnType<typeof normalRules>)[]> = {
@@ -91,6 +91,7 @@ const SECTION_FIELDS: Record<SectionId, readonly (keyof ReturnType<typeof normal
   win: ['winMode', 'cycle', 'reverse'],
   hazards: ['events', 'showdown', 'growth', 'promotion'],
   clock: ['seconds', 'bank'],
+  twists: [],
 }
 
 export interface SetupValues {

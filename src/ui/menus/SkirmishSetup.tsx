@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import { BOARDS, GRAND_BOARDS, boardById, grandBoardById } from '../../engine/data/boards'
 import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
-import { matchesPreset, presetById, PRESETS, RULESETS, rulesetById, SETUP_INFO, type Preset, type RuleGroup, type RulesetId, type PresetRules, type SetupChoice, type SetupMode } from '../../engine/data/setups'
+import { matchesPreset, presetById, skirmishConfig, PRESETS, RULESETS, rulesetById, SETUP_INFO, type Preset, type RuleGroup, type RulesetId, type PresetRules, type SetupChoice, type SetupMode } from '../../engine/data/setups'
 import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
 import { BANK_SECONDS } from '../../clock'
+import { FOG_SIGHT, HEAD_START_LEVELS, shardMultiplier, SUDDEN_DEATH_ROUNDS } from '../../engine/data/modifiers'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { ShareButton } from '../ShareButton'
@@ -80,6 +81,9 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const [extraTime, setExtraTime] = useState(false)
   const [growth, setGrowth] = useState(false)
   const [promotion, setPromotion] = useState(false)
+  const [fog, setFog] = useState(false)
+  const [suddenDeath, setSuddenDeath] = useState(0)
+  const [headStart, setHeadStart] = useState(0)
   const [presetId, setPresetId] = useState<string | null>(null)
   const [rulesId, setRulesId] = useState<RulesetId>(initialTier)
   const tier = rulesetById(rulesId) ?? RULESETS[1]
@@ -91,7 +95,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
       ? { text: loadoutProblem(court, loadout) as string, section: 'spells' }
       : null
   const ready = problem === null
-  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({ army: false, spells: false, win: false, hazards: false, clock: false })
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({ army: false, spells: false, win: false, hazards: false, clock: false, twists: false })
   const reveal = (...ids: SectionId[]) => setOpenSections((o) => ({ ...o, ...Object.fromEntries(ids.map((id) => [id, true])) }))
   const choice = (): SetupChoice => ({
     mode: grand ? 'classic' : mode, board: boardId, roles,
@@ -102,6 +106,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     ...(tier.rules.passives === false ? { passives: false } : {}),
     ...(tier.rules.spells ? { spells: tier.rules.spells } : {}),
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
+    ...(fog ? { fog } : {}), ...(suddenDeath ? { suddenDeath } : {}), ...(headStart ? { headStart } : {}),
   })
   const applyRules = (r: PresetRules) => {
     setWinMode(r.winMode ?? 'beacons')
@@ -146,6 +151,9 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     },
     armyMode: mode, boardId, spellMode,
   }, tier.rules))
+  const twistList = [fog && 'Fog of war', suddenDeath > 0 && `Sudden death ${suddenDeath}`, headStart > 0 && `AI +${headStart} HP`].filter(Boolean)
+  // The multiplier is for a match against the computer; two people share it, so none is promised then.
+  const bonus = hotSeat ? 1 : shardMultiplier(skirmishConfig(choice(), court, 1), court)
   const clockName = CLOCKS.find((c) => c.seconds === clockSeconds)?.name ?? 'Untimed'
   const hazards = [
     open('events') && events && 'Events',
@@ -159,9 +167,10 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     win: [open('win') && MODE_INFO[winMode].name, open('cycle') && `${CYCLES.find((c) => c.id === cycle)?.name} day`, open('reverse') && reverse && 'reversed'].filter(Boolean).join(' · '),
     hazards: hazards.length ? hazards.join(' · ') : 'None',
     clock: clockSeconds ? `${clockName}${extraTime ? ' + extra time' : ''}` : 'Untimed',
+    twists: twistList.length ? twistList.join(' · ') : 'None',
   }
   const sectionProps = (id: SectionId) => ({
-    summary: summaries[id], changed: changed.has(id), open: openSections[id],
+    summary: summaries[id], changed: changed.has(id) || (id === 'twists' && twistList.length > 0), open: openSections[id],
     onToggle: (o: boolean) => setOpenSections((cur) => ({ ...cur, [id]: o })),
   })
   const onlineOption: SegOption<'one' | 'two' | 'online'> = { value: 'online', label: 'Online', icon: 'chain', hint: 'Host a game for a friend on another device. Duels are settled automatically.' }
@@ -266,6 +275,18 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         <Segmented label="Turn clock" options={clocks} value={clockSeconds} onChange={setClockSeconds} />
         {clockSeconds > 0 && <ToggleRow label="Extra time" text={`${BANK_SECONDS} seconds per court, spent only after a turn runs out.`} checked={extraTime} onChange={() => setExtraTime((v) => !v)} />}
       </Section>}
+      <Section title="Twists" {...sectionProps('twists')}>
+        <ToggleRow label="Fog of war" text={`Enemy pieces more than ${FOG_SIGHT} squares from yours are hidden. Against the computer only.`} checked={fog} onChange={() => setFog((f) => !f)} />
+        <h4>Sudden death</h4>
+        <Segmented label="Sudden death" options={[{ value: 0, label: 'Off', hint: 'The game runs its course.' },
+          ...SUDDEN_DEATH_ROUNDS.map((r) => ({ value: r, label: `Round ${r}`, hint: `From round ${r}, the first duel that kills a piece ends the game.` }))]}
+          value={suddenDeath} onChange={setSuddenDeath} />
+        <h4>AI head start</h4>
+        <Segmented label="AI head start" options={[{ value: 0, label: 'None', hint: 'An even start.' },
+          ...HEAD_START_LEVELS.map((h) => ({ value: h, label: `+${h} HP`, hint: `Every opposing piece starts with ${h} more HP.` }))]}
+          value={headStart} onChange={setHeadStart} />
+        {bonus > 1 && <p className="setup-note">Twists and a short clock pay {Math.round((bonus - 1) * 100)}% more Shards on a win.</p>}
+      </Section>
       <div className="setup-actions">
         {problem && <button className="setup-problem" onClick={() => reveal(problem.section)}>{problem.text}</button>}
         <div className="menu-buttons">

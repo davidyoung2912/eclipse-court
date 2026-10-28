@@ -24,9 +24,11 @@ export const ROUND_LIMIT = DEFAULT_CONFIG.roundLimit
 /** A fresh match: a seed for the classic setup, or a full set of settings. */
 export function newGame(setup: number | Partial<MatchConfig> = 1): GameState {
   const config = matchConfig(typeof setup === 'number' ? { seed: setup } : setup)
+  const { edge } = config
   return {
     config,
-    pieces: startingPieces(config.layout, config.umbralLayout, sizeOf(config)),
+    pieces: startingPieces(config.layout, config.umbralLayout, sizeOf(config))
+      .map((p) => (edge && p.court === edge.court ? { ...p, hp: p.hp + edge.hp, maxHp: p.maxHp + edge.hp } : p)),
     captured: [],
     turn: 'solari',
     round: 1,
@@ -341,5 +343,10 @@ function applyMove(state: GameState, piece: Piece, action: Extract<Action, { typ
       else pieces.push(attackerHp <= 0 ? recordWin(config, { ...p, hp: defenderHp }) : { ...p, hp: defenderHp })
     } else pieces.push(p)
   }
-  return finishTurn({ ...state, pieces, captured, rng, lastDuel })
+  const next = finishTurn({ ...state, pieces, captured, rng, lastDuel })
+  // Sudden death: once the round comes, a duel that kills exactly one fighter ends the game.
+  const { suddenDeath } = config
+  if (suddenDeath && state.round >= suddenDeath && !next.winner && (attackerHp <= 0) !== (defenderHp <= 0))
+    return { ...next, winner: attackerHp <= 0 ? target.court : piece.court }
+  return next
 }

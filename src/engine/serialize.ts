@@ -134,7 +134,9 @@ const validConfigFor = (c: Partial<MatchConfig>, size: number): c is MatchConfig
   (c.recharge === undefined || inRange(c.recharge, 1, MAX_RECHARGE)) && (c.passives === undefined || typeof c.passives === 'boolean') &&
   (c.mode === undefined || (MODES as readonly unknown[]).includes(c.mode)) && (c.objective === undefined || validObjective(c.objective, size)) &&
   (c.turnClock === undefined || validClock(c.turnClock)) &&
-  (['events', 'showdown', 'reverse', 'growth', 'promotion'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
+  (c.suddenDeath === undefined || inRange(c.suddenDeath, 1, MAX_ROUNDS)) &&
+  (c.edge === undefined || ((c.edge?.court === 'solari' || c.edge?.court === 'umbral') && inRange(c.edge.hp, 1, 5))) &&
+  (['events', 'showdown', 'reverse', 'growth', 'promotion', 'fog'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */
 export function decodeRecord(code: string): GameRecord | null {

@@ -140,6 +140,12 @@ export interface MatchConfig {
   growth?: boolean
   /** Footsoldiers reaching the enemy home column become Chargers or Marksmen. */
   promotion?: boolean
+  /** The human cannot see enemy pieces more than a couple of squares from their own; a display rule that the engine ignores. */
+  fog?: boolean
+  /** From this round on, the first duel that kills a piece wins the game for the survivor. */
+  suddenDeath?: number
+  /** Every piece of this court starts with this much more HP (a head start for the AI). */
+  edge?: { court: Court; hp: number }
 }
 
 /** A spell cast earlier, waiting to return to its Leader. */

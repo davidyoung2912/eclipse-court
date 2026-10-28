@@ -606,6 +606,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .setup-actions .menu-buttons { margin-top: 0; }
 .setup-actions .menu-buttons button { padding: 14px 8px; }
 .setup-actions .menu-buttons button.primary { flex: 2; }
+.setup-note { margin: 0; font-size: 0.85rem; opacity: 0.8; }
 .setup-problem { padding: 8px 10px; border-radius: 8px; border: 1px solid #ff8a8a; background: rgba(255, 138, 138, 0.1); color: #ff8a8a; font-size: 0.85rem; text-align: left; }
 @media (prefers-reduced-motion: reduce) { .setup-toggle input[type='checkbox']::after { transition: none; } }
 

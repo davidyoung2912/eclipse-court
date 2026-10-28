@@ -2,6 +2,7 @@ import { boardById, BOARDS, grandBoardById } from './boards'
 import { arrange, randomDraft } from './draft'
 import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import { rngNext } from '../rng'
+import { otherCourt } from '../rules/board'
 import { DAYS, type CycleId } from '../rules/luminance'
 import type { Court, MatchConfig, MatchMode, Role, Spell, TurnClock } from '../rules/types'
 
@@ -48,6 +49,12 @@ export interface SetupChoice {
   growth?: boolean
   /** Footsoldiers that cross the board are promoted. */
   promotion?: boolean
+  /** Enemy pieces beyond reach of your own are hidden. */
+  fog?: boolean
+  /** From this round on, the first kill in a duel wins. */
+  suddenDeath?: number
+  /** The opponent's pieces start with this much more HP. */
+  headStart?: number
   /** Court passives (Solari fliers in full light, Umbral regeneration in the dark); on when absent. */
   passives?: boolean
   /** Both Leaders carry exactly these spells, whatever `loadout` says. */
@@ -182,6 +189,9 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.clock) base.turnClock = choice.clock
   if (choice.growth) base.growth = true
   if (choice.promotion) base.promotion = true
+  if (choice.fog) base.fog = true
+  if (choice.suddenDeath) base.suddenDeath = choice.suddenDeath
+  if (choice.headStart) base.edge = { court: otherCourt(human), hp: choice.headStart }
   if (choice.passives === false) base.passives = false
   if (mode === 'classic') return base
   if (mode === 'draft') {

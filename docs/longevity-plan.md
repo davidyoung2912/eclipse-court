@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L4 done; L5 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L5 done; L6 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -39,7 +39,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L2 (done): shards and cosmetics shop.** A wallet (`eclipse-court:shop`) of Shards, earned from finished games (more for harder opponents and first clears), achievements and daily/weekly play. A Collection page spends them on cosmetics: board themes (the four star-locked themes stay free unlocks), piece sets, capture effects, sound packs and Story codex art. Equip state is saved. Cosmetics are CSS variables, art variants and synth settings only.
 - **L3 (done): mastery and achievements.** Per-area mastery tracks (Campaign, Scenarios, Puzzles, Gauntlet, Grand board, Online) with levels that pay Shards. About 25 new achievements, including review-based ones ("a game with no mistakes"), a no-loss tier clear, and speed goals. Three pinnable showcase badges on the Stats page. Needs L1 and L2.
 - **L4 (done): weekly challenge.** A seeded modifier-of-the-week match (for example "every square is a Hazard") reusing the daily plumbing, with a best-score board on the device and a shard reward. Needs L2.
-- **L5: modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
+- **L5 (done): modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
 - **L6: ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
 - **L7: Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
 - **L8: editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
@@ -72,3 +72,9 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/engine/data/weekly.ts`: `WEEKLY_MODIFIERS` (eight twists, five of them a cell effect over the middle band), `weeklyMatch(date)` (week = Monday's `dailySeed`; seeded random army, persona and difficulty), `isWeeklyMatch`, `weeklyScore` (win 500 plus speed and pieces kept).
 - `src/weekly.ts` (+ test in `weekly.test.ts`): store `eclipse-court:weekly` with the week's best, attempts, weeks won and recent history; `recordWeekly` pays 40 Shards for a week's first win and 10 for each better winning score.
 - `src/ui/menus/Weekly.tsx`, a "Weekly" button in the main menu's Today row, wiring in `App.tsx` (`finishGame` records the score; weekly games are not counted as daily).
+
+## L5 file map
+- `src/engine/rules/types.ts`: `MatchConfig.fog`, `suddenDeath` (a round) and `edge` (`{ court, hp }`), all optional and off by default; validated in `serialize.ts` and listed by `describeConfig` in `share.ts`.
+- `src/engine/reducer.ts`: `newGame` applies `edge` (extra HP on every piece of that court); `applyMove` ends the game on a one-sided kill from the sudden-death round on. Fog is display only: the AI still sees everything.
+- `src/engine/data/modifiers.ts` (+ test): `visibleTo`, `FOG_SIGHT`, the choices, and `shardMultiplier(config, human)` (fog +25%, sudden death +10%, +20% per head-start HP against the human, and +15/10/5% for a 15 s / 30 s / longer turn clock). `shardsForGame` takes the multiplier for the game part, not for achievements.
+- `src/engine/data/setups.ts`: `SetupChoice.fog / suddenDeath / headStart`. `SkirmishSetup.tsx` has a Twists section; `Board` takes `fogFor`, passed by `Game` only against the AI. The capture timer is the existing turn clock.

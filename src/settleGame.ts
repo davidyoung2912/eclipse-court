@@ -11,6 +11,7 @@ import {
 import type { Summary } from './engine/data/summary'
 import { CAMPAIGN } from './engine/data/campaign'
 import { shardsForGame } from './shop'
+import { shardMultiplier } from './engine/data/modifiers'
 
 export interface Settled {
   summary: Summary | null
@@ -62,7 +63,7 @@ export function settleGame(progress: Progress, c: Context): Settled {
   }
   const shards = shardsForGame({
     won: summary.won, draw: summary.draw, difficulty, firstClear, campaign: campaignIndex !== null, scenario: scenario !== undefined,
-    dailyScored: !!scored?.scored, achievements: earned.length + (scored?.earned.length ?? 0) + scenarioAchievements,
+    dailyScored: !!scored?.scored, multiplier: shardMultiplier(finished.initial.config, human), achievements: earned.length + (scored?.earned.length ?? 0) + scenarioAchievements,
   })
   return {
     summary,

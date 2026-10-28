@@ -398,7 +398,7 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
       <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
-        focus={boardFocus} hint={boardHint} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+        focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={duelCells(state, attacker, defender)}

@@ -98,6 +98,8 @@ export interface Earning {
   scenario: boolean
   dailyScored: boolean
   achievements: number
+  /** The match's modifier multiplier (`shardMultiplier`); 1 when absent. */
+  multiplier?: number
 }
 
 const BY_DIFFICULTY: Record<Difficulty, number> = { easy: 8, normal: 12, hard: 18 }
@@ -109,7 +111,7 @@ export function shardsForGame(e: Earning): number {
   if (e.won && e.scenario) n += 6
   if (e.won && e.firstClear) n += 20
   if (e.dailyScored) n += 15
-  return n + e.achievements * 10
+  return Math.round(n * (e.multiplier ?? 1)) + e.achievements * 10
 }
 
 export const SHARDS_PUZZLE = 5
