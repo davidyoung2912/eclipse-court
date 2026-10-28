@@ -721,7 +721,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .puzzle-intro p { margin: 0 0 14px; line-height: 1.45; }
 .puzzle-intro-foot { display: flex; justify-content: flex-end; }
 .puzzle-intro-foot button {
-  display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-size: 1rem; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 9px; font-size: 0.88rem; font-weight: 700;
   background: var(--solari-gold); color: #1b1740; border: 1px solid var(--solari-cream);
 }
 
