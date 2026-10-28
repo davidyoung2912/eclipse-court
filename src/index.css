@@ -439,7 +439,8 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .mode-card.wide { grid-column: 1 / -1; }
 .mode-card strong { display: flex; align-items: center; gap: 8px; letter-spacing: 0.06em; }
 .mode-card span { font-size: 0.8rem; opacity: 0.8; line-height: 1.25; }
-.utility { display: flex; gap: 6px; margin-top: auto; }
+/* margin-top: auto pushes the bar to the bottom; the padding keeps a gap above it when the page is full. */
+.utility { display: flex; gap: 6px; margin-top: auto; padding-top: 18px; }
 .utility button {
   flex: 1; min-width: 44px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; padding: 6px 2px; box-shadow: none;
