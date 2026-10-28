@@ -1391,6 +1391,19 @@ svg.board:focus { outline: none; }
 .game-solari::after, .game-umbral::after { content: ''; position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity var(--t-slow) var(--ease); background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%); }
 .eclipsed::after { opacity: 1 !important; }
 .eclipsed .hud, .eclipsed .board { filter: saturate(0.45) brightness(0.85); }
+/* The HUD wears the board's Hour: a warm wash while the light rises, violet as it wanes, and a dawn-to-dusk strip whose marker walks toward the Eclipse disc at its end. */
+.hud { position: relative; }
+.hud-rising { --hour: #ffe9a8; }
+.hud-waning { --hour: #6a4fd0; }
+.hud-eclipse { --hour: #000; }
+.hud::before { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 8px; background: radial-gradient(ellipse at 50% 0%, var(--hour), transparent 80%); opacity: 0.16; transition: opacity var(--t-slow) var(--ease), background var(--t-slow) var(--ease); }
+.dial { position: relative; }
+.dial-now { box-shadow: 0 0 10px color-mix(in srgb, var(--hour, #ffdc8c) 60%, transparent); }
+.hour-strip { position: absolute; left: 0; right: 14px; bottom: -3px; height: 3px; border-radius: 2px; background: linear-gradient(to right, #ffe9a8, #e8b64a 35%, #6a4fd0 80%, #1b1740); opacity: 0.85; }
+.hour-mark { position: absolute; top: -2px; left: calc(var(--at) * 100%); width: 7px; height: 7px; margin-left: -3px; border-radius: 50%; background: #fbf1d4; box-shadow: 0 0 6px #ffe9a8; transition: left var(--t-slow) var(--ease); }
+.hour-end { position: absolute; top: -4px; right: -14px; width: 11px; height: 11px; border-radius: 50%; background: #05030c; box-shadow: 0 0 0 1.5px var(--solari-gold), 0 0 8px rgba(232, 182, 74, 0.55); }
+.hud-eclipse .hour-mark { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .hud::before, .hour-mark { transition: none; } }
 body:has(.eclipsed) { --tone-a: #14101f !important; --tone-b: #030208 !important; }
 @media (prefers-reduced-motion: reduce) { .game-solari .hud, .game-umbral .hud, .game-solari .board, .game-umbral .board, .game-solari::after, .game-umbral::after { transition: none; } }
 

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, objectiveRounds, safeRadius, SCORE_TARGET } from '../../engine/rules/events'
 import { centerOf, sizeOf } from '../../engine/rules/board'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
@@ -6,14 +6,16 @@ import type { GameState } from '../../engine/rules/types'
 import { t } from '../../i18n'
 import { eclipseIn } from '../board/aids'
 import { lumColor } from '../board/lumColor'
+import { hourStrip } from './hourStrip'
 
 export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip?: boolean }) {
   const now = squareLuminance(state, centerOf(sizeOf(state.config)))
   const next = forecast(state, 3)
   const notes = hudNotes(state)
   const left = chip ? eclipseIn(state) : null
+  const { hour, at } = hourStrip(state)
   return (
-    <header className="hud">
+    <header className={`hud hud-${hour}`}>
       <div className="hud-round">
         {state.eclipse ? 'Eclipse' : `Round ${Math.min(state.round, state.config.eclipseRound)} / ${state.config.eclipseRound}`}
         <span key={state.turn} className={`turn turn-${state.turn}`}>{state.turn === 'solari' ? 'Solari' : 'Umbral'} to move</span>
@@ -25,6 +27,10 @@ export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip
         {next.map((l, i) => (
           <span key={i} className="dial-next" style={{ background: lumColor(l) }}>{l > 0 ? `+${l}` : l}</span>
         ))}
+      </div>
+      <div className="hour-strip" aria-hidden="true" style={{ '--at': at } as CSSProperties}>
+        <i className="hour-mark" />
+        <b className="hour-end" />
       </div>
     </header>
   )
