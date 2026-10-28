@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createDuelAi } from '../../ai/duelAi'
-import { sfx, startDuelDrums } from '../../audio/synth'
+import { setMuffled, sfx, startDuelDrums } from '../../audio/synth'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
 import { ASSIST_SLOW_SECONDS, ASSIST_SLOWDOWN, DUEL_PACE, getSettings } from '../../settings'
@@ -11,6 +11,7 @@ import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../.
 import type { DuelCells } from '../../engine/rules/cells'
 import type { CellEffect, DuelOutcome, Piece } from '../../engine/rules/types'
 import { hitStopFor, KO_END_DELAY, KO_SLOW, KO_SLOW_SECONDS } from '../../duelImpact'
+import { comboHit, comboPitch, comboTick, NO_COMBO } from '../../duelPresentation'
 import { createFx, drawDuel, updateFx } from './duelFx'
 import { DuelBriefing } from './DuelBriefing'
 import { TipCard, useTipsPending } from '../tips/TipCard'
@@ -163,6 +164,8 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     let shake = 0
     let endTimer = -1
     let hudTick = 0
+    let combo = NO_COMBO
+    let muffled = false
     const fx = createFx({
       luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
       courts: [attacker.court, defender.court], mineSide: playerSide, assistSide: assist ? playerSide : undefined,
@@ -219,8 +222,11 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           else if (e.type === 'slam') sfx.slam()
           else if (e.type === 'pickup') sfx.pickup()
           else if (e.type === 'hit') {
-            sfx.hit(e.damage)
-            freeze = hitStopFor(e.damage, state.fighters[e.target].hp <= 0)
+            combo = comboHit(combo, (1 - e.target) as 0 | 1)
+            sfx.hit(e.damage, comboPitch(combo.count))
+            const ko = state.fighters[e.target].hp <= 0
+            if (ko) sfx.crowd()
+            freeze = hitStopFor(e.damage, ko)
             shake = getSettings().reduceMotion ? 0 : Math.min(14, 4 + e.damage * 3)
             if (optionsRef.current.haptics) navigator.vibrate?.(e.damage >= 2 ? 40 : 18)
           } else if (e.type === 'suddenDeath') setBanner('Sudden death!')
@@ -242,6 +248,10 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           return
         }
       }
+      combo = comboTick(combo, dt)
+      // Sound goes dull while the fight is frozen on a heavy blow.
+      const dull = freeze > 0.08
+      if (dull !== muffled) { muffled = dull; setMuffled(dull) }
       drums.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
       if (started.current) fx.call += dt
@@ -258,6 +268,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     raf = requestAnimationFrame(frame)
     return () => {
       cancelAnimationFrame(raf)
+      setMuffled(false)
       drums.stop()
     }
   }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, assist, seed, waiting])

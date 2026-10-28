@@ -1,6 +1,7 @@
 import { debrisCount, healthColor, lowHealthPulse, punchFor, PUNCH_RETURN, shockwaveRadius, stepGhost, struck, type Ghost } from '../../duelImpact'
+import { ambientLight, chargeAura, easeTo, flareFor, followZoom, loserFade, PARALLAX, telegraphFill } from '../../duelPresentation'
 import { lostPanes, PALETTE, pieceArtSvg } from '../../art/pieceGeometry'
-import { ARENA_H, ARENA_W, BUFF_SECONDS, PICKUP_KINDS, PICKUP_LIFE, PICKUP_RADIUS, type DuelEvent, type DuelState, type PickupKind, type Vec } from '../../engine/duel/types'
+import { ARENA_H, ARENA_W, BUFF_SECONDS, DUEL_SECONDS, PICKUP_KINDS, PICKUP_LIFE, PICKUP_RADIUS, type DuelEvent, type DuelState, type PickupKind, type Vec } from '../../engine/duel/types'
 import type { CellEffect, Court, Piece } from '../../engine/rules/types'
 
 export const COLORS: Record<Court, string> = { solari: '#e8b64a', umbral: '#7a5cc8' }
@@ -95,6 +96,9 @@ export interface Fx {
   ghost: [Ghost, Ghost]
   /** Seconds since a fighter fell and which one, or null while the fight goes on. */
   ko: { t: number; side: 0 | 1 } | null
+  /** The follow-zoom camera's current zoom (a share) and the flare of arena light a hit leaves behind. */
+  cam: number
+  flare: number
 }
 
 /** Width of the coloured side strips, in arena units. */
@@ -113,7 +117,7 @@ export function createFx(look: DuelLook): Fx {
       ph: Math.random() * 6.28, r: 0.025 + Math.random() * 0.04,
     })
   }
-  return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null], punch: 0, punchAt: { x: ARENA_W / 2, y: ARENA_H / 2 }, ghost: [{ value: 1, hold: 0 }, { value: 1, hold: 0 }], ko: null }
+  return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null], punch: 0, punchAt: { x: ARENA_W / 2, y: ARENA_H / 2 }, ghost: [{ value: 1, hold: 0 }, { value: 1, hold: 0 }], ko: null, cam: 0, flare: 0 }
 }
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10)
@@ -149,7 +153,16 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
       fx.punch = Math.max(fx.punch, punchFor(e.damage, ko, calm))
       fx.punchAt = e.at
       fx.ghost[e.target] = struck(fx.ghost[e.target])
-      if (ko && !fx.ko) fx.ko = { t: 0, side: e.target }
+      fx.flare = Math.max(fx.flare, flareFor(e.damage))
+      if (ko && !fx.ko) {
+        fx.ko = { t: 0, side: e.target }
+        // The fallen fighter breaks up into motes of its court's colour.
+        for (let i = calm ? 8 : 24; i > 0; i--) {
+          const a = Math.random() * Math.PI * 2
+          const v = 0.4 + Math.random() * 1.6
+          push(fx, { kind: 'spark', x: victim.pos.x, y: victim.pos.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.5, life: 1, max: 1, r: 0.05 + Math.random() * 0.06, color: COLORS[victim.court] })
+        }
+      }
       if (!calm) {
         const dx = victim.pos.x - hitter.pos.x
         const dy = victim.pos.y - hitter.pos.y
@@ -180,6 +193,9 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
     fx.recoil[i] = { x: fx.recoil[i].x * k, y: fx.recoil[i].y * k }
   })
   fx.punch *= Math.exp(-dt * PUNCH_RETURN)
+  const [a, b] = s.fighters
+  fx.cam = easeTo(fx.cam, followZoom(Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y), Math.min(a.hp / a.maxHp, b.hp / b.maxHp), calm), 2.5, dt)
+  fx.flare *= Math.exp(-dt * 4)
   if (fx.ko) fx.ko.t += dt
   s.fighters.forEach((f, i) => { fx.ghost[i] = stepGhost(fx.ghost[i], Math.max(0, f.hp / f.maxHp), dt) })
   for (const p of fx.particles) {
@@ -522,6 +538,15 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
 
   // The camera punches in toward the last impact and eases back.
   ctx.save()
+  if (fx.cam > 0.001) {
+    // The follow-zoom leans on the midpoint between the fighters.
+    const [fa, fb] = s.fighters
+    const mx = bx + ((fa.pos.x + fb.pos.x) / 2) * scale
+    const my = by + ((fa.pos.y + fb.pos.y) / 2) * scale
+    ctx.translate(mx, my)
+    ctx.scale(1 + fx.cam, 1 + fx.cam)
+    ctx.translate(-mx, -my)
+  }
   if (fx.punch > 0.001) {
     const zx = bx + fx.punchAt.x * scale
     const zy = by + fx.punchAt.y * scale
@@ -546,7 +571,20 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   ctx.clearRect(0, 0, w, h)
   ctx.fillStyle = '#0c0920'
   ctx.fillRect(X(0), Y(0), ARENA_W * scale, ARENA_H * scale)
-  ctx.drawImage(fx.floor.canvas, sx, sy, w, h)
+  // The floor sits further back, so it follows the shake only part of the way.
+  ctx.drawImage(fx.floor.canvas, sx * PARALLAX, sy * PARALLAX, w, h)
+  {
+    // Ambient light swells with the clock and flares on every hit.
+    const glow = ambientLight(t, 1 - s.t / DUEL_SECONDS, calm ? 0 : fx.flare)
+    const lamp = ctx.createRadialGradient(X(ARENA_W / 2), Y(ARENA_H / 2), 0, X(ARENA_W / 2), Y(ARENA_H / 2), Math.max(ARENA_W, ARENA_H) * 0.6 * scale)
+    lamp.addColorStop(0, theme.rim)
+    lamp.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.save()
+    ctx.globalAlpha = glow * 0.18
+    ctx.fillStyle = lamp
+    ctx.fillRect(X(0), Y(0), ARENA_W * scale, ARENA_H * scale)
+    ctx.restore()
+  }
 
   const aw = ARENA_W * s.arena
   const ah = ARENA_H * s.arena
@@ -648,6 +686,11 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
       ctx.strokeStyle = `rgba(255, 255, 255, ${0.25 + 0.4 * k})`
       ctx.lineWidth = 1.5
       ctx.beginPath(); ctx.arc(tx, ty, 0.9 * scale, 0, Math.PI * 2); ctx.stroke()
+      // A fill grows out from the middle of the decal until the shot lands.
+      ctx.fillStyle = color
+      ctx.globalAlpha = 0.28
+      ctx.beginPath(); ctx.arc(tx, ty, 0.9 * scale * telegraphFill(p.ttl, start), 0, Math.PI * 2); ctx.fill()
+      ctx.globalAlpha = 1
       const lift = Math.sin(k * Math.PI) * 0.9
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
       ctx.beginPath(); ctx.ellipse(X(p.pos.x), Y(p.pos.y) + 2, 0.13 * scale, 0.07 * scale, 0, 0, Math.PI * 2); ctx.fill()
@@ -683,8 +726,23 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     const py = f.pos.y + rec.y + bob + (1 - slide) * (i === 0 ? 3 : -3)
     const cx = X(px)
     const cy = Y(py)
-    const r = f.radius * (calm ? 1 : 1 + 0.025 * Math.sin(t * 3 + i * 2)) * scale
-    ctx.globalAlpha = 0.4 + 0.6 * slide
+    const fallen = fx.ko?.side === i
+    const fade = fallen ? loserFade(fx.ko!.t) : { alpha: 1, scale: 1 }
+    const r = f.radius * (calm ? 1 : 1 + 0.025 * Math.sin(t * 3 + i * 2)) * scale * fade.scale
+    ctx.globalAlpha = (0.4 + 0.6 * slide) * fade.alpha
+    const aura = f.hp > 0 ? chargeAura(f.charge) : null
+    if (aura) {
+      // A glow gathers round a fighter winding up an attack.
+      const g = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * aura.radius * 1.6)
+      g.addColorStop(0, `${COLORS[f.court]}00`)
+      g.addColorStop(0.5, `${COLORS[f.court]}${Math.round(aura.strength * (calm ? 0.5 : 1) * 160).toString(16).padStart(2, '0')}`)
+      g.addColorStop(1, `${COLORS[f.court]}00`)
+      ctx.save()
+      ctx.globalAlpha = 1
+      ctx.fillStyle = g
+      ctx.beginPath(); ctx.arc(cx, cy, r * aura.radius * 1.6, 0, Math.PI * 2); ctx.fill()
+      ctx.restore()
+    }
     // Soft shadow on the floor.
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
     ctx.beginPath(); ctx.ellipse(X(f.pos.x + rec.x), Y(f.pos.y + rec.y) + r * 0.7, r * 0.95, r * 0.4, 0, 0, Math.PI * 2); ctx.fill()
@@ -706,6 +764,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
       ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, fx.flash[i] / 0.18) * 0.75})`
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
     }
+    if (fallen) { ctx.globalAlpha = 1; return }
     if (f.hp > 0 && f.hp / f.maxHp <= 0.34) {
       ctx.strokeStyle = `rgba(255, 70, 80, ${0.35 + 0.35 * Math.sin(t * 8)})`
       ctx.lineWidth = 3

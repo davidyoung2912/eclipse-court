@@ -1414,3 +1414,18 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 /* Eclipse chip: rounds left before the Eclipse falls; violet on the last round. */
 .eclipse-chip { align-self: flex-start; margin-top: 2px; padding: 1px 8px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; font-size: 0.75rem; font-weight: 500; }
 .eclipse-chip.soon { background: #3b2d86; border-color: #cdbfff; color: #fff; }
+
+/* Duel versus intro: the two cards slide in from opposite sides and meet at a "VS" */
+.duel-brief-cards { position: relative; }
+.duel-brief-card:first-child { animation: brief-from-left 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.duel-brief-card:last-child { animation: brief-from-right 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) 0.08s both; }
+.duel-brief-cards::after {
+  content: 'VS'; position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 2px 8px; border-radius: 999px;
+  font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.1em; background: #120d2a; border: 2px solid var(--solari-cream);
+  animation: brief-vs 0.35s ease-out 0.4s both;
+}
+@keyframes brief-from-left { from { transform: translateX(-60%); opacity: 0; } }
+@keyframes brief-from-right { from { transform: translateX(60%); opacity: 0; } }
+@keyframes brief-vs { from { transform: scale(2.2); opacity: 0; } }
+:root[data-motion='reduced'] .duel-brief-card, :root[data-motion='reduced'] .duel-brief-cards::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .duel-brief-card, .duel-brief-cards::after { animation: none; } }

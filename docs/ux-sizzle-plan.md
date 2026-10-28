@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phase 1 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-2 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -28,6 +28,8 @@ Fight page, `duelFx.ts` / `DuelView.tsx`, with the pure numbers in a new `src/du
 - Arena life: ambient light pulsing on hits and with the clock, a parallax layer that shifts with the shake.
 - Versus intro (medallions sliding in from opposite sides) and an outro (loser dissolves, stats count up).
 - Audio layering: hit pitch rising with a combo, a muffled low-pass during hit-stop, a crowd swell on K.O.
+
+Phase 2 notes: pure numbers are in `src/duelPresentation.ts`. Lob shots already had a landing decal, so it now fills as the shot comes down; slams have no wind-up in the engine, so the telegraph there is the charge aura. The stats count-up on the outro was left out (the result screen is outside the duel view); the loser now dissolves instead.
 
 ## Phase 3: Board move feel
 

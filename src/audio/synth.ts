@@ -5,6 +5,7 @@ const MUTE_KEY = 'eclipse-court:muted'
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let sfxOut: GainNode | null = null
+let muffler: BiquadFilterNode | null = null
 let musicOut: GainNode | null = null
 let muted = readMuted()
 
@@ -68,6 +69,11 @@ export function setVolumes(patch: Partial<typeof volumes>) {
   }
 }
 
+/** Muffles the effects behind a low-pass while on (the freeze on a heavy hit), and opens them up again when off. */
+export function setMuffled(on: boolean) {
+  if (ctx && muffler) muffler.frequency.setTargetAtTime(on ? 700 : 20000, ctx.currentTime, on ? 0.01 : 0.08)
+}
+
 export function setMuted(value: boolean) {
   muted = value
   try {
@@ -88,7 +94,10 @@ function audio(): AudioContext | null {
   master.connect(ctx.destination)
   sfxOut = ctx.createGain()
   sfxOut.gain.value = volumes.sfx
-  sfxOut.connect(master)
+  muffler = ctx.createBiquadFilter()
+  muffler.type = 'lowpass'
+  muffler.frequency.value = 20000
+  sfxOut.connect(muffler).connect(master)
   musicOut = ctx.createGain()
   musicOut.gain.value = volumes.music
   musicOut.connect(master)
@@ -180,9 +189,15 @@ export const sfx = {
     tone(80, 0.35, { gain: 0.35, to: 38 })
     noise(0.2, { gain: 0.2, freq: 250 })
   },
-  hit: (damage: number) => {
-    tone(160 + damage * 20, 0.18, { type: 'square', gain: 0.18, to: 70 })
+  /** `pitch` is a ratio that climbs with a combo of hits. */
+  hit: (damage: number, pitch = 1) => {
+    tone((160 + damage * 20) * pitch, 0.18, { type: 'square', gain: 0.18, to: 70 * pitch })
     noise(0.1, { gain: 0.15 + Math.min(0.15, damage * 0.04), freq: 1200 })
+  },
+  /** The crowd roars when a fighter falls: a swell of filtered noise. */
+  crowd: () => {
+    noise(1.4, { gain: 0.14, freq: 900 })
+    noise(1.1, { gain: 0.08, freq: 2400, delay: 0.15 })
   },
   /** A rising sting for the n-th capture in a row. */
   streak: (count: number) =>
