@@ -16,9 +16,11 @@ export interface StoryState {
   losses: Readonly<Record<string, number>>
   /** Who keeps the Hour, once the player has chosen. */
   ending: EndingId | null
+  /** Every ending the player has chosen, so choosing another later does not take an earlier one away. */
+  endings: ReadonlySet<EndingId>
 }
 
-const EMPTY: StoryState = { read: new Set(), characters: {}, losses: {}, ending: null }
+const EMPTY: StoryState = { read: new Set(), characters: {}, losses: {}, ending: null, endings: new Set() }
 
 const ENDINGS: readonly string[] = ['solarch', 'duskmother', 'shared', 'free']
 
@@ -27,7 +29,7 @@ const STATES: readonly string[] = ['ready', 'wounded', 'fallen']
 function parse(raw: unknown): StoryState {
   // The first version stored just the list of read chapters.
   if (Array.isArray(raw)) return { ...EMPTY, read: new Set(raw.filter((x): x is string => typeof x === 'string')) }
-  const o = (raw ?? {}) as Partial<Record<'read' | 'characters' | 'losses' | 'ending', unknown>>
+  const o = (raw ?? {}) as Partial<Record<'read' | 'characters' | 'losses' | 'ending' | 'endings', unknown>>
   const characters: CharacterStates = {}
   if (o.characters && typeof o.characters === 'object')
     for (const [id, state] of Object.entries(o.characters))
@@ -37,7 +39,9 @@ function parse(raw: unknown): StoryState {
     for (const [id, n] of Object.entries(o.losses)) if (typeof n === 'number' && Number.isInteger(n) && n > 0) losses[id] = n
   const read = Array.isArray(o.read) ? o.read.filter((x): x is string => typeof x === 'string') : []
   const ending = typeof o.ending === 'string' && ENDINGS.includes(o.ending) ? (o.ending as EndingId) : null
-  return { read: new Set(read), characters, losses, ending }
+  // Stories saved before endings were collected only know the latest one.
+  const seen = Array.isArray(o.endings) ? o.endings.filter((x): x is EndingId => typeof x === 'string' && ENDINGS.includes(x)) : []
+  return { read: new Set(read), characters, losses, ending, endings: new Set(ending ? [...seen, ending] : seen) }
 }
 
 function load(): StoryState {
@@ -54,7 +58,7 @@ let state = load()
 function commit(next: StoryState) {
   state = next
   try {
-    localStorage.setItem(KEY, JSON.stringify({ read: [...next.read], characters: next.characters, losses: next.losses, ending: next.ending }))
+    localStorage.setItem(KEY, JSON.stringify({ read: [...next.read], characters: next.characters, losses: next.losses, ending: next.ending, endings: [...next.endings] }))
   } catch {
     // Without storage the story simply starts over next visit.
   }
@@ -80,7 +84,7 @@ export function recordStoryLoss(id: string) {
 
 /** The player's choice at the end of the story; choosing again replaces it. */
 export function recordEnding(ending: EndingId) {
-  commit({ ...state, ending })
+  commit({ ...state, ending, endings: new Set(state.endings).add(ending) })
 }
 
 export function resetStory() {
@@ -156,8 +160,13 @@ export function markBondRead(id: string) {
 /** Bonds whose chapter has been read, in the order they were written. */
 export const availableBonds = (s: Pick<StoryState, 'read'>): Bond[] => BONDS.filter((b) => s.read.has(b.after))
 
+/** The groups the Story page folds its achievements into. */
+export const ACHIEVEMENT_GROUPS = ['The Tale', 'Trials', 'Company', 'Bonds', 'Endings'] as const
+export type AchievementGroup = (typeof ACHIEVEMENT_GROUPS)[number]
+
 export interface Achievement {
   id: string
+  group: AchievementGroup
   title: string
   text: string
   earned: boolean
@@ -167,15 +176,47 @@ export interface Achievement {
 export function achievements(s: StoryState): Achievement[] {
   const final = endingChapter()
   const done = (id: string) => s.read.has(id)
-  const defs: [string, string, string, boolean][] = [
-    ['stilling', 'The Stilling', 'Read the Prologue.', done('prologue')],
-    ['sky', 'The Sky Darkens', 'Finish Act I.', done('darkening-sky')],
-    ['raised', 'Called Back', 'Finish Act II.', done('long-dusk')],
-    ['whole-tale', 'The Whole Tale', 'Read every chapter.', CHAPTERS.every((c) => s.read.has(c.id))],
-    ['clean', 'Clean Hands', 'Win the final battle without losing it first.', !!final && done(final.id) && cleanVictory(s, final.id)],
-    ['resolved', 'Who Keeps the Hour', 'Choose an ending.', s.ending !== null],
-    ['close-company', 'Close Company', 'Read every bond scene.', BONDS.every((b) => bondRead(s, b.id))],
-    ['stubborn', 'Stubborn', 'Lose a chapter\'s battle three times, and still return.', CHAPTERS.some((c) => (s.losses[c.id] ?? 0) >= 3 && done(c.id))],
+  const battles = CHAPTERS.filter((c) => c.battle)
+  const lost = (id: string) => s.losses[id] ?? 0
+  const flawless = (list: readonly (typeof CHAPTERS)[number][]) => list.length > 0 && list.every((c) => done(c.id) && lost(c.id) === 0)
+  const actBattles = (act: number) => battles.filter((c) => c.act === act)
+  const met = metCharacters(s)
+  const metSide = (court: 'solari' | 'umbral') => {
+    const side = (Object.keys(CHARACTERS) as CharacterId[]).filter((id) => CHARACTERS[id].portrait?.court === court)
+    return side.length > 0 && side.every((id) => met.includes(id))
+  }
+  const bondsRead = BONDS.filter((b) => bondRead(s, b.id)).length
+  const ended = (id: EndingId) => s.endings.has(id)
+  const G = ACHIEVEMENT_GROUPS
+  const defs: [AchievementGroup, string, string, string, boolean][] = [
+    [G[0], 'stilling', 'The Stilling', 'Read the Prologue.', done('prologue')],
+    [G[0], 'first-road', 'The Road Begins', 'Finish the first chapter of Act I.', done(CHAPTERS.find((c) => c.act === 1)?.id ?? '')],
+    [G[0], 'sky', 'The Sky Darkens', 'Finish Act I.', done('darkening-sky')],
+    [G[0], 'raised', 'Called Back', 'Finish Act II.', done('long-dusk')],
+    [G[0], 'halfway', 'Halfway Home', 'Read half of the chapters.', CHAPTERS.filter((c) => done(c.id)).length * 2 >= CHAPTERS.length],
+    [G[0], 'sanctum', 'The Sanctum', 'Finish the last chapter.', !!final && done(final.id)],
+    [G[0], 'whole-tale', 'The Whole Tale', 'Read every chapter.', CHAPTERS.every((c) => done(c.id))],
+    [G[1], 'clean', 'Clean Hands', 'Win the final battle without losing it first.', !!final && done(final.id) && cleanVictory(s, final.id)],
+    [G[1], 'flawless-1', 'Sure Footing', 'Win every Act I battle without a loss.', flawless(actBattles(1))],
+    [G[1], 'flawless-2', 'Steady Hands', 'Win every Act II battle without a loss.', flawless(actBattles(2))],
+    [G[1], 'flawless-3', 'Unbowed', 'Win every Act III battle without a loss.', flawless(actBattles(3))],
+    [G[1], 'untouched', 'Untouched', 'Win every battle of the tale without a single loss.', flawless(battles)],
+    [G[1], 'second-wind', 'Second Wind', 'Win a battle you have lost before.', battles.some((c) => done(c.id) && lost(c.id) > 0)],
+    [G[1], 'hard-lessons', 'Hard Lessons', 'Lose ten battles in total.', Object.values(s.losses).reduce((a, n) => a + n, 0) >= 10],
+    [G[1], 'stubborn', 'Stubborn', 'Lose a chapter\'s battle three times, and still return.', CHAPTERS.some((c) => lost(c.id) >= 3 && done(c.id))],
+    [G[2], 'full-roster', 'Full Roster', 'Meet every character.', met.length >= (Object.keys(CHARACTERS) as CharacterId[]).filter((id) => CHARACTERS[id].portrait).length],
+    [G[2], 'sunward', 'Sunward', 'Meet every character of the Solari court.', metSide('solari')],
+    [G[2], 'duskward', 'Duskward', 'Meet every character of the Umbral court.', metSide('umbral')],
+    [G[2], 'standing-tall', 'Standing Tall', 'Finish the last battle with no one fallen.', !!final && done(final.id) && Object.values(s.characters).every((c) => c !== 'fallen')],
+    [G[3], 'first-bond', 'First Confidence', 'Read a bond scene.', bondsRead >= 1],
+    [G[3], 'trusted', 'Trusted Circle', 'Read three bond scenes.', bondsRead >= 3],
+    [G[3], 'close-company', 'Close Company', 'Read every bond scene.', BONDS.every((b) => bondRead(s, b.id))],
+    [G[4], 'resolved', 'Who Keeps the Hour', 'Choose an ending.', s.ending !== null],
+    [G[4], 'end-solarch', 'The Sun Holds', 'Let the Solarch keep the Hour.', ended('solarch')],
+    [G[4], 'end-duskmother', 'The Dusk Holds', 'Let the Duskmother keep the Hour.', ended('duskmother')],
+    [G[4], 'end-shared', 'Two Courts, One Hour', 'Share the Hour.', ended('shared')],
+    [G[4], 'end-free', 'The Queen Freed', 'Free the Queen.', ended('free')],
+    [G[4], 'every-ending', 'Every Hour', 'Choose all four endings.', ended('solarch') && ended('duskmother') && ended('shared') && ended('free')],
   ]
-  return defs.map(([id, title, text, earned]) => ({ id, title, text, earned }))
+  return defs.map(([group, id, title, text, earned]) => ({ id, group, title, text, earned }))
 }

@@ -27,7 +27,7 @@ describe('primaryAction', () => {
 })
 
 describe('cardSummaries', () => {
-  const story = { read: new Set<string>(), characters: {}, losses: {}, ending: null }
+  const story = { read: new Set<string>(), characters: {}, losses: {}, ending: null, endings: new Set<never>() }
 
   it('reads empty progress', () => {
     const s = cardSummaries(emptyProgress(), 20260101, story)

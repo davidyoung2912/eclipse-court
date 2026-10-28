@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
-import { achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
+import { ACHIEVEMENT_GROUPS, achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
 import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -95,12 +95,20 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
       )}
       <section className="story-cast" aria-label="Achievements">
         <h3>Achievements · {medals.filter((m) => m.earned).length} of {medals.length}</h3>
-        {medals.map((m) => (
-          <div key={m.id} className={`story-member${m.earned ? '' : ' fallen'}`}>
-            <span><strong>{m.title}</strong><small>{m.text}</small></span>
-            <em>{m.earned ? 'earned' : 'locked'}</em>
-          </div>
-        ))}
+        {ACHIEVEMENT_GROUPS.map((group) => {
+          const list = medals.filter((m) => m.group === group)
+          return (
+            <details key={group} className="tier-fold">
+              <summary><h3>{group} ({list.filter((m) => m.earned).length}/{list.length})</h3></summary>
+              {list.map((m) => (
+                <div key={m.id} className={`story-member${m.earned ? '' : ' fallen'}`}>
+                  <span><strong>{m.title}</strong><small>{m.text}</small></span>
+                  <em>{m.earned ? 'earned' : 'locked'}</em>
+                </div>
+              ))}
+            </details>
+          )
+        })}
       </section>
       <div className="menu-buttons stacked">
         <ResetButton label="Reset Story" disabled={untouched} warning="Forget every chapter read, bond scene, ending and story achievement, and bring every character back? Campaign, puzzle and scenario progress is kept." onReset={resetStory} />

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { BONDS, CHAPTERS } from './engine/data/story'
-import { achievements, availableBonds, bondRead, markBondRead, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
+import { ACHIEVEMENT_GROUPS, achievements, availableBonds, bondRead, markBondRead, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -102,5 +102,36 @@ describe('story progress', () => {
     expect(earned()).toEqual(expect.arrayContaining(['whole-tale', 'clean', 'resolved', 'close-company']))
     recordStoryLoss(endingChapter()!.id)
     expect(earned()).not.toContain('clean')
+  })
+
+  it('keeps every ending chosen, so choosing again does not lose an earlier one', () => {
+    const earned = () => achievements(storySnapshot()).filter((a) => a.earned).map((a) => a.id)
+    recordEnding('solarch')
+    recordEnding('free')
+    expect(earned()).toEqual(expect.arrayContaining(['end-solarch', 'end-free']))
+    expect(earned()).not.toContain('every-ending')
+    recordEnding('duskmother')
+    recordEnding('shared')
+    expect(earned()).toContain('every-ending')
+  })
+
+  it('earns the trial achievements from losses and clean wins', () => {
+    const earned = () => achievements(storySnapshot()).filter((a) => a.earned).map((a) => a.id)
+    const battles = CHAPTERS.filter((c) => c.battle)
+    const first = battles.find((c) => c.act === 1)!
+    markChapterRead(first.id)
+    recordStoryLoss(first.id)
+    expect(earned()).toContain('second-wind')
+    battles.forEach((c) => markChapterRead(c.id))
+    expect(earned()).not.toContain('untouched')
+    resetStory()
+    battles.forEach((c) => markChapterRead(c.id))
+    expect(earned()).toEqual(expect.arrayContaining(['flawless-1', 'flawless-2', 'flawless-3', 'untouched']))
+  })
+
+  it('groups every achievement and gives each a distinct id', () => {
+    const all = achievements(storySnapshot())
+    expect(new Set(all.map((a) => a.id)).size).toBe(all.length)
+    expect(all.every((a) => ACHIEVEMENT_GROUPS.includes(a.group))).toBe(true)
   })
 })

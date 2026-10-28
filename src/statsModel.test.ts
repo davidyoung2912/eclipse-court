@@ -3,7 +3,7 @@ import { CAMPAIGN } from './engine/data/campaign'
 import { emptyProgress, migrate, recordGame, recordPractice, recordVersus, resetStats, type Summary } from './progress'
 import { overall, sections, totals } from './statsModel'
 
-const story = { read: new Set<string>(), characters: {}, losses: {}, ending: null }
+const story = { read: new Set<string>(), characters: {}, losses: {}, ending: null, endings: new Set<never>() }
 const game = (over: Partial<Summary> = {}): Summary => ({
   won: true, draw: false, lost: 1, taken: 4, turns: 12, swift: false, spellsCast: 0, difficulty: 'hard', campaignIndex: null, daily: false, ...over,
 })
