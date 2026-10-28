@@ -6,6 +6,7 @@ import { rngNext } from '../rng'
 import type { CycleId } from '../rules/luminance'
 import type { Court, GameState, MatchConfig, MatchMode } from '../rules/types'
 import { boardById } from './boards'
+import { seasonalEvent, withEvent } from './events'
 import { dailySeed, skirmishConfig, type SetupChoice } from './setups'
 
 /** The court of the daily run (the gauntlet); the daily match alternates by day, but everyone plays the same side that day. */
@@ -64,7 +65,8 @@ export function dailyMatch(date = new Date()): DailyMatch {
   const personality = pick(roll, PERSONALITY_IDS)
   const court: Court = roll() < 0.5 ? 'solari' : 'umbral'
   const choice: SetupChoice = { mode: 'daily', board: 'classic', winMode: win.mode, events, showdown, cycle: cycle.cycle, reverse }
-  const config = skirmishConfig(choice, court, seed, {}, date)
+  const config = withEvent(skirmishConfig(choice, court, seed, {}, date), date)
+  const event = seasonalEvent(date)?.event
   const tags = [
     win.label,
     boardById(config.board).name,
@@ -72,6 +74,7 @@ export function dailyMatch(date = new Date()): DailyMatch {
     ...(events ? ['Day events'] : []),
     ...(showdown ? ['Showdown'] : []),
     ...(reverse ? ['Reverse light'] : []),
+    ...(event ? [event.name] : []),
   ]
   return { date: seed, court, config, difficulty, personality, tags, blurb: tags.join(' · ') }
 }

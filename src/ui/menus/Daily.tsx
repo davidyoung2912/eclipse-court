@@ -1,4 +1,5 @@
 import { PERSONALITIES } from '../../engine/data/personality'
+import { seasonalEvent } from '../../engine/data/events'
 import { dailyShareText, type DailyMatch } from '../../engine/data/daily'
 import { dailyResult, liveStreak, type Progress } from '../../progress'
 import { challengeLink } from '../../share'
@@ -24,6 +25,7 @@ const dateLabel = (date: number) => `${Math.floor(date / 10000)}-${String(Math.f
 export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   const result = dailyResult(progress, match.date)
   const streak = liveStreak(progress, match.date)
+  const event = seasonalEvent()
   return (
     <main className="app menu">
       <PageArt icon="sun" />
@@ -34,6 +36,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
       )}
       <ul className="setup-card">
         <li>{match.blurb}</li>
+        {event && <li>Seasonal event: <strong>{event.event.name}</strong>. {event.event.text} {event.daysLeft} {event.daysLeft === 1 ? 'day' : 'days'} left; adds to the Shard multiplier.</li>}
         <li>Opponent: {PERSONALITIES[match.personality].name}, {match.difficulty}</li>
         <li>You play the {match.court === 'solari' ? 'Solari' : 'Umbral'} court today.</li>
       </ul>

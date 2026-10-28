@@ -4,6 +4,7 @@ import { newGame } from '../reducer'
 import { rngNext } from '../rng'
 import { isBlocked } from '../rules/board'
 import type { CellEffect, CellSquare, GameState, MatchConfig } from '../rules/types'
+import { seasonalEvent, withEvent, type SeasonalEvent } from './events'
 import { dayIndex, skirmishConfig, dailySeed, type SetupChoice } from './setups'
 
 /** The weekly match is always played from the Solari court, as the daily one is. */
@@ -42,6 +43,8 @@ export interface WeeklyMatch {
   personality: PersonalityId
   /** One line for the menu. */
   blurb: string
+  /** The seasonal event laid over the match, if one runs. */
+  event?: SeasonalEvent
 }
 
 /** The Monday on or before `date`, as a `dailySeed`. */
@@ -81,10 +84,12 @@ export function weeklyMatch(date = new Date()): WeeklyMatch {
   const difficulty = pool[Math.floor(r2 * pool.length)]
   const choice: SetupChoice = { mode: 'random', board: 'classic', ...modifier.rules }
   const base = skirmishConfig(choice, WEEKLY_COURT, week)
-  const config: MatchConfig = { ...base, setup: 'weekly' }
+  // The event of the week's Monday holds all week, so the match stays the same for everyone.
+  const monday = new Date(Math.floor(week / 10000), Math.floor((week % 10000) / 100) - 1, week % 100)
+  const config: MatchConfig = withEvent({ ...base, setup: 'weekly' }, monday)
   if (modifier.eclipseRound) config.eclipseRound = modifier.eclipseRound
   if (modifier.band) config.cells = [...(base.cells ?? []), ...bandCells(base, modifier.band)]
-  return { week, modifier, config, difficulty, personality, blurb: `${modifier.name}: ${modifier.text}` }
+  return { week, modifier, config, difficulty, personality, blurb: `${modifier.name}: ${modifier.text}`, event: seasonalEvent(monday)?.event }
 }
 
 export const weeklyGame = (match: WeeklyMatch): GameState => newGame(match.config)

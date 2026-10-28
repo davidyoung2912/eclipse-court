@@ -36,6 +36,7 @@ export function Weekly({ match, report, onPlay, onBack }: Props) {
       )}
       <ul className="setup-card">
         <li><strong>{match.modifier.name}</strong>: {match.modifier.text}</li>
+        {match.event && <li>Seasonal event: <strong>{match.event.name}</strong>. {match.event.text} Adds to the Shard multiplier.</li>}
         <li>Opponent: {PERSONALITIES[match.personality].name}, {match.difficulty}</li>
         <li>You play the Solari court. A new challenge in {left} {left === 1 ? 'day' : 'days'}.</li>
         <li>Shards: {SHARDS_WEEKLY_WIN} for the week’s first win, {SHARDS_WEEKLY_BEST} for each better winning score after.</li>
