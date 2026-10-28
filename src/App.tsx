@@ -536,7 +536,7 @@ export default function App() {
       <Gauntlet
         progress={progress} run={run} resuming={!!left} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
         summary={runText}
-        onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension })) }}
+        onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
         onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}

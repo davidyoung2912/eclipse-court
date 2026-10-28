@@ -4,7 +4,7 @@ import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'
 import {
-  applyReward, applyVictory, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, type Run,
+  applyReward, applyVictory, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
 } from './gauntlet'
 import { ROLE_STATS } from './roster'
 import { validConfig } from '../serialize'
@@ -240,4 +240,16 @@ describe('gauntlet soak', () => {
       expect(run.stage).toBeGreaterThan(1)
     }
   }, 600_000)
+})
+
+describe('starting relics', () => {
+  it('unlock one per won run and open a run with the chosen relic', () => {
+    expect(startingRelics(0)).toEqual([])
+    expect(startingRelics(1)).toEqual(['moonwell'])
+    expect(startingRelics(6)).toHaveLength(6)
+    const run = startRun('solari', CLASSIC_ROLES, 7, { relic: 'banner' })
+    expect(run.relics).toEqual(['banner'])
+    expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
+    expect(startRun('solari', CLASSIC_ROLES, 7).relics).toEqual([])
+  })
 })

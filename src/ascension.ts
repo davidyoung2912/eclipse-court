@@ -1,4 +1,5 @@
 import { MAX_ASCENSION } from './engine/data/gauntlet'
+import { dayIndex } from './engine/data/setups'
 
 /** Gauntlet ascension and daily-run records; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:ascension'
@@ -16,18 +17,26 @@ export interface AscensionState {
   dayWon: boolean
   /** Days on which the daily run was won. */
   daysWon: number
+  /** The `dailySeed` of the latest day the daily run was won; 0 before the first. */
+  lastWon: number
+  /** Consecutive days the daily run has been won, as of `lastWon`. */
+  streak: number
+  bestStreak: number
 }
 
-const EMPTY: AscensionState = { unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0 }
+const EMPTY: AscensionState = { unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0 }
 
 export const SHARDS_ASCENSION_WIN = 20
 export const SHARDS_DAILY_RUN = 30
+/** Each earlier day in a daily-run streak adds this many Shards to a win, up to STREAK_BONUS_DAYS days. */
+export const SHARDS_STREAK_STEP = 2
+export const STREAK_BONUS_DAYS = 5
 
 const count = (x: unknown, max = 1e9) => (typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= max ? x : 0)
 
 export function parseAscension(raw: unknown): AscensionState {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
-  return { unlocked: count(o.unlocked, MAX_ASCENSION), day: count(o.day), dayBest: count(o.dayBest, 9), dayWon: o.dayWon === true, daysWon: count(o.daysWon) }
+  return { unlocked: count(o.unlocked, MAX_ASCENSION), day: count(o.day), dayBest: count(o.dayBest, 9), dayWon: o.dayWon === true, daysWon: count(o.daysWon), lastWon: count(o.lastWon, 99991231), streak: count(o.streak), bestStreak: count(o.bestStreak) }
 }
 
 function load(): AscensionState {
@@ -59,6 +68,10 @@ export function subscribeAscension(l: Listener) {
 /** The daily record as it stands on `day`: a new day starts with nothing played. */
 export const forDay = (s: AscensionState, day: number): AscensionState => (s.day === day ? s : { ...s, day, dayBest: 0, dayWon: false })
 
+/** The daily-run streak still alive on `day`: it lapses once a day passes without a win. */
+export const liveStreak = (s: AscensionState, day: number): number =>
+  s.lastWon && dayIndex(day) - dayIndex(s.lastWon) <= 1 ? s.streak : 0
+
 export interface RunOutcome {
   shards: number
   lines: string[]
@@ -80,11 +93,16 @@ export function recordAscension(run: { ascension: number; daily: number }, stage
   if (run.daily) {
     const was = forDay(next, run.daily)
     const firstWin = won && !was.dayWon
+    let streak = {}
     if (firstWin) {
-      shards += SHARDS_DAILY_RUN
+      const len = liveStreak(was, run.daily) + 1
+      const bonus = SHARDS_STREAK_STEP * Math.min(len - 1, STREAK_BONUS_DAYS)
+      shards += SHARDS_DAILY_RUN + bonus
       lines.push(`Daily run won: +${SHARDS_DAILY_RUN} Shards.`)
+      if (len > 1) lines.push(`Streak of ${len} days${bonus ? `: +${bonus} Shards` : ''}.`)
+      streak = { lastWon: run.daily, streak: len, bestStreak: Math.max(was.bestStreak, len) }
     }
-    next = { ...was, dayBest: Math.max(was.dayBest, Math.min(stage, 9)), dayWon: was.dayWon || won, daysWon: was.daysWon + (firstWin ? 1 : 0) }
+    next = { ...was, ...streak, dayBest: Math.max(was.dayBest, Math.min(stage, 9)), dayWon: was.dayWon || won, daysWon: was.daysWon + (firstWin ? 1 : 0) }
   }
   if (next !== state) commit(next)
   return { shards, lines }

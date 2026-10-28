@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ascensionSnapshot, forDay, parseAscension, recordAscension, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN } from './ascension'
+import { ascensionSnapshot, forDay, parseAscension, recordAscension, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, SHARDS_STREAK_STEP, liveStreak } from './ascension'
 
 describe('parseAscension', () => {
   it('repairs junk', () => {
-    expect(parseAscension(null)).toEqual({ unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0 })
+    expect(parseAscension(null)).toEqual({ unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0 })
     expect(parseAscension({ unlocked: 99, day: -1, dayBest: 3, dayWon: 'yes' }).unlocked).toBe(0)
     expect(parseAscension({ unlocked: 2, dayBest: 3, dayWon: true }).dayBest).toBe(3)
   })
@@ -33,5 +33,17 @@ describe('recordAscension', () => {
     recordAscension({ ascension: 0, daily: 20270105 }, 5, false)
     recordAscension({ ascension: 0, daily: 20270105 }, 3, false)
     expect(ascensionSnapshot().dayBest).toBe(5)
+  })
+
+  it('builds a daily streak over consecutive days and restarts after a gap', () => {
+    recordAscension({ ascension: 0, daily: 20280229 }, 9, true)
+    const second = recordAscension({ ascension: 0, daily: 20280301 }, 9, true)
+    expect(second.shards).toBe(SHARDS_DAILY_RUN + SHARDS_STREAK_STEP)
+    expect(ascensionSnapshot()).toMatchObject({ streak: 2, bestStreak: 2 })
+    expect(liveStreak(ascensionSnapshot(), 20280302)).toBe(2)
+    expect(liveStreak(ascensionSnapshot(), 20280303)).toBe(0)
+    const later = recordAscension({ ascension: 0, daily: 20280305 }, 9, true)
+    expect(later.shards).toBe(SHARDS_DAILY_RUN)
+    expect(ascensionSnapshot()).toMatchObject({ streak: 1, bestStreak: 2 })
   })
 })

@@ -1,13 +1,13 @@
 import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELICS, restStages, roster, stageFoe, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELIC_UNLOCK_WINS, RELICS, restStages, startingRelics, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
 import { SPELL_INFO } from '../../engine/rules/spells'
 import type { Court, Role } from '../../engine/rules/types'
 import { totalStars, type Progress } from '../../progress'
-import { ascensionSnapshot, forDay, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, subscribeAscension } from '../../ascension'
+import { ascensionSnapshot, forDay, liveStreak, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, subscribeAscension } from '../../ascension'
 import { dailySeed } from '../../engine/data/setups'
 import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
@@ -25,7 +25,7 @@ interface Props {
   report: string[]
   /** The text of the run that just ended, ready to share. */
   summary: string | null
-  onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number }) => void
+  onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number; relic?: RelicId }) => void
   onDaily: () => void
   onFight: () => void
   /** A fight of this stage was left unfinished; Fight picks it up where it stopped. */
@@ -80,6 +80,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
   const [ascension, setAscension] = useState(0)
+  const [relic, setRelic] = useState<RelicId | null>(null)
   const [code, setCode] = useState('')
   const asc = useSyncExternalStore(subscribeAscension, ascensionSnapshot)
   const today = forDay(asc, dailySeed())
@@ -119,13 +120,29 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
         <div className="setup-card">
           Everyone gets the same foes today, with the classic army from the Solari court.{' '}
           {today.dayWon ? 'Won today.' : today.dayBest ? `Furthest today: stage ${today.dayBest}.` : `A first win pays ${SHARDS_DAILY_RUN} Shards.`}{' '}
-          Days won: {asc.daysWon}.
+          Days won: {asc.daysWon}. Streak: {liveStreak(asc, dailySeed())}{asc.bestStreak > 0 ? ` (best ${asc.bestStreak})` : ''}.
+          {' '}Each day in a row adds Shards to a win. The daily run takes no starting relic.
         </div>
         <div className="menu-buttons stacked"><button onClick={onDaily}><Icon name="play" />Begin the Daily Run</button></div>
         <h3>Your court</h3>
         <CourtPicker value={court} onChange={setCourt} />
         <h3>Starting army</h3>
         <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
+        <h3>Starting relic</h3>
+        <div className="choices">
+          <button className={`choice${relic === null ? ' on' : ''}`} aria-pressed={relic === null} onClick={() => setRelic(null)}>
+            <strong>None</strong><span>Begin with no relic.</span>
+          </button>
+          {(Object.keys(RELICS) as RelicId[]).map((r) => {
+            const open = startingRelics(g.won).includes(r)
+            return (
+              <button key={r} className={`choice${relic === r ? ' on' : ''}`} aria-pressed={relic === r} disabled={!open} onClick={() => setRelic(r)}>
+                <strong>{RELICS[r].name}</strong>
+                <span>{open ? `${RELICS[r].text} It applies to both courts.` : `Win ${RELIC_UNLOCK_WINS[r]} gauntlet run${RELIC_UNLOCK_WINS[r] === 1 ? '' : 's'} to unlock (${g.won} so far).`}</span>
+              </button>
+            )
+          })}
+        </div>
         <h3>Run code</h3>
         <label className="setup-card">
           Enter a friend’s code to fight their sequence of foes (optional):{' '}
@@ -133,7 +150,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
           {code.trim() !== '' && !parsed && <div role="alert">That code is not valid.</div>}
         </label>
         <div className="menu-buttons stacked">
-          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed })}><Icon name="play" />Begin the Run</button>
+          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed, relic: relic && startingRelics(g.won).includes(relic) ? relic : undefined })}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
         <TipCard page="gauntlet" />

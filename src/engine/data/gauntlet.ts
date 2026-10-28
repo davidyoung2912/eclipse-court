@@ -62,6 +62,12 @@ export const RELICS: Record<RelicId, { name: string; text: string }> = {
   omen: { name: 'Omen', text: 'A day event strikes at the start of each day.' },
 }
 
+/** Gauntlet runs won before a relic can be chosen as a starting relic. */
+export const RELIC_UNLOCK_WINS: Record<RelicId, number> = { moonwell: 1, hourglass: 2, dawnstone: 3, banner: 4, sundial: 5, omen: 6 }
+
+/** The relics that can open a run once `won` runs have been won. */
+export const startingRelics = (won: number): RelicId[] => (Object.keys(RELICS) as RelicId[]).filter((r) => won >= RELIC_UNLOCK_WINS[r])
+
 const RELIC_IDS = Object.keys(RELICS) as RelicId[]
 
 export type Reward =
@@ -101,11 +107,11 @@ const fresh = (role: Role): RunPiece => ({ role, wins: 0, bonus: 0 })
 /** The spells a new run begins with. */
 export const STARTER_SPELLS: readonly Spell[] = ['blink', 'mend', 'revive', 'bind']
 
-export function startRun(court: Court, roles: readonly Role[], seed: number, opts: { ascension?: number; daily?: number } = {}): Run {
+export function startRun(court: Court, roles: readonly Role[], seed: number, opts: { ascension?: number; daily?: number; relic?: RelicId } = {}): Run {
   return {
     ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
-    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: [], offers: null,
+    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null,
   }
 }
 
