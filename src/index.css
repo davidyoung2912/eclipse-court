@@ -395,23 +395,23 @@ body:has(.puzzles-menu) {
 .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .mode-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; min-height: 112px; padding: 12px; text-align: left; font-size: 1rem; }
 /* Each main page card wears the colours of the page it opens. */
-.mode-card.story {
+.mode-card.card-story {
   background: linear-gradient(180deg, #3f2275, #2c1552); border-color: rgba(176, 130, 240, 0.65);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(150, 100, 230, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
-.mode-card.battle {
+.mode-card.card-battle {
   background: linear-gradient(180deg, #4f1a2c, #36101e); border-color: rgba(232, 110, 130, 0.65);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(220, 80, 105, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
-.mode-card.campaign {
+.mode-card.card-campaign {
   background: linear-gradient(180deg, #66491a, #4a3611); border-color: rgba(232, 182, 74, 0.7);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(232, 182, 74, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
-.mode-card.gauntlet {
+.mode-card.card-gauntlet {
   background: linear-gradient(180deg, #1a5629, #123d1e); border-color: rgba(100, 210, 130, 0.65);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(80, 190, 110, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
-.mode-card.puzzles {
+.mode-card.card-puzzles {
   background: linear-gradient(180deg, #10525f, #0b3a45); border-color: rgba(90, 200, 220, 0.65);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(70, 180, 205, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }

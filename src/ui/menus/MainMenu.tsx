@@ -170,7 +170,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </section>
       <div className="mode-cards">
         {cards.map((c) => (
-          <button key={c.title} className={`mode-card ${c.title.toLowerCase()}${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
+          <button key={c.title} className={`mode-card card-${c.title.toLowerCase()}${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
             <strong><Icon name={c.icon} />{c.title}</strong>
             {c.info.lines.map((line) => <span key={line}>{line}</span>)}
             {c.info.fraction !== null && <Bar fraction={c.info.fraction} thin />}
