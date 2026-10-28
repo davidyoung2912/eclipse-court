@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   expectedScore, foeById, kFactor, ladderGame, LADDER_FOES, MIN_RATING, nextRating, rankOf, RANKS, START_RATING, suggestFoe,
 } from './engine/data/ladder'
-import { parseLadder, recordLadder, ladderSnapshot, SEASON_MIN_GAMES, seasonStart, startSeason, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
+import { parseLadder, recordLadder, ladderSnapshot, SEASON_MIN_GAMES, SEASON_SHARDS, seasonHistory, seasonReward, seasonStart, startSeason, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
 
 describe('ladder maths', () => {
   it('has five distinct foes in every rank, weakest first', () => {
@@ -95,14 +95,30 @@ describe('seasons and rivals', () => {
     recordLadder(foe, 'win')
     expect(ladderSnapshot().rivals[foe.id].w).toBeGreaterThanOrEqual(1)
     while (ladderSnapshot().seasonGames < SEASON_MIN_GAMES) {
-      expect(startSeason()).toBe(false)
+      expect(startSeason()).toBeNull()
       recordLadder(foe, 'loss')
     }
     const peak = ladderSnapshot().seasonPeak
-    expect(startSeason()).toBe(true)
+    const reward = startSeason()
+    expect(reward).toEqual(seasonReward(1, peak))
+    expect(reward!.shards).toBe(SEASON_SHARDS[rankOf(peak)])
     const s = ladderSnapshot()
     expect(s.season).toBe(2)
     expect(s.seasonGames).toBe(0)
     expect(s.past.at(-1)).toBe(peak)
+    expect(seasonHistory(s).at(-1)).toEqual(reward)
+  })
+})
+
+describe('season rewards', () => {
+  it('pays more for a higher rank and covers every rank', () => {
+    for (const r of RANKS) expect(SEASON_SHARDS[r.title]).toBeGreaterThan(0)
+    const paid = RANKS.map((r) => SEASON_SHARDS[r.title])
+    expect(paid).toEqual([...paid].sort((a, b) => a - b))
+    expect(seasonReward(3, 1520)).toEqual({ season: 3, peak: 1520, rank: 'Eclipse Champion', shards: SEASON_SHARDS['Eclipse Champion'] })
+  })
+  it('numbers the past seasons from the current one', () => {
+    const s = parseLadder({ season: 4, past: [800, 950, 1100] })
+    expect(seasonHistory(s).map((h) => [h.season, h.rank])).toEqual([[1, 'Squire'], [2, 'Knight'], [3, 'Captain']])
   })
 })

@@ -86,7 +86,7 @@ const DATA = {
     { id: 'ladder-ranks', icon: 'champion', title: 'Ranks and Rivals',
       text: 'Opponents are grouped under the rank their rating sits in, from Squire up to Eclipse Champion, and your own rank is marked. Tap an opponent to choose them instead of the suggestion; the figure beside a name is your record against them. Reaching a new rank pays Shards.' },
     { id: 'ladder-seasons', icon: 'cycle', title: 'Seasons',
-      text: 'Once you have played enough games in a season you can start the next one. Your rating then moves halfway back toward the start while your season peak is kept, and earlier peaks are listed under the tiles. It gives a fresh climb without losing your history.' },
+      text: 'Once you have played enough games in a season you can start the next one. Your rating then moves halfway back toward the start while your season peak is kept. Ending a season pays Shards by the rank its peak reached and gives you a banner for that rank; Season history lists every past season. It gives a fresh climb without losing your history.' },
   ],
   weekly: [
     { id: 'weekly-intro', icon: 'cycle', title: 'The Weekly Challenge',

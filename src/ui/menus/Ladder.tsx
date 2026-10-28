@@ -2,7 +2,8 @@ import { useState, useSyncExternalStore } from 'react'
 import { BOSS_UNLOCK } from '../../engine/data/bosses'
 import { foeById, LADDER_BOSSES, LADDER_FOES, rankOf, RANKS, suggestFoe } from '../../engine/data/ladder'
 import { PERSONALITIES } from '../../engine/data/personality'
-import { canStartSeason, ladderSnapshot, startSeason, subscribeLadder } from '../../ladder'
+import { canStartSeason, ladderSnapshot, seasonHistory, seasonReward, startSeason, subscribeLadder, type SeasonReward } from '../../ladder'
+import { earnShards } from '../../shop'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
@@ -25,6 +26,9 @@ export function Ladder({ report, onPlay, onBack }: Props) {
   const store = useSyncExternalStore(subscribeLadder, ladderSnapshot)
   const suggested = suggestFoe(store.rating)
   const [chosen, setChosen] = useState<string | null>(null)
+  const [paid, setPaid] = useState<SeasonReward | null>(null)
+  const seasons = seasonHistory(store)
+  const lastSeason = seasons[seasons.length - 1]
   const foe = foeById(chosen ?? suggested.id) ?? suggested
   const next = RANKS.find((r) => r.from > store.rating)
   /** Opponents grouped under the rank their rating sits in, weakest first. */
@@ -50,7 +54,9 @@ export function Ladder({ report, onPlay, onBack }: Props) {
         <div><dd>{store.peak}</dd><dt>Peak rating</dt></div>
         <div><dd>{store.wins} / {store.losses} / {store.draws}</dd><dt>Won / lost / drawn</dt></div>
       </dl>
-      <p className="tagline">Season {store.season} · best this season {store.seasonPeak}{store.past.length > 0 ? ` · earlier seasons: ${store.past.join(', ')}` : ''}</p>
+      <p className="tagline">Season {store.season} · best this season {store.seasonPeak}</p>
+      {paid && <div className="setup-card" role="status">Season {paid.season} ended at {paid.peak} ({paid.rank}): +{paid.shards} Shards and the {paid.rank} banner.</div>}
+      {lastSeason && <p className="season-banner" data-rank={rankOf(lastSeason.peak)}><Icon name={RANK_ICONS[lastSeason.rank] ?? 'swords'} />Season {lastSeason.season} banner · {lastSeason.rank}</p>}
       {next && <p className="tagline">{next.from - store.rating} points to {next.title}.</p>}
       {groups.map(({ rank, foes }) => (
         <details key={rank} className="tier-fold" open={rank === openRank}>
@@ -80,12 +86,22 @@ export function Ladder({ report, onPlay, onBack }: Props) {
           </div>
         )}
       </details>
+      {seasons.length > 0 && (
+        <details className="tier-fold">
+          <summary><h3><Icon name="trophy" />Season history ({seasons.length})</h3></summary>
+          <ul className="season-list">
+            {seasons.slice().reverse().map((h) => (
+              <li key={h.season}><strong>Season {h.season}</strong> · peak {h.peak} · {h.rank} · +{h.shards} Shards</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {store.history.length > 0 && (
         <p className="tagline">Recent: {store.history.slice().reverse().map((h) => `${h.result === 'win' ? 'W' : h.result === 'loss' ? 'L' : 'D'} ${h.change >= 0 ? '+' : ''}${h.change}`).join(' · ')}</p>
       )}
       <div className="menu-buttons stacked">
         <button className="primary" disabled={foe.boss !== undefined && store.peak < BOSS_UNLOCK} onClick={() => onPlay(foe.id)}><Icon name="play" />Play {foe.name}</button>
-        {canStartSeason(store) && <button onClick={() => { if (window.confirm('Start a new season? Your rating moves halfway back toward the start and your season peak is kept.')) startSeason() }}><Icon name="cycle" />Start Season {store.season + 1}</button>}
+        {canStartSeason(store) && <button onClick={() => { if (window.confirm(`Start a new season? Your rating moves halfway back toward the start, your season peak is kept and ${seasonReward(store.season, store.seasonPeak).shards} Shards are paid for reaching ${rankOf(store.seasonPeak)}.`)) { const r = startSeason(); if (r) { earnShards(r.shards); setPaid(r) } } }}><Icon name="cycle" />Start Season {store.season + 1}</button>}
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="ladder" />

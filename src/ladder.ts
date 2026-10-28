@@ -112,12 +112,34 @@ export const seasonStart = (rating: number) => Math.max(MIN_RATING, START_RATING
 
 export const canStartSeason = (s: LadderState = state) => s.seasonGames >= SEASON_MIN_GAMES
 
-/** Ends the season: its peak is kept, the rating is pulled halfway back and the placement games begin again. */
-export function startSeason(): boolean {
-  if (!canStartSeason()) return false
+/** Shards paid when a season ends, by the rank its peak reached. */
+export const SEASON_SHARDS: Readonly<Record<string, number>> = {
+  Squire: 10, Knight: 25, Captain: 45, Marshal: 70, Warden: 100, 'Eclipse Champion': 150,
+}
+
+/** What a season's peak earned: its rank, the banner that rank flies and the Shards paid. */
+export interface SeasonReward {
+  season: number
+  peak: number
+  rank: string
+  shards: number
+}
+
+export const seasonReward = (season: number, peak: number): SeasonReward => {
+  const rank = rankOf(peak)
+  return { season, peak, rank, shards: SEASON_SHARDS[rank] ?? 0 }
+}
+
+/** The finished seasons, oldest first, each with its reward. */
+export const seasonHistory = (s: LadderState = state): SeasonReward[] => s.past.map((peak, i) => seasonReward(s.season - s.past.length + i, peak))
+
+/** Ends the season: its peak is kept, the rating is pulled halfway back and the placement games begin again. Returns the reward to pay, or null if the season cannot end yet. */
+export function startSeason(): SeasonReward | null {
+  if (!canStartSeason()) return null
+  const reward = seasonReward(state.season, state.seasonPeak)
   const rating = seasonStart(state.rating)
   commit({ ...state, rating, season: state.season + 1, seasonGames: 0, seasonPeak: rating, past: [...state.past, state.seasonPeak].slice(-20) })
-  return true
+  return reward
 }
 
 export interface LadderOutcome {

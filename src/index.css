@@ -587,6 +587,13 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 }
 .menu h3 { display: flex; align-items: center; gap: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--solari-cream); }
 .menu h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--umbral-violet), transparent); }
+.season-banner { --banner: #b08d57; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 16px; padding: 8px 14px; border: 2px solid var(--banner); border-radius: 4px 4px 14px 14px; background: #1c1a24; color: var(--banner); font-weight: 600; }
+.season-banner[data-rank='Knight'] { --banner: #9fb4c8; }
+.season-banner[data-rank='Captain'] { --banner: #6fbf8e; }
+.season-banner[data-rank='Marshal'] { --banner: #d9a441; }
+.season-banner[data-rank='Warden'] { --banner: #c77dff; }
+.season-banner[data-rank='Eclipse Champion'] { --banner: #ff9a3c; box-shadow: 0 0 12px var(--banner); }
+.season-list { margin: 0; padding: 0 0 0 20px; }
 .tier-fold { display: flex; flex-direction: column; gap: 8px; }
 .tier-fold summary { cursor: pointer; list-style: none; }
 .tier-fold summary::-webkit-details-marker { display: none; }
