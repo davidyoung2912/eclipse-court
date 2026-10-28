@@ -96,6 +96,9 @@ export interface TurnClock {
 /** A day event: one of these bends the rules for a couple of rounds. */
 export type DayEvent = 'flare' | 'gloaming' | 'fog' | 'blight'
 
+/** A chaos modifier that strikes as rounds pass. */
+export type Mayhem = 'spawns' | 'thefts' | 'swaps'
+
 /** Everything that describes how a match is set up and paced; plain data, so it can be saved and shared. */
 export interface MatchConfig {
   /** Squares along each side of the board; the standard 7 when absent. */
@@ -148,6 +151,8 @@ export interface MatchConfig {
   edge?: { court: Court; hp: number }
   /** This court's Leader may cast once a turn without ending it (a boss rule); the turn then goes on with a move or a second cast that ends it. */
   freeCast?: Court
+  /** Chaos that strikes every few rounds (cells appear, spells are stolen, pieces trade places); decided by the seed. */
+  mayhem?: readonly Mayhem[]
 }
 
 /** A spell cast earlier, waiting to return to its Leader. */
@@ -183,6 +188,8 @@ export interface GameState {
   winner: Court | 'draw' | null
   rng: number
   lastDuel: DuelRecord | null
+  /** What mayhem did at the start of this round, if anything. */
+  mayhemNote?: string
 }
 
 export type Action =

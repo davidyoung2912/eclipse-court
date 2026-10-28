@@ -43,6 +43,7 @@ function hudNotes(state: GameState): string[] {
   const next = nextEvent(state)
   if (event) notes.push(`${EVENT_INFO[event].name}: ${EVENT_INFO[event].text}`)
   else if (next) notes.push(`${EVENT_INFO[next.event].name} ${next.in === 1 ? 'next round' : 'in 2 rounds'}`)
+  if (state.mayhemNote) notes.push(state.mayhemNote)
   const radius = safeRadius(state)
   if (radius !== null) notes.push(radius === 0 ? 'Only the centre is safe' : `Safe zone: ${radius} from the centre`)
   return notes

@@ -7,6 +7,7 @@ import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
 import { LOADOUT_SIZE, loadoutProblem, spellPool } from '../../engine/rules/spells'
 import { BANK_SECONDS } from '../../clock'
+import { MAYHEMS, MAYHEM_INFO } from '../../engine/rules/mayhem'
 import { FOG_SIGHT, HEAD_START_LEVELS, shardMultiplier, SUDDEN_DEATH_ROUNDS } from '../../engine/data/modifiers'
 import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
@@ -19,7 +20,7 @@ import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
 import { TipCard } from '../tips/TipCard'
 import { SkirmishArt } from './MenuArt'
 import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
-import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
+import type { Court, MatchMode, Mayhem, Role, Spell } from '../../engine/rules/types'
 import { bountiesFor } from '../../engine/data/bounties'
 import { claimedOn } from '../../bounties'
 import { dailySeed } from '../../engine/data/setups'
@@ -103,6 +104,8 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const [fog, setFog] = useState(() => bool(saved.fog, false))
   const [suddenDeath, setSuddenDeath] = useState(() => oneOf<number>(saved.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
   const [headStart, setHeadStart] = useState(() => oneOf<number>(saved.headStart, [0, ...HEAD_START_LEVELS], 0))
+  const [mayhem, setMayhem] = useState<Mayhem[]>(() => MAYHEMS.filter((m) => Array.isArray(saved.mayhem) && saved.mayhem.includes(m)))
+  const toggleMayhem = (m: Mayhem) => setMayhem((l) => (l.includes(m) ? l.filter((x) => x !== m) : [...l, m]))
   const [presetId, setPresetId] = useState<string | null>(() => (startPreset && presetUnlocked(progress, startPreset) ? startPreset.id : null))
   const [rulesId, setRulesId] = useState<RulesetId>(() => oneOf(saved.rulesId, RULESETS.map((t) => t.id), initialTier))
   const tier = rulesetById(rulesId) ?? RULESETS[1]
@@ -126,10 +129,11 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     ...(tier.rules.spells ? { spells: tier.rules.spells } : {}),
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
     ...(fog ? { fog } : {}), ...(suddenDeath ? { suddenDeath } : {}), ...(headStart ? { headStart } : {}),
+    ...(mayhem.length ? { mayhem } : {}),
   })
   const remember = () => saveChoices('skirmish', {
     court, difficulty, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
-    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, presetId, rulesId,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, presetId, rulesId,
   })
   const [mine, setMine] = useState<SavedPreset[]>(loadPresets)
   const [mineName, setMineName] = useState('')
@@ -137,7 +141,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   /** What a named preset keeps: the match's rules, army, board and twists, not who plays or which court. */
   const presetChoices = () => ({
     mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
-    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, rulesId,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, rulesId,
   })
   const applyMine = (p: SavedPreset) => {
     const c = p.choices
@@ -166,6 +170,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     setFog(bool(c.fog, false))
     setSuddenDeath(oneOf<number>(c.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
     setHeadStart(oneOf<number>(c.headStart, [0, ...HEAD_START_LEVELS], 0))
+    setMayhem(MAYHEMS.filter((m) => Array.isArray(c.mayhem) && c.mayhem.includes(m)))
     setRulesId(oneOf(c.rulesId, RULESETS.map((t) => t.id), 'standard'))
     setPresetId(null)
     setMineId(p.id)
@@ -220,7 +225,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     },
     armyMode: mode, boardId, spellMode,
   }, tier.rules))
-  const twistList = [fog && 'Fog of war', suddenDeath > 0 && `Sudden death ${suddenDeath}`, headStart > 0 && `AI +${headStart} HP`].filter(Boolean)
+  const twistList = [fog && 'Fog of war', suddenDeath > 0 && `Sudden death ${suddenDeath}`, headStart > 0 && `AI +${headStart} HP`, ...mayhem.map((m) => MAYHEM_INFO[m].name)].filter(Boolean)
   // The multiplier is for a match against the computer; two people share it, so none is promised then.
   const bonus = hotSeat ? 1 : shardMultiplier(skirmishConfig(choice(), court, 1), court)
   const clockName = CLOCKS.find((c) => c.seconds === clockSeconds)?.name ?? 'Untimed'
@@ -380,6 +385,8 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         <Segmented label="AI head start" options={[{ value: 0, label: 'None', hint: 'An even start.' },
           ...HEAD_START_LEVELS.map((h) => ({ value: h, label: `+${h} HP`, hint: `Every opposing piece starts with ${h} more HP.` }))]}
           value={headStart} onChange={setHeadStart} />
+        <h4>Mayhem</h4>
+        {MAYHEMS.map((m) => <ToggleRow key={m} label={MAYHEM_INFO[m].name} text={MAYHEM_INFO[m].text} checked={mayhem.includes(m)} onChange={() => toggleMayhem(m)} />)}
         {bonus > 1 && <p className="setup-note">Twists and a short clock pay {Math.round((bonus - 1) * 100)}% more Shards on a win.</p>}
       </Section>
       <div className="setup-actions">

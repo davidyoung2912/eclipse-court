@@ -62,3 +62,42 @@ describe('skirmish twists', () => {
     }
   })
 })
+
+describe('mayhem', () => {
+  const mayhemGame = (mayhem: ('spawns' | 'thefts' | 'swaps')[]) => newGame(skirmishConfig({ ...choice, mayhem }, 'solari', 7))
+  const passRounds = (s: GameState, rounds: number) => {
+    for (let i = 0; i < rounds * 2; i++) s = reduce(s, { type: 'pass' })
+    return s
+  }
+
+  it('spawns mirrored cells every third round, the same on every replay', () => {
+    const a = passRounds(mayhemGame(['spawns']), 3)
+    expect(a.config.cells).toHaveLength(2)
+    expect(a.mayhemNote).toContain('Cell spawns')
+    expect(passRounds(mayhemGame(['spawns']), 3).config.cells).toEqual(a.config.cells)
+    expect(passRounds(mayhemGame([]), 3).config.cells).toBeUndefined()
+  })
+
+  it('moves a spell from one Leader to the other', () => {
+    const start = mayhemGame(['thefts'])
+    // Both Leaders hold the same seven spells at the start, so give them different hands first.
+    const base = { ...start, spells: { solari: start.spells.solari.slice(0, 3), umbral: start.spells.umbral.slice(3) } }
+    const s = passRounds(base, 5)
+    expect(s.spells.solari.length + s.spells.umbral.length).toBe(base.spells.solari.length + base.spells.umbral.length)
+    expect(s.spells.solari.length).not.toBe(base.spells.solari.length)
+  })
+
+  it('swaps two same-role pieces across courts and keeps squares unique', () => {
+    const base = mayhemGame(['swaps'])
+    const s = passRounds(base, 4)
+    expect(s.mayhemNote).toContain('Piece swaps')
+    expect(new Set(s.pieces.map((p) => `${p.pos.x},${p.pos.y}`)).size).toBe(s.pieces.length)
+    expect(s.pieces.filter((p, i) => p.pos.x !== base.pieces[i].pos.x || p.pos.y !== base.pieces[i].pos.y)).toHaveLength(2)
+  })
+
+  it('survives a record round trip and pays a Shard bonus', () => {
+    const base = mayhemGame(['spawns', 'swaps'])
+    expect(decodeRecord(encodeRecord({ initial: base, actions: [] }) as string)).not.toBeNull()
+    expect(shardMultiplier(base.config, 'solari')).toBe(1.2)
+  })
+})

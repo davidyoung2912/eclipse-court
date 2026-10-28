@@ -4,7 +4,7 @@ import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import { rngNext } from '../rng'
 import { otherCourt } from '../rules/board'
 import { DAYS, type CycleId } from '../rules/luminance'
-import type { Court, MatchConfig, MatchMode, Role, Spell, TurnClock } from '../rules/types'
+import type { Court, MatchConfig, MatchMode, Mayhem, Role, Spell, TurnClock } from '../rules/types'
 
 export type SetupMode = 'classic' | 'draft' | 'random' | 'daily'
 
@@ -55,6 +55,8 @@ export interface SetupChoice {
   suddenDeath?: number
   /** The opponent's pieces start with this much more HP. */
   headStart?: number
+  /** Chaos modifiers that strike as rounds pass. */
+  mayhem?: readonly Mayhem[]
   /** Court passives (Solari fliers in full light, Umbral regeneration in the dark); on when absent. */
   passives?: boolean
   /** Both Leaders carry exactly these spells, whatever `loadout` says. */
@@ -192,6 +194,7 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.fog) base.fog = true
   if (choice.suddenDeath) base.suddenDeath = choice.suddenDeath
   if (choice.headStart) base.edge = { court: otherCourt(human), hp: choice.headStart }
+  if (choice.mayhem?.length) base.mayhem = choice.mayhem
   if (choice.passives === false) base.passives = false
   if (mode === 'classic') return base
   if (mode === 'draft') {

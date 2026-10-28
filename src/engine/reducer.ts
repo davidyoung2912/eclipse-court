@@ -4,6 +4,7 @@ import { rngNext } from './rng'
 import { centerOf, chebyshev, sizeOf, isBeacon, otherCourt, samePos } from './rules/board'
 import { cellAt, cellHpChange, duelCells, NEUTRAL_CELL, type DuelCells } from './rules/cells'
 import { eventAt, HILL_TURNS, modeOf, objectiveRounds, SCORE_TARGET, SHRINK_DAMAGE, safeRadius } from './rules/events'
+import { applyMayhem } from './rules/mayhem'
 import { isStock, perkMods, promote, recordWin } from './rules/growth'
 import { duelMods, squareLuminance } from './rules/luminance'
 import { legalMoves, pieceAt } from './rules/moves'
@@ -256,7 +257,7 @@ function finishTurn(state: GameState): GameState {
     : state.pieces
   let next: GameState = { ...state, pieces, streak, turn: otherCourt(mover) }
   if (mover === 'umbral') {
-    next = endRound(next)
+    next = applyMayhem(endRound(next))
     next = { ...next, winner: eliminationWinner(next) ?? scoreWinner(next) ?? objectiveWinner(next) ?? (next.round > next.config.roundLimit ? adjudicate(next) : null) }
   }
   return next

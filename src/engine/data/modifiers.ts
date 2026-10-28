@@ -18,6 +18,7 @@ export const visibleTo = (state: GameState, court: Court, piece: Piece) =>
 const FOG_BONUS = 0.25
 const SUDDEN_DEATH_BONUS = 0.1
 const HEAD_START_BONUS = 0.2
+const MAYHEM_BONUS = 0.1
 const CLOCK_BONUS = (seconds: number) => (seconds <= 15 ? 0.15 : seconds <= 30 ? 0.1 : 0.05)
 
 /** The Shard multiplier a match's modifiers earn for `human`; 1 without any. A head start for the human's own court earns nothing. */
@@ -26,6 +27,7 @@ export function shardMultiplier(config: MatchConfig, human: Court): number {
   if (config.fog) bonus += FOG_BONUS
   if (config.suddenDeath) bonus += SUDDEN_DEATH_BONUS
   if (config.edge && config.edge.court === otherCourt(human)) bonus += HEAD_START_BONUS * config.edge.hp
+  bonus += MAYHEM_BONUS * (config.mayhem?.length ?? 0)
   if (config.turnClock) bonus += CLOCK_BONUS(config.turnClock.seconds)
   return Math.round((1 + bonus) * 100) / 100
 }

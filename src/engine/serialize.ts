@@ -3,6 +3,7 @@ import { newGame } from './reducer'
 import type { Action, Court, GameState, MatchConfig, MatchMode, Perk, Pos, PromotionRole, Role, Spell } from './rules/types'
 import { BOARD_SIZES, DEFAULT_SIZE, inBounds } from './rules/board'
 import { CELL_EFFECTS } from './rules/cells'
+import { MAYHEMS } from './rules/mayhem'
 import { ALL_SPELLS } from './rules/spells'
 
 const MODES: readonly MatchMode[] = ['beacons', 'leader', 'score', 'hill']
@@ -136,6 +137,7 @@ const validConfigFor = (c: Partial<MatchConfig>, size: number): c is MatchConfig
   (c.turnClock === undefined || validClock(c.turnClock)) &&
   (c.suddenDeath === undefined || inRange(c.suddenDeath, 1, MAX_ROUNDS)) &&
   (c.edge === undefined || ((c.edge?.court === 'solari' || c.edge?.court === 'umbral') && inRange(c.edge.hp, 1, 5))) &&
+  (c.mayhem === undefined || (Array.isArray(c.mayhem) && c.mayhem.every((m) => (MAYHEMS as readonly unknown[]).includes(m)))) &&
   (c.freeCast === undefined || c.freeCast === 'solari' || c.freeCast === 'umbral') &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion', 'fog'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
