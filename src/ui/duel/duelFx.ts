@@ -37,6 +37,8 @@ export interface DuelLook {
   reduceMotion: boolean
   /** The courts of the attacker and the defender. */
   courts: [Court, Court]
+  /** The fighter the player steers, when duel assist is on: it gets a longer aim line and bigger hit markers. */
+  assistSide?: 0 | 1
 }
 
 interface Theme {
@@ -125,6 +127,7 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
         push(fx, { kind: 'spark', x: e.at.x, y: e.at.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.45, max: 0.45, r: 0.05 + Math.random() * 0.05, color: i % 3 ? COLORS[hitter.court] : '#ffffff' })
       }
       push(fx, { kind: 'text', x: e.at.x, y: e.at.y - victim.radius, vx: 0, vy: -1.4, life: 0.9, max: 0.9, r: 0, color: '#ff8088', text: `-${fmt(e.damage)}` })
+      if (fx.look.assistSide !== undefined) push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.6, max: 0.6, r: 1.1, color: '#ff8088' })
       fx.flash[e.target] = 0.18
       if (!calm) {
         const dx = victim.pos.x - hitter.pos.x
@@ -702,6 +705,14 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     ctx.beginPath()
     ctx.moveTo(tip, 0); ctx.lineTo(base, -r * 0.4); ctx.lineTo(base + (tip - base) * 0.3, 0); ctx.lineTo(base, r * 0.4); ctx.closePath()
     ctx.fill(); ctx.stroke()
+    if (look.assistSide === i) {
+      // A faint dotted line carries the aim across the arena.
+      ctx.setLineDash([r * 0.3, r * 0.45])
+      ctx.globalAlpha = f.cooldown > 0 ? 0.2 : 0.45
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(tip + r * 0.4, 0); ctx.lineTo(Math.max(ARENA_W, ARENA_H) * scale, 0); ctx.stroke()
+    }
     ctx.restore()
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 3
@@ -754,7 +765,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     } else if (p.kind === 'text' && p.text) {
       ctx.globalAlpha = Math.min(1, k * 1.5)
       unflip(X(p.x), Y(p.y), () => {
-        ctx.font = `800 ${Math.round(scale * 0.55)}px system-ui, sans-serif`
+        ctx.font = `800 ${Math.round(scale * (fx.look.assistSide !== undefined && p.color === '#ff8088' ? 0.85 : 0.55))}px system-ui, sans-serif`
         ctx.textAlign = 'center'
         ctx.lineWidth = 4
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)'

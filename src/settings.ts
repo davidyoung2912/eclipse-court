@@ -96,6 +96,8 @@ export interface Settings {
   reminders: boolean
   /** Show a chip by the dial counting the rounds until the Eclipse falls. */
   eclipseChip: boolean
+  /** Help in live duels: a longer aim line, bigger hit markers and a gentler last few seconds. Off in scored, daily and puzzle games. */
+  duelAssist: boolean
   /** How many hints a match allows: Unlimited, Three per match, or Off (the button is hidden). Puzzles keep their own hints. */
   hints: HintLimit
   /** When Undo is offered: Always, Casual games only (skirmish and hot-seat), or Off. Daily and scored games never allow it. */
@@ -124,12 +126,17 @@ export const BANTER_LEVELS: readonly BanterLevel[] = ['full', 'quiet', 'off']
 export type FightLevel = 'easy' | 'normal' | 'hard'
 export const FIGHT_LEVELS: readonly FightLevel[] = ['easy', 'normal', 'hard']
 
+/** In the last seconds of an assisted duel the fight plays at this share of its pace, for both fighters. */
+export const ASSIST_SLOWDOWN = 0.7
+/** How many seconds from the end the slow-down lasts. */
+export const ASSIST_SLOW_SECONDS = 5
+
 export type DuelSpeed = 'normal' | 'fast' | 'instant'
 export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -150,6 +157,7 @@ export function parseSettings(raw: unknown): Settings {
     blunderCheck: o.blunderCheck === true,
     oddsDetail: o.oddsDetail === true,
     reminders: o.reminders === true,
+    duelAssist: o.duelAssist === true,
     hints: HINT_LIMITS.includes(o.hints as HintLimit) ? (o.hints as HintLimit) : DEFAULT_SETTINGS.hints,
     takeBacks: TAKE_BACK_RULES.includes(o.takeBacks as TakeBackRule) ? (o.takeBacks as TakeBackRule) : DEFAULT_SETTINGS.takeBacks,
     duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,

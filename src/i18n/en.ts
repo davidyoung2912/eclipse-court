@@ -32,6 +32,7 @@ export const en = {
   'eclipse.chipNext': 'Eclipse falls this round',
   'settings.blunderCheck': 'Blunder check: ask before a move into an enemy\'s reach on bad odds, or one that leaves your Leader exposed (not in scored games or under fog)',
   'settings.oddsDetail': 'Odds detail: show wounds, perks, status, cell effects and the odds once the light turns when you confirm an attack (not in scored games or under fog)',
+  'settings.duelAssist': 'Duel assist: a longer aim line, bigger hit markers and a slower last five seconds (not in scored games)',
   'settings.reminders': 'Reminders: ring Beacons you could take this turn and list the spells you could cast (not in scored games or under fog)',
   'reminder.spells': 'You could cast: {list}',
   'reminder.idle': 'Your spells are all unused.',

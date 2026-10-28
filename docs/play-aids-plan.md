@@ -1,6 +1,6 @@
 # Play aids: phased plan
 
-Status: **phases 1-8 done.** Written 2026-10-28. Nine ideas from the play-aids discussion, one phase each.
+Status: **phases 1-9 done.** Written 2026-10-28. Nine ideas from the play-aids discussion, one phase each.
 
 ## Ground rules
 
@@ -47,7 +47,7 @@ Status: **phases 1-8 done.** Written 2026-10-28. Nine ideas from the play-aids d
 - `takeBacks` setting: Always (today), Casual games only, or Off. Wire into the Undo button's condition in `Game.tsx`; the daily and scored rules stay unchanged.
 
 ### Phase 9: Duel assists (idea 9)
-- `duelAssist` setting. Read `DuelView` first. Likely: a longer aim line, larger hit indicators and a brief slow-down on the last seconds. Real-time scoring stays identical for the AI.
+- `duelAssist` setting. Done: a dotted aim line across the arena and bigger hit markers (ring and larger damage text) for the player's fighter, and the last five seconds play at 70% pace for both fighters. Off in scored, daily, puzzle and online games; the AI and the engine are untouched.
 
 ## Order and effort
 

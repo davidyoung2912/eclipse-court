@@ -253,6 +253,8 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     askHintRaw()
   }
 
+  /** Duel assist is off in scored, daily and puzzle games, like the other aids. */
+  const duelAssistOk = getSettings().duelAssist && !online && !puzzleHelp && puzzleLimit === undefined && context?.kind !== 'daily' && !context?.scored
   const takeBacks = getSettings().takeBacks
   /** Casual games are skirmishes and hot-seat; Undo stays hidden elsewhere under Casual games only. */
   const takeBackOk = takeBacks === 'always' || (takeBacks === 'casual' && (hotSeat || context?.kind === 'skirmish'))
@@ -621,7 +623,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={fightCells(attacker, defender, !!pending.byAi)}
           boardId={state.config.board} cellEffects={[cellAt(state.config, attacker.pos), cellAt(state.config, defender.pos)]}
-          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression} foeRamp={tuning.foeRamp}
+          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression} foeRamp={tuning.foeRamp} assist={duelAssistOk}
           seed={state.rng + state.round} onDone={finishDuel} />
       )}
       {settled && !asking && attacker && defender && (

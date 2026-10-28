@@ -3,7 +3,7 @@ import { createDuelAi } from '../../ai/duelAi'
 import { sfx, startDuelDrums } from '../../audio/synth'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
-import { DUEL_PACE, getSettings } from '../../settings'
+import { ASSIST_SLOW_SECONDS, ASSIST_SLOWDOWN, DUEL_PACE, getSettings } from '../../settings'
 import { Icon } from '../menus/icons'
 import { AUTO_DUEL_SKILL, profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
@@ -39,6 +39,8 @@ interface Props {
   opponentAggression?: number
   /** Scales how fast the AI fighter speeds up over the fight (1 is the standard ramp). */
   foeRamp?: number
+  /** Duel assist: a longer aim line, bigger hit markers and a slower last few seconds. */
+  assist?: boolean
   seed: number
   onDone: (outcome: DuelOutcome) => void
 }
@@ -56,7 +58,7 @@ const COUNT_STEP_MS = 750
 /** The stats briefing leads the countdown for this long (tap to skip). */
 const BRIEF_MS = 3200
 
-export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, foeRamp = 1, seed, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, foeRamp = 1, assist = false, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
@@ -163,7 +165,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     let hudTick = 0
     const fx = createFx({
       luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
-      courts: [attacker.court, defender.court],
+      courts: [attacker.court, defender.court], assistSide: assist ? playerSide : undefined,
     })
     const drums = startDuelDrums()
     sfx.duelStart()
@@ -191,7 +193,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         input.current = { ...input.current, mx: mouse.current.x / STICK_RADIUS, my: mouse.current.y / STICK_RADIUS }
       }
       if (freeze > 0) freeze -= dt
-      else if (started.current) acc += dt * pace
+      else if (started.current) acc += dt * (assist && DUEL_SECONDS - state.t <= ASSIST_SLOW_SECONDS ? pace * ASSIST_SLOWDOWN : pace)
       const events: DuelEvent[] = []
       if (skipping.current) {
         while (!state.done) {
@@ -257,7 +259,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       cancelAnimationFrame(raf)
       drums.stop()
     }
-  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, seed, waiting])
+  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, assist, seed, waiting])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return
