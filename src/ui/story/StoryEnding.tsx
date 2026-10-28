@@ -15,7 +15,7 @@ interface Props {
 /** Who keeps the Hour: one button per ending, the ending already chosen marked and any that need a clean victory locked until earned. */
 export function StoryEnding({ choice, story, chapterId, onChoose, onBack }: Props) {
   return (
-    <main className="app menu">
+    <main className="app menu story-menu">
       <h2>Who keeps the Hour?</h2>
       <p className="tagline">{choice.prompt}</p>
       <div className="choices">

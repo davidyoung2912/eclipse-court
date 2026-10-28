@@ -42,7 +42,7 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
   const untouched = read.size === 0 && Object.keys(story.characters).length === 0 && Object.keys(story.losses).length === 0 && !story.ending
   const prologue = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === 'prologue')
   return (
-    <main className="app menu">
+    <main className="app menu story-menu">
       <PageArt icon="book" />
       <h2>Story</h2>
       <p className="tagline">How the Hour stopped, and the courts that came of it.</p>

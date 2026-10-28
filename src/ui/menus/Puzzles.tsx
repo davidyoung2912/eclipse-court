@@ -24,7 +24,7 @@ export function Puzzles({ progress, report, onPlay, onRush, onReset, onBack }: P
   /** The tier to open: the first with a puzzle still unsolved. */
   const current = PUZZLE_TIERS.find(({ tier }) => puzzlesIn(tier).some((p) => !isSolved(p.id)))?.tier
   return (
-    <main className="app menu">
+    <main className="app menu puzzles-menu">
       <PageArt icon="puzzle" />
       <h2>Puzzles</h2>
       <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you. Stuck? The Hint button helps, at no cost.</p>

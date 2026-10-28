@@ -95,7 +95,7 @@ export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onF
 
   if (!run)
     return (
-      <main className="app menu">
+      <main className="app menu gauntlet-menu">
         <PageArt icon="flame" />
         <h2>Gauntlet</h2>
         <p className="tagline">
@@ -140,7 +140,7 @@ export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onF
 
   if (run.offers)
     return (
-      <main className="app menu">
+      <main className="app menu gauntlet-menu">
         <PageArt icon="flame" />
         <h2>Spoils of stage {run.stage - 1}</h2>
         <p className="tagline">Take one reward. {restStages(run.ascension).includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
@@ -168,7 +168,7 @@ export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onF
   const foe = stageFoe(run.seed, run.stage, run.ascension)
   const personality = PERSONALITIES[foe.personality]
   return (
-    <main className="app menu">
+    <main className="app menu gauntlet-menu">
       <PageArt icon="flame" />
       <h2>Stage {run.stage} of {GAUNTLET_STAGES}</h2>
       {(run.ascension > 0 || run.daily > 0) && <p className="tagline">{run.daily > 0 ? 'Daily run. ' : ''}{run.ascension > 0 ? `Ascension ${run.ascension}: ${ASCENSIONS[run.ascension - 1].name}.` : ''}</p>}

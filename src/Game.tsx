@@ -460,7 +460,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   }
 
   return (
-    <main className="app timed" style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
+    <main className={`app timed game-${human}`} style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
       <Board state={state} selected={selected} moves={moves} threats={threats} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}

@@ -278,7 +278,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const light = luminance > 0 ? `Light +${luminance}` : luminance < 0 ? `Light ${luminance}` : 'Neutral light'
 
   return (
-    <div className="duel">
+    <div className={`duel duel-${mine.court}`}>
       <div className="duel-frame">
         <header className="duel-head">
           <h2>{named(mine)} <span>vs</span> {named(foe)}</h2>

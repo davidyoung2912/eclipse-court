@@ -282,7 +282,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .main-menu { position: relative; }
 
 /* The fight arena's dusk floor: a dark blue glow with a faint checkerboard, behind the whole screen. */
-body:has(.main-menu) {
+body:has(.main-menu), body:has(.game-umbral) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
     radial-gradient(ellipse at center, #231b52, #0f0b26 75%);
@@ -298,11 +298,40 @@ body:has(.battle-menu) {
 }
 
 /* The Campaign: the light court's golds, kept dark so the cards stand out. */
-body:has(.campaign-menu) {
+body:has(.campaign-menu), body:has(.game-solari) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
     radial-gradient(ellipse at center, #4a3611, #1a1305 75%);
   background-attachment: fixed;
+}
+/* Story, Gauntlet and Puzzles each get their own tone of the same checkerboard. */
+body:has(.story-menu) {
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #2c1552, #0e0620 75%);
+  background-attachment: fixed;
+}
+body:has(.gauntlet-menu) {
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #123d1e, #05160b 75%);
+  background-attachment: fixed;
+}
+body:has(.puzzles-menu) {
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #0b3a45, #04151a 75%);
+  background-attachment: fixed;
+}
+
+/* The fight screen follows the player's court, like the board screen behind it. */
+.duel-umbral {
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #231b52, #0f0b26 75%);
+}
+.duel-solari {
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #4a3611, #1a1305 75%);
 }
 
 /* Opening sequence: the title shows at once, centred; after a pause everything rises into place. */
