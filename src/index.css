@@ -60,7 +60,7 @@ body {
   gap: 8px;
 }
 
-.hud { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; }
+.hud { position: relative; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; }
 .hud-round { display: flex; flex-direction: column; font-weight: 600; }
 .hud-note { font-size: var(--fs-xs); font-weight: 400; opacity: 0.85; max-width: 45vw; line-height: 1.25; }
 .doom { fill: #b3202a; opacity: 0.38; pointer-events: none; }
@@ -69,23 +69,22 @@ body {
 .turn-solari { color: var(--solari-gold); }
 .turn-umbral { color: var(--umbral-violet); }
 
-.dial { display: flex; gap: 6px; align-items: center; }
+.dial { position: relative; display: flex; gap: 6px; align-items: center; }
 .dial span {
   display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: 50%;
   font-size: var(--fs-xs); font-weight: 700; color: #1b1740;
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
-.dial-now { width: 38px !important; height: 38px !important; box-shadow: 0 0 10px rgba(255, 220, 140, 0.5); }
+.dial-now { width: 38px !important; height: 38px !important; box-shadow: 0 0 10px color-mix(in srgb, var(--hour, #ffdc8c) 60%, transparent); }
 .dial-next { opacity: 0.85; }
 
-.board { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; width: 100%; max-height: 100%; aspect-ratio: 1; flex: 0 1 auto; touch-action: manipulation; }
+.board { overflow: visible; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; width: 100%; max-height: 100%; aspect-ratio: 1; flex: 0 1 auto; touch-action: manipulation; }
 .sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }
 /* Board materials: bevelled stone squares, fine grain over the grid, a gilded frame and a wash that follows the Hour. */
 .sq-bevel { fill: url(#bevel-lit); pointer-events: none; }
 .board-grain { pointer-events: none; mix-blend-mode: multiply; opacity: 0.35; }
 .board-frame { fill: none; stroke: url(#frame-gild); stroke-width: 0.12; pointer-events: none; filter: drop-shadow(0 0 0.06px rgba(0, 0, 0, 0.6)); }
-.board { overflow: visible; }
 .hour-wash { pointer-events: none; mix-blend-mode: soft-light; transition: color var(--t-slow) var(--ease); }
 .hour-wash.rising { color: #ffe9a8; }
 .hour-wash.waning { color: #6a4fd0; }
@@ -208,7 +207,7 @@ body {
 @media (prefers-reduced-motion: reduce) { .ripple, .move-glow, .piece .halo { animation: none !important; } .piece, .piece-lift, .ground-shadow { transition: none; } .piece-settle { animation: none; } }
 .pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
 
-.tray { margin-top: auto; }
+.tray { position: relative; margin-top: auto; }
 .status { margin: 0 0 8px; text-align: center; min-height: 1.4em; }
 .buttons { display: flex; gap: 8px; }
 .buttons button {
@@ -223,12 +222,11 @@ body {
   box-shadow: var(--shadow-1), var(--edge);
   transition: box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
-.buttons button.primary, .menu-buttons button.primary, .choice.on, .buttons button.on { --glow: 255, 205, 90; }
 .buttons button.primary, .menu-buttons button.primary, .choice.on, .buttons button.on {
+  --glow: 255, 205, 90;
   box-shadow: 0 0 14px rgba(var(--glow), 0.55), inset 0 0 8px rgba(var(--glow), 0.2);
 }
 .buttons button.primary, .menu-buttons button.primary { animation: btn-pulse 2.2s ease-in-out infinite; }
-.choice.won { --glow: 111, 224, 138; }
 .buttons button:not(:disabled):hover, .menu-buttons button:hover, .spell:not(:disabled):hover, .choice:not(:disabled):hover {
   border-color: rgba(var(--glow), 0.9); box-shadow: var(--shadow-2), var(--edge);
 }
@@ -310,6 +308,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .stick-base { width: 96px; height: 96px; border: 2px solid rgba(255, 255, 255, 0.35); }
 .stick-knob { width: 46px; height: 46px; background: rgba(255, 255, 255, 0.45); }
 .attack-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   flex: 0 0 112px; border-radius: 14px; border: 2px solid var(--solari-cream); background: rgba(232, 182, 74, 0.35);
   color: var(--fg); font-size: var(--fs-md); font-weight: 700; touch-action: none;
 }
@@ -351,14 +350,13 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 
 /* Title screen */
 .main-menu {
-  justify-content: flex-start; gap: 3px; padding-top: 0;
+  position: relative; justify-content: flex-start; gap: 3px; padding-top: 0;
   background:
     radial-gradient(ellipse 80% 45% at 50% 28%, rgba(122, 92, 200, 0.35), transparent 70%),
     radial-gradient(ellipse 60% 30% at 50% 100%, rgba(232, 182, 74, 0.14), transparent 70%);
 }
 .hero { width: 100%; max-height: 16vh; margin-top: -10px; flex-shrink: 1; overflow: visible; }
 .brand { display: flex; flex-direction: column; gap: 3px; }
-.main-menu { position: relative; }
 
 /* Every screen shares one backdrop: a faint checkerboard under a radial wash, toned per section by --tone-a (centre) and --tone-b (edge). */
 body:has(.main-menu, .blue-menu, .game-umbral, .battle-menu, .campaign-menu, .game-solari, .story-menu, .gauntlet-menu, .puzzles-menu),
@@ -477,7 +475,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 }
 
 .menu h2, .menu h3 { margin: 0; }
-.menu h3 { margin-top: 8px; font-size: var(--fs-sm); opacity: 0.8; }
+.menu h3 { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: var(--fs-sm); letter-spacing: 0.12em; text-transform: uppercase; color: var(--solari-cream); opacity: 0.8; }
 .tagline { margin: 0 0 16px; text-align: center; opacity: 0.8; }
 .menu-buttons { position: relative; z-index: 1; display: flex; gap: 8px; margin-top: 12px; }
 .menu-buttons button, .tabs button {
@@ -492,14 +490,13 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 }
 .choice span { font-size: var(--fs-xs); opacity: 0.75; }
 .choice.on { border-color: var(--solari-gold); background: rgba(232, 182, 74, 0.18); }
-.choice.won { border-color: #6fe08a; }
+.choice.won { --glow: 111, 224, 138; border-color: #6fe08a; }
 .choice:disabled { opacity: 0.35; }
 .campaign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.campaign .choice { width: 100%; }
+.campaign .choice { width: 100%; min-height: 64px; }
 .result { z-index: 20; }
 
-.lesson { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(rgba(122, 92, 200, 0.22), rgba(122, 92, 200, 0.22)), rgb(26, 20, 62); }
-.lesson { display: grid; }
+.lesson { display: grid; margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(rgba(122, 92, 200, 0.22), rgba(122, 92, 200, 0.22)), rgb(26, 20, 62); }
 .lesson > * { grid-area: 1 / 1; }
 .lesson-hidden { visibility: hidden; }
 .lesson h2 { margin: 0 0 4px; font-family: var(--display); font-size: var(--fs-md); color: var(--solari-gold); }
@@ -539,10 +536,9 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .btn-icon { width: 1.25em; height: 1.25em; flex-shrink: 0; }
 .buttons button, .menu-buttons button, .spell { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .menu-buttons.stacked { flex-direction: column; }
-.spell { gap: 5px; }
+.spell { gap: 5px; } /* stays here: it must follow the shared gap: 8px just above */
 .spell .btn-icon { width: 1.1em; height: 1.1em; }
 .choice strong { display: flex; align-items: center; gap: 8px; }
-.attack-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .attack-btn .btn-icon { width: 1.6em; height: 1.6em; }
 
 .wall rect { fill: #2a2347; stroke: #5b4f8f; stroke-width: 0.04; }
@@ -602,6 +598,7 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--fs-xs); background: rgba(111, 224, 138, 0.2); border: 1px solid #6fe08a; }
 .row-pick { display: flex; flex-wrap: wrap; gap: 6px; }
 .row-pick button {
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(26, 20, 62, 0.92); color: var(--fg); font-size: var(--fs-sm);
 }
 .row-pick button.on { border-color: var(--solari-gold); background: linear-gradient(rgba(232, 182, 74, 0.3), rgba(232, 182, 74, 0.3)), rgb(26, 20, 62); }
@@ -612,13 +609,13 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 /* Menu pages: a framed scene on top, ornamented headings, gilded cards */
 .menu-art { width: 100%; flex: 0 0 auto; border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.5); box-shadow: 0 0 18px rgba(122, 92, 200, 0.45); }
 /* Header scene motion: slow and small, so the scene feels alive without pulling the eye from the page. */
-.menu-art .art-star { animation: art-twinkle 3.2s ease-in-out infinite; }
+.menu-art .art-star { animation: art-twinkle 1.9s ease-in-out infinite; }
 .menu-art .art-glow, .menu-art .art-bob, .menu-art .art-burst, .menu-art .art-spin, .menu-art .art-flag { transform-box: fill-box; transform-origin: center; }
-.menu-art .art-glow { animation: art-breathe 6s ease-in-out infinite; }
-.menu-art .art-bob { animation: art-bob 4.5s ease-in-out infinite; }
+.menu-art .art-glow { animation: art-breathe 3.4s ease-in-out infinite; }
+.menu-art .art-bob { animation: art-bob 2.6s ease-in-out infinite, art-sway 5.2s ease-in-out infinite; }
 .menu-art .art-late { animation-delay: -2.2s; }
-.menu-art .art-burst { animation: art-pulse 2.4s ease-in-out infinite; }
-.menu-art .art-spin { animation: spin 40s linear infinite; }
+.menu-art .art-burst { animation: art-pulse 1.4s ease-in-out infinite, art-flicker 0.9s ease-in-out infinite; }
+.menu-art .art-spin { animation: spin 18s linear infinite; }
 .menu-art .art-road { animation: art-march 3s linear infinite; }
 .menu-art .art-flag { transform-origin: left center; animation: art-wave 2.4s ease-in-out infinite; }
 .menu-art .art-window { animation: art-twinkle 2.8s ease-in-out infinite; }
@@ -631,11 +628,6 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 /* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
 .menu-art .art-mote { animation: art-mote 7s ease-in-out infinite; }
 .menu-art .art-shoot, .hero .art-shoot { opacity: 0; animation: art-shoot 1.2s ease-in both; }
-.menu-art .art-glow { animation-duration: 3.4s; }
-.menu-art .art-bob { animation-name: art-bob, art-sway; animation-duration: 2.6s, 5.2s; }
-.menu-art .art-burst { animation-name: art-pulse, art-flicker; animation-duration: 1.4s, 0.9s; }
-.menu-art .art-spin { animation-duration: 18s; }
-.menu-art .art-star { animation-duration: 1.9s; }
 @keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
 /* A moon that slides back and forth across the sun while the glow dims as it is covered and rises as it clears; both share one clock and turn straight round at each end. */
 .art-moon-slide, .art-dim { animation-duration: 18s; animation-timing-function: linear; animation-iteration-count: infinite; animation-direction: alternate; }
@@ -670,7 +662,6 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
   background: linear-gradient(90deg, var(--solari-gold), var(--solari-cream) 45%, #b9a2ff 60%, var(--umbral-violet));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.menu h3 { display: flex; align-items: center; gap: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--solari-cream); }
 .menu h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--umbral-violet), transparent); }
 .season-banner { --banner: #b08d57; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 16px; padding: 8px 14px; border: 2px solid var(--banner); border-radius: 4px 4px 14px 14px; background: #1c1a24; color: var(--banner); font-weight: 600; }
 .season-banner[data-rank='Knight'] { --banner: #9fb4c8; }
@@ -694,7 +685,6 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu .choice.solari.on, .menu .choice.umbral.on { box-shadow: 0 0 14px rgba(232, 182, 74, 0.5); }
 .choice .avatar { position: absolute; right: 10px; top: 50%; width: 52px; height: 52px; transform: translateY(-50%); filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6)); }
 .choice:has(.avatar) { padding-right: 72px; }
-.campaign .choice { min-height: 64px; }
 .campaign .choice .avatar.locked { filter: grayscale(1) brightness(0.6); }
 .campaign .choice .stars { margin-left: 0; margin-right: 0; }
 .campaign .choice strong { flex-wrap: wrap; }
@@ -1029,14 +1019,12 @@ body:has(.duel) .play-timer { display: none; }
 .confirm-advice.stop { color: #ff8088; }
 
 /* The attack summary sits in the tray, centred between the info card above and the screen bottom; the tray keeps its size underneath. */
-.tray { position: relative; }
 .tray.confirming > :not(.confirm) { visibility: hidden; }
 .tray > .confirm { position: absolute; top: calc(50% + var(--bottom-gap) / 2); bottom: auto; transform: translateY(-50%); }
 
 /* A bound piece keeps a crisp chain badge even though its art is dimmed */
 .bound-badge circle { fill: #120d2a; stroke: #fff; stroke-width: 0.025; }
 .bound-badge path { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.row-pick button { display: inline-flex; align-items: center; gap: 6px; }
 .row-pick .role-icon { width: 2.3em; height: 2.3em; flex: none; }
 .odds-note { margin: 0 0 6px; text-align: center; font-size: var(--fs-xs); opacity: 0.65; }
 
@@ -1375,13 +1363,10 @@ svg.board:focus { outline: none; }
 .eclipsed::after { opacity: 1 !important; }
 .eclipsed .hud, .eclipsed .board { filter: saturate(0.45) brightness(0.85); }
 /* The HUD wears the board's Hour: a warm wash while the light rises, violet as it wanes, and a dawn-to-dusk strip whose marker walks toward the Eclipse disc at its end. */
-.hud { position: relative; }
 .hud-rising { --hour: #ffe9a8; }
 .hud-waning { --hour: #6a4fd0; }
 .hud-eclipse { --hour: #000; }
 .hud::before { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 8px; background: radial-gradient(ellipse at 50% 0%, var(--hour), transparent 80%); opacity: 0.16; transition: opacity var(--t-slow) var(--ease), background var(--t-slow) var(--ease); }
-.dial { position: relative; }
-.dial-now { box-shadow: 0 0 10px color-mix(in srgb, var(--hour, #ffdc8c) 60%, transparent); }
 .hour-strip { position: absolute; left: 0; right: 14px; bottom: -3px; height: 3px; border-radius: 2px; background: linear-gradient(to right, #ffe9a8, #e8b64a 35%, #6a4fd0 80%, #1b1740); opacity: 0.85; }
 .hour-mark { position: absolute; top: -2px; left: calc(var(--at) * 100%); width: 7px; height: 7px; margin-left: -3px; border-radius: 50%; background: #fbf1d4; box-shadow: 0 0 6px #ffe9a8; transition: left var(--t-slow) var(--ease); }
 .hour-end { position: absolute; top: -4px; right: -14px; width: 11px; height: 11px; border-radius: 50%; background: #05030c; box-shadow: 0 0 0 1.5px var(--solari-gold), 0 0 8px rgba(232, 182, 74, 0.55); }
@@ -1448,7 +1433,7 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
   position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
   padding: 10px; border: 0; color: inherit; font: inherit; cursor: pointer; background: rgba(15, 11, 40, 0.82); animation: count-fade-in 0.3s ease-out;
 }
-.duel-brief-cards { display: flex; gap: 10px; width: 100%; max-width: 440px; }
+.duel-brief-cards { position: relative; display: flex; gap: 10px; width: 100%; max-width: 440px; }
 .duel-brief-card { flex: 1; min-width: 0; padding: 10px; border-radius: 12px; text-align: left; border: 2px solid var(--umbral-violet); background: rgba(29, 23, 69, 0.9); }
 .duel-brief-card.solari { border-color: var(--solari-cream); }
 .duel-brief-card h3 { margin: 0; font-weight: 700; font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
@@ -1505,7 +1490,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .eclipse-chip.soon { background: #3b2d86; border-color: #cdbfff; color: #fff; }
 
 /* Duel versus intro: the two cards slide in from opposite sides and meet at a "VS" */
-.duel-brief-cards { position: relative; }
 .duel-brief-card:first-child { animation: brief-from-left 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
 .duel-brief-card:last-child { animation: brief-from-right 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) 0.08s both; }
 .duel-brief-cards::after {
