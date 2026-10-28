@@ -766,8 +766,9 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   padding: 10px 0 calc(env(safe-area-inset-bottom) + 4px); background: linear-gradient(180deg, transparent, var(--bg) 24%);
 }
 .setup-actions .menu-buttons { margin-top: 0; }
-/* This page keeps its Back and Start bar stuck to the bottom, so its tip card scrolls with the page instead of covering the bar. */
-.setup .tip-card { position: static; margin-top: 0; }
+/* Setup pages show their tip card at the end of the page; Skirmish's sticky Back and Start bar makes its card float just above the bar instead. */
+.setup .tip-card:not(.float) { position: static; margin-top: 0; }
+.setup .tip-card.float { bottom: calc(env(safe-area-inset-bottom) + 84px); }
 .setup-actions .menu-buttons button { padding: 14px 8px; }
 .setup-actions .menu-buttons button.primary { flex: 2; }
 .setup-note { margin: 0; font-size: 0.85rem; opacity: 0.8; }

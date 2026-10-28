@@ -306,7 +306,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     <main className="app menu setup battle-menu">
       <SkirmishArt />
       <h2>Skirmish</h2>
-      <TipCard page="skirmish" />
+      <TipCard float page="skirmish" />
       {!hotSeat && (
         <details className="tier-fold">
           <summary><h3>Today’s bounties ({claimedOn().length}/{bountiesFor(dailySeed()).length})</h3></summary>
