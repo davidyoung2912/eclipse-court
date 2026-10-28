@@ -367,6 +367,9 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .result { z-index: 20; }
 
 .lesson { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(122, 92, 200, 0.18); }
+.lesson { display: grid; }
+.lesson > * { grid-area: 1 / 1; }
+.lesson-hidden { visibility: hidden; }
 .lesson h2 { margin: 0 0 4px; font-size: 1rem; color: var(--solari-gold); }
 .lesson p { margin: 0; font-size: 0.85rem; line-height: 1.35; }
 

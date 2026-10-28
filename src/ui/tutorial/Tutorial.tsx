@@ -112,8 +112,13 @@ export function Tutorial({ onExit }: Props) {
         : <PieceCard state={state} human="solari" piece={shown} hint="Tap any piece to read its card." />}
       <footer className="tray">
         <section className="lesson" aria-live="polite">
-          <h2>{current.title}</h2>
-          <p>{current.text}</p>
+          {/* Every step is laid out in one cell and only the current one shows, so the card keeps the tallest step's height and the board never shifts. */}
+          {TUTORIAL_STEPS.map((s, i) => (
+            <div key={s.title} className={i === step ? undefined : 'lesson-hidden'} aria-hidden={i === step ? undefined : true}>
+              <h2>{s.title}</h2>
+              <p>{s.text}</p>
+            </div>
+          ))}
         </section>
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">

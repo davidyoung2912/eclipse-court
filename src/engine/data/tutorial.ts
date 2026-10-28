@@ -19,37 +19,37 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   },
   {
     kind: 'info',
-    title: '2. Your pieces',
+    title: '2. Your Pieces',
     text: 'Every piece type moves and fights differently. Tap any piece to read its card: how it moves, how it fights in a duel and its HP. Sunhawks and Seraphs fly up to 3 squares, Stags jump like chess knights and the Solarch teleports up to 4.',
   },
   {
     kind: 'info',
-    title: '3. The light shifts',
+    title: '3. The Light Shifts',
     text: 'Once both courts have moved, the day advances. The dial shows the centre ring now and the next three steps, from +2 (full light) to -2 (deep dark). Squares near the middle brighten and darken in a ripple outward from the centre.',
   },
   {
     kind: 'info',
-    title: '4. Reading the colours',
+    title: '4. Reading the Colours',
     text: 'A square\'s colour tells you who the light favours. Pale cream is Solari ground, deep indigo is Umbral ground, and the in-between shade is dusk, which favours nobody. The outer rows never change: the Solari half at the bottom is always bright, the Umbral half at the top always dark.',
   },
   {
     kind: 'info',
-    title: '5. Light in combat',
+    title: '5. Light in Combat',
     text: 'In a duel, the court the square favours deals 15% more damage and takes 10% less for each step of brightness, up to +30% and -20% at full light or dark. The other court gets no bonus. So attack on your own ground, or wait for the light to turn. The odds card already counts it.',
   },
   {
     kind: 'info',
-    title: '6. How a duel plays',
+    title: '6. How a Duel Plays',
     text: 'Moving onto an enemy starts a 20 second duel in real time. Drag on the left to move, hold the right button to attack and release to strike: holding longer hits harder but slows you. The green bar over each fighter is its HP. After 12 seconds the arena shrinks to force a finish. Umbral fighters slowly regenerate.',
   },
   {
     kind: 'duel',
-    title: '7. Your first duel',
+    title: '7. Your First Duel',
     text: 'Tap your Knight, then the enemy beside it. Your attacker glows gold and the target red while you read the odds: your win chance, a draw, and the defender\'s, plus the square\'s light. Cancel to think again, or Attack to fight.',
   },
   {
     kind: 'info',
-    title: '8. Hit points',
+    title: '8. Hit Points',
     text: 'The dots under each piece are its HP. A duel ends when one fighter reaches 0 HP (it is captured and the winner takes its square) or time runs out: then the fighter with the larger share of HP left wins. A tie leaves both standing and the defender holds. Survivors keep their wounds.',
   },
   {
@@ -59,32 +59,32 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   },
   {
     kind: 'spell',
-    title: '10. Cast a spell',
+    title: '10. Cast a Spell',
     text: 'Your Solarch can cast each of seven spells once per game, if it has at least 2 HP. A cast costs 1 HP and your whole turn, and pieces on beacons cannot be targeted. Choose Blink, then tap any empty square to jump the Solarch there. (In Skirmish you can pick a loadout of four from a larger pool, with two signature spells for each court.)',
   },
   {
     kind: 'info',
-    title: '11. How to win',
+    title: '11. How to Win',
     text: 'In the classic game, hold all five beacons (the dashed rings) at the end of your turn, or defeat every enemy piece. Beacons also heal whoever stands on them. Skirmish adds other goals (capture the Leader, a beacon score race, hold the centre); the line under the round counter shows yours.',
   },
   {
     kind: 'info',
-    title: '12. Special squares',
+    title: '12. Special Squares',
     text: 'Some boards have coloured squares with effects: Might adds damage, Ward cuts damage taken, Recovery heals, Hazard hurts, Silence blocks a Leader\'s spells and Invincibility protects on odd rounds. A legend under the board names each colour, and tapping an empty square describes it. Use them: a duel on a Ward square is far safer.',
   },
   {
     kind: 'info',
-    title: '13. Veterans and promotion',
+    title: '13. Veterans and Promotion',
     text: 'In some games a piece that wins duels grows. It becomes a Veteran with +1 max HP, then an Elite that picks a perk. A Footsoldier that reaches the enemy home column is promoted to a Charger or a Marksman. You are asked to choose just before your move is played.',
   },
   {
     kind: 'info',
-    title: '14. Goal line, hints and undo',
+    title: '14. Goal Line, Hints and Undo',
     text: 'The white line above every board states the goal of that battle, whether it is a campaign opponent, a scenario, a puzzle or a story chapter. Stuck? The Hint button suggests a move for free (puzzles give the setter\'s own hints), and Undo takes your last move back in games against the AI. Neither is available online.',
   },
   {
     kind: 'info',
-    title: '15. Ways to play',
+    title: '15. Ways to Play',
     text: 'Skirmish builds a match to your liking, including the 9x9 Grand board. The Campaign is a ladder of battles and hand-built scenarios that earn stars, the Gauntlet is a run with one army, Puzzles give you a fixed position, the Daily is the same for everyone, and Story tells the tale of the two courts. You can also play a friend on one device or online.',
   },
   {
