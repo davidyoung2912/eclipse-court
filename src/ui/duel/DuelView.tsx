@@ -11,6 +11,7 @@ import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../.
 import type { DuelCells } from '../../engine/rules/cells'
 import type { CellEffect, DuelOutcome, Piece } from '../../engine/rules/types'
 import { createFx, drawDuel, updateFx } from './duelFx'
+import { DuelBriefing } from './DuelBriefing'
 import { TipCard, useTipsPending } from '../tips/TipCard'
 
 export interface DuelOptions {
@@ -50,6 +51,8 @@ const END_DELAY = 1.1
 /** The pre-fight countdown: each of these shows for COUNT_STEP_MS, then the fight begins. */
 const COUNTDOWN = ['3', '2', '1', 'Go!']
 const COUNT_STEP_MS = 750
+/** The stats briefing leads the countdown for this long (tap to skip). */
+const BRIEF_MS = 3200
 
 export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -69,6 +72,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const [desktop] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches)
   const [locked, setLocked] = useState(false)
   const [count, setCount] = useState(0)
+  const [briefing, setBriefing] = useState(true)
   /** The guidance cards show over the arena before the fight; nothing starts (countdown, clock, music, mouse capture) until they are read. */
   const tipPages = ['duel', desktop ? 'duel-mouse' : 'duel-touch', playerSide === 1 && 'duel-defend', (!!cells || !!cellEffects?.some(Boolean)) && 'duel-cells'] as const
   const waiting = useTipsPending(tipPages)
@@ -78,14 +82,20 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const skipping = useRef(false)
 
   useEffect(() => {
-    if (waiting) return
+    if (waiting || !briefing) return
+    const t = setTimeout(() => setBriefing(false), BRIEF_MS)
+    return () => clearTimeout(t)
+  }, [waiting, briefing])
+
+  useEffect(() => {
+    if (waiting || briefing) return
     started.current = false
     const timers = COUNTDOWN.map((_, i) => setTimeout(() => {
       if (i + 1 < COUNTDOWN.length) setCount(i + 1)
       else { started.current = true; setCount(COUNTDOWN.length) }
     }, (i + 1) * COUNT_STEP_MS))
     return () => timers.forEach(clearTimeout)
-  }, [attacker, defender, seed, waiting])
+  }, [attacker, defender, seed, waiting, briefing])
 
   useEffect(() => {
     optionsRef.current = options
@@ -313,7 +323,11 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
           <canvas ref={canvas} className="duel-canvas" />
           {banner && <div className="duel-banner">{banner}</div>}
-          {!waiting && count < COUNTDOWN.length && (
+          {!waiting && briefing && (
+            <DuelBriefing mine={mine} foe={foe} luminance={luminance} cells={cells} playerSide={playerSide}
+              opponentSkill={opponentSkill} opponentAggression={opponentAggression} onContinue={() => setBriefing(false)} />
+          )}
+          {!waiting && !briefing && count < COUNTDOWN.length && (
             <div key={count} className={`duel-countdown ${attacker.court}`} role="status" aria-label={COUNTDOWN[count]}>{COUNTDOWN[count]}</div>
           )}
           {desktop && !waiting && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">Click the arena to take control with the mouse</p>}
