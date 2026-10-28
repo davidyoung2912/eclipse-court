@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
-import { getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
+import { DUEL_SPEEDS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -74,6 +74,13 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
       <h3>Play aids</h3>
       <label className="recharge"><input type="checkbox" checked={settings.aids} onChange={() => change({ aids: !settings.aids })} /> Danger view: ring your pieces an enemy could attack next turn, and show the odds of each attack you could make</label>
+      <h3>Duels</h3>
+      <p className="setup-hint">Normal is the slowed pace, Fast is full speed, and Instant settles every duel for you at the auto-duel skill. You can also tap Skip during any duel.</p>
+      <div className="choices">
+        {DUEL_SPEEDS.map((s) => (
+          <button key={s} className={`choice${settings.duelSpeed === s ? ' on' : ''}`} aria-pressed={settings.duelSpeed === s} onClick={() => change({ duelSpeed: s })}>{s[0].toUpperCase() + s.slice(1)}</button>
+        ))}
+      </div>
       <h3>Guidance</h3>
       <div className="menu-buttons">
         <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote('Tips, the checklist and the guided lesson are back.') }}><Icon name="bulb" />Show Tips Again</button>

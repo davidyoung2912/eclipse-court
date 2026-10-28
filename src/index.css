@@ -190,6 +190,10 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   position: absolute; top: 0; right: 0; min-width: 40px; padding: 4px 8px; border-radius: 999px;
   border: 1px solid var(--umbral-violet); background: rgba(29, 23, 69, 0.9); font-weight: 700; font-size: 0.85rem;
 }
+.duel-skip {
+  position: absolute; top: 0; left: 0; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+  border: 1px solid var(--umbral-violet); background: rgb(29, 23, 69); color: inherit;
+}
 .duel-stage {
   position: relative; flex: 1; min-height: 0; border-radius: 14px; overflow: hidden;
   border: 2px solid var(--umbral-violet); box-shadow: 0 0 18px rgba(122, 92, 200, 0.5), inset 0 0 24px rgba(0, 0, 0, 0.5);

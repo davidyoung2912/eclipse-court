@@ -82,9 +82,16 @@ export interface Settings {
   largeUi: boolean
   /** Ring your pieces an enemy could attack next turn, and show the odds of each attack you could make. */
   aids: boolean
+  /** How fast live duels play: Normal is the slowed pace, Fast is full speed, Instant settles every duel without playing it. */
+  duelSpeed: DuelSpeed
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false }
+export type DuelSpeed = 'normal' | 'fast' | 'instant'
+export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
+/** The share of full speed a live duel plays at for each setting. */
+export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
+
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, duelSpeed: 'normal' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -98,6 +105,7 @@ export function parseSettings(raw: unknown): Settings {
     marks: o.marks === true,
     largeUi: o.largeUi === true,
     aids: o.aids === true,
+    duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,
   }
 }
 

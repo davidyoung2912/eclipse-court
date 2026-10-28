@@ -3,9 +3,9 @@ import { createDuelAi } from '../../ai/duelAi'
 import { sfx, startDuelDrums } from '../../audio/synth'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
-import { getSettings } from '../../settings'
+import { DUEL_PACE, getSettings } from '../../settings'
 import { Icon } from '../menus/icons'
-import { profileForSkill } from '../../ai/profile'
+import { AUTO_DUEL_SKILL, profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
 import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../../engine/duel/types'
 import type { DuelCells } from '../../engine/rules/cells'
@@ -47,8 +47,6 @@ const FOE_SPEED_RAMP = 0.018
 const MOUSE_RETURN = 5
 const HIT_STOP = 0.07
 const END_DELAY = 1.1
-/** Fraction of normal speed the live duel plays at; the simulation itself (and so the odds) is unchanged. */
-const SLOWDOWN = 0.55
 /** The pre-fight countdown: each of these shows for COUNT_STEP_MS, then the fight begins. */
 const COUNTDOWN = ['3', '2', '1', 'Go!']
 const COUNT_STEP_MS = 750
@@ -76,6 +74,8 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const waiting = useTipsPending(tipPages)
   /** The simulation holds still until the countdown has run out. */
   const started = useRef(false)
+  /** Set by Skip: the rest of the fight is played out at once with the duel AI at the player's controls. */
+  const skipping = useRef(false)
 
   useEffect(() => {
     if (waiting) return
@@ -134,6 +134,9 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   useEffect(() => {
     if (waiting) return
     const foeSide = (1 - playerSide) as 0 | 1
+    const pace = DUEL_PACE[getSettings().duelSpeed]
+    const myAi = createDuelAi(profileForSkill(AUTO_DUEL_SKILL, 1), seed + 1)
+    skipping.current = false
     const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP }, pickups: { seed: seed ^ 0x9e3779b9 } }
     const state = createDuel(attacker, defender, luminance, cfg, cells)
     const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
@@ -176,8 +179,18 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         input.current = { ...input.current, mx: mouse.current.x / STICK_RADIUS, my: mouse.current.y / STICK_RADIUS }
       }
       if (freeze > 0) freeze -= dt
-      else if (started.current) acc += dt * SLOWDOWN
+      else if (started.current) acc += dt * pace
       const events: DuelEvent[] = []
+      if (skipping.current) {
+        while (!state.done) {
+          const inputs: [DuelInput, DuelInput] = [NO_INPUT, NO_INPUT]
+          inputs[playerSide] = myAi(state, playerSide)
+          inputs[foeSide] = ai(state, foeSide)
+          stepDuel(state, inputs)
+        }
+        acc = 0
+        freeze = 0
+      }
       while (acc >= DT && !state.done && freeze <= 0) {
         acc -= DT
         const mine = flip ? { ...input.current, mx: -input.current.mx, my: -input.current.my } : input.current
@@ -223,7 +236,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       hudTick += dt
       if (hudTick > 0.1) {
         hudTick = 0
-        setTime(Math.max(0, DUEL_SECONDS - state.t) / SLOWDOWN)
+        setTime(Math.max(0, DUEL_SECONDS - state.t) / pace)
       }
       raf = requestAnimationFrame(frame)
     }
@@ -293,6 +306,9 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
             {' · '}{light}{playerSide === 1 ? ' · hold your ground!' : ''}
           </p>
           <div className="duel-timer" aria-label="Time left">{Math.ceil(time)}s</div>
+          {!waiting && count >= COUNTDOWN.length && !banner.match(/^(Victory|Defeat|Both|Draw)/) && (
+            <button className="duel-skip" onClick={() => { skipping.current = true; input.current = { ...NO_INPUT }; setHeld(false) }}>Skip</button>
+          )}
         </header>
         <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
           <canvas ref={canvas} className="duel-canvas" />

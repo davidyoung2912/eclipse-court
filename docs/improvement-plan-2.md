@@ -40,4 +40,4 @@ Verification per phase: `npm run test`, `npm run lint`, `npx tsc -b`, `npm run b
 
 ## Status
 
-Phase 1 done: the Danger toggle (Settings and in-game button) rings own pieces under threat and shows attack odds on enemy pieces; off under fog. Phases 2 onward not started.
+Phase 1 done: the Danger toggle (Settings and in-game button) rings own pieces under threat and shows attack odds on enemy pieces; off under fog. Phase 2 done: a Duel speed setting (Normal, Fast, Instant) and a Skip button in every live duel that plays the rest out with the duel AI at the auto-duel skill. Phases 3 onward not started.

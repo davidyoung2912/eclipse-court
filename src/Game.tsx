@@ -144,7 +144,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const foeAggression = DIFFICULTY[difficulty].aggression
   /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
   const even = hotSeat || online || !!mail
-  const settleAuto = even || duelMode === 'auto'
+  const settleAuto = even || duelMode === 'auto' || getSettings().duelSpeed === 'instant'
   /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
   const failed = puzzleLimit !== undefined && !state.winner && turnsTaken >= puzzleLimit
