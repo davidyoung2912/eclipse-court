@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-3 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-4 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -46,6 +46,8 @@ Phase 3 notes: pure numbers are in `src/boardMotion.ts`. Effects are CSS animati
 - Light-ray sweep: a travelling wavefront when light or dark takes over cells (replaces the uniform ripple fade).
 - Threat feedback: a slow red vignette pulse and heartbeat when your Leader is in danger; a gold shimmer on the winning cell when you are one move from winning.
 - Persistent streak meter that fills and cracks with escalating particles, alongside the existing combo words.
+
+Phase 4 notes: pure numbers are in `src/boardDrama.ts`. The slash runs along the attacker's approach, and the Leader hit-stop (70ms) pauses board animations before the shake. The light-ray sweep sweeps from the Solari edge as the light rises, the Umbral edge as it wanes, and rings out from the centre after the Eclipse. The danger pulse, heartbeat and gold win shimmer are advice, so they follow the Aids setting (off under fog, online, scored, daily and puzzle games). The win shimmer marks only empty squares that win on the spot, since a win that rides on a duel is never promised. The streak meter sits under the board and cracks when a streak of two or more ends.
 
 ## Phase 5: Eclipse moment and spell VFX
 

@@ -122,6 +122,26 @@ body {
 .move-fx .puff { fill: none; stroke: #ffd98a; stroke-width: 0.05; transform-box: fill-box; transform-origin: center; animation: puff 480ms ease-out var(--t-slow) both; }
 .move-fx.umbral .puff { stroke: #b9a2ff; }
 @keyframes puff { from { opacity: 0.7; transform: scale(0.5); } to { opacity: 0; transform: scale(1.5); } }
+/* Capture drama: the slash across a taken square, the light ray, and the threat and win cues */
+.slash { stroke: #fff4d0; stroke-width: 0.07; stroke-linecap: round; filter: drop-shadow(0 0 0.08px #ffd98a); stroke-dasharray: 1; animation: slash 340ms ease-out both; pointer-events: none; }
+.slash.leader { stroke-width: 0.12; stroke: #ffe9a8; animation-duration: 520ms; }
+@keyframes slash { 0% { stroke-dashoffset: 1; opacity: 1; } 45% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.board.hitstop, .board.hitstop * { animation-play-state: paused !important; }
+.win-shimmer { fill: none; stroke: #ffd35a; stroke-width: 0.08; pointer-events: none; animation: win-shimmer 1.8s ease-in-out infinite; }
+@keyframes win-shimmer { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.95; } }
+.leader-danger::before { content: ''; position: fixed; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(200, 30, 40, 0.55) 100%); animation: heartbeat 1.6s ease-in-out infinite; }
+@keyframes heartbeat { 0%, 100% { opacity: 0.05; } 12% { opacity: 0.5; } 24% { opacity: 0.12; } 36% { opacity: 0.4; } 60% { opacity: 0.05; } }
+.streak-meter { position: relative; display: flex; justify-content: center; gap: 4px; margin: 4px auto 0; pointer-events: none; }
+.streak-meter i { width: 26px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); transition: background var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); }
+.streak-meter.solari i.on { background: var(--solari-gold); box-shadow: 0 0 8px rgba(232, 182, 74, 0.8); }
+.streak-meter.umbral i.on { background: #b9a2ff; box-shadow: 0 0 8px rgba(122, 92, 200, 0.9); }
+.streak-meter.cracked i.on { animation: meter-crack 700ms ease-in forwards; }
+.streak-meter.cracked i.on:nth-child(odd) { --tilt: -14deg; }
+.streak-meter.cracked i.on:nth-child(even) { --tilt: 12deg; }
+@keyframes meter-crack { 0% { transform: none; opacity: 1; } 30% { transform: translateY(-2px) rotate(var(--tilt)); } 100% { transform: translateY(14px) rotate(var(--tilt)); opacity: 0; } }
+.streak-meter .sparks { position: absolute; left: 50%; top: 3px; width: 0; height: 0; }
+.streak-meter .sparks b { position: absolute; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #fff4d0; animation: meter-spark 600ms ease-out both; }
+@keyframes meter-spark { from { opacity: 1; transform: rotate(var(--angle)) translateY(0); } to { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)); } }
 .board-glow { fill: none; stroke: var(--turn-glow); stroke-width: 0.22; filter: url(#halo-blur); pointer-events: none; transition: stroke var(--t-slow) var(--ease); }
 .move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
 @keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
@@ -186,7 +206,7 @@ body {
 .ripple { pointer-events: none; opacity: 0; animation: ripple 0.9s ease-out both; }
 .ripple.lit { fill: #fff3b8; }
 .ripple.dim { fill: #5a3fb0; }
-@keyframes ripple { 0% { opacity: 0; } 30% { opacity: 0.5; } 100% { opacity: 0; } }
+@keyframes ripple { 0% { opacity: 0; } 22% { opacity: 0.65; } 60% { opacity: 0.18; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ripple, .move-glow, .piece .halo { animation: none !important; } .piece, .piece-lift, .ground-shadow { transition: none; } .piece-settle { animation: none; } }
 .pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
 

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
+import { HEARTBEAT_S, leaderInDanger, leaderStopMs, streaksOf, winningSquares } from './boardDrama'
+import { StreakMeter } from './ui/board/StreakMeter'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
@@ -239,6 +241,9 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   /** The aids are off under fog, where they would give away unseen pieces. */
   const aidsOn = aids && !state.config.fog && !ended
   const endangered = useMemo(() => (aidsOn ? threatenedIds(state, human) : NO_IDS), [aidsOn, state, human])
+  /** Threat and win cues are advice, so they follow the aids: a red pulse while the Leader can be taken, gold on a winning square. */
+  const leaderDanger = aidsOn && !pending && !settled && leaderInDanger(state, human, endangered)
+  const winAt = useMemo(() => (aidsOn && myTurn && !pending ? winningSquares(state, human) : undefined), [aidsOn, myTurn, pending, state, human])
   const odds = useMemo(() => (aidsOn && selected && myTurn && !targets ? attackOdds(state, selected, moves) : undefined), [aidsOn, state, selected, myTurn, targets, moves])
 
   const nextOdds = useMemo(() => (forecastOn && selected && myTurn && !targets ? nextAttackOdds(state, selected, moves) : undefined), [forecastOn, state, selected, myTurn, targets, moves])
@@ -288,6 +293,14 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     }
   }, [sound, music])
   useEffect(() => musicRef.current?.setLevel(musicLevel(state)), [state, sound, music])
+
+  // A slow heartbeat thuds while the Leader is in danger.
+  useEffect(() => {
+    if (!leaderDanger || !sound) return
+    sfx.heartbeat()
+    const timer = setInterval(sfx.heartbeat, HEARTBEAT_S * 1000)
+    return () => clearInterval(timer)
+  }, [leaderDanger, sound])
 
   // The streak label clears itself.
   useEffect(() => {
@@ -342,11 +355,17 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     const leaderFell = from.pieces.some((p) => p.role === 'leader' && !to.pieces.some((q) => q.id === p.id))
     const shake = shakeFor(lost, leaderFell, getSettings().reduceMotion)
     const board = document.querySelector('.board')
+    // A fallen Leader freezes the board for a beat before it shakes.
+    const stop = leaderStopMs(leaderFell, getSettings().reduceMotion)
+    if (stop && board) {
+      board.classList.add('hitstop')
+      setTimeout(() => board.classList.remove('hitstop'), stop)
+    }
     if (shake && board?.animate) {
       const { px } = shake
       board.animate(
         [{ translate: '0 0' }, { translate: `${-px}px ${px / 3}px` }, { translate: `${px}px ${-px / 3}px` }, { translate: `${-px / 2}px 0` }, { translate: '0 0' }],
-        { duration: shake.ms, easing: 'ease-out' },
+        { duration: shake.ms, easing: 'ease-out', delay: stop, fill: 'backwards' },
       )
     }
     const streak = streakAfter(steps)
@@ -607,10 +626,13 @@ export function Game({ controllers, opening, record, session, context, coach, pu
 
   const farewell = persona && ended && getSettings().banter !== 'off' ? farewellLine(persona.id, state.winner, human, String(record.initial.config.seed)) : null
   const [coaching, setCoaching] = useState(false)
+  const streaks = useMemo(() => streaksOf(history), [history])
+  /** The meter follows the player's court, or in hot-seat whichever court is on the longer streak. */
+  const meterCourt: Court = hotSeat ? (streaks.umbral > streaks.solari ? 'umbral' : 'solari') : human
   const dusk = musicLevel(state)
   const eclipseFallen = state.eclipse && !state.winner
   return (
-    <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
+    <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}${leaderDanger ? ' leader-danger' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} chip={chipOn} />
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
@@ -618,7 +640,8 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} nextOdds={nextOdds} nextLight={nextLight} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
-        focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+        focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} />
+      {!ended && <StreakMeter court={meterCourt} count={streaks[meterCourt]} />}
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={fightCells(attacker, defender, !!pending.byAi)}

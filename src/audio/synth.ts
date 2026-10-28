@@ -202,6 +202,11 @@ export const sfx = {
   /** A rising sting for the n-th capture in a row. */
   streak: (count: number) =>
     [0, 1, 2].forEach((i) => tone(440 * Math.pow(1.122, Math.min(count, 6) * 2 + i * 4), 0.3, { type: 'triangle', gain: 0.12, delay: i * 0.06 })),
+  /** A soft double thud, once a heartbeat, while a Leader is in danger. */
+  heartbeat: () => {
+    tone(62, 0.16, { gain: 0.2, to: 44 })
+    tone(58, 0.18, { gain: 0.14, to: 42, delay: 0.2 })
+  },
   /** The Eclipse falls: a deep swell and a hush. */
   eclipse: () => {
     tone(55, 1.8, { gain: 0.3, to: 36 })

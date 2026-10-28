@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { ROLE_NAMES } from '../../engine/data/roster'
-import { allSquares, centerOf, chebyshev, isBeacon, isBlocked, isCycling, ringOf, samePos, sizeOf } from '../../engine/rules/board'
+import { allSquares, centerOf, chebyshev, isBeacon, isBlocked, isCycling, samePos, sizeOf } from '../../engine/rules/board'
 import { safeRadius } from '../../engine/rules/events'
 import { squareLuminance } from '../../engine/rules/luminance'
 import type { Court, GameState, Piece, Pos } from '../../engine/rules/types'
@@ -18,6 +18,7 @@ import { equippedId } from '../../shop'
 import { stepCursor } from './cursor'
 import { describeSquare } from '../../narrate'
 import { cascadeDelay, lungeOffset, turnGlow } from '../../boardMotion'
+import { rayDelay, slashEnds } from '../../boardDrama'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
 const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
@@ -52,6 +53,8 @@ interface Props {
   flip?: boolean
   /** Hide the enemy pieces this court cannot see under fog of war. */
   fogFor?: Court
+  /** Empty squares the player could step onto to win at once: they shimmer gold. */
+  winAt?: Pos[]
 }
 
 /** Pause on the start square, then the same slide a real move makes, then a pause on arrival. */
@@ -79,7 +82,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, reach, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, reach, flip = false, fogFor, winAt = [] }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -96,6 +99,8 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   const [landings, setLandings] = useState<Record<string, number>>({})
   // The latest moves, each with a comet trail from its start, an arrival puff and, on a capture, a lunge past the landing.
   const [moves_, setMoves_] = useState<{ key: string; id: string; court: Court; from: Pos; to: Pos }[]>([])
+  // A capture leaves a slash across the square it took, along the way the attacker came.
+  const [slashes, setSlashes] = useState<{ key: string; at: Pos; dx: number; dy: number; leader: boolean }[]>([])
   const [lunges, setLunges] = useState<Record<string, { dx: number; dy: number }>>({})
   if (seen !== state.pieces) {
     setSeen(state.pieces)
@@ -104,6 +109,9 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
     const gone = seen.filter((p) => !state.pieces.some((q) => q.id === p.id))
     setMoves_(moved.map((q) => ({ key: `${q.id}-${seen.length}-${state.pieces.length}`, id: q.id, court: q.court, from: seen.find((p) => p.id === q.id)!.pos, to: q.pos })))
     setLunges(gone.length > 0 ? Object.fromEntries(moved.map((q) => [q.id, lungeOffset(seen.find((p) => p.id === q.id)!.pos, q.pos)])) : {})
+    const duel = state.lastDuel
+    const attackerFrom = duel ? seen.find((p) => p.id === duel.attackerId)?.pos : undefined
+    setSlashes(duel ? gone.filter((p) => samePos(p.pos, duel.at)).map((p) => ({ key: `${p.id}-${seen.length}`, at: p.pos, ...slashEnds(attackerFrom ?? p.pos, p.pos), leader: p.role === 'leader' })) : [])
     if (gone.length > 0 && gone.length <= 2) setFalls(gone.map((p) => ({ key: `${p.id}-${seen.length}`, pos: p.pos, role: p.role, court: p.court })))
     else if (falls.length > 0) setFalls([])
   }
@@ -165,7 +173,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             {(() => { const effect = cellAt(state.config, p); return effect && <CellMark effect={effect} cx={cx} cy={cy} round={state.round} /> })()}
             {cycling && (
               <rect key={rippleKey} x={cx - 0.5} y={cy - 0.5} width={1} height={1} className={`ripple ${lum >= 0 ? 'lit' : 'dim'}`}
-                style={{ animationDelay: `${ringOf(p, size) * 70}ms` }} />
+                style={{ animationDelay: `${rayDelay(p, size, state.dir, state.eclipse)}ms` }} />
             )}
             {radius !== null && chebyshev(p, center) > radius && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="doom" />}
             {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
@@ -178,6 +186,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             )}
             {isThreat(p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#threat-glow)" className="move-glow" />}
             {isThreat(p) && <circle cx={cx} cy={cy} r={0.16} className="move-dot threat-dot" />}
+            {winAt.some((w) => samePos(w, p)) && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="win-shimmer" />}
             {hint?.square && samePos(hint.square, p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow hint-square" />}
           </g>
         )
@@ -193,6 +202,11 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             <circle className="puff" cx={b.cx} cy={b.cy} r={0.3} />
           </g>
         )
+      })}
+      {!fogFor && slashes.map(({ key, at, dx, dy, leader }) => {
+        const a = toScreen({ x: at.x - dx, y: at.y - dy }, flip, size)
+        const b = toScreen({ x: at.x + dx, y: at.y + dy }, flip, size)
+        return <line key={key} className={`slash${leader ? ' leader' : ''}`} x1={a.cx} y1={a.cy} x2={b.cx} y2={b.cy} pathLength={1} pointerEvents="none" />
       })}
       {state.pieces.filter((pc) => !fogFor || visibleTo(state, fogFor, pc)).map((pc) => {
         const { cx, cy } = toScreen(pc.pos, flip, size)
