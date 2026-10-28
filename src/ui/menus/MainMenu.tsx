@@ -161,7 +161,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
           <ul>
             {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
           </ul>
-          <button onClick={hideChecklist}>Hide</button>
+          <button className="primary" onClick={hideChecklist}><Icon name="check" />Hide</button>
         </section>
       )}
       <section className="today" aria-label="Today">

@@ -917,7 +917,10 @@ body:has(.duel) .play-timer { display: none; }
 .coach-line svg { flex: none; width: 1.1em; height: 1.1em; color: #ffd45a; margin-top: 2px; }
 .coach-card, .first-steps { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgba(43, 36, 104, 0.6); border: 1px solid rgba(154, 124, 240, 0.5); font-size: 0.85rem; }
 .coach-card p { margin: 0; }
-.coach-card button, .first-steps button { align-self: flex-end; }
+.coach-card button { align-self: flex-end; }
+.first-steps { position: relative; }
+.first-steps button { position: absolute; right: 12px; bottom: 10px; }
+.first-steps li:last-child { padding-right: 96px; }
 .first-steps h3 { display: flex; justify-content: space-between; margin: 0; }
 .first-steps h3::after { display: none; }
 .first-steps h3 span { text-transform: none; letter-spacing: 0.04em; color: var(--solari-gold); }
