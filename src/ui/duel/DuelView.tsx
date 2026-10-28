@@ -10,6 +10,7 @@ import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/
 import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../../engine/duel/types'
 import type { DuelCells } from '../../engine/rules/cells'
 import type { CellEffect, DuelOutcome, Piece } from '../../engine/rules/types'
+import { hitStopFor, KO_END_DELAY, KO_SLOW, KO_SLOW_SECONDS } from '../../duelImpact'
 import { createFx, drawDuel, updateFx } from './duelFx'
 import { DuelBriefing } from './DuelBriefing'
 import { TipCard, useTipsPending } from '../tips/TipCard'
@@ -50,7 +51,6 @@ const STICK_RADIUS = 56
 const FOE_SPEED_RAMP = 0.018
 /** How quickly the mouse's virtual stick drifts back to centre, per second. */
 const MOUSE_RETURN = 5
-const HIT_STOP = 0.07
 const END_DELAY = 1.1
 /** The pre-fight countdown: each of these shows for COUNT_STEP_MS, then the fight begins. */
 const COUNTDOWN = ['3', '2', '1', 'Go!']
@@ -165,7 +165,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     let hudTick = 0
     const fx = createFx({
       luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
-      courts: [attacker.court, defender.court], assistSide: assist ? playerSide : undefined,
+      courts: [attacker.court, defender.court], mineSide: playerSide, assistSide: assist ? playerSide : undefined,
     })
     const drums = startDuelDrums()
     sfx.duelStart()
@@ -220,7 +220,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           else if (e.type === 'pickup') sfx.pickup()
           else if (e.type === 'hit') {
             sfx.hit(e.damage)
-            freeze = HIT_STOP
+            freeze = hitStopFor(e.damage, state.fighters[e.target].hp <= 0)
             shake = getSettings().reduceMotion ? 0 : Math.min(14, 4 + e.damage * 3)
             if (optionsRef.current.haptics) navigator.vibrate?.(e.damage >= 2 ? 40 : 18)
           } else if (e.type === 'suddenDeath') setBanner('Sudden death!')
@@ -233,7 +233,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         if (mineHp > 0 && foeHp <= 0) sfx.win()
         else if (mineHp <= 0) sfx.lose()
         drums.stop()
-        endTimer = END_DELAY
+        endTimer = fx.ko ? KO_END_DELAY : END_DELAY
       }
       if (endTimer >= 0) {
         endTimer -= dt
@@ -245,7 +245,8 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       drums.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
       if (started.current) fx.call += dt
-      updateFx(fx, state, dt, events)
+      // Once a fighter falls the effects play out in slow motion for a moment.
+      updateFx(fx, state, fx.ko && fx.ko.t < KO_SLOW_SECONDS * KO_SLOW ? dt * KO_SLOW : dt, events)
       drawDuel(ctx, fx, state, w, h, dpr, shake, flip)
       hudTick += dt
       if (hudTick > 0.1) {

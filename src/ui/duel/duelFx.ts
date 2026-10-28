@@ -1,3 +1,4 @@
+import { debrisCount, healthColor, lowHealthPulse, punchFor, PUNCH_RETURN, shockwaveRadius, stepGhost, struck, type Ghost } from '../../duelImpact'
 import { lostPanes, PALETTE, pieceArtSvg } from '../../art/pieceGeometry'
 import { ARENA_H, ARENA_W, BUFF_SECONDS, PICKUP_KINDS, PICKUP_LIFE, PICKUP_RADIUS, type DuelEvent, type DuelState, type PickupKind, type Vec } from '../../engine/duel/types'
 import type { CellEffect, Court, Piece } from '../../engine/rules/types'
@@ -35,6 +36,8 @@ export interface DuelLook {
   /** Cell effect under the attacker and the defender. */
   cells: [CellEffect | null, CellEffect | null]
   reduceMotion: boolean
+  /** The fighter the player steers, which gets the low-health edge pulse. */
+  mineSide?: 0 | 1
   /** The courts of the attacker and the defender. */
   courts: [Court, Court]
   /** The fighter the player steers, when duel assist is on: it gets a longer aim line and bigger hit markers. */
@@ -85,6 +88,13 @@ export interface Fx {
   hatch: CanvasPattern | null
   /** The last medallion that had finished loading for each fighter, shown while the next one loads. */
   lastIcon: [HTMLImageElement | null, HTMLImageElement | null]
+  /** The camera punch-in (a share of the zoom) and the arena point it leans toward. */
+  punch: number
+  punchAt: Vec
+  /** The pale trailing segment of each health bar. */
+  ghost: [Ghost, Ghost]
+  /** Seconds since a fighter fell and which one, or null while the fight goes on. */
+  ko: { t: number; side: 0 | 1 } | null
 }
 
 /** Width of the coloured side strips, in arena units. */
@@ -103,7 +113,7 @@ export function createFx(look: DuelLook): Fx {
       ph: Math.random() * 6.28, r: 0.025 + Math.random() * 0.04,
     })
   }
-  return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null] }
+  return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null], punch: 0, punchAt: { x: ARENA_W / 2, y: ARENA_H / 2 }, ghost: [{ value: 1, hold: 0 }, { value: 1, hold: 0 }], ko: null }
 }
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10)
@@ -129,6 +139,17 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
       push(fx, { kind: 'text', x: e.at.x, y: e.at.y - victim.radius, vx: 0, vy: -1.4, life: 0.9, max: 0.9, r: 0, color: '#ff8088', text: `-${fmt(e.damage)}` })
       if (fx.look.assistSide !== undefined) push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.6, max: 0.6, r: 1.1, color: '#ff8088' })
       fx.flash[e.target] = 0.18
+      push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.35, max: 0.35, r: shockwaveRadius(e.damage), color: '#ffffff' })
+      for (let i = debrisCount(e.damage, calm); i > 0; i--) {
+        const a = Math.random() * Math.PI * 2
+        const v = 1 + Math.random() * 1.5
+        push(fx, { kind: 'spark', x: e.at.x, y: e.at.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.6, max: 0.6, r: 0.09 + Math.random() * 0.05, color: COLORS[victim.court] })
+      }
+      const ko = victim.hp <= 0
+      fx.punch = Math.max(fx.punch, punchFor(e.damage, ko, calm))
+      fx.punchAt = e.at
+      fx.ghost[e.target] = struck(fx.ghost[e.target])
+      if (ko && !fx.ko) fx.ko = { t: 0, side: e.target }
       if (!calm) {
         const dx = victim.pos.x - hitter.pos.x
         const dy = victim.pos.y - hitter.pos.y
@@ -158,6 +179,9 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
     const k = Math.exp(-dt * 10)
     fx.recoil[i] = { x: fx.recoil[i].x * k, y: fx.recoil[i].y * k }
   })
+  fx.punch *= Math.exp(-dt * PUNCH_RETURN)
+  if (fx.ko) fx.ko.t += dt
+  s.fighters.forEach((f, i) => { fx.ghost[i] = stepGhost(fx.ghost[i], Math.max(0, f.hp / f.maxHp), dt) })
   for (const p of fx.particles) {
     p.life -= dt
     p.x += p.vx * dt
@@ -496,6 +520,16 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   const { theme, look, t } = fx
   const calm = look.reduceMotion
 
+  // The camera punches in toward the last impact and eases back.
+  ctx.save()
+  if (fx.punch > 0.001) {
+    const zx = bx + fx.punchAt.x * scale
+    const zy = by + fx.punchAt.y * scale
+    ctx.translate(zx, zy)
+    ctx.scale(1 + fx.punch, 1 + fx.punch)
+    ctx.translate(-zx, -zy)
+  }
+
   if (!fx.floor || fx.floor.w !== w || fx.floor.h !== h || fx.floor.dpr !== dpr) {
     const canvas = fx.floor?.canvas ?? document.createElement('canvas')
     canvas.width = Math.round(w * dpr)
@@ -747,9 +781,15 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'
     ctx.beginPath(); ctx.arc(cx, cy, barR, from, from + span); ctx.stroke()
     const left = Math.max(0, f.hp / f.maxHp)
+    const trail = fx.ghost[i].value
+    if (trail > left) {
+      ctx.lineWidth = 3.5
+      ctx.strokeStyle = 'rgba(255, 244, 214, 0.9)'
+      ctx.beginPath(); ctx.arc(cx, cy, barR, from, from + span * trail); ctx.stroke()
+    }
     if (left > 0) {
       ctx.lineWidth = 3.5
-      ctx.strokeStyle = '#6fe08a'
+      ctx.strokeStyle = healthColor(left)
       ctx.beginPath(); ctx.arc(cx, cy, barR, from, from + span * left); ctx.stroke()
     }
     ctx.lineCap = 'butt'
@@ -777,12 +817,42 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   }
   ctx.globalAlpha = 1
 
+  ctx.restore()
+
   // Vignette, then the opening call.
   const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) * 0.55)
   vg.addColorStop(0, 'rgba(0, 0, 0, 0)')
   vg.addColorStop(1, 'rgba(0, 0, 0, 0.6)')
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
+  const mine = look.mineSide === undefined ? null : s.fighters[look.mineSide]
+  const pulse = mine ? lowHealthPulse(mine.hp / mine.maxHp) : null
+  if (pulse) {
+    // Red creeps in from the edges, beating faster as health runs out.
+    const beat = calm ? 0.5 : 0.5 + 0.5 * Math.sin(t * pulse.hz * Math.PI * 2)
+    const edge = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.5)
+    edge.addColorStop(0, 'rgba(255, 40, 60, 0)')
+    edge.addColorStop(1, `rgba(255, 40, 60, ${pulse.strength * (0.12 + 0.28 * beat)})`)
+    ctx.fillStyle = edge
+    ctx.fillRect(0, 0, w, h)
+  }
+  if (fx.ko) {
+    const slam = calm ? 1 : 1 + 1.4 * Math.exp(-fx.ko.t * 14)
+    ctx.globalAlpha = Math.min(1, fx.ko.t * 10)
+    unflip(w / 2, h / 2, () => {
+      ctx.font = `900 ${Math.round(scale * 1.9 * slam)}px system-ui, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 8
+      ctx.strokeStyle = 'rgba(12, 9, 32, 0.92)'
+      ctx.shadowColor = '#ff5a64'
+      ctx.shadowBlur = 26
+      ctx.strokeText('K.O.', 0, 0)
+      ctx.fillStyle = '#fff1d6'
+      ctx.fillText('K.O.', 0, 0)
+    })
+    ctx.globalAlpha = 1
+  }
   if (fx.call > 0.1 && fx.call < 1) {
     const k = (fx.call - 0.1) / 0.9
     ctx.globalAlpha = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8
