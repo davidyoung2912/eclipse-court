@@ -373,9 +373,9 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .lesson h2 { margin: 0 0 4px; font-size: 1rem; color: var(--solari-gold); }
 .lesson p { margin: 0; font-size: 0.85rem; line-height: 1.35; }
 
-/* Selected-piece summary: a fixed-height strip under the board, so selecting never shifts the layout */
+/* Selected-piece summary: a fixed-height strip under the board, so selecting never shifts the layout. --card-rows reserves a line for each optional row (cell, gift, record) the match can show. */
 .piece-card {
-  flex: 0 0 auto; height: 5.6rem; overflow: hidden; padding: 1px 10px 3px; border-radius: 10px;
+  flex: 0 0 auto; height: calc(1.7rem + var(--card-rows, 4) * 0.97rem); overflow: hidden; padding: 1px 10px 3px; border-radius: 10px;
   background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35); font-size: 0.72rem; line-height: 1.35;
 }
 .piece-card.solari { border-color: rgba(232, 182, 74, 0.6); }
@@ -668,7 +668,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .tip-body p { margin: 0; font-size: 0.82rem; line-height: 1.42; }
 .tip-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .tip-foot small { margin-right: auto; opacity: 0.6; font-size: 0.7rem; }
-.tip-foot button {
+.tip-foot button, .first-steps button, .coach-card button {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 700;
   background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6;
 }

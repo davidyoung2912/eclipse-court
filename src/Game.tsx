@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
@@ -459,7 +459,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   }
 
   return (
-    <main className="app timed">
+    <main className="app timed" style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
       <Board state={state} selected={selected} moves={moves} threats={threats} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
@@ -502,7 +502,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           <p>The game is kept. Make a new connection with the same player to carry on.</p>
           <div className="buttons">
             {onReconnect && <button className="primary" onClick={() => onReconnect({ initial: record.initial, actions: [...net!.actions] })}><Icon name="chain" />Reconnect</button>}
-            <button onClick={() => { session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />Resign</button>
+            <button className="back" onClick={() => { session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />Resign</button>
           </div>
         </div>
       )}
@@ -571,7 +571,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           {!online && !mail && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
           {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
-          <button onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
+          <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
         {confirming && attacker && defender && (
           <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
