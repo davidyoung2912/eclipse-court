@@ -41,7 +41,6 @@
   .main-menu .hero { max-height: none; margin-top: 0; }
   .main-menu .menu-side .menu-buttons { margin-top: 8px; }
   .main-menu .menu-buttons button.primary { width: 100%; padding-block: 14px; font-size: var(--fs-md); }
-  .main-menu > .tip-card { grid-column: 1 / -1; }
   .main-menu[data-intro]:not([data-intro='done']) .menu-side > :not(.brand), .main-menu[data-intro]:not([data-intro='done']) .menu-main { opacity: 0; pointer-events: none; }
   .main-menu[data-intro='done'] .menu-side > :not(.brand), .main-menu[data-intro='done'] .menu-main { animation: fade-in 0.8s ease-out backwards; }
 }

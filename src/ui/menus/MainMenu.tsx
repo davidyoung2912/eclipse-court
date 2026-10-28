@@ -288,7 +288,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </nav>
       </div>
       <SoundPrompt onAnswer={setSound} />
-      <TipCard page="menu" />
+      <TipCard page="menu" float />
     </main>
   )
 }

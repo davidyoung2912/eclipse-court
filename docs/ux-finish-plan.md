@@ -80,7 +80,6 @@ Phase 2 done: `index.html` draws the eclipse loader (inline CSS, so it shows bef
 
 Phase 3 done: the main menu's greeting, coach card, first-steps list and suggestions are one "Next up" card with the persona face as avatar. `nextUpSlot` in `menuModel.ts` (tested) picks advice, then first steps, then suggestions, then the greeting; dismiss buttons are unchanged.
 
-Phase 4 done: `PersonaFace` wraps the WebP portrait in an arched `.persona-frame` with a house tint overlay (solari, umbral, marches, hour), lead lines and a corner highlight; the size class now sits on the frame. The SVG bust fallback is unchanged.
 
 Phase 5 reverted: the two-pane layout on Battle, Campaign, Story, Collection, Settings and Stats did not look right, so those pages are back to a single column.
 
