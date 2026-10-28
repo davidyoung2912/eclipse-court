@@ -393,7 +393,7 @@ body:has(.puzzles-menu) {
   background: linear-gradient(100deg, rgba(232, 182, 74, 0.36), rgba(43, 36, 104, 0.88) 70%);
 }
 .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; text-align: left; font-size: 1rem; }
+.mode-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; min-height: 112px; padding: 12px; text-align: left; font-size: 1rem; }
 /* Each main page card wears the colours of the page it opens. */
 .mode-card.story {
   background: linear-gradient(180deg, #3f2275, #2c1552); border-color: rgba(176, 130, 240, 0.65);
