@@ -15,6 +15,7 @@ import { IconShape } from '../menus/icons'
 import { CAPTURE_FX } from '../../engine/data/cosmetics'
 import { equippedId } from '../../shop'
 import { stepCursor } from './cursor'
+import { describeSquare } from '../../narrate'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
 const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
@@ -101,6 +102,8 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   }
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (
+    <>
+    <p className="sr-only" role="status" aria-live="polite">{cursor ? describeSquare(state, cursor) : ''}</p>
     <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
       <BoardDefs />
       {allSquares(size).map((p) => {
@@ -188,5 +191,6 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
         return piece && <HintGhost piece={piece} from={hint.from} to={hint.to} flip={flip} size={size} />
       })()}
     </svg>
+    </>
   )
 })

@@ -28,6 +28,7 @@ import { CHAT_IDS, CHAT_LINES } from './net/protocol'
 import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
+import { narrate } from './narrate'
 import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
 import { useHint } from './hooks/useHint'
@@ -182,6 +183,16 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     () => (!selected && !targets && shown && shown.court !== human ? legalMoves(state, shown) : NO_SQUARES),
     [state, selected, targets, shown, human],
   )
+
+  /** The last few plays in words for a screen reader; under fog the enemy's plays are not described. */
+  const log = useMemo(() => {
+    const hidden = !!state.config.fog && !hotSeat && !online
+    return history.slice(-12).flatMap((step, i, all) => {
+      const before = all[i - 1] ?? history[history.length - all.length - 1]
+      if (!step.action || !before) return []
+      return [hidden && before.state.turn !== human ? 'The opponent acts.' : narrate(before.state, step.action, step.state)]
+    })
+  }, [history, state.config.fog, hotSeat, online, human])
 
   const [aids, setAids] = useState(() => getSettings().aids)
   /** The aids are off under fog, where they would give away unseen pieces. */
@@ -480,6 +491,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   return (
     <main className={`app timed game-${human}`} style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
+      <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}

@@ -30,7 +30,7 @@ export function DraftPicker({ court, roles, onChange, stars }: Props) {
             <span className="name">{ROLE_NAMES[court][role]}</span>
             <span className="cost">{ROLE_COST[role]} pts · max {limit}{next !== null && ` (${next} ★ for more)`}</span>
             <button aria-label={`Fewer ${role}`} disabled={n === 0} onClick={() => onChange(removeOne(roles, role))}>−</button>
-            <span className="count">{n}</span>
+            <span className="count" role="status" aria-label={`${ROLE_NAMES[court][role]} count`}>{n}</span>
             <button aria-label={`More ${role}`} disabled={!canAdd(roles, role) || n >= limit} onClick={() => onChange([...roles, role])}>+</button>
           </div>
         )
