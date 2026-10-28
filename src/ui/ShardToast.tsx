@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { burstCount, COIN_FLIGHT_MS, COIN_STEP_MS } from '../rewardFx'
+import { burstCount, COIN_FLIGHT_MS, COIN_STEP_MS, takeFlightClaim } from '../rewardFx'
 import { haptic } from '../haptics'
 import { getSettings } from '../settings'
 import { sfx } from '../audio/synth'
@@ -8,9 +8,9 @@ import { Icon } from './menus/icons'
 
 const SHOW_MS = 2400
 
-/** Coins that fly from the middle of the screen to the chip, fanning out a little on the way. */
-function flyCoins(to: DOMRect, count: number) {
-  const from = { x: window.innerWidth / 2, y: window.innerHeight * 0.45 }
+/** Coins that fly from `origin` (the middle of the screen by default) to the chip, fanning out a little on the way. */
+export function flyCoins(to: DOMRect, count: number, origin?: DOMRect) {
+  const from = origin ? { x: origin.left + origin.width / 2, y: origin.top + origin.height / 2 } : { x: window.innerWidth / 2, y: window.innerHeight * 0.45 }
   const goal = { x: to.left + to.width / 2, y: to.top + to.height / 2 }
   for (let i = 0; i < count; i++) {
     const coin = document.createElement('i')
@@ -44,7 +44,8 @@ export function ShardToast() {
     if (gained <= 0) return
     setGain((g) => ({ n: gained + (g ? g.n : 0), id: (g?.id ?? 0) + 1 }))
     haptic('coin')
-    if (getSettings().reduceMotion) return
+    const flownByDialog = takeFlightClaim()
+    if (getSettings().reduceMotion || flownByDialog) return
     sfx.pickup()
     requestAnimationFrame(() => { if (chip.current) flyCoins(chip.current.getBoundingClientRect(), burstCount(gained)) })
   }, [shards])

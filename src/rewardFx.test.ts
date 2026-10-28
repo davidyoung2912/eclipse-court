@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { burstCount, confettiCount, confettiPieces, FLIP_MS, flashScale, pulseHz, REVEAL_SPARKS } from './rewardFx'
+import { burstCount, claimFlight, confettiCount, confettiPieces, FLIP_MS, flashScale, pulseHz, REVEAL_SPARKS, shardsIn, takeFlightClaim } from './rewardFx'
 import { flashesReduced } from './settings'
 
 describe('rewardFx', () => {
@@ -44,5 +44,19 @@ describe('rewardFx', () => {
     expect(flashesReduced({ reduceMotion: false, reduceFlashes: false })).toBe(false)
     expect(flashesReduced({ reduceMotion: false, reduceFlashes: true })).toBe(true)
     expect(flashesReduced({ reduceMotion: true, reduceFlashes: false })).toBe(true)
+  })
+
+  it('reads the Shards a reward line pays', () => {
+    expect(shardsIn('Shards: +12.')).toBe(12)
+    expect(shardsIn('Bounty: Win fast. +5 Shards.')).toBe(5)
+    expect(shardsIn('Ladder win: +8 Shards.')).toBe(8)
+    expect(shardsIn('Achievement: First Blood')).toBe(0)
+  })
+
+  it('a claimed flight is taken once', () => {
+    expect(takeFlightClaim()).toBe(false)
+    claimFlight()
+    expect(takeFlightClaim()).toBe(true)
+    expect(takeFlightClaim()).toBe(false)
   })
 })

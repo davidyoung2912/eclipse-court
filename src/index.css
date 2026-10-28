@@ -1694,3 +1694,8 @@ body:has(.main-menu)::before {
 /* Numbers that change (dial, clocks, wallet, costs, counts, scores) keep a fixed width so they never jitter. */
 .dial span, .hud-round, .duel-timer, .clock-ring span, .play-timer, .shard-wallet, .shard-toast, .choice .cost, .draft-row .cost, .draft-row .count,
 .stat-tiles dd, .stat-overall strong, .result-stat b, .eclipse-chip, .streak, .odds-tag, .duel-countdown, .piece-stats, .next-up h3 span { font-variant-numeric: tabular-nums; }
+
+/* Rewards listed in the result dialog; lines that pay Shards glow as their coins leave */
+.reward-lines { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); text-align: center; }
+.reward-lines li { opacity: 0.85; }
+.reward-lines li.pays { color: var(--solari-gold); opacity: 1; font-weight: 700; font-variant-numeric: tabular-nums; }

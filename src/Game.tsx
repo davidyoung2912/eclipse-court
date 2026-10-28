@@ -63,6 +63,7 @@ import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 import { WinBurst } from './ui/tray/WinBurst'
 import { Confetti } from './ui/tray/Confetti'
+import { RewardLines } from './ui/tray/RewardLines'
 import { confettiCount } from './rewardFx'
 import { ResultBanner, type ResultStat, type ResultTone } from './ui/tray/ResultBanner'
 
@@ -92,6 +93,8 @@ interface Props {
   mail?: (record: GameRecord) => void
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord, review?: boolean) => void
+  /** Once, when the game is decided and the result opens: settles the payouts and returns the lines to show; absent when nothing is paid here. */
+  onEnded?: (winner: GameState['winner'], record: GameRecord) => string[]
   /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
   onReconnect?: (record: GameRecord) => void
   /** Online, once both players asked for a rematch and the next match has begun: swap to it. */
@@ -131,7 +134,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onEnded, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const coop = !!context?.coop
@@ -359,6 +362,20 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     // A move by link ends the visit: the link to send is on the next screen. A decided game waits for Continue.
     if (mail && !last.winner && history.length > record.actions.length + 1 && last.turn !== human) mail(recordOf(history))
     // onSave is read fresh; only a change to the game itself should save.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [history])
+
+  // The payouts settle when the result opens, not on Continue.
+  const [rewards, setRewards] = useState<string[]>([])
+  const paid = useRef(false)
+  // The first win is known when the game starts; settling must not take the confetti away.
+  const [firstWinAtStart] = useState(firstWin)
+  useEffect(() => {
+    const last = history[history.length - 1].state
+    if (!last.winner || paid.current) return
+    paid.current = true
+    if (onEnded) setRewards(onEnded(last.winner, recordOf(history)))
+    // Runs once, when the game is decided.
     // oxlint-disable-next-line react/exhaustive-deps
   }, [history])
 
@@ -730,8 +747,9 @@ export function Game({ controllers, opening, record, session, context, coach, fi
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
-          {winner === human && !hotSeat && !online && <Confetti count={confettiCount(!!firstWin, flashesReduced())} />}
+          {winner === human && !hotSeat && !online && <Confetti count={confettiCount(!!firstWinAtStart, flashesReduced())} />}
           <ResultBanner title={result} tone={resultTone} stats={resultStats} />
+          <RewardLines lines={rewards} />
           {persona && !even && farewell && <p className="persona-farewell"><b>{persona.name}</b> “{farewell}”</p>}
           <div className="buttons">
             {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}

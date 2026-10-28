@@ -43,3 +43,19 @@ export const flashScale = (reduced: boolean): number => (reduced ? 0 : 1)
 export function pulseHz(hz: number, reduced: boolean): number {
   return reduced ? 0 : Math.min(hz, 2.4)
 }
+
+/** Shards a reward line pays, from "Shards: +12." or "... +5 Shards."; 0 for any other line. */
+export function shardsIn(line: string): number {
+  const m = /^Shards: \+(\d+)/.exec(line) ?? /\+(\d+) Shards/.exec(line)
+  return m ? Number(m[1]) : 0
+}
+
+let claimed = false
+/** The result dialog will fly the coins itself, so the toast skips its own burst for the next payout. */
+export const claimFlight = () => { claimed = true }
+/** True once if a flight was claimed; the toast calls this on every payout so a claim never lingers. */
+export function takeFlightClaim(): boolean {
+  const was = claimed
+  claimed = false
+  return was
+}

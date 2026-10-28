@@ -42,6 +42,7 @@ import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, r
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
 import { settleGame } from './settleGame'
+import { claimFlight, shardsIn } from './rewardFx'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
 import { recordRoleDuels } from './roleGoals'
 import { rememberCourt, masterySnapshot } from './mastery'
@@ -233,6 +234,8 @@ export default function App() {
   const changeDesign = (next: Design) => { setDesign(next); saveDraft(next) }
   /** What the battle just finished earned, shown on the campaign screen. */
   const [report, setReport] = useState<string[]>([])
+  /** A plain game settled when its result opened, kept until Continue so it is not paid twice. */
+  const settledGame = useRef<{ key: string; done: ReturnType<typeof settleGame> } | null>(null)
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
   const [run, setRun] = useState(loadRun)
@@ -763,11 +766,14 @@ export default function App() {
       : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish', scored: true, flavour: 'ladder' }
       : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage, run.ascension) : null
+    const gameKey = `${record.initial.rng}${human}`
+    /** Plain games are paid when the result opens; every other kind settles on Continue. */
+    const plain = !mail && !online && !(custom && !hotSeat) && !gauntlet && !story && !puzzle && !series && !hotSeat
     return (
       <>
       <PlayTimer onFlush={addTime} />
       <Game
-        key={`${record.initial.rng}${human}`}
+        key={gameKey}
         controllers={hotSeat ? HOT_SEAT
           : online || mail ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
@@ -792,6 +798,14 @@ export default function App() {
           if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, persona: screen.persona, record: progress })
           else clearSaved()
         }}
+        onEnded={plain ? (winner, finished) => {
+          const done = finishGame(winner, finished, true)
+          setProgress(done.progress)
+          if (done.summary) saveProgress(done.progress)
+          settledGame.current = { key: gameKey, done }
+          if (done.lines.some((line) => shardsIn(line) > 0)) claimFlight()
+          return done.lines
+        } : undefined}
         onExit={(winner, finished, review) => {
           if (mail) {
             // Quitting before a move changes nothing; a game decided by the last move is kept and its link shown.
@@ -820,9 +834,13 @@ export default function App() {
             if (winner) { const next = recordVersus(progress, 'hotseat', winner === 'draw' ? null : winner === 'solari'); setProgress(next); saveProgress(next) }
             return setScreen({ name: 'menu' })
           }
-          const done = finishGame(winner, finished, true)
-          setProgress(done.progress)
-          if (done.summary) saveProgress(done.progress)
+          const cached = settledGame.current?.key === gameKey ? settledGame.current.done : null
+          settledGame.current = null
+          const done = cached ?? finishGame(winner, finished, true)
+          if (!cached) {
+            setProgress(done.progress)
+            if (done.summary) saveProgress(done.progress)
+          }
           const lines = [...done.lines]
           // Only games where the player picked the difficulty say whether it is too hard.
           if (done.summary && !ladder && !daily && !weekly) {
