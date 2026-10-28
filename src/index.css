@@ -1256,12 +1256,15 @@ svg.board:focus { outline: none; }
   .app.timed > .board {
     grid-column: 1;
     grid-row: 1 / span 24;
-    align-self: center;
+    align-self: start;
     justify-self: center;
+    margin-top: 12px;
     width: min(100%, calc(100vh - 24px - var(--bottom-gap)));
     max-height: none;
   }
   .app.timed > .tray { margin-top: 0; }
+  .app.timed > .tray .buttons { flex-wrap: wrap; }
+  .app.timed > .tray .buttons button { flex: 1 1 auto; min-width: 0; }
 }
 
 /* Desktop menu: the hero and title stand on the left, the cards and shortcuts fill the right, on the board's wide breakpoint. */
