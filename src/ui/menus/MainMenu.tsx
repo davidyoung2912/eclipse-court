@@ -7,6 +7,7 @@ import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
 import { TipCard } from '../tips/TipCard'
 import { cardSummaries, primaryAction, type CardInfo } from './menuModel'
+import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
 
 interface Props {
@@ -96,6 +97,9 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
   const storyRead = useSyncExternalStore(subscribeStory, storySnapshot)
+  const onboarding = useSyncExternalStore(subscribeOnboarding, onboardingSnapshot)
+  const steps = checklist(progress, !firstRun)
+  const advice = adviceFor(onboarding)
   const summary = cardSummaries(progress, dailySeed(), storyRead)
   const cards: Card[] = [
     { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
@@ -112,6 +116,22 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       <div className="menu-buttons">
         <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
       </div>
+      {advice && (
+        <aside className="coach-card" role="note" aria-label="A suggestion">
+          <Icon name="bulb" />
+          <p>{advice.text}</p>
+          <button onClick={hideAdvice}><Icon name="check" />Thanks</button>
+        </aside>
+      )}
+      {showChecklist(steps, onboarding) && (
+        <section className="first-steps" aria-label="First steps">
+          <h3>First steps<span>{steps.filter((s) => s.done).length} of {steps.length}</span></h3>
+          <ul>
+            {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
+          </ul>
+          <button onClick={hideChecklist}>Hide</button>
+        </section>
+      )}
       <section className="today" aria-label="Today">
         <h3>Today{summary.streak > 0 && <span className="streak"><Icon name="flame" />{summary.streak} day streak</span>}</h3>
         <div className="today-row">

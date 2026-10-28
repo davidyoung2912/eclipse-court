@@ -7,6 +7,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { resetTips } from '../../tips'
+import { resetOnboarding } from '../../onboarding'
 import { BackButton } from './BackButton'
 
 interface Props {
@@ -46,7 +47,7 @@ export function Settings({ progress, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
       <h3>Guidance</h3>
       <div className="menu-buttons">
-        <button onClick={resetTips}><Icon name="bulb" />Show Tips Again</button>
+        <button onClick={() => { resetTips(); resetOnboarding() }}><Icon name="bulb" />Show Tips Again</button>
       </div>
       <div className="menu-buttons">
         <BackButton onClick={onBack} />

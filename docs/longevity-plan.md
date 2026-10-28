@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L9 done; L10 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L10 done; L11 and L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -44,9 +44,13 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L7 (done): Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
 - **L8 (done): editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
 - **L9 (done): juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
-- **L10: onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
+- **L10 (done): onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
 - **L11: shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
 - **L12: async play-by-link.** Play a game by passing a link back and forth, one move at a time, using the existing action-log encoding. Each link carries the whole record, so no server is needed; the app checks that the pasted record extends the one it holds.
+
+## L10 file map
+- `src/onboarding.ts` (+ test): store `eclipse-court:onboarding` (last six AI games, a total, when advice was dismissed, checklist hidden). `adviceFor` suggests one level easier after two losses in a row at the same difficulty (not on Easy; hidden until another game is played). `checklist`/`showChecklist` (five first steps), `isFirstBattle`, `coachLine` (prompt chosen from the board and selection).
+- `Game.tsx` `coach` prop shows the coaching line in campaign battle 1 until it is cleared (not in tournaments); `App.tsx` records games where the player picked the difficulty (not ladder, daily or weekly) and adds the advice to the report; `MainMenu.tsx` shows the advice card and a First steps list once the tutorial is done. Settings "Show Tips Again" also resets this.
 
 ## L1 file map
 - `src/ai/strategy.ts`: `judgeMove(state, played, difficulty)` returns the best action, its value, and the played action's value (same search, no noise, duel outcomes averaged).

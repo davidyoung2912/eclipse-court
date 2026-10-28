@@ -22,6 +22,7 @@ import { isWeeklyMatch, weeklyGame, weeklyMatch, weeklyScore, WEEKLY_COURT } fro
 import { forWeek, recordWeekly, weeklySnapshot } from './weekly'
 import { foeById, ladderGame, LADDER_COURT } from './engine/data/ladder'
 import { recordLadder } from './ladder'
+import { adviceFor, isFirstBattle, onboardingSnapshot, recordAiGame } from './onboarding'
 import { Ladder } from './ui/menus/Ladder'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
@@ -621,6 +622,7 @@ export default function App() {
         record={record}
         session={online}
         context={context}
+        coach={!series && isFirstBattle(progress, campaignIndex)}
         puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text }}
         onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
@@ -653,7 +655,14 @@ export default function App() {
           const done = finishGame(winner, finished, true)
           setProgress(done.progress)
           if (done.summary) saveProgress(done.progress)
-          setReport(done.lines)
+          const lines = [...done.lines]
+          // Only games where the player picked the difficulty say whether it is too hard.
+          if (done.summary && !ladder && !daily && !weekly) {
+            recordAiGame(difficulty, done.summary.won ? 'win' : done.summary.draw ? 'draw' : 'loss')
+            const advice = adviceFor(onboardingSnapshot())
+            if (advice) lines.push(advice.text)
+          }
+          setReport(lines)
           if (scenario !== undefined) setCampaignTab('scenarios')
           setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}

@@ -21,6 +21,7 @@ import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
 import { TipCard } from './ui/tips/TipCard'
+import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import type { PuzzleHelp } from './hooks/useHint'
@@ -52,6 +53,8 @@ interface Props {
   puzzleLimit?: number
   /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
   context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series' }
+  /** The player's first campaign battle: a line of coaching sits above the board's cards. */
+  coach?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
   puzzle?: { name: string; text: string }
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
@@ -95,7 +98,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, record, session, context, puzzle, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const [net, setNet] = useState(() => session?.view() ?? null)
@@ -511,6 +514,10 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
           </div>
         </div>
       )}
+      {coach && !ended && !pending && !asking && (() => {
+        const line = coachLine(state, human, selected, moves)
+        return line && <p className="coach-line" role="status"><Icon name="bulb" />{line}</p>
+      })()}
       {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? 'From the puzzle setter' : undefined} />
         : !shown && inspectSq ? <CellCard state={state} pos={inspectSq} /> : (
         <PieceCard state={state} human={human} piece={shown}
