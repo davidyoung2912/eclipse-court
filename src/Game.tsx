@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
-import { getSettings } from './settings'
+import { getSettings, updateSettings } from './settings'
+import { attackOdds, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
 import type { EndReason, Session } from './net/session'
@@ -172,6 +173,12 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     () => (!selected && !targets && shown && shown.court !== human ? legalMoves(state, shown) : NO_SQUARES),
     [state, selected, targets, shown, human],
   )
+
+  const [aids, setAids] = useState(() => getSettings().aids)
+  /** The aids are off under fog, where they would give away unseen pieces. */
+  const aidsOn = aids && !state.config.fog && !ended
+  const endangered = useMemo(() => (aidsOn ? threatenedIds(state, human) : NO_IDS), [aidsOn, state, human])
+  const odds = useMemo(() => (aidsOn && selected && myTurn && !targets ? attackOdds(state, selected, moves) : undefined), [aidsOn, state, selected, myTurn, targets, moves])
 
   const { hint, level: hintLevel, ask: askHint, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
 
@@ -463,7 +470,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     <main className={`app timed game-${human}`} style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
-      <Board state={state} selected={selected} moves={moves} threats={threats} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
+      <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
@@ -593,6 +600,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
               </select>
             </>
           )}
+          {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />Danger</button>}
           {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>

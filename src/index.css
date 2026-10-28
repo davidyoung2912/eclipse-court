@@ -99,6 +99,11 @@ body {
   filter: url(#halo-blur); stroke-width: 0.18; animation: halo-pulse 1.1s ease-in-out infinite;
 }
 .piece.selected .halo { stroke: #fff6c0; }
+.piece.endangered .ring { stroke: #ff5a5a; stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
+.odds-tag { font-size: 0.24px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: #120c24; stroke-width: 0.07px; pointer-events: none; }
+.odds-tag.good { fill: #8ff0a4; }
+.odds-tag.even { fill: #ffe08a; }
+.odds-tag.bad { fill: #ff9a9a; }
 .piece.attackable .halo { stroke: #ff4a4a; }
 /* AI about to move, or the attacker under review: bright gold. The piece under attack: hot red. */
 .piece.mover .ring { stroke: var(--solari-gold); stroke-width: 0.1; }

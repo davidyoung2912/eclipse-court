@@ -72,6 +72,8 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.largeUi} onChange={() => change({ largeUi: !settings.largeUi })} /> Larger text and buttons</label>
       <label className="recharge"><input type="checkbox" checked={settings.marks} onChange={() => change({ marks: !settings.marks })} /> Mark the light on every square with + and − (colour is never the only clue)</label>
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
+      <h3>Play aids</h3>
+      <label className="recharge"><input type="checkbox" checked={settings.aids} onChange={() => change({ aids: !settings.aids })} /> Danger view: ring your pieces an enemy could attack next turn, and show the odds of each attack you could make</label>
       <h3>Guidance</h3>
       <div className="menu-buttons">
         <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote('Tips, the checklist and the guided lesson are back.') }}><Icon name="bulb" />Show Tips Again</button>

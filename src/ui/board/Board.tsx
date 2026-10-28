@@ -26,6 +26,10 @@ interface Props {
   moves: Pos[]
   /** Squares an inspected enemy piece could reach: shown in red, with any of the player's pieces there ringed. */
   threats?: Pos[]
+  /** Own pieces an enemy could attack next turn: ringed in red. */
+  endangered?: string[]
+  /** For enemy pieces the selected piece could attack, its chance (0 to 100) of winning the duel. */
+  odds?: Record<string, number>
   /** Pieces a chosen spell may target. */
   targetIds?: string[]
   onSquare: (p: Pos) => void
@@ -64,7 +68,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -144,11 +148,14 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
         const attack = isMove(pc.pos) || targetIds.includes(pc.id) || isThreat(pc.pos)
         return (
           <g key={pc.id} aria-label={`${ROLE_NAMES[pc.court][pc.role]} ${pc.hp}/${pc.maxHp}`} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
-            className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
+            className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${endangered.includes(pc.id) ? ' endangered' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
             
             <circle className="halo" r={0.4} />
             <circle className="ring" r={0.4} />
             <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
+            {odds?.[pc.id] !== undefined && (
+              <text className={`odds-tag ${odds[pc.id] >= 60 ? 'good' : odds[pc.id] >= 35 ? 'even' : 'bad'}`} x={0} y={-0.38}>{odds[pc.id]}%</text>
+            )}
             {pc.bound && (
               <g className="bound-badge" aria-label="Bound">
                 <circle cx={0.28} cy={-0.28} r={0.15} />

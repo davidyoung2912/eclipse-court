@@ -80,9 +80,11 @@ export interface Settings {
   marks: boolean
   /** Larger text and bigger buttons. */
   largeUi: boolean
+  /** Ring your pieces an enemy could attack next turn, and show the odds of each attack you could make. */
+  aids: boolean
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -95,6 +97,7 @@ export function parseSettings(raw: unknown): Settings {
     reduceMotion: o.reduceMotion === true,
     marks: o.marks === true,
     largeUi: o.largeUi === true,
+    aids: o.aids === true,
   }
 }
 
