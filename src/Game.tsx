@@ -41,6 +41,7 @@ import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import { narrate } from './narrate'
+import { moodFor, MOOD_MS, type Mood } from './mood'
 import { momentOf, MOMENT_MS, type Moment, type MomentId } from './moments'
 import { lineAllowed, newBanter, speak, triggerFor, type BanterState } from './banter'
 import { personaById } from './engine/data/personas'
@@ -300,6 +301,8 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   /** The named moment on show (tap to skip); each is named once a game. */
   const [moment, setMoment] = useState<(Moment & { key: number }) | null>(null)
   const momentsSeen = useRef(new Set<MomentId>())
+  /** The named opponent's expression; it settles back to calm on its own. */
+  const [mood, setMood] = useState<{ mood: Mood; key: number } | null>(null)
   const lastTurn = useRef(state.turn)
   const wasEclipse = useRef(state.eclipse)
   const musicRef = useRef<ReturnType<typeof startMusic> | null>(null)
@@ -330,6 +333,13 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     const timer = setTimeout(() => setCombo(null), 1600)
     return () => clearTimeout(timer)
   }, [combo])
+
+  // The opponent's face settles back to calm.
+  useEffect(() => {
+    if (!mood) return
+    const timer = setTimeout(() => setMood(null), MOOD_MS)
+    return () => clearTimeout(timer)
+  }, [mood])
 
   // The named moment clears itself.
   useEffect(() => {
@@ -669,6 +679,8 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     const side = foe
     const first = !steps.slice(0, -2).some((s) => s.state.turn === side)
     const category = triggerFor(before, action, after, side, first)
+    const felt = moodFor(category)
+    if (felt && getSettings().banter !== 'off') setMood({ mood: felt, key: steps.length })
     if (category) talk(category, steps.length - 1)
   }
   function talk(category: LineCategory, ply: number) {
@@ -697,7 +709,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   const eclipseFallen = state.eclipse && !state.winner
   return (
     <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}${leaderDanger ? ' leader-danger' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
-      <Dial state={state} chip={chipOn} />
+      <Dial state={state} chip={chipOn} face={persona && !even && getSettings().banter !== 'off' ? persona.id : undefined} mood={ended ? (state.winner === foe ? 'pleased' : state.winner === human ? 'stung' : 'calm') : mood?.mood} />
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}

@@ -3,12 +3,14 @@ import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, obje
 import { centerOf, sizeOf } from '../../engine/rules/board'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
+import { PersonaFace } from '../../art/PersonaFace'
+import type { PersonaId } from '../../engine/data/personas'
 import { t } from '../../i18n'
 import { eclipseIn } from '../board/aids'
 import { lumColor } from '../board/lumColor'
 import { hourStrip } from './hourStrip'
 
-export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip?: boolean }) {
+export const Dial = memo(function Dial({ state, chip, face, mood }: { state: GameState; chip?: boolean; face?: PersonaId; mood?: string }) {
   const now = squareLuminance(state, centerOf(sizeOf(state.config)))
   const next = forecast(state, 3)
   const notes = hudNotes(state)
@@ -22,6 +24,7 @@ export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip
         {left !== null && <span className={`eclipse-chip${left === 1 ? ' soon' : ''}`} role="status" aria-live="polite">{left === 1 ? t('eclipse.chipNext') : t('eclipse.chip', { count: left })}</span>}
         {notes.length > 0 && <span className="hud-note">{notes.join(' · ')}</span>}
       </div>
+      {face && <PersonaFace id={face} className={`persona-corner mood-${mood ?? 'calm'}`} />}
       <div className="dial" aria-label="Luminance dial">
         <span className="dial-now" style={{ background: lumColor(now) }}>{now > 0 ? `+${now}` : now}</span>
         {next.map((l, i) => (
