@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { foeById, LADDER_FOES, rankOf, RANKS, suggestFoe } from '../../engine/data/ladder'
 import { PERSONALITIES } from '../../engine/data/personality'
-import { ladderSnapshot, subscribeLadder } from '../../ladder'
+import { canStartSeason, ladderSnapshot, startSeason, subscribeLadder } from '../../ladder'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
@@ -48,6 +48,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
         <div><dd>{store.peak}</dd><dt>Peak rating</dt></div>
         <div><dd>{store.wins} / {store.losses} / {store.draws}</dd><dt>Won / lost / drawn</dt></div>
       </dl>
+      <p className="tagline">Season {store.season} · best this season {store.seasonPeak}{store.past.length > 0 ? ` · earlier seasons: ${store.past.join(', ')}` : ''}</p>
       {next && <p className="tagline">{next.from - store.rating} points to {next.title}.</p>}
       {groups.map(({ rank, foes }) => (
         <details key={rank} className="tier-fold" open={rank === openRank}>
@@ -55,7 +56,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
           <div className="choices">
             {foes.map((f) => (
               <button key={f.id} className={`choice${f.id === foe.id ? ' on' : ''}`} aria-pressed={f.id === foe.id} onClick={() => setChosen(f.id)}>
-                <strong><Icon name={RANK_ICONS[rank] ?? 'swords'} />{f.name} · {f.rating}{f.id === suggested.id ? ' · suggested' : ''}</strong>
+                <strong><Icon name={RANK_ICONS[rank] ?? 'swords'} />{f.name} · {f.rating}{f.id === suggested.id ? ' · suggested' : ''}{store.rivals[f.id] ? ` · ${store.rivals[f.id].w}–${store.rivals[f.id].l}${store.rivals[f.id].d ? `–${store.rivals[f.id].d}` : ''}` : ''}</strong>
                 <span>{PERSONALITIES[f.personality].text}</span>
               </button>
             ))}
@@ -67,6 +68,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
       )}
       <div className="menu-buttons stacked">
         <button className="primary" onClick={() => onPlay(foe.id)}><Icon name="play" />Play {foe.name}</button>
+        {canStartSeason(store) && <button onClick={() => { if (window.confirm('Start a new season? Your rating moves halfway back toward the start and your season peak is kept.')) startSeason() }}><Icon name="cycle" />Start Season {store.season + 1}</button>}
         <BackButton onClick={onBack} />
       </div>
     </main>

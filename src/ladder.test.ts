@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   expectedScore, foeById, kFactor, ladderGame, LADDER_FOES, MIN_RATING, nextRating, rankOf, RANKS, START_RATING, suggestFoe,
 } from './engine/data/ladder'
-import { parseLadder, recordLadder, ladderSnapshot, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
+import { parseLadder, recordLadder, ladderSnapshot, SEASON_MIN_GAMES, seasonStart, startSeason, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
 
 describe('ladder maths', () => {
   it('has five distinct foes in every rank, weakest first', () => {
@@ -74,5 +74,35 @@ describe('ladder store', () => {
     for (let i = 0; i < 40; i++) bonus += recordLadder(foe, 'win').shards >= SHARDS_LADDER_RANK + SHARDS_LADDER_WIN ? 1 : 0
     expect(bonus).toBeGreaterThan(0)
     expect(bonus).toBeLessThanOrEqual(RANKS.length - 1)
+  })
+})
+
+describe('seasons and rivals', () => {
+  it('reads old saves as a first season and keeps results per foe', () => {
+    const old = parseLadder({ rating: 900, peak: 950, games: 3, wins: 2, draws: 0, losses: 1, history: [] })
+    expect(old.season).toBe(1)
+    expect(old.rivals).toEqual({})
+    const foe = LADDER_FOES[0]
+    expect(parseLadder({ rivals: { [foe.id]: { w: 2, d: 1, l: 0 }, nobody: { w: 9 } } }).rivals).toEqual({ [foe.id]: { w: 2, d: 1, l: 0 } })
+  })
+  it('pulls the rating halfway back for a new season', () => {
+    expect(seasonStart(1400)).toBe(1100)
+    expect(seasonStart(START_RATING)).toBe(START_RATING)
+    expect(seasonStart(MIN_RATING)).toBe(START_RATING - Math.round((START_RATING - MIN_RATING) / 2))
+  })
+  it('counts games against a foe and opens the next season only after ten', () => {
+    const foe = LADDER_FOES[0]
+    recordLadder(foe, 'win')
+    expect(ladderSnapshot().rivals[foe.id].w).toBeGreaterThanOrEqual(1)
+    while (ladderSnapshot().seasonGames < SEASON_MIN_GAMES) {
+      expect(startSeason()).toBe(false)
+      recordLadder(foe, 'loss')
+    }
+    const peak = ladderSnapshot().seasonPeak
+    expect(startSeason()).toBe(true)
+    const s = ladderSnapshot()
+    expect(s.season).toBe(2)
+    expect(s.seasonGames).toBe(0)
+    expect(s.past.at(-1)).toBe(peak)
   })
 })

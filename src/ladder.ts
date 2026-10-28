@@ -1,4 +1,4 @@
-import { foeById, nextRating, rankOf, START_RATING, type LadderFoe } from './engine/data/ladder'
+import { foeById, MIN_RATING, nextRating, rankOf, START_RATING, type LadderFoe } from './engine/data/ladder'
 
 /** The ranked ladder's rating; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:ladder'
@@ -23,9 +23,26 @@ export interface LadderState {
   losses: number
   /** The latest games, newest last. */
   history: readonly LadderGame[]
+  /** The current season, from 1; a season ends when the player starts the next. */
+  season: number
+  /** Games played this season: the rating settles quickly again after a reset. */
+  seasonGames: number
+  /** The highest rating reached this season. */
+  seasonPeak: number
+  /** The peaks of the seasons before this one, oldest first. */
+  past: readonly number[]
+  /** Results against each opponent, by foe id. */
+  rivals: Readonly<Record<string, Tally>>
 }
 
-const EMPTY: LadderState = { rating: START_RATING, peak: START_RATING, games: 0, wins: 0, draws: 0, losses: 0, history: [] }
+/** Wins, draws and losses against one opponent. */
+export interface Tally {
+  w: number
+  d: number
+  l: number
+}
+
+const EMPTY: LadderState = { rating: START_RATING, peak: START_RATING, games: 0, wins: 0, draws: 0, losses: 0, history: [], season: 1, seasonGames: 0, seasonPeak: START_RATING, past: [], rivals: {} }
 const HISTORY = 10
 
 export const SHARDS_LADDER_WIN = 5
@@ -43,7 +60,18 @@ export function parseLadder(raw: unknown): LadderState {
         .map((h) => ({ foe: h.foe, result: h.result, change: h.change }))
         .slice(-HISTORY)
     : []
-  return { rating, peak: Math.max(rating, count(o.peak)), games: count(o.games), wins: count(o.wins), draws: count(o.draws), losses: count(o.losses), history }
+  const rivals: Record<string, Tally> = {}
+  if (o.rivals && typeof o.rivals === 'object')
+    for (const [id, t] of Object.entries(o.rivals as Record<string, Partial<Tally>>))
+      if (foeById(id) && t) rivals[id] = { w: count(t.w), d: count(t.d), l: count(t.l) }
+  const peak = Math.max(rating, count(o.peak))
+  return {
+    rating, peak, games: count(o.games), wins: count(o.wins), draws: count(o.draws), losses: count(o.losses), history,
+    season: Math.max(1, count(o.season)), seasonGames: count(o.seasonGames),
+    seasonPeak: Math.min(peak, Math.max(rating, count(o.seasonPeak))),
+    past: Array.isArray(o.past) ? o.past.filter((n): n is number => Number.isInteger(n) && n > 0).slice(-20) : [],
+    rivals,
+  }
 }
 
 function load(): LadderState {
@@ -72,6 +100,26 @@ export function subscribeLadder(l: Listener) {
   return () => { listeners.delete(l) }
 }
 
+const bumped = (t: Tally = { w: 0, d: 0, l: 0 }, result: LadderResult): Tally => ({
+  w: t.w + (result === 'win' ? 1 : 0), d: t.d + (result === 'draw' ? 1 : 0), l: t.l + (result === 'loss' ? 1 : 0),
+})
+
+/** Games a season must run before the next can begin. */
+export const SEASON_MIN_GAMES = 10
+
+/** The rating a new season starts from: halfway back toward the first rung. */
+export const seasonStart = (rating: number) => Math.max(MIN_RATING, START_RATING + Math.round((rating - START_RATING) / 2))
+
+export const canStartSeason = (s: LadderState = state) => s.seasonGames >= SEASON_MIN_GAMES
+
+/** Ends the season: its peak is kept, the rating is pulled halfway back and the placement games begin again. */
+export function startSeason(): boolean {
+  if (!canStartSeason()) return false
+  const rating = seasonStart(state.rating)
+  commit({ ...state, rating, season: state.season + 1, seasonGames: 0, seasonPeak: rating, past: [...state.past, state.seasonPeak].slice(-20) })
+  return true
+}
+
 export interface LadderOutcome {
   rating: number
   change: number
@@ -85,7 +133,7 @@ export interface LadderOutcome {
 export function recordLadder(foe: LadderFoe, result: LadderResult): LadderOutcome {
   const was = state
   const score = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0
-  const rating = nextRating(was.rating, foe.rating, score, was.games)
+  const rating = nextRating(was.rating, foe.rating, score, was.seasonGames)
   const change = rating - was.rating
   const peak = Math.max(was.peak, rating)
   commit({
@@ -94,6 +142,8 @@ export function recordLadder(foe: LadderFoe, result: LadderResult): LadderOutcom
     draws: was.draws + (result === 'draw' ? 1 : 0),
     losses: was.losses + (result === 'loss' ? 1 : 0),
     history: [...was.history, { foe: foe.id, result, change }].slice(-HISTORY),
+    season: was.season, seasonGames: was.seasonGames + 1, seasonPeak: Math.max(was.seasonPeak, rating), past: was.past,
+    rivals: { ...was.rivals, [foe.id]: bumped(was.rivals[foe.id], result) },
   })
   // Paid once per rank: only a new peak in a higher rank counts.
   const promoted = rankOf(peak) !== rankOf(was.peak)
