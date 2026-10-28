@@ -72,8 +72,20 @@ export function Satellite() {
   )
 }
 
-/** The moon's travel for an eclipse that slides back and forth: it starts and ends with its edge overlapping the sun by about 15% of its width, and covers the sun at the middle. */
-const reach = (px: number) => ({ ['--reach' as string]: `${px}px` })
+/** Every header scene shares one eclipse: the moon is 92% of the sun's size, slides until its edge overlaps the sun by 15% of its width, and the glow dims as it covers the sun. */
+const MOON_RATIO = 0.92
+
+function Eclipse({ id, cx, cy, r }: { id: string; cx: number; cy: number; r: number }) {
+  const moon = r * MOON_RATIO
+  const reach = r + moon * 0.7
+  return (
+    <>
+      <g className="art-dim"><circle cx={cx} cy={cy} r={r * 2.2} fill={`url(#${id}-sun)`} className="art-glow" /></g>
+      <circle cx={cx} cy={cy} r={r} fill="#ffe08a" />
+      <circle cx={cx} cy={cy} r={moon} fill="#0d0a22" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={{ ['--reach' as string]: `${reach.toFixed(1)}px` }} />
+    </>
+  )
+}
 
 function Sky({ id }: { id: string }) {
   return (
@@ -122,9 +134,8 @@ export function SkirmishArt() {
       <path d="M0,112H320" stroke="#9a7cf0" strokeOpacity="0.6" />
       <g transform="translate(62 82) scale(96)"><g className="art-bob" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="solari" /></g></g>
       <g transform="translate(258 82) scale(96)"><g className="art-bob art-late" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="umbral" /></g></g>
-      <g className="art-dim" style={{ ['--dim' as string]: 0.1 }}><g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g></g>
-      <circle cx="160" cy="76" r="14" fill="#fff1b8" />
-      <circle cx="160" cy="76" r="12.5" fill="#14102b" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(23)} />
+      <g className="art-dim"><g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g></g>
+      <Eclipse id="sk" cx={160} cy={76} r={14} />
       <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" className="art-spin" />
     </svg>
   )
@@ -136,9 +147,7 @@ export function CampaignArt() {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" role="img" aria-label="The road to the Eclipse Court">
       <Sky id="cp" />
-      <g className="art-dim"><circle cx="262" cy="34" r="46" fill="url(#cp-sun)" className="art-glow" /></g>
-      <circle cx="262" cy="34" r="19" fill="#ffe08a" />
-      <circle cx="262" cy="34" r="17.5" fill="#0d0a22" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(31)} />
+      <Eclipse id="cp" cx={262} cy={34} r={19} />
       <path d="M0,150V104L38,78L74,104L120,66L170,108L214,76L260,104L320,70V150Z" fill="#241d58" />
       <path d="M0,150V124L50,102L96,124L150,92L206,124L258,98L320,118V150Z" fill="#1a1442" />
       <path d="M-4,140C60,150 80,100 130,118S190,96 232,100 276,92 290,66" fill="none" stroke="#e8b64a" strokeWidth="5" strokeOpacity="0.75" strokeLinecap="round" strokeDasharray="1 9" className="art-road" />
@@ -173,9 +182,7 @@ export function PageArt({ icon }: { icon: IconName }) {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" aria-hidden="true">
       <Sky id={id} />
-      <g className="art-dim"><circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} className="art-glow" /></g>
-      <circle cx="160" cy="150" r="46" fill="#ffe08a" opacity="0.9" />
-      <circle cx="160" cy="150" r="43" fill="#0d0a22" stroke="#9a7cf0" strokeOpacity="0.35" strokeWidth="0.8" className="art-moon-slide" style={reach(76)} />
+      <Eclipse id={id} cx={160} cy={150} r={46} />
       <g transform="translate(160 68) scale(3.6) translate(-12 -12)">
         <g className="art-bob" style={{ ['--bob' as string]: '-0.6px' }} fill="none" stroke="#fbf1d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <IconShape name={icon} />

@@ -657,7 +657,7 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .art-dim { animation-name: art-eclipse-dim; }
 .hero-moon, .hero-dim { animation-duration: 26s; }
 @keyframes art-moon-slide { 0% { transform: translateX(calc(var(--reach) * -1)); } 100% { transform: translateX(var(--reach)); } }
-@keyframes art-eclipse-dim { 0%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.12); } }
+@keyframes art-eclipse-dim { 0%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.1); } }
 /* The joke satellite: a slow crossing near the top, with a blinking light */
 .menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20s linear both; }
 .menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }

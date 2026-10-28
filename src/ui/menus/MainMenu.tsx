@@ -118,7 +118,7 @@ function Hero() {
         <Satellite />
       </g>
       <g transform="translate(160 110) scale(0.9)" className="hero-core">
-        <g className="art-dim hero-dim" style={{ ['--dim' as string]: 0.05 }}>
+        <g className="art-dim hero-dim">
           <circle r="112" fill="url(#hero-corona)" className="corona" />
           <g className="rays">
             {RAYS.map((r) => (
