@@ -393,7 +393,7 @@ export default function App() {
       saveProgress(result.progress)
       return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
     }
-    return <Replay record={screen.record} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
+    return <Replay record={screen.record} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
   }
 
   if (screen.name === 'paste')

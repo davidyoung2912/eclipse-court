@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L10 done; L11 and L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L11 done; L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -45,8 +45,12 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L8 (done): editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
 - **L9 (done): juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
 - **L10 (done): onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
-- **L11: shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
+- **L11 (done): shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
 - **L12: async play-by-link.** Play a game by passing a link back and forth, one move at a time, using the existing action-log encoding. Each link carries the whole record, so no server is needed; the app checks that the pasted record extends the one it holds.
+
+## L11 file map
+- `src/shareCard.ts` (+ test): `cardModel` (headline, detail, rule tags; pure), `drawCard` (canvas drawing of the final position with light shading, beacons, cells and piece letters), `cardImage` (PNG blob), `cardClip` (WebM recorded from a canvas with `MediaRecorder`, positions from `clipFrames`, only where `canRecordClip()`). `src/saveFile.ts` downloads a blob.
+- `Replay.tsx`: Save Card and Save Clip buttons; `autoplay` prop, set in `App.tsx` for replays opened from a link or pasted code. No new saved state.
 
 ## L10 file map
 - `src/onboarding.ts` (+ test): store `eclipse-court:onboarding` (last six AI games, a total, when advice was dismissed, checklist hidden). `adviceFor` suggests one level easier after two losses in a row at the same difficulty (not on Easy; hidden until another game is played). `checklist`/`showChecklist` (five first steps), `isFirstBattle`, `coachLine` (prompt chosen from the board and selection).

@@ -7,11 +7,15 @@ import { replaySteps } from '../../engine/log'
 import type { Court } from '../../engine/rules/types'
 import { Board } from '../board/Board'
 import { Dial } from '../dial/Dial'
+import { canRecordClip, cardClip, cardImage } from '../../shareCard'
+import { saveBlob } from '../../saveFile'
 import { Icon } from './icons'
 import { TipCard } from '../tips/TipCard'
 
 interface Props {
   record: GameRecord
+  /** Start playing at once, as a replay opened from a link does. */
+  autoplay?: boolean
   onBack: () => void
   /** Called once when a review finishes, with each side's summary and the winner, if there was one. */
   onReviewed?: (sides: Record<Court, SideSummary>, winner: Court | 'draw' | null) => string[]
@@ -42,11 +46,13 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
 }
 
 /** A finished game played back from its action log, one position at a time. */
-export function Replay({ record, onBack, onReviewed }: Props) {
+export function Replay({ record, autoplay, onBack, onReviewed }: Props) {
   const steps = useMemo(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }], [record])
   const last = steps.length - 1
   const [at, setAt] = useState(0)
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(!!autoplay)
+  const [saving, setSaving] = useState<'card' | 'clip' | null>(null)
+  const [saveNote, setSaveNote] = useState<string | null>(null)
   const [reviews, setReviews] = useState<(MoveReview | null)[]>([])
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle')
   const [better, setBetter] = useState(false)
@@ -68,6 +74,20 @@ export function Replay({ record, onBack, onReviewed }: Props) {
     })
   }
   const cancel = () => { stop.current = true; setPhase('idle'); setReviews([]); setNotes([]); setBetter(false) }
+
+  const save = async (kind: 'card' | 'clip') => {
+    setPlaying(false)
+    setSaving(kind)
+    setSaveNote(null)
+    try {
+      const blob = await (kind === 'card' ? cardImage(record) : cardClip(record))
+      if (!blob) setSaveNote('Could not make that here.')
+      else setSaveNote(saveBlob(blob, kind === 'card' ? 'eclipse-court.png' : 'eclipse-court.webm') ? 'Saved.' : 'Could not save that.')
+    } catch {
+      setSaveNote('Could not make that here.')
+    }
+    setSaving(null)
+  }
 
   const running = playing && at < last
   useEffect(() => {
@@ -139,6 +159,11 @@ export function Replay({ record, onBack, onReviewed }: Props) {
           {phase !== 'idle' && <button disabled={nextMoment === undefined} onClick={() => jump(nextMoment!)}><Icon name="next" />Next Key Move</button>}
         </div>
       )}
+      <div className="buttons">
+        <button disabled={saving !== null} onClick={() => void save('card')}><Icon name="chain" />{saving === 'card' ? 'Drawing…' : 'Save Card'}</button>
+        {canRecordClip() && <button disabled={saving !== null} onClick={() => void save('clip')}><Icon name="play" />{saving === 'clip' ? 'Recording…' : 'Save Clip'}</button>}
+      </div>
+      {saveNote && <p className="status" role="status">{saveNote}</p>}
       <TipCard page="replay" float />
     </main>
   )
