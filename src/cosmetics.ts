@@ -8,6 +8,7 @@ export function applyCosmetics() {
   setVoice(VOICES[equippedId('sound', s)] ?? VOICES.classic)
   if (typeof document === 'undefined') return
   document.documentElement.dataset.pieces = equippedId('pieces', s)
+  document.documentElement.dataset.board = equippedId('board', s)
   document.documentElement.dataset.codex = equippedId('codex', s)
 }
 

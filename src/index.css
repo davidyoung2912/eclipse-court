@@ -1012,6 +1012,35 @@ body:has(.duel) .play-timer { display: none; }
 :root[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
 
 /* Codex frames on the story scenes */
+:root[data-pieces='aurora'] .art-solari .pane-0, :root[data-pieces='aurora'] .art-umbral .pane-0 { animation: pane-aurora 6s ease-in-out infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-1, :root[data-pieces='aurora'] .art-umbral .pane-1 { animation: pane-aurora 6s ease-in-out -2s infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-2, :root[data-pieces='aurora'] .art-umbral .pane-2 { fill: #f0ffe8; }
+:root[data-pieces='forge'] .art-solari .pane-0 { animation: pane-forge 3.2s ease-in-out infinite alternate; }
+:root[data-pieces='forge'] .art-solari .pane-1 { fill: #e07a2e; }
+:root[data-pieces='forge'] .art-solari .pane-2 { fill: #fff0c8; }
+:root[data-pieces='forge'] .art-umbral .pane-0 { animation: pane-forge 3.2s ease-in-out -1.6s infinite alternate; filter: brightness(0.6); }
+:root[data-pieces='forge'] .art-umbral .pane-1 { fill: #3a1a12; }
+:root[data-pieces='forge'] .art-umbral .pane-2 { fill: #a85a3a; }
+@keyframes pane-aurora { from { fill: #6fe0a8; } to { fill: #a88cf0; } }
+@keyframes pane-forge { from { fill: #f0b04a; } to { fill: #ff6a2a; } }
+:root[data-board='starlit'] .board .sq { animation: sq-twinkle 4s ease-in-out infinite; }
+:root[data-board='starlit'] .board g:nth-child(3n) .sq { animation-delay: -1.3s; }
+:root[data-board='starlit'] .board g:nth-child(5n) .sq { animation-delay: -2.6s; }
+:root[data-board='starlit'] .board g:nth-child(7n) .sq { animation-delay: -0.6s; }
+:root[data-board='tidal'] .board .sq { animation: sq-swell 5s ease-in-out infinite; }
+:root[data-board='tidal'] .board g:nth-child(7n+2) .sq { animation-delay: -0.7s; }
+:root[data-board='tidal'] .board g:nth-child(7n+3) .sq { animation-delay: -1.4s; }
+:root[data-board='tidal'] .board g:nth-child(7n+4) .sq { animation-delay: -2.1s; }
+:root[data-board='tidal'] .board g:nth-child(7n+5) .sq { animation-delay: -2.8s; }
+:root[data-board='tidal'] .board g:nth-child(7n+6) .sq { animation-delay: -3.5s; }
+:root[data-board='cinder'] .board .glow { animation: glow-breathe 2.8s ease-in-out infinite alternate; }
+:root[data-board='cinder'] .board g:nth-child(2n) .glow { animation-delay: -1.4s; }
+@keyframes sq-twinkle { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.22); } }
+@keyframes sq-swell { 0%, 100% { filter: brightness(0.92) saturate(1); } 50% { filter: brightness(1.12) saturate(1.25); } }
+@keyframes glow-breathe { from { opacity: 0.35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  :root[data-pieces='aurora'] [class*='pane-'], :root[data-pieces='forge'] [class*='pane-'], :root[data-board] .board .sq, :root[data-board] .board .glow { animation: none !important; }
+}
 :root[data-codex='gilt'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 0 0 18px rgba(232, 182, 74, 0.3); }
 :root[data-codex='moon'] .story-stage { border-color: #9ec8f0; box-shadow: 0 0 0 2px rgba(158, 200, 240, 0.5), 0 0 18px rgba(158, 200, 240, 0.35); }
 :root[data-codex='laurel'] .story-stage { border-color: #b8c85a; box-shadow: 0 0 0 2px rgba(184, 200, 90, 0.5), 0 0 18px rgba(214, 190, 80, 0.35); }

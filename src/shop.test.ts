@@ -17,6 +17,12 @@ describe('cosmetics catalog', () => {
     for (const c of cosmeticsOf('sound')) expect(VOICES[c.id], c.id).toBeDefined()
     for (const c of cosmeticsOf('capture')) expect(CAPTURE_FX[c.id], c.id).toBeDefined()
   })
+
+  it('prices animated tiers above the still ones', () => {
+    const dearest = Math.max(...cosmeticsOf('pieces').filter((c) => !c.text.includes('Animated')).map((c) => c.cost))
+    for (const c of COSMETICS.filter((c) => c.text.includes('Animated'))) expect(c.cost, c.id).toBeGreaterThan(dearest)
+    expect(defaultOf('board')).toBe('still')
+  })
 })
 
 describe('shop', () => {

@@ -1,5 +1,5 @@
 /** What Shards buy. Cosmetics only: they change colours, art, sound and animation, never a rule. */
-export type CosmeticKind = 'theme' | 'pieces' | 'capture' | 'sound' | 'codex'
+export type CosmeticKind = 'theme' | 'pieces' | 'capture' | 'board' | 'sound' | 'codex'
 
 export interface Cosmetic {
   kind: CosmeticKind
@@ -16,11 +16,12 @@ export const KIND_TITLES: Record<CosmeticKind, string> = {
   theme: 'Board themes',
   pieces: 'Piece sets',
   capture: 'Capture effects',
+  board: 'Board effects',
   sound: 'Sound packs',
   codex: 'Codex frames',
 }
 
-export const KINDS: readonly CosmeticKind[] = ['theme', 'pieces', 'capture', 'sound', 'codex']
+export const KINDS: readonly CosmeticKind[] = ['theme', 'pieces', 'capture', 'board', 'sound', 'codex']
 
 export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'theme', id: 'obsidian', name: 'Obsidian', text: 'Black glass with a cold white gleam.', cost: 120 },
@@ -32,6 +33,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'pieces', id: 'jade', name: 'Jade', text: 'Green stone, pale and dark.', cost: 100 },
   { kind: 'pieces', id: 'mono', name: 'Ink and Bone', text: 'Two courts in plain black and white.', cost: 80 },
 
+  { kind: 'pieces', id: 'aurora', name: 'Aurora', text: 'Panes that drift between green and violet light. Animated.', cost: 280 },
+  { kind: 'pieces', id: 'forge', name: 'Forge Glass', text: 'Panes that glow like cooling metal. Animated.', cost: 340 },
+
   { kind: 'capture', id: 'fade', name: 'Quiet Fall', text: 'A soft ring where a piece falls.', cost: 0 },
   { kind: 'capture', id: 'shatter', name: 'Shatter', text: 'Glass shards fly outward.', cost: 80 },
   { kind: 'capture', id: 'embers', name: 'Embers', text: 'Sparks rise from the square.', cost: 100 },
@@ -39,6 +43,11 @@ export const COSMETICS: readonly Cosmetic[] = [
 
   { kind: 'capture', id: 'comet', name: 'Comet', text: 'A long trail of pale fire.', cost: 0, goals: 6 },
   { kind: 'capture', id: 'supernova', name: 'Supernova', text: 'A wide golden bloom. Earned by mastering every piece.', cost: 0, goals: 28 },
+
+  { kind: 'board', id: 'still', name: 'Still Board', text: 'The squares as they are.', cost: 0 },
+  { kind: 'board', id: 'starlit', name: 'Starlit', text: 'Squares twinkle one after another. Animated.', cost: 240 },
+  { kind: 'board', id: 'tidal', name: 'Tidal', text: 'A slow swell rolls across the board. Animated.', cost: 300 },
+  { kind: 'board', id: 'cinder', name: 'Cinder Drift', text: 'The glow on lit squares breathes like coals. Animated.', cost: 360 },
 
   { kind: 'sound', id: 'classic', name: 'Classic', text: 'The original synth voices.', cost: 0 },
   { kind: 'sound', id: 'crystal', name: 'Crystal', text: 'Bright, high and glassy.', cost: 90 },
