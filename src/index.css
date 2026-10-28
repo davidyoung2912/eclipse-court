@@ -282,7 +282,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .main-menu { position: relative; }
 
 /* The fight arena's dusk floor: a dark blue glow with a faint checkerboard, behind the whole screen. */
-body:has(.main-menu), body:has(.game-umbral) {
+body:has(.main-menu), body:has(.blue-menu), body:has(.game-umbral) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
     radial-gradient(ellipse at center, #231b52, #0f0b26 75%);

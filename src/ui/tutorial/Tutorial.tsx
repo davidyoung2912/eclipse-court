@@ -90,7 +90,7 @@ export function Tutorial({ onExit }: Props) {
   }
 
   return (
-    <main className="app tutorial">
+    <main className="app tutorial blue-menu">
       <Dial state={state} />
       <Board state={state} selected={selected ? knight : (inspected ?? null)} moves={moves} onSquare={onSquare} />
       {duel === 'confirm' && knight && foe && (

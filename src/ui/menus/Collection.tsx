@@ -24,7 +24,7 @@ export function Collection({ onBack }: Props) {
     }
   }
   return (
-    <main className="app menu">
+    <main className="app menu blue-menu">
       <PageArt icon="star" />
       <h2>Collection</h2>
       <p className="tagline">Spend Shards, earned from games, puzzles and achievements. Cosmetics change how the game looks and sounds, never how it plays.</p>

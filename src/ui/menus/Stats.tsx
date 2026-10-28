@@ -49,7 +49,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
     ...(rushBest() > 0 ? [{ label: 'Puzzle Rush best', value: String(rushBest()) }] : []),
   ]
   return (
-    <main className="app menu">
+    <main className="app menu blue-menu">
       <PageArt icon="trophy" />
       <h2>Stats</h2>
       <div className="stat-overall" role="group" aria-label="Overall completion">

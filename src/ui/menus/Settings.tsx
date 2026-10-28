@@ -43,7 +43,7 @@ export function Settings({ progress, onBack }: Props) {
   }
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
-    <main className="app menu">
+    <main className="app menu blue-menu">
       <PageArt icon="gear" />
       <h2>Settings</h2>
       <h3>Look</h3>
