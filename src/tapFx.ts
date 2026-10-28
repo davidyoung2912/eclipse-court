@@ -28,7 +28,7 @@ export function installTapFx(): () => void {
     overlay(button, 'ripple', RIPPLE_MS, spot.x, spot.y)
   }
   const onOver = (e: PointerEvent) => {
-    if (e.pointerType !== 'mouse' || getSettings().reduceMotion) return
+    if (e.pointerType !== 'mouse' || getSettings().reduceMotion || !getSettings().buttonSheen) return
     const button = (e.target as Element | null)?.closest<HTMLElement>(TARGETS)
     if (!button || (button as HTMLButtonElement).disabled) return
     if (e.relatedTarget instanceof Node && button.contains(e.relatedTarget)) return

@@ -81,6 +81,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.largeUi} onChange={() => change({ largeUi: !settings.largeUi })} /> {t('settings.largeUi')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.marks} onChange={() => change({ marks: !settings.marks })} /> {t('settings.marks')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> {t('settings.reduceMotion')}</label>
+      <label className="recharge"><input type="checkbox" checked={settings.buttonSheen} onChange={() => change({ buttonSheen: !settings.buttonSheen })} /> {t('settings.buttonSheen')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.reduceFlashes || settings.reduceMotion} disabled={settings.reduceMotion} onChange={() => change({ reduceFlashes: !settings.reduceFlashes })} /> {t('settings.reduceFlashes')}</label>
       <h3>{t('settings.playAids')}</h3>
       <label className="recharge"><input type="checkbox" checked={settings.aids} onChange={() => change({ aids: !settings.aids })} /> {t('settings.aids')}</label>
