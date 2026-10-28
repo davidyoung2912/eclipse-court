@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { CountUp } from '../CountUp'
 import { buy, equip, equippedId, owns, shopSnapshot, subscribeShop } from '../../shop'
+import { glintOf } from '../../progression'
 import { cosmeticKey, cosmeticsOf, KIND_TITLES, KINDS, rarityOf, type Cosmetic } from '../../engine/data/cosmetics'
 import { getSettings, themeById, updateSettings } from '../../settings'
 import { sfx, unlockAudio } from '../../audio/synth'
@@ -12,6 +13,15 @@ import { BackButton } from './BackButton'
 import { Showcase } from './Showcase'
 import { TipCard } from '../tips/TipCard'
 import { t } from '../../i18n'
+import type { Rarity } from '../../engine/data/cosmetics'
+
+/** The glint's period, strength and an id-based delay so neighbouring rows do not sweep together. */
+function glintStyle(rarity: Rarity, id: string): Record<string, string> {
+  const g = glintOf(rarity)
+  if (!g) return {}
+  const seed = [...id].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) % 997, 7)
+  return { '--glint-period': `${g.period}ms`, '--glint-alpha': String(g.strength), '--glint-delay': `${-(seed / 997) * g.period}ms` }
+}
 
 interface Props {
   onBack: () => void
@@ -50,8 +60,8 @@ export function Collection({ onBack }: Props) {
               const have = owns(c, shop)
               const on = have && isOn(c)
               return (
-                <div key={c.id} className={`choice-row rarity-${rarityOf(c)}${fresh === cosmeticKey(c) ? ' unlocked' : ''}`}
-                  style={fresh === cosmeticKey(c) ? { ['--flip' as string]: `${FLIP_MS[rarityOf(c)]}ms` } : undefined}>
+                <div key={c.id} className={`choice-row rarity-${rarityOf(c)}${glintOf(rarityOf(c)) ? ' glint' : ''}${fresh === cosmeticKey(c) ? ' unlocked' : ''}`}
+                  style={{ ...glintStyle(rarityOf(c), c.id), ...(fresh === cosmeticKey(c) ? { ['--flip' as string]: `${FLIP_MS[rarityOf(c)]}ms` } : null) }}>
                   {fresh === cosmeticKey(c) && Array.from({ length: REVEAL_SPARKS[rarityOf(c)] }, (_, i) => (
                     <i key={i} className="reveal-spark" aria-hidden="true" style={{ ['--angle' as string]: `${(360 / REVEAL_SPARKS[rarityOf(c)]) * i}deg` }} />
                   ))}

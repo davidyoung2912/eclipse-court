@@ -11,6 +11,8 @@ import { recordsSnapshot, subscribeRecords } from '../../records'
 import { rushBest } from '../../rush'
 import { rankOf } from '../../engine/data/ladder'
 import { Bar } from './Bar'
+import { RankCrest } from './RankCrest'
+import { courtRank } from '../../progression'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { ResetButton } from './ResetButton'
@@ -38,6 +40,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const goalsDone = ROLE_GOALS.filter((g) => goalDone(g, goals.tally)).length
   const goalsOwed = unclaimedGoals(goals).reduce((n, g) => n + g.shards, 0)
   const tracks = standings(progress, mastery)
+  const rank = courtRank(tracks.reduce((n, x) => n + x.level, 0))
   const owed = tracks.reduce((n, t) => n + t.owed, 0)
   const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
   const list = sections(progress, story, dailySeed())
@@ -59,6 +62,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
       <PageArt icon="trophy" />
       <h2>Stats</h2>
       <div className="pane-side">
+      <RankCrest rank={rank} />
       <div className="stat-overall" role="group" aria-label="Overall completion">
         <strong>{percent(done)}</strong>
         <span>complete across the campaign, scenarios, puzzles, gauntlet, story and achievements</span>

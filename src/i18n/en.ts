@@ -101,6 +101,8 @@ export const en = {
   'daily.won': 'Won, {turns} rounds, {lost} lost',
   'daily.lost': 'Lost, {turns} rounds, {lost} lost',
   'daily.streak': 'Streak',
+  'daily.week': 'The last seven days',
+  'daily.stamped': 'Stamped',
   'daily.streakValue': '{days} (best {best})',
   'daily.playAgain': 'Play Again (Not Scored)',
   'daily.play': 'Play Today’s Match',

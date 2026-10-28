@@ -8,6 +8,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { stampWeek } from '../../progression'
 import { t } from '../../i18n'
 
 interface Props {
@@ -27,6 +28,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   const result = dailyResult(progress, match.date)
   const streak = liveStreak(progress, match.date)
   const event = seasonalEvent()
+  const week = stampWeek(match.date, progress.daily.last?.date ?? null, streak)
   return (
     <main className="app menu">
       <PageArt icon="sun" />
@@ -45,6 +47,14 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
         <div><dt>{t('daily.today')}</dt><dd>{result ? t(result.won ? 'daily.won' : 'daily.lost', { turns: result.turns, lost: result.lost }) : t('common.notPlayed')}</dd></div>
         <div><dt>{t('daily.streak')}</dt><dd>{t('daily.streakValue', { days: t('common.day', { count: streak }), best: progress.daily.best })}</dd></div>
       </dl>
+      <ol className="stamp-week" aria-label={t('daily.week')}>
+        {week.map((d, i) => (
+          <li key={d.date} className={`${d.stamped ? 'stamped' : ''}${d.today ? ' today' : ''}`} style={{ ['--i' as string]: i }}>
+            <span>{d.date % 100}</span>
+            {d.stamped && <i aria-label={t('daily.stamped')}><Icon name="sun" /></i>}
+          </li>
+        ))}
+      </ol>
       <div className="menu-buttons stacked">
         <button className={result ? undefined : 'primary'} onClick={onPlay}>
           <Icon name="play" />{result ? t('daily.playAgain') : t('daily.play')}

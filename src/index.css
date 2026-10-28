@@ -1755,3 +1755,38 @@ body:has(.main-menu)::before {
 @keyframes face-flinch { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 60% { transform: translateX(2px); } }
 @media (prefers-reduced-motion: reduce) { .persona-corner { animation: none !important; transition: none; } }
 :root[data-motion="reduced"] .persona-corner { animation: none !important; transition: none; }
+
+/* Visible progression: rank crest, cosmetic glint, daily stamps */
+.rank-crest { --crest: #8d93aa; --crest-rim: #5d627a; display: grid; justify-items: center; gap: 2px; margin: 0 auto 12px; text-align: center; }
+.rank-crest svg { width: 84px; height: 100px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--crest) 45%, transparent)); }
+.rank-crest strong { font-family: var(--display); letter-spacing: 0.08em; color: var(--crest); font-size: var(--fs-md); }
+.rank-crest small { opacity: 0.75; font-size: var(--fs-xs); }
+.rank-crest.tier-1 { --crest: #6fe08a; --crest-rim: #3d8a50; }
+.rank-crest.tier-2 { --crest: #6fb4ff; --crest-rim: #3c72b0; }
+.rank-crest.tier-3 { --crest: #c58cff; --crest-rim: #7a4cb0; }
+.rank-crest.tier-4 { --crest: #ffc94a; --crest-rim: #a87a1c; }
+.rank-crest.tier-5 { --crest: #fff0b8; --crest-rim: #e8b64a; }
+.crest-shield { fill: rgba(20, 16, 40, 0.9); stroke: var(--crest-rim); stroke-width: 4; stroke-linejoin: round; }
+.crest-inner { fill: none; stroke: var(--crest); stroke-width: 1.5; opacity: 0.7; }
+.crest-sun { fill: var(--crest); }
+.crest-moon { fill: #14102a; }
+.crest-pip { fill: var(--crest); }
+.rank-crest.tier-5 svg { animation: crest-glow 3.6s ease-in-out infinite alternate; }
+@keyframes crest-glow { to { filter: drop-shadow(0 0 14px rgba(255, 224, 140, 0.9)); } }
+
+.choice-row.glint { overflow: hidden; }
+.choice-row.glint::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--rarity) calc(var(--glint-alpha) * 100%), transparent) 50%, transparent 60%);
+  background-size: 250% 100%; background-position: 150% 0;
+  animation: cosmetic-glint var(--glint-period, 6000ms) linear var(--glint-delay, 0ms) infinite;
+}
+@keyframes cosmetic-glint { 0%, 70% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+
+.stamp-week { display: flex; justify-content: center; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.stamp-week li { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 1px dashed rgba(255, 255, 255, 0.3); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); }
+.stamp-week li.today { border-style: solid; border-color: rgba(255, 255, 255, 0.55); }
+.stamp-week li.stamped { border: 2px solid var(--solari-gold); color: transparent; }
+.stamp-week li i { position: absolute; inset: 0; display: grid; place-items: center; color: var(--solari-gold); animation: stamp-in 420ms var(--ease) both; animation-delay: calc(var(--i) * 90ms); }
+.stamp-week li i svg { width: 20px; height: 20px; }
+@keyframes stamp-in { 0% { opacity: 0; transform: scale(2.2) rotate(-18deg); } 60% { opacity: 1; transform: scale(0.9) rotate(4deg); } 100% { opacity: 1; transform: none; } }
