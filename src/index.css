@@ -1402,3 +1402,9 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .persona-greet b { display: block; font-size: 0.75rem; color: #cdbfff; }
 .persona-farewell { margin: 6px 0 0; text-align: center; }
 .persona-farewell b { margin-right: 6px; color: #cdbfff; }
+
+/* Light forecast: a small arrow on a square that will lighten (up) or darken (down) next round. */
+.forecast { pointer-events: none; stroke-width: 0.03; }
+.forecast.lit { fill: #fff6cf; stroke: #3a2410; }
+.forecast.dim { fill: #3b2d86; stroke: #e4d8ff; }
+.odds-tag.next { fill: #d7ccff; }

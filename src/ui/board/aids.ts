@@ -39,3 +39,20 @@ export function lastMoveOf(history: readonly Step[]): { from: Pos; to: Pos } | n
   const from = before.state.pieces.find((p) => p.id === pieceId)?.pos
   return from ? { from, to } : null
 }
+
+/** The light as it will stand when the round turns: the phase steps on unless an Eclipse or a hold stops it, and the round event changes. */
+export function nextLightState(state: GameState): GameState {
+  const length = state.config.day.length
+  const round = state.round + 1
+  return {
+    ...state,
+    round,
+    phase: state.eclipse || state.hold > 0 ? state.phase : (state.phase + state.dir + length) % length,
+    eclipse: state.eclipse || round > state.config.eclipseRound,
+  }
+}
+
+/** For each attackable enemy, the attacker's win chance (0 to 100) once the light has turned. */
+export function nextAttackOdds(state: GameState, attacker: Piece, moves: readonly Pos[]): Record<string, number> {
+  return attackOdds(nextLightState(state), attacker, moves)
+}

@@ -32,6 +32,10 @@ interface Props {
   endangered?: string[]
   /** For enemy pieces the selected piece could attack, its chance (0 to 100) of winning the duel. */
   odds?: Record<string, number>
+  /** The same attack odds once the light has turned, shown under the current ones (Light forecast). */
+  nextOdds?: Record<string, number>
+  /** The state as the next round will find the light; squares that change are marked (Light forecast). */
+  nextLight?: GameState
   /** Pieces a chosen spell may target. */
   targetIds?: string[]
   onSquare: (p: Pos) => void
@@ -72,7 +76,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, targetIds = [], onSquare, focus, hint, trail, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -136,6 +140,13 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             {marks && lum !== 0 && (
               <text x={cx - 0.32} y={cy - 0.3} className={`lum-mark ${lum > 0 ? 'lit' : 'dim'}`}>{(lum > 0 ? '+' : '−').repeat(Math.abs(lum))}</text>
             )}
+            {nextLight && cycling && (() => {
+              const shift = squareLuminance(nextLight, p) - lum
+              if (shift === 0) return null
+              const up = shift > 0
+              const x = cx + 0.34, y = cy + 0.34
+              return <path className={`forecast ${up ? 'lit' : 'dim'}`} d={up ? `M${x - 0.1},${y + 0.07}L${x},${y - 0.09}L${x + 0.1},${y + 0.07}Z` : `M${x - 0.1},${y - 0.07}L${x},${y + 0.09}L${x + 0.1},${y - 0.07}Z`}><title>{up ? 'Lighter next round' : 'Darker next round'}</title></path>
+            })()}
             {isBlocked(state.config, p) && (
               <g className="wall">
                 <rect x={cx - 0.44} y={cy - 0.44} width={0.88} height={0.88} rx={0.1} />
@@ -176,6 +187,9 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             </g>
             {odds?.[pc.id] !== undefined && (
               <text className={`odds-tag ${odds[pc.id] >= 60 ? 'good' : odds[pc.id] >= 35 ? 'even' : 'bad'}`} x={0} y={-0.38}>{odds[pc.id]}%</text>
+            )}
+            {nextOdds?.[pc.id] !== undefined && odds?.[pc.id] !== nextOdds[pc.id] && (
+              <text className="odds-tag next" x={0} y={0.5}>{`→${nextOdds[pc.id]}%`}</text>
             )}
             {pc.bound && (
               <g className="bound-badge" aria-label="Bound">

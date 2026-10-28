@@ -83,6 +83,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.aids} onChange={() => change({ aids: !settings.aids })} /> {t('settings.aids')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.aiWhy} onChange={() => change({ aiWhy: !settings.aiWhy })} /> {t('settings.aiWhy')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.lastMove} onChange={() => change({ lastMove: !settings.lastMove })} /> {t('settings.lastMove')}</label>
+      <label className="recharge"><input type="checkbox" checked={settings.forecast} onChange={() => change({ forecast: !settings.forecast })} /> {t('settings.forecast')}</label>
       <h3>{t('settings.duels')}</h3>
       <p className="setup-hint">{t('settings.duelHint')}</p>
       <div className="choices row">

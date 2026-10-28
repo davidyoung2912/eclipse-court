@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { newGame } from '../../engine/reducer'
 import { legalMoves } from '../../engine/rules/moves'
 import type { GameState, Piece } from '../../engine/rules/types'
-import { attackOdds, lastMoveOf, threatenedIds } from './aids'
+import { squareLuminance } from '../../engine/rules/luminance'
+import { attackOdds, lastMoveOf, nextLightState, threatenedIds } from './aids'
 
 const piece = (id: string, court: Piece['court'], role: Piece['role'], x: number, y: number): Piece => ({
   id, court, role, hp: 4, maxHp: 4, pos: { x, y }, rest: 0, moved: false, bound: false,
@@ -41,5 +42,18 @@ describe('lastMoveOf', () => {
   it('is null at the start and after a pass', () => {
     expect(lastMoveOf([{ state: before, action: null }])).toBeNull()
     expect(lastMoveOf([{ state: before, action: null }, { state: before, action: { type: 'pass' as const } }])).toBeNull()
+  })
+})
+
+describe('nextLightState', () => {
+  const state = newGame()
+  it('steps the phase and the round', () => {
+    const next = nextLightState(state)
+    expect(next.round).toBe(state.round + 1)
+    expect(next.phase).not.toBe(state.phase)
+    expect(squareLuminance(next, { x: 3, y: 3 })).not.toBe(squareLuminance(state, { x: 3, y: 3 }))
+  })
+  it('holds the phase during an Eclipse', () => {
+    expect(nextLightState({ ...state, eclipse: true }).phase).toBe(state.phase)
   })
 })
