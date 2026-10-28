@@ -48,6 +48,9 @@ const HIT_STOP = 0.07
 const END_DELAY = 1.1
 /** Fraction of normal speed the live duel plays at; the simulation itself (and so the odds) is unchanged. */
 const SLOWDOWN = 0.55
+/** The pre-fight countdown: each of these shows for COUNT_STEP_MS, then the fight begins. */
+const COUNTDOWN = ['3', '2', '1', 'Go!']
+const COUNT_STEP_MS = 750
 
 export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -66,6 +69,18 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const mouse = useRef({ x: 0, y: 0, locked: false })
   const [desktop] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches)
   const [locked, setLocked] = useState(false)
+  const [count, setCount] = useState(0)
+  /** The simulation holds still until the countdown has run out. */
+  const started = useRef(false)
+
+  useEffect(() => {
+    started.current = false
+    const timers = COUNTDOWN.map((_, i) => setTimeout(() => {
+      if (i + 1 < COUNTDOWN.length) setCount(i + 1)
+      else { started.current = true; setCount(COUNTDOWN.length) }
+    }, (i + 1) * COUNT_STEP_MS))
+    return () => timers.forEach(clearTimeout)
+  }, [attacker, defender, seed])
 
   useEffect(() => {
     optionsRef.current = options
@@ -155,7 +170,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         input.current = { ...input.current, mx: mouse.current.x / STICK_RADIUS, my: mouse.current.y / STICK_RADIUS }
       }
       if (freeze > 0) freeze -= dt
-      else acc += dt * SLOWDOWN
+      else if (started.current) acc += dt * SLOWDOWN
       const events: DuelEvent[] = []
       while (acc >= DT && !state.done && freeze <= 0) {
         acc -= DT
@@ -275,12 +290,21 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
           <canvas ref={canvas} className="duel-canvas" />
           {banner && <div className="duel-banner">{banner}</div>}
-          {desktop && (
-            <p className={`duel-mouse-hint${locked ? '' : ' prompt'}`}>
-              {locked ? 'Move the mouse to steer · hold left click to attack · Esc frees the mouse' : 'Click the arena to take control with the mouse'}
-            </p>
+          {count < COUNTDOWN.length && (
+            <div key={count} className={`duel-countdown ${attacker.court}`} role="status" aria-label={COUNTDOWN[count]}>{COUNTDOWN[count]}</div>
           )}
+          {desktop && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">Click the arena to take control with the mouse</p>}
         </div>
+        {desktop ? (
+          <aside className="duel-info" aria-label="Mouse controls">
+            <h3>Mouse controls</h3>
+            <ul>
+              <li><strong>Move the mouse</strong> to steer. Stop moving to stop.</li>
+              <li><strong>Hold left click</strong> to attack.</li>
+              <li><strong>Esc</strong> frees the mouse.</li>
+            </ul>
+          </aside>
+        ) : (
         <div className="duel-controls">
           <div className={`duel-pad${options.mirror ? ' mirror' : ''}`}>
             <div className="stick-zone" onPointerDown={onStickDown} onPointerMove={onStickMove}
@@ -304,6 +328,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

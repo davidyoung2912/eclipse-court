@@ -196,6 +196,27 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   font-size: 2.4rem; font-weight: 800; text-shadow: 0 2px 12px #000;
 }
 .duel-controls { flex: 0 0 auto; }
+.duel-info { flex: 0 0 auto; padding: 10px 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
+.duel-info h3 { margin: 0 0 4px; font-family: var(--display); font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.duel-info ul { margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5; opacity: 0.9; }
+.duel-countdown {
+  position: absolute; left: 50%; top: 50%; z-index: 5; pointer-events: none; min-width: 120px; padding: 14px 34px; border-radius: 14px;
+  text-align: center; font-family: var(--display); font-size: 2.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  transform: translate(-50%, -50%); animation: count-fade 0.75s ease-in-out forwards;
+}
+.duel-countdown.solari {
+  background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; border: 2px solid var(--solari-cream);
+  box-shadow: 0 0 28px rgba(232, 182, 74, 0.6);
+}
+.duel-countdown.umbral {
+  background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; border: 2px solid var(--umbral-violet);
+  box-shadow: 0 0 28px rgba(122, 92, 200, 0.7);
+}
+@keyframes count-fade {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  25%, 65% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
 .duel-pad {
   display: flex; align-items: stretch; gap: 12px; height: 128px; padding: 8px; border-radius: 14px;
   background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35);
