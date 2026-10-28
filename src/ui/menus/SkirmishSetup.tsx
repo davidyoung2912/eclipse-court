@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DIFFICULTY_LIST, type Difficulty } from '../../ai/profile'
 import { BOARDS, GRAND_BOARDS, boardById, grandBoardById } from '../../engine/data/boards'
-import { CLASSIC_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
+import { CLASSIC_ROLES, DRAFT_ROLES, draftCost, draftProblem } from '../../engine/data/draft'
 import { matchesPreset, presetById, skirmishConfig, PRESETS, RULESETS, rulesetById, SETUP_INFO, type Preset, type RuleGroup, type RulesetId, type PresetRules, type SetupChoice, type SetupMode } from '../../engine/data/setups'
 import { MODE_INFO } from '../../engine/rules/events'
 import type { CycleId } from '../../engine/rules/luminance'
@@ -24,6 +24,7 @@ import { bountiesFor } from '../../engine/data/bounties'
 import { claimedOn } from '../../bounties'
 import { dailySeed } from '../../engine/data/setups'
 import { BackButton } from './BackButton'
+import { bool, list, loadChoices, oneOf, saveChoices } from '../../lastChoices'
 
 interface Props {
   progress: Progress
@@ -64,33 +65,45 @@ const LEVEL_TEXT: Record<Difficulty, string> = {
 }
 
 export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onHost, byLink, challengeLink, onBack }: Props) {
-  const [court, setCourt] = useState<Court>('solari')
-  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
-  const [twoPlayers, setTwoPlayers] = useState(false)
+  const [saved] = useState(() => loadChoices('skirmish'))
+  const grandOpen = totalStars(progress) >= GRAND_STARS
+  const startGrand = bool(saved.grand, false) && grandOpen
+  const startBoards = startGrand ? GRAND_BOARDS : BOARDS
+  const startBoard = oneOf(saved.boardId, startBoards.map((b) => b.id).filter((id) => boardUnlocked(progress, id)), startGrand ? GRAND_BOARDS[0].id : 'classic')
+  const startTwo = !onHost && bool(saved.twoPlayers, false)
+  const startMode = oneOf(saved.mode, Object.keys(SETUP_INFO) as SetupMode[], 'classic')
+  const startRoles = list(saved.roles, DRAFT_ROLES)
+  const startPreset = typeof saved.presetId === 'string' ? presetById(saved.presetId) : undefined
+  const [court, setCourt] = useState<Court>(() => oneOf<Court>(saved.court, ['solari', 'umbral'], 'solari'))
+  const [difficulty, setDifficulty] = useState<Difficulty>(() => oneOf(saved.difficulty, DIFFICULTY_LIST, 'normal'))
+  const [twoPlayers, setTwoPlayers] = useState(startTwo)
   const [online, setOnline] = useState(!!onHost)
   /** Hot seat and online both pit two people, so neither can draft an army or pick a loadout; the AI is not used. */
   const hotSeat = twoPlayers || online
-  const [mode, setMode] = useState<SetupMode>('classic')
-  const [boardId, setBoardId] = useState('classic')
-  const [grand, setGrand] = useState(false)
-  const [roles, setRoles] = useState<Role[]>([...CLASSIC_ROLES])
-  const [spellMode, setSpellMode] = useState<'classic' | 'loadout'>('classic')
-  const [loadout, setLoadout] = useState<Spell[]>([])
-  const [recharge, setRecharge] = useState(false)
-  const [winMode, setWinMode] = useState<MatchMode>('beacons')
-  const [events, setEvents] = useState(false)
-  const [showdown, setShowdown] = useState(initialTier !== 'classic')
-  const [cycle, setCycle] = useState<CycleId>('standard')
-  const [reverse, setReverse] = useState(false)
-  const [clockSeconds, setClockSeconds] = useState(0)
-  const [extraTime, setExtraTime] = useState(false)
-  const [growth, setGrowth] = useState(false)
-  const [promotion, setPromotion] = useState(false)
-  const [fog, setFog] = useState(false)
-  const [suddenDeath, setSuddenDeath] = useState(0)
-  const [headStart, setHeadStart] = useState(0)
-  const [presetId, setPresetId] = useState<string | null>(null)
-  const [rulesId, setRulesId] = useState<RulesetId>(initialTier)
+  const [mode, setMode] = useState<SetupMode>(() => (startGrand ? 'classic' : startMode === 'draft' && (startTwo || onHost) ? 'classic' : startMode))
+  const [boardId, setBoardId] = useState(startBoard)
+  const [grand, setGrand] = useState(startGrand)
+  const [roles, setRoles] = useState<Role[]>(() => (startRoles && !draftProblem(startRoles) ? startRoles : [...CLASSIC_ROLES]))
+  const [spellMode, setSpellMode] = useState<'classic' | 'loadout'>(() => (!startTwo && !onHost && saved.spellMode === 'loadout' ? 'loadout' : 'classic'))
+  const [loadout, setLoadout] = useState<Spell[]>(() => {
+    const picked = list(saved.loadout, spellPool(oneOf<Court>(saved.court, ['solari', 'umbral'], 'solari')))
+    return picked && picked.length <= LOADOUT_SIZE ? picked : []
+  })
+  const [recharge, setRecharge] = useState(() => bool(saved.recharge, false))
+  const [winMode, setWinMode] = useState<MatchMode>(() => oneOf(saved.winMode, Object.keys(MODE_INFO) as MatchMode[], 'beacons'))
+  const [events, setEvents] = useState(() => bool(saved.events, false))
+  const [showdown, setShowdown] = useState(() => bool(saved.showdown, initialTier !== 'classic'))
+  const [cycle, setCycle] = useState<CycleId>(() => oneOf(saved.cycle, CYCLES.map((c) => c.id), 'standard'))
+  const [reverse, setReverse] = useState(() => bool(saved.reverse, false))
+  const [clockSeconds, setClockSeconds] = useState(() => oneOf(saved.clockSeconds, CLOCKS.map((c) => c.seconds), 0))
+  const [extraTime, setExtraTime] = useState(() => bool(saved.extraTime, false))
+  const [growth, setGrowth] = useState(() => bool(saved.growth, false))
+  const [promotion, setPromotion] = useState(() => bool(saved.promotion, false))
+  const [fog, setFog] = useState(() => bool(saved.fog, false))
+  const [suddenDeath, setSuddenDeath] = useState(() => oneOf<number>(saved.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
+  const [headStart, setHeadStart] = useState(() => oneOf<number>(saved.headStart, [0, ...HEAD_START_LEVELS], 0))
+  const [presetId, setPresetId] = useState<string | null>(() => (startPreset && presetUnlocked(progress, startPreset) ? startPreset.id : null))
+  const [rulesId, setRulesId] = useState<RulesetId>(() => oneOf(saved.rulesId, RULESETS.map((t) => t.id), initialTier))
   const tier = rulesetById(rulesId) ?? RULESETS[1]
   const open = (group: RuleGroup) => !tier.locks.includes(group)
   const board = grand ? grandBoardById(boardId) : boardById(boardId)
@@ -112,6 +125,10 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     ...(tier.rules.spells ? { spells: tier.rules.spells } : {}),
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
     ...(fog ? { fog } : {}), ...(suddenDeath ? { suddenDeath } : {}), ...(headStart ? { headStart } : {}),
+  })
+  const remember = () => saveChoices('skirmish', {
+    court, difficulty, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, presetId, rulesId,
   })
   const applyRules = (r: PresetRules) => {
     setWinMode(r.winMode ?? 'beacons')
@@ -195,7 +212,6 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   }))
   const boardNote = !grand && mode === 'daily' ? 'The daily game picks its own board.'
     : [board.text, ...shownBoards.filter((b) => !boardUnlocked(progress, b.id)).map((b) => `${b.name}: earn ${BOARD_STARS[b.id]} campaign stars to unlock.`)].join(' ')
-  const grandOpen = totalStars(progress) >= GRAND_STARS
   const sizes: SegOption<'standard' | 'grand'>[] = [
     { value: 'standard', label: 'Standard 7x7', hint: 'The classic board and 12-piece armies.' },
     { value: 'grand', label: 'Grand 9x9', hint: 'A wider board with 16 pieces a side. Footsoldiers, Bruisers and Marksmen reach further, and the Leader teleports 5.', locked: !grandOpen, disabled: !grandOpen },
@@ -308,7 +324,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
         <div className="menu-buttons">
           <BackButton onClick={onBack} />
           {ready && !online && <ShareButton title="Eclipse Court challenge" label="Share" link={() => challengeLink(court, difficulty, choice(), hotSeat)} />}
-          <button className="primary" disabled={!ready} onClick={() => online ? onHost?.(court, choice()) : onStart(court, difficulty, choice(), hotSeat)}><Icon name="play" />{online && !byLink ? 'Host' : 'Start'}</button>
+          <button className="primary" disabled={!ready} onClick={() => { remember(); if (online) onHost?.(court, choice()); else onStart(court, difficulty, choice(), hotSeat) }}><Icon name="play" />{online && !byLink ? 'Host' : 'Start'}</button>
         </div>
       </div>
       <TipCard page="skirmish" />

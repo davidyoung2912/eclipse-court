@@ -13,6 +13,7 @@ import { LEVEL_ICON } from './levels'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { loadChoices, oneOf, saveChoices } from '../../lastChoices'
 
 interface Props {
   onPlaytime: (seconds: number) => void
@@ -33,11 +34,12 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
 
 /** A duel between any two roles, with the odds card: for learning how pieces fight without a game riding on it. */
 export function Practice({ onPlaytime, onDuel, onBack }: Props) {
-  const [mine, setMine] = useState<Role>('footsoldier')
-  const [theirs, setTheirs] = useState<Role>('footsoldier')
-  const [court, setCourt] = useState<Court>('solari')
-  const [light, setLight] = useState(0)
-  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
+  const [saved] = useState(() => loadChoices('practice'))
+  const [mine, setMine] = useState<Role>(() => oneOf(saved.mine, ROLES, 'footsoldier'))
+  const [theirs, setTheirs] = useState<Role>(() => oneOf(saved.theirs, ROLES, 'footsoldier'))
+  const [court, setCourt] = useState<Court>(() => oneOf<Court>(saved.court, ['solari', 'umbral'], 'solari'))
+  const [light, setLight] = useState(() => oneOf(saved.light, LIGHTS, 0))
+  const [difficulty, setDifficulty] = useState<Difficulty>(() => oneOf(saved.difficulty, DIFFICULTY_LIST, 'normal'))
   const [seed, setSeed] = useState(1)
   const [fighting, setFighting] = useState(false)
   const [outcome, setOutcome] = useState<DuelOutcome | null>(null)
@@ -103,7 +105,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
         {result && <p className="practice-out" role="status">{result}</p>}
       </div>
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={() => { setSeed(Date.now()); setOutcome(null); setFighting(true) }}><Icon name="swords" />Fight</button>
+        <button className="primary" onClick={() => { saveChoices('practice', { mine, theirs, court, light, difficulty }); setSeed(Date.now()); setOutcome(null); setFighting(true) }}><Icon name="swords" />Fight</button>
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="practice" />

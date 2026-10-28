@@ -40,6 +40,7 @@ import { rememberCourt, masterySnapshot } from './mastery'
 import { Collection } from './ui/menus/Collection'
 import type { Court, GameState } from './engine/rules/types'
 import type { SideSummary } from './ai/review'
+import { loadChoices, oneOf, saveChoices } from './lastChoices'
 import { Campaign, type Tab as CampaignTab } from './ui/menus/Campaign'
 import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
 import { Daily } from './ui/menus/Daily'
@@ -223,7 +224,7 @@ export default function App() {
     setProgress(next)
     saveProgress(next)
   }
-  const [campaignTab, setCampaignTab] = useState<CampaignTab>('battles')
+  const [campaignTab, setCampaignTab] = useState<CampaignTab>(() => oneOf<CampaignTab>(loadChoices('campaign').tab, ['battles', 'scenarios'], 'battles'))
 
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
@@ -513,7 +514,7 @@ export default function App() {
         progress={progress}
         report={report}
         tab={campaignTab}
-        onTab={setCampaignTab}
+        onTab={(t) => { setCampaignTab(t); saveChoices('campaign', { tab: t }) }}
         onReset={(tab) => { const next = tab === 'scenarios' ? resetScenarios(progress) : resetCampaign(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
         onPlayScenario={(i) => {
@@ -738,7 +739,7 @@ export default function App() {
             if (advice) lines.push(advice.text)
           }
           setReport(lines)
-          if (scenario !== undefined) setCampaignTab('scenarios')
+          if (scenario !== undefined) { setCampaignTab('scenarios'); saveChoices('campaign', { tab: 'scenarios' }) }
           if (review) return setScreen({ name: 'replay', record: finished, own: true })
           setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
@@ -750,7 +751,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen} progress={progress} onBattle={() => setScreen({ name: 'battle' })}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setCampaignTab('battles'); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }} onWeekly={() => { setReport([]); setScreen({ name: 'weekly' }) }}
       dailyDone={{ weekly: forWeek(weeklySnapshot(), weeklyMatch().week).paid, match: !!dailyResult(progress, dailySeed()), puzzle: progress.puzzles.includes(PUZZLES[dailyPuzzleIndex()].id) }}
       onDailyPuzzle={() => {

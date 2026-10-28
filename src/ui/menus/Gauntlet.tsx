@@ -120,16 +120,16 @@ export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onF
           Days won: {asc.daysWon}.
         </div>
         <div className="menu-buttons stacked"><button onClick={onDaily}><Icon name="play" />Begin the Daily Run</button></div>
+        <h3>Your court</h3>
+        <CourtPicker value={court} onChange={setCourt} />
+        <h3>Starting army</h3>
+        <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
         <h3>Run code</h3>
         <label className="setup-card">
           Enter a friend’s code to fight their sequence of foes (optional):{' '}
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="G2-1k5x9a" aria-label="Run code" maxLength={12} />
           {code.trim() !== '' && !parsed && <div role="alert">That code is not valid.</div>}
         </label>
-        <h3>Your court</h3>
-        <CourtPicker value={court} onChange={setCourt} />
-        <h3>Starting army</h3>
-        <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
         <div className="menu-buttons stacked">
           <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed })}><Icon name="play" />Begin the Run</button>
           {back}
