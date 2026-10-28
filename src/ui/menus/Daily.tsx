@@ -8,6 +8,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   match: DailyMatch
@@ -29,27 +30,27 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   return (
     <main className="app menu">
       <PageArt icon="sun" />
-      <h2>Daily Match</h2>
-      <p className="tagline">{dateLabel(match.date)}. The same game for everyone today; your first finished attempt is the one that counts.</p>
+      <h2>{t('daily.title')}</h2>
+      <p className="tagline">{t('daily.tagline', { date: dateLabel(match.date) })}</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}
       <ul className="setup-card">
         <li>{match.blurb}</li>
-        {event && <li>Seasonal event: <strong>{event.event.name}</strong>. {event.event.text} {event.daysLeft} {event.daysLeft === 1 ? 'day' : 'days'} left; adds to the Shard multiplier.</li>}
-        <li>Opponent: {PERSONALITIES[match.personality].name}, {match.difficulty}</li>
-        <li>You play the {match.court === 'solari' ? 'Solari' : 'Umbral'} court today.</li>
+        {event && <li>{t('daily.event')}<strong>{event.event.name}</strong>. {event.event.text} {t('daily.eventLeft', { days: t('common.day', { count: event.daysLeft }) })}</li>}
+        <li>{t('daily.opponent', { name: PERSONALITIES[match.personality].name, difficulty: match.difficulty })}</li>
+        <li>{t('daily.court', { court: match.court === 'solari' ? 'Solari' : 'Umbral' })}</li>
       </ul>
       <dl className="stats">
-        <div><dt>Today</dt><dd>{result ? `${result.won ? 'Won' : 'Lost'}, ${result.turns} rounds, ${result.lost} lost` : 'Not played'}</dd></div>
-        <div><dt>Streak</dt><dd>{streak} {streak === 1 ? 'day' : 'days'} (best {progress.daily.best})</dd></div>
+        <div><dt>{t('daily.today')}</dt><dd>{result ? t(result.won ? 'daily.won' : 'daily.lost', { turns: result.turns, lost: result.lost }) : t('common.notPlayed')}</dd></div>
+        <div><dt>{t('daily.streak')}</dt><dd>{t('daily.streakValue', { days: t('common.day', { count: streak }), best: progress.daily.best })}</dd></div>
       </dl>
       <div className="menu-buttons stacked">
         <button className={result ? undefined : 'primary'} onClick={onPlay}>
-          <Icon name="play" />{result ? 'Play Again (Not Scored)' : 'Play Today’s Match'}
+          <Icon name="play" />{result ? t('daily.playAgain') : t('daily.play')}
         </button>
         {result && (
-          <ShareButton title="Eclipse Court daily" label="Share Result" text={dailyShareText(match, dateLabel(match.date), result.won, result.turns, result.lost)}
+          <ShareButton title={t('daily.shareTitle')} label={t('daily.shareLabel')} text={dailyShareText(match, dateLabel(match.date), result.won, result.turns, result.lost)}
             link={() => challengeLink({ config: match.config, side: match.court })} />
         )}
         <BackButton onClick={onBack} />
