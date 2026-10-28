@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L5 done; L6 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L6 done; L7 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -40,7 +40,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L3 (done): mastery and achievements.** Per-area mastery tracks (Campaign, Scenarios, Puzzles, Gauntlet, Grand board, Online) with levels that pay Shards. About 25 new achievements, including review-based ones ("a game with no mistakes"), a no-loss tier clear, and speed goals. Three pinnable showcase badges on the Stats page. Needs L1 and L2.
 - **L4 (done): weekly challenge.** A seeded modifier-of-the-week match (for example "every square is a Hazard") reusing the daily plumbing, with a best-score board on the device and a shard reward. Needs L2.
 - **L5 (done): modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
-- **L6: ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
+- **L6 (done): ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
 - **L7: Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
 - **L8: editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
 - **L9: juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
@@ -78,3 +78,8 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/engine/reducer.ts`: `newGame` applies `edge` (extra HP on every piece of that court); `applyMove` ends the game on a one-sided kill from the sudden-death round on. Fog is display only: the AI still sees everything.
 - `src/engine/data/modifiers.ts` (+ test): `visibleTo`, `FOG_SIGHT`, the choices, and `shardMultiplier(config, human)` (fog +25%, sudden death +10%, +20% per head-start HP against the human, and +15/10/5% for a 15 s / 30 s / longer turn clock). `shardsForGame` takes the multiplier for the game part, not for achievements.
 - `src/engine/data/setups.ts`: `SetupChoice.fog / suddenDeath / headStart`. `SkirmishSetup.tsx` has a Twists section; `Board` takes `fogFor`, passed by `Game` only against the AI. The capture timer is the existing turn clock.
+
+## L6 file map
+- `src/engine/data/ladder.ts`: `LADDER_FOES` (5 personas x 3 difficulties, rated 770 to 1430), Elo maths (`expectedScore`, `kFactor` 40 for the first ten games then 24, `nextRating`), `RANKS`/`rankOf`, `suggestFoe`, `ladderConfig` (seeded random army, classic board, Solari).
+- `src/ladder.ts` (+ `ladder.test.ts`): store `eclipse-court:ladder` (rating from 1000, peak, record, last ten games); `recordLadder` pays 5 Shards per win and 30 for each new rank reached.
+- `src/ui/menus/Ladder.tsx`, reached from Battle; `App.tsx` game screen has `ladder` (foe id), non-resumable, rated in `finishGame` (abandoned games change nothing). Stats shows the rating tile once a game is played.

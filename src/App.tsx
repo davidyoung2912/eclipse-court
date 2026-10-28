@@ -16,6 +16,9 @@ import { dailyGame, dailyMatch, DAILY_COURT, isDailyMatch } from './engine/data/
 import { dailySeed } from './engine/data/setups'
 import { isWeeklyMatch, weeklyGame, weeklyMatch, weeklyScore, WEEKLY_COURT } from './engine/data/weekly'
 import { forWeek, recordWeekly, weeklySnapshot } from './weekly'
+import { foeById, ladderGame, LADDER_COURT } from './engine/data/ladder'
+import { recordLadder } from './ladder'
+import { Ladder } from './ui/menus/Ladder'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
 import { decodeRecord } from './engine/serialize'
@@ -73,6 +76,7 @@ type Screen =
   | { name: 'epilogue'; id: string; ending: EndingId }
   | { name: 'daily' }
   | { name: 'weekly' }
+  | { name: 'ladder' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
   | { name: 'stats' }
@@ -102,6 +106,8 @@ type Screen =
     scenario?: number
     /** A chapter of the story whose battle this is; story games are not resumable and touch no campaign progress. */
     story?: string
+    /** A ranked ladder game: the id of the opponent; not resumable. */
+    ladder?: string
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -322,8 +328,19 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'ladder')
+    return (
+      <Ladder report={report} onBack={() => setScreen({ name: 'battle' })}
+        onPlay={(id) => {
+          const foe = foeById(id)
+          if (!foe) return
+          setReport([])
+          setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007), actions: [] }, campaignIndex: null, ladder: id })
+        }} />
+    )
+
   if (screen.name === 'battle')
-    return <Battle onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onOnline={() => setScreen({ name: 'online' })} />
+    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onOnline={() => setScreen({ name: 'online' })} />
 
   if (screen.name === 'online')
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
@@ -446,7 +463,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -455,7 +472,7 @@ export default function App() {
     const weeklyToday = weeklyMatch()
     const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === WEEKLY_COURT
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
-    const transient = !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
+    const transient = !!ladder || !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -476,6 +493,12 @@ export default function App() {
       if (settled.summary) rememberCourt(human)
       let extra: ReturnType<typeof recordWeekly> | null = null
       if (weekly && stats && settled.summary) extra = recordWeekly(weeklyToday.week, weeklyScore(settled.summary), settled.summary.won)
+      const foe = ladder ? foeById(ladder) : undefined
+      if (foe && stats && settled.summary) {
+        const rated = recordLadder(foe, settled.summary.won ? 'win' : settled.summary.draw ? 'draw' : 'loss')
+        earnShards(settled.shards + rated.shards)
+        return { ...settled, lines: [...rated.lines, ...settled.lines] }
+      }
       earnShards(settled.shards + (extra?.shards ?? 0))
       return extra ? { ...settled, lines: [...extra.lines, ...settled.lines] } : settled
     }
@@ -553,6 +576,7 @@ export default function App() {
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
       : daily ? { label: 'Daily match', kind: 'daily' }
       : weekly ? { label: 'Weekly challenge', kind: 'daily' }
+      : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish' }
       : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
     return (
@@ -563,7 +587,7 @@ export default function App() {
         controllers={hotSeat ? HOT_SEAT
           : online ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
-          : versusAi(human, difficulty, daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
+          : versusAi(human, difficulty, ladder ? foeById(ladder)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
         context={context}
@@ -600,7 +624,7 @@ export default function App() {
           if (done.summary) saveProgress(done.progress)
           setReport(done.lines)
           if (scenario !== undefined) setCampaignTab('scenarios')
-          setScreen(daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
+          setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
       </>

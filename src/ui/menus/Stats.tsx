@@ -4,6 +4,8 @@ import { dailySeed } from '../../engine/data/setups'
 import { overall, percent, sections, totals } from '../../statsModel'
 import { storySnapshot, subscribeStory } from '../../story'
 import { claimMastery, levelReward, masterySnapshot, SHOWCASE_SLOTS, standings, subscribeMastery, togglePin } from '../../mastery'
+import { ladderSnapshot, subscribeLadder } from '../../ladder'
+import { rankOf } from '../../engine/data/ladder'
 import { Bar } from './Bar'
 import { shareLink } from '../../share'
 import { ShareButton } from '../ShareButton'
@@ -24,13 +26,15 @@ interface Props {
 export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
+  const ladder = useSyncExternalStore(subscribeLadder, ladderSnapshot)
   const [claimed, setClaimed] = useState<number | null>(null)
   const tracks = standings(progress, mastery)
   const owed = tracks.reduce((n, t) => n + t.owed, 0)
   const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
   const list = sections(progress, story, dailySeed())
   const done = overall(list)
-  const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) }]
+  const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) },
+    ...(ladder.games > 0 ? [{ label: `Ladder rating (${rankOf(ladder.rating)})`, value: String(ladder.rating) }] : [])]
   return (
     <main className="app menu">
       <PageArt icon="trophy" />
