@@ -65,7 +65,11 @@ body {
 .sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }
 .acting { fill: rgba(60, 130, 255, 0.55); pointer-events: none; }
 .sq.fixed { opacity: 0.85; }
-.beacon { fill: none; stroke: var(--solari-gold); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
+.beacon { fill: none; stroke: var(--solari-gold); pointer-events: none; transform-box: fill-box; transform-origin: center;
+  animation: beacon-spin 24s linear infinite, beacon-fade 4s ease-in-out infinite; stroke-width: 0.06; stroke-dasharray: 0.12 0.08; }
+@keyframes beacon-spin { to { transform: rotate(360deg); } }
+@keyframes beacon-fade { 0%, 100% { stroke: #ffd45a; } 50% { stroke: #1a2a8a; } }
+@media (prefers-reduced-motion: reduce) { .beacon { animation: none; } }
 .cell { pointer-events: none; }
 .cell-tint { fill: var(--cell); fill-opacity: 0.18; stroke: var(--cell); stroke-width: 0.03; stroke-opacity: 0.8; }
 .cell-glyph { fill: var(--cell); stroke: var(--cell); stroke-width: 0.06; stroke-linejoin: round; stroke-linecap: round; paint-order: stroke; }
@@ -368,7 +372,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 
 /* Selected-piece summary: a fixed-height strip under the board, so selecting never shifts the layout */
 .piece-card {
-  flex: 0 0 auto; height: 5.6rem; overflow: hidden; padding: 6px 10px; border-radius: 10px;
+  flex: 0 0 auto; height: 5.6rem; overflow: hidden; padding: 1px 10px 3px; border-radius: 10px;
   background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35); font-size: 0.72rem; line-height: 1.35;
 }
 .piece-card.solari { border-color: rgba(232, 182, 74, 0.6); }
@@ -376,7 +380,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .piece-card.empty p { margin: 0; }
 .piece-card p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .piece-card i { font-style: normal; opacity: 0.6; display: inline-block; min-width: 3.4em; }
-.piece-card header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; white-space: nowrap; }
+.piece-card header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; white-space: nowrap; }
 .piece-card header b { font-size: 0.9rem; }
 .piece-card.solari header b { color: var(--solari-gold); }
 .piece-card.umbral header b { color: #b9a2ff; }
