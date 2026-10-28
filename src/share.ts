@@ -12,11 +12,13 @@ export type Shared =
   | { kind: 'replay'; record: GameRecord }
   /** A game played by link: the same record as a replay, but meant to be continued. */
   | { kind: 'turn'; record: GameRecord }
+  /** A finished game to watch move by move: the same record as a replay, opened as a spectator. */
+  | { kind: 'watch'; record: GameRecord }
 
 const CODE = /^[A-Za-z0-9_-]+$/
 
-/** A link to this page that opens `code` as a challenge (`c`), a replay (`r`) or a turn of a game by link (`g`). */
-export function shareLink(kind: 'c' | 'r' | 'g', code: string): string {
+/** A link to this page that opens `code` as a challenge (`c`), a replay (`r`), a spectated game (`w`) or a turn of a game by link (`g`). */
+export function shareLink(kind: 'c' | 'r' | 'w' | 'g', code: string): string {
   const { origin, pathname } = window.location
   return `${origin}${pathname}#${kind}=${code}`
 }
@@ -24,6 +26,8 @@ export function shareLink(kind: 'c' | 'r' | 'g', code: string): string {
 export const challengeLink = (challenge: Challenge) => shareLink('c', encodeChallenge(challenge))
 
 export const replayLink = (record: GameRecord) => shareLink('r', encodeRecord(record))
+
+export const watchLink = (record: GameRecord) => shareLink('w', encodeRecord(record))
 
 export const turnLink = (record: GameRecord) => shareLink('g', encodeRecord(record))
 
@@ -34,14 +38,14 @@ export const turnLink = (record: GameRecord) => shareLink('g', encodeRecord(reco
 export function parseShared(text: string): Shared | null {
   const trimmed = text.trim()
   const hash = trimmed.includes('#') ? trimmed.slice(trimmed.indexOf('#') + 1) : trimmed
-  const pair = /^([crg])=(.*)$/.exec(hash)
+  const pair = /^([crgw])=(.*)$/.exec(hash)
   const code = pair ? pair[2] : hash
   if (!CODE.test(code)) return null
   if (pair?.[1] !== 'c') {
     const record = decodeRecord(code)
-    if (record) return { kind: pair?.[1] === 'g' ? 'turn' : 'replay', record }
+    if (record) return { kind: pair?.[1] === 'g' ? 'turn' : pair?.[1] === 'w' ? 'watch' : 'replay', record }
   }
-  if (pair?.[1] !== 'r' && pair?.[1] !== 'g') {
+  if (pair?.[1] !== 'r' && pair?.[1] !== 'g' && pair?.[1] !== 'w') {
     const challenge = decodeChallenge(code)
     if (challenge) return { kind: 'challenge', challenge }
   }

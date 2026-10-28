@@ -37,7 +37,7 @@ import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { cellAt } from './engine/rules/cells'
 import { CellLegend } from './ui/board/CellLegend'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
-import { replayLink } from './share'
+import { replayLink, watchLink } from './share'
 import { ShareButton } from './ui/ShareButton'
 import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
@@ -539,6 +539,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
             {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
             {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
             {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
+            {online && !dropped && history.length > 1 && <ShareButton title="Watch my Eclipse Court game" label="Copy Watch Link" link={() => watchLink(recordOf(history))} />}
             {online && net && net.rematch !== 'none' && (
               <button disabled={net.rematch === 'sent'} onClick={() => session!.rematch()}>
                 <Icon name="undo" />{net.rematch === 'sent' ? 'Waiting for them' : net.rematch === 'asked' ? 'Accept Rematch' : 'Rematch'}

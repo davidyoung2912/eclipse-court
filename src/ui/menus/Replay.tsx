@@ -16,6 +16,8 @@ interface Props {
   record: GameRecord
   /** Start playing at once, as a replay opened from a link does. */
   autoplay?: boolean
+  /** A spectator's view from a watch link: says so, and leaves out playing on from a position. */
+  watch?: boolean
   onBack: () => void
   /** Take over the game from the position on show, as `court`; the replay offers it for a position still in play. */
   onPlayOn?: (state: GameState, court: Court) => void
@@ -48,7 +50,7 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
 }
 
 /** A finished game played back from its action log, one position at a time. */
-export function Replay({ record, autoplay, onBack, onPlayOn, onReviewed }: Props) {
+export function Replay({ record, autoplay, watch, onBack, onPlayOn, onReviewed }: Props) {
   const steps = useMemo(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }], [record])
   const last = steps.length - 1
   const [at, setAt] = useState(0)
@@ -126,6 +128,7 @@ export function Replay({ record, autoplay, onBack, onPlayOn, onReviewed }: Props
       <Board state={state} selected={null} moves={[]} onSquare={() => {}}
         focus={!showBetter && to ? { mover: action && action.type === 'move' ? action.pieceId : undefined } : undefined}
         hint={showBetter && bestHint ? { from: bestHint.from, to: bestHint.to, square: bestHint.square, pieceId: bestHint.mover } : to ? { to } : undefined} />
+      {watch && <p className="tagline" role="status">Watching a finished game</p>}
       <p className="status">{status}</p>
       {mine && (
         <p className={`review-note grade-${mine.grade}`} role="status">

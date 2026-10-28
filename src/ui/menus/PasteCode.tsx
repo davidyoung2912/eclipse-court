@@ -18,7 +18,7 @@ export function PasteCode({ onOpen, onBack }: Props) {
     <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>Paste a Code</h2>
-      <p className="tagline">Paste a challenge or replay link, or the code after the # sign.</p>
+      <p className="tagline">Paste a challenge, replay or watch link, or the code after the # sign.</p>
       <textarea className="code-box" rows={5} value={text} spellCheck={false} aria-label="Link or code"
         onChange={(e) => { setText(e.target.value); setError(false) }} />
       {error && <p role="alert">That is not a valid code for this version of the game.</p>}

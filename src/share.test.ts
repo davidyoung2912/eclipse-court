@@ -97,4 +97,10 @@ describe('turn links', () => {
     expect(parseShared(`#r=${c}`)?.kind).toBe('replay')
     expect(parseShared(c)?.kind).toBe('replay')
   })
+
+  it('open a watch link as a spectated game, and refuse it as a challenge', () => {
+    const c = encodeRecord(record)
+    expect(parseShared(`#w=${c}`)?.kind).toBe('watch')
+    expect(parseShared(`w=${encodeChallenge(challenge)}`)).toBeNull()
+  })
 })

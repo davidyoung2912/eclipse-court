@@ -98,7 +98,7 @@ type Screen =
   | { name: 'practice' }
   | { name: 'settings' }
   | { name: 'collection' }
-  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' | 'mail'; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
+  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' | 'mail'; /** Opened from a watch link: a spectator's view, which cannot take over the game. */ watch?: boolean; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
   /** Games played by link: the list, with a move that arrived by link waiting to be accepted. */
@@ -186,6 +186,7 @@ function setClassicNext(on: boolean) {
 const sharedScreen = (shared: Shared): Screen =>
   shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge }
     : shared.kind === 'turn' ? { name: 'mail', incoming: shared.record }
+    : shared.kind === 'watch' ? { name: 'replay', record: shared.record, from: 'menu', watch: true }
     : { name: 'replay', record: shared.record, from: 'menu' }
 
 /** Reads a `#c=`, `#r=` or `#g=` link out of the address, then removes it so a reload does not reopen it. */
@@ -432,7 +433,7 @@ export default function App() {
       saveProgress(result.progress)
       return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
     }
-    return <Replay record={screen.record} onPlayOn={(state, court) => setScreen({ name: 'game', human: court, difficulty: 'normal', record: { initial: state, actions: [] }, campaignIndex: null, tryout: true })} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
+    return <Replay record={screen.record} watch={screen.watch} onPlayOn={screen.watch ? undefined : (state, court) => setScreen({ name: 'game', human: court, difficulty: 'normal', record: { initial: state, actions: [] }, campaignIndex: null, tryout: true })} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
   }
 
   if (screen.name === 'paste')
