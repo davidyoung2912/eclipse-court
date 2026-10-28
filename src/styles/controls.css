@@ -1,0 +1,127 @@
+/* Buttons sit flat on a soft shadow; only the primary action and a switched-on state glow (and only the primary pulses). */
+.buttons button, .menu-buttons button, .spell, .choice {
+  --glow: 154, 124, 240;
+  box-shadow: var(--shadow-1), var(--edge);
+  transition: box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.buttons button.primary, .menu-buttons button.primary, .choice.on, .buttons button.on {
+  --glow: 255, 205, 90;
+  box-shadow: 0 0 14px rgba(var(--glow), 0.55), inset 0 0 8px rgba(var(--glow), 0.2);
+}
+.buttons button.primary, .menu-buttons button.primary { animation: btn-pulse 2.2s ease-in-out infinite; }
+.buttons button:not(:disabled):hover, .menu-buttons button:hover, .spell:not(:disabled):hover, .choice:not(:disabled):hover {
+  border-color: rgba(var(--glow), 0.9); box-shadow: var(--shadow-2), var(--edge);
+}
+.buttons button.primary:not(:disabled):hover, .menu-buttons button.primary:hover, .choice.on:not(:disabled):hover {
+  box-shadow: 0 0 18px rgba(var(--glow), 0.85), inset 0 0 10px rgba(var(--glow), 0.35);
+}
+.buttons button:not(:disabled):active, .menu-buttons button:active, .spell:not(:disabled):active { transform: scale(0.97); }
+:focus-visible { outline: 2px solid var(--solari-cream); outline-offset: 2px; }
+button:disabled { box-shadow: none !important; animation: none !important; }
+@keyframes btn-pulse {
+  50% { box-shadow: 0 0 20px rgba(var(--glow), 0.9), inset 0 0 12px rgba(var(--glow), 0.4); }
+}
+
+.duel {
+  position: fixed; inset: 0; z-index: 10; display: flex; justify-content: center;
+  background: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(122, 92, 200, 0.3), transparent 70%), var(--bg);
+}
+.duel-frame {
+  display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 560px; height: 100%;
+  padding: calc(env(safe-area-inset-top) + 14px) 12px calc(env(safe-area-inset-bottom) + var(--bottom-gap));
+}
+.duel-head { position: relative; text-align: center; padding: 0 44px; }
+.duel-head h2 {
+  margin: 0 0 4px; font-family: var(--display); font-weight: 700; font-size: var(--fs-lg);
+  letter-spacing: 0.06em; color: var(--solari-cream);
+}
+.duel-head h2 span { font-size: 0.8em; opacity: 0.6; font-style: italic; }
+.duel-head p { margin: 0; font-size: var(--fs-xs); line-height: 1.35; opacity: 0.8; }
+.duel-timer {
+  position: absolute; top: 0; right: 0; min-width: 40px; padding: 4px 8px; border-radius: 999px;
+  border: 1px solid var(--umbral-violet); background: rgba(29, 23, 69, 0.9); font-weight: 700; font-size: var(--fs-sm);
+}
+.duel-skip {
+  position: absolute; top: 0; left: 0; padding: 4px 12px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 700;
+  border: 1px solid var(--umbral-violet); background: rgb(29, 23, 69); color: inherit;
+}
+.duel-stage {
+  position: relative; flex: 1; min-height: 0; border-radius: 14px; overflow: hidden;
+  border: 2px solid var(--umbral-violet); box-shadow: 0 0 18px rgba(122, 92, 200, 0.5), inset 0 0 24px rgba(0, 0, 0, 0.5);
+  background: #0c0920;
+}
+.duel-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.duel-banner {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font-size: 2.4rem; font-weight: 800; text-shadow: 0 2px 12px #000;
+}
+.duel-controls { flex: 0 0 auto; }
+.duel-info { flex: 0 0 auto; padding: 10px 14px; border-radius: 10px; background: rgb(33, 26, 78); border: 1px solid rgba(255, 255, 255, 0.14); }
+.duel-info h3 { margin: 0 0 4px; font-weight: 700; font-size: var(--fs-sm); letter-spacing: 0.06em; text-transform: uppercase; }
+.duel-info ul { margin: 0; padding-left: 18px; font-size: var(--fs-sm); line-height: 1.5; opacity: 0.9; }
+.duel-countdown {
+  position: absolute; left: 50%; top: 50%; z-index: 5; pointer-events: none; min-width: 120px; padding: 14px 34px; border-radius: 14px;
+  text-align: center; font-family: var(--display); font-size: 2.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  transform: translate(-50%, -50%); animation: count-fade 0.75s ease-in-out forwards;
+}
+/* Coloured for the side whose turn it is: light for Solari, dark for Umbral (shared by the turn banner and the named moments) */
+.duel-countdown.solari, .turn-banner.solari, .moment.solari { background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; }
+.duel-countdown.umbral, .turn-banner.umbral, .moment.umbral { background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; }
+.duel-countdown.solari, .turn-banner.solari { border: 2px solid var(--solari-cream); box-shadow: 0 0 28px rgba(232, 182, 74, 0.6); }
+.duel-countdown.umbral, .turn-banner.umbral { border: 2px solid var(--umbral-violet); box-shadow: 0 0 28px rgba(122, 92, 200, 0.7); }
+@keyframes count-fade {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  25%, 65% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+.duel-pad {
+  display: flex; align-items: stretch; gap: 12px; height: 128px; padding: 8px; border-radius: 14px;
+  background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35);
+}
+.duel-pad.mirror { flex-direction: row-reverse; }
+.stick-zone {
+  position: relative; flex: 1; overflow: hidden; border-radius: 10px; touch-action: none;
+  background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2);
+  display: grid; place-items: center;
+}
+.stick-idle { font-size: var(--fs-xs); opacity: 0.5; pointer-events: none; }
+.stick-base, .stick-knob { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.stick-base { width: 96px; height: 96px; border: 2px solid rgba(255, 255, 255, 0.35); }
+.stick-knob { width: 46px; height: 46px; background: rgba(255, 255, 255, 0.45); }
+.attack-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  flex: 0 0 112px; border-radius: 14px; border: 2px solid var(--solari-cream); background: rgba(232, 182, 74, 0.35);
+  color: var(--fg); font-size: var(--fs-md); font-weight: 700; touch-action: none;
+}
+.attack-btn.held { background: rgba(232, 182, 74, 0.8); transform: scale(0.97); }
+.options { display: flex; gap: 12px; justify-content: center; font-size: var(--fs-xs); margin-bottom: 6px; }
+
+.spells { margin-bottom: 8px; }
+.spell-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.spell {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--solari-gold);
+  background: var(--umbral-indigo); color: var(--solari-cream); font-size: var(--fs-xs);
+}
+.spell.active { background: var(--solari-gold); color: #1b1740; }
+.spell:disabled { opacity: 0.3; }
+.spell-hint { margin: 6px 0 0; text-align: center; font-size: var(--fs-xs); opacity: 0.8; }
+.piece.bound circle:first-of-type { stroke-dasharray: 0.1 0.06; }
+
+.confirm {
+  position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + var(--bottom-gap)); z-index: 5;
+  width: calc(100% - 32px); max-width: 440px; margin: 0 auto;
+  padding: 10px 12px; background: #1d1745;
+  border: 2px solid var(--umbral-violet); border-radius: 14px; box-shadow: 0 0 18px rgba(122, 92, 200, 0.6);
+}
+.confirm-title { margin: 0 0 6px; font-weight: 600; font-size: var(--fs-sm); text-align: center; }
+.confirm .buttons button { padding: 9px 8px; font-size: var(--fs-sm); }
+.odds { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #000; }
+.odds span { flex-basis: 0; }
+.odds-a.solari, .odds-d.solari { background: var(--solari-gold); }
+.odds-a.umbral, .odds-d.umbral { background: var(--umbral-violet); }
+.odds-o { background: #6b6b7e; }
+.odds-text { margin: 5px 0 8px; text-align: center; font-size: var(--fs-xs); line-height: 1.3; }
+.odds-detail { margin: 0 0 8px; padding: 0; list-style: none; text-align: center; font-size: var(--fs-xs); line-height: 1.3; opacity: 0.85; }
+.buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
+
+.menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-inline: 24px; padding-top: max(env(safe-area-inset-top), 12px); }

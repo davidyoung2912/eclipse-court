@@ -1,0 +1,83 @@
+:root {
+  --reset-bg: #5c1913;
+  --reset-border: #b84432;
+  --reset-glow: 184, 68, 50;
+  --back-bg: #3d4a58;
+  --back-border: #9fb4c8;
+  --back-glow: 159, 180, 200;
+  --tip-bg: linear-gradient(160deg, rgba(12, 98, 104, 0.97), rgba(7, 58, 66, 0.97));
+  --tip-border: #4fd9c8;
+  --tip-accent: #8ff3e4;
+  --display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --body: 'Nunito', ui-rounded, 'Trebuchet MS', system-ui, sans-serif;
+  --solari-gold: #e8b64a;
+  --solari-cream: #fbf1d4;
+  --umbral-indigo: #2b2468;
+  --umbral-violet: #7a5cc8;
+  --bg: #14102b;
+  --fg: #f4eefc;
+  /* Constant breathing room under every screen's last control. */
+  --bottom-gap: 20px;
+  /* Elevation: panels sit on a soft dark shadow with a faint top edge; glow is kept for the primary action and the active state. */
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --radius-lg: 14px;
+  /* Motion language: one curve and three durations; ambient loops keep their own tempo. */
+  --ease: cubic-bezier(0.3, 0, 0.2, 1);
+  --t-fast: 140ms;
+  --t-mid: 240ms;
+  --t-slow: 420ms;
+  /* Type scale: five steps; one-off display sizes (banners, countdown) stay local. Cinzel (--display) is for headings and names, not small labels. */
+  --fs-xs: 0.8rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.4rem;
+  --fs-xl: 2.1rem;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 8px calc(env(safe-area-inset-bottom) + var(--bottom-gap));
+  gap: 8px;
+}
+
+.hud { position: relative; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; }
+.hud-round { display: flex; flex-direction: column; font-weight: 600; }
+.hud-note { font-size: var(--fs-xs); font-weight: 400; opacity: 0.85; max-width: 45vw; line-height: 1.25; }
+.doom { fill: #b3202a; opacity: 0.38; pointer-events: none; }
+.turn { font-size: var(--fs-xs); font-weight: 400; display: inline-block; transform-origin: left center; animation: turn-swing 360ms var(--ease) both; }
+@keyframes turn-swing { from { opacity: 0; transform: perspective(60px) rotateX(-80deg) translateY(-4px); } 60% { opacity: 1; transform: perspective(60px) rotateX(12deg); } to { transform: none; } }
+.turn-solari { color: var(--solari-gold); }
+.turn-umbral { color: var(--umbral-violet); }
+
+.dial { position: relative; display: flex; gap: 6px; align-items: center; }
+.dial span {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: var(--fs-xs); font-weight: 700; color: #1b1740;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.dial-now { width: 38px !important; height: 38px !important; box-shadow: 0 0 10px color-mix(in srgb, var(--hour, #ffdc8c) 60%, transparent); }
+.dial-next { opacity: 0.85; }
+
+.board { overflow: visible; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; width: 100%; max-height: 100%; aspect-ratio: 1; flex: 0 1 auto; touch-action: manipulation; }
+.sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }

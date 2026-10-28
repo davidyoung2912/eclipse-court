@@ -39,7 +39,7 @@ Each as a selector list, subject to the move rule:
 
 21 selectors are defined twice (`.hud`, `.dial`, `.dial-now`, `.board`, `.tray`, `.main-menu`, `.lesson`, `.spell`, `.attack-btn`, `.row-pick button`, `.choice.won`, `.menu h3`, `.campaign .choice`, `.duel-brief-cards`, the `.menu-art` animation overrides, and so on). Merge each into the first definition where the move rule allows, dropping declarations the later copy overrides (for example `.dial-now`'s dead `box-shadow`). Where a merge is unsafe, leave both and add a comment.
 
-## Phase 5: only if asked
+## Phase 5: done (parts 1 and 3; part 2 dropped by decision)
 
 - Make `prefers-reduced-motion` behave like the in-app setting (one blanket rule instead of 26 blocks). This changes behaviour for OS-level users, so it needs a decision.
 - Name repeated colours/radii as tokens (maintainability only; makes the CSS bigger).
@@ -51,3 +51,6 @@ Each as a selector list, subject to the move rule:
 - [x] Phase 2: done. 38 `.cstage` rules joined into the 38 root rules (ledger multiset identical; only order moved, and nothing between the positions touches `.pane-0/1/2`, `.sq`, `.glow`).
 - [x] Phase 3: done. Ledger multiset identical to HEAD (only order moved; checked that nothing between the old and new positions sets the same properties on the moved selectors). Joined: the three delay ladders, `.menu-buttons button`/`.tabs button` (+ `.on`/`.primary`), the tip/coach button, h4 and p rules, and the Solari/Umbral plates of `.duel-countdown`, `.turn-banner` and `.moment` (border and glow stay per rule).
 - [x] Phase 4: done. 1717 to 1701 lines; source 132,032 to 129,222 bytes (cumulative from the baseline 134,344). Merged `.hud`, `.dial`, `.dial-now` (dropped its dead `box-shadow`), `.board`, `.tray`, `.main-menu`, `.lesson`, the `.choice.on`/`.primary` pair, `.choice.won` (its `--glow` moved down next to `border-color`, so it still follows `.choice.on`), `.attack-btn`, `.menu h3`, `.campaign .choice`, `.row-pick button`, `.duel-brief-cards`, and the five `.menu-art` animation overrides (each folded into one `animation` shorthand with the final durations and names). Left split on purpose: `.spell { gap: 5px }`, which must follow the shared `gap: 8px` rule above it (commented). Ledger diff showed only the dead `.dial-now` shadow and the folded `.menu-art` animation lines.
+- [x] Phase 5: done. Part 1: the 26 `prefers-reduced-motion` blocks are replaced by one blanket `@media` rule that mirrors the in-app `[data-motion='reduced']` rule, plus one list of the effects hidden outright (`.fall`, `.win-burst`, `.eclipse-cinema`, `.kill-cam`, `.confetti`) and `.moment`'s centring transform. OS-level users now get the same result as the in-app setting (`.fall` and `.win-burst`-style effects included). Part 3: `src/index.css` is now ten `@import` lines over `src/styles/{base,board,controls,shell,menu-pages,setup,game-ui,wide,showcase,motion}.css`, contiguous slices in the original order; the concatenated ledger is identical to the pre-split file. Part 2 (colour/radius tokens) was not done, by decision. Built CSS 104.23 kB, 22.48 kB gzipped.
+
+**Plan complete.**

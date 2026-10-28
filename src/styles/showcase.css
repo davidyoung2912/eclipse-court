@@ -1,0 +1,153 @@
+/* Collection showcase: a preview stage, rarity frames and the unlock flash */
+
+/* Codex frames on the story scenes */
+.cstage { margin: 6px 0 12px; padding: 12px; border-radius: var(--radius-lg, 14px); border: 2px solid var(--rarity, rgba(255, 255, 255, 0.25)); background: rgba(0, 0, 0, 0.28); box-shadow: var(--shadow-2); text-align: center; position: sticky; top: 0; z-index: 3; backdrop-filter: blur(6px); }
+.cstage-view { min-height: 110px; display: flex; align-items: center; justify-content: center; animation: stage-in var(--t-mid) var(--ease) both; }
+.cstage-name { margin: 6px 0 0; font-family: var(--display); }
+.rarity-tag { font-family: var(--body); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rarity); margin-right: 6px; }
+.show-pieces { width: min(100%, 320px); }
+.show-board { width: 120px; max-height: 120px; }
+.show-fall { width: 160px; }
+.show-codex { width: 110px; height: 110px; display: grid; place-items: center; border: 2px solid; border-radius: 12px; }
+.show-codex svg { width: 70%; }
+.show-play { margin-top: 4px; padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.3); background: transparent; color: var(--fg); font-size: var(--fs-sm); }
+main .cstage[data-codex='gilt'] .show-codex { border-color: #e8b64a; box-shadow: 0 0 14px rgba(232, 182, 74, 0.4); }
+main .cstage[data-codex='moon'] .show-codex { border-color: #9ec8f0; box-shadow: 0 0 14px rgba(158, 200, 240, 0.4); }
+main .cstage[data-codex='laurel'] .show-codex { border-color: #b8c85a; box-shadow: 0 0 14px rgba(214, 190, 80, 0.4); }
+main .cstage[data-codex='ember'] .show-codex { border-color: #f07a4a; box-shadow: 0 0 14px rgba(240, 122, 74, 0.4); }
+main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255, 0.3); }
+@keyframes stage-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+
+.rarity-common { --rarity: #9aa0b4; }
+.rarity-uncommon { --rarity: #6fe08a; }
+.rarity-rare { --rarity: #6fb4ff; }
+.rarity-epic { --rarity: #c58cff; }
+.rarity-legend { --rarity: #ffc94a; }
+.choice-row { display: flex; gap: 6px; align-items: stretch; position: relative; border-radius: 12px; border-left: 4px solid var(--rarity); }
+.choice-row .choice { flex: 1; min-width: 0; }
+.preview-btn { flex: none; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: var(--fg); font-size: var(--fs-xs); }
+.preview-btn[aria-pressed='true'] { border-color: var(--rarity); color: var(--rarity); }
+.rarity-legend.choice-row { background: linear-gradient(90deg, rgba(255, 201, 74, 0.12), transparent 60%); }
+.choice-row.unlocked { animation: reveal-flip var(--flip, 600ms) var(--ease) both; }
+.choice-row.unlocked::after { content: ''; position: absolute; inset: -2px; border-radius: 14px; border: 2px solid var(--rarity); pointer-events: none; animation: unlock var(--t-slow) var(--ease) both; }
+@keyframes reveal-flip { 0% { transform: perspective(600px) rotateX(90deg); opacity: 0; } 70% { transform: perspective(600px) rotateX(-8deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes unlock { 0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 var(--rarity); } 100% { opacity: 0; transform: scale(1.04); box-shadow: 0 0 28px 8px var(--rarity); } }
+.reveal-spark { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--rarity); box-shadow: 0 0 8px var(--rarity); pointer-events: none; animation: reveal-spark calc(var(--flip, 600ms) + 300ms) ease-out both; }
+@keyframes reveal-spark { 0% { opacity: 1; transform: rotate(var(--angle)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(90px); } }
+
+/* First-run coach-marks: a ring on the real element and a callout beside it */
+.coach { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.coach-ring {
+  position: fixed; border-radius: 14px; border: 2px solid var(--tip-accent);
+  box-shadow: 0 0 0 9999px rgba(6, 4, 18, 0.55), 0 0 14px rgba(79, 217, 200, 0.6);
+  transition: top var(--t-mid) var(--ease), left var(--t-mid) var(--ease), width var(--t-mid) var(--ease), height var(--t-mid) var(--ease);
+}
+.coach-bubble {
+  position: fixed; left: 20px; right: 20px; max-width: 420px; margin: 0 auto; pointer-events: auto; text-align: left;
+  padding: 12px 14px 10px; border-radius: 14px; background: var(--tip-bg); border: 1px solid var(--tip-border);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); animation: tip-in var(--t-mid) var(--ease) both;
+}
+.coach-bubble .tip-foot .coach-skip { background: transparent; color: var(--tip-accent); border-color: transparent; margin-right: auto; }
+.duel-brief {
+  position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
+  padding: 10px; border: 0; color: inherit; font: inherit; cursor: pointer; background: rgba(15, 11, 40, 0.82); animation: count-fade-in 0.3s ease-out;
+}
+.duel-brief-cards { position: relative; display: flex; gap: 10px; width: 100%; max-width: 440px; }
+.duel-brief-card { flex: 1; min-width: 0; padding: 10px; border-radius: 12px; text-align: left; border: 2px solid var(--umbral-violet); background: rgba(29, 23, 69, 0.9); }
+.duel-brief-card.solari { border-color: var(--solari-cream); }
+.duel-brief-card h3 { margin: 0; font-weight: 700; font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+.duel-brief-card p { margin: 2px 0 0; }
+.duel-brief-name { font-family: var(--display); font-size: var(--fs-md); text-transform: capitalize; }
+.duel-brief-role { font-size: var(--fs-xs); opacity: 0.8; }
+.duel-brief-hp { height: 6px; margin: 8px 0; border-radius: 3px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+.duel-brief-hp span { display: block; height: 100%; background: #6fd08c; }
+.duel-brief-card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 0; font-size: var(--fs-xs); }
+.duel-brief-card dt { opacity: 0.7; }
+.duel-brief-card dd { margin: 0; text-align: right; font-weight: 600; }
+.duel-brief-hint { font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+@keyframes count-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* A named opponent's speech bubble during a fight */
+.persona-bubble {
+  display: flex; align-items: center; gap: 10px; width: 100%; max-width: 420px; margin: 0 auto; padding: 6px 12px 6px 6px;
+  text-align: left; font: inherit; font-size: var(--fs-sm); line-height: 1.3; color: #e9e3ff; cursor: pointer;
+  background: rgba(30, 22, 64, 0.92); border: 1px solid rgba(205, 191, 255, 0.5); border-radius: 14px;
+  animation: bubble-in 0.25s ease-out;
+}
+.persona-bubble-face { flex: none; width: 36px; height: 43px; }
+/* Leaded-glass frame: an arched pane, a house tint, lead lines and a corner highlight over the picture. */
+.persona-frame { --tint: 154, 124, 240; position: relative; display: block; width: 36px; height: 43px; overflow: hidden; border-radius: 50% 50% 14% 14% / 38% 38% 10% 10%; border: 1.5px solid #3a2f5a; box-shadow: 0 0 0 1px rgba(205, 191, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.5); background: #120d2a; }
+.persona-frame[data-house="solari"] { --tint: 232, 182, 74; }
+.persona-frame[data-house="umbral"] { --tint: 106, 76, 192; }
+.persona-frame[data-house="marches"] { --tint: 138, 150, 160; }
+.persona-frame[data-house="hour"] { --tint: 74, 166, 184; }
+.persona-frame .persona-photo { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; border: 0; border-radius: 0; }
+.persona-frame::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(var(--tint), 0.22); mix-blend-mode: soft-light; }
+.persona-frame::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.45), transparent 22%),
+    linear-gradient(90deg, transparent calc(50% - 0.75px), rgba(20, 14, 40, 0.75) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(0deg, transparent calc(38% - 0.75px), rgba(20, 14, 40, 0.75) calc(38% - 0.75px) calc(38% + 0.75px), transparent calc(38% + 0.75px)); }
+.persona-bubble-text b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
+@keyframes bubble-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.persona-greet, .persona-farewell { font-size: var(--fs-sm); line-height: 1.3; color: #e9e3ff; }
+.persona-greet { display: flex; align-items: center; gap: 10px; max-width: 420px; padding: 6px 12px 6px 6px; background: rgba(30, 22, 64, 0.6); border: 1px solid rgba(205, 191, 255, 0.35); border-radius: 14px; }
+.persona-greet p { margin: 0; }
+.persona-greet b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
+.persona-farewell { margin: 6px 0 0; text-align: center; }
+.persona-farewell b { margin-right: 6px; color: #cdbfff; }
+
+/* Light forecast: a small arrow on a square that will lighten (up) or darken (down) next round. */
+.forecast { pointer-events: none; stroke-width: 0.03; }
+.forecast.lit { fill: #fff6cf; stroke: #3a2410; }
+.forecast.dim { fill: #3b2d86; stroke: #e4d8ff; }
+.odds-tag.next { fill: #d7ccff; }
+
+/* Eclipse chip: rounds left before the Eclipse falls; violet on the last round. */
+.eclipse-chip { align-self: flex-start; margin-top: 2px; padding: 1px 8px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; font-size: var(--fs-xs); font-weight: 500; }
+.eclipse-chip.soon { background: #3b2d86; border-color: #cdbfff; color: #fff; }
+
+/* Duel versus intro: the two cards slide in from opposite sides and meet at a "VS" */
+.duel-brief-card:first-child { animation: brief-from-left 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.duel-brief-card:last-child { animation: brief-from-right 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) 0.08s both; }
+.duel-brief-cards::after {
+  content: 'VS'; position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 2px 8px; border-radius: 999px;
+  font-family: var(--display); font-size: var(--fs-xs); letter-spacing: 0.1em; background: #120d2a; border: 2px solid var(--solari-cream);
+  animation: brief-vs 0.35s ease-out 0.4s both;
+}
+@keyframes brief-from-left { from { transform: translateX(-60%); opacity: 0; } }
+@keyframes brief-from-right { from { transform: translateX(60%); opacity: 0; } }
+@keyframes brief-vs { from { transform: scale(2.2); opacity: 0; } }
+
+/* Eclipse and spell spectacle: the cinematic, each spell's charge, bolt or beam and bloom (the beacon pickup flight is drawn in script) */
+.spell-fx * { fill: none; stroke: none; }
+.spell-charge { stroke: currentColor; stroke-width: 0.05; filter: drop-shadow(0 0 0.1px currentColor); transform-box: fill-box; transform-origin: center; animation: spell-charge both ease-in; }
+@keyframes spell-charge { from { transform: scale(1.1); opacity: 0; } 30% { opacity: 1; } to { transform: scale(0.15); opacity: 0.9; } }
+.spell-bolt { fill: currentColor; filter: drop-shadow(0 0 0.14px currentColor); opacity: 0; animation: spell-bolt both ease-in; }
+@keyframes spell-bolt { 0% { transform: translate(0, 0); opacity: 1; } 99% { opacity: 1; } 100% { transform: translate(var(--sx), var(--sy)); opacity: 0; } }
+.spell-beam { stroke: currentColor; stroke-width: 0.09; stroke-linecap: round; filter: drop-shadow(0 0 0.12px currentColor); stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: spell-beam both ease-out; }
+@keyframes spell-beam { 0% { stroke-dashoffset: 1; opacity: 1; } 55% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.spell-bloom { fill: currentColor; opacity: 0; transform-box: fill-box; transform-origin: center; animation: spell-bloom both ease-out; }
+@keyframes spell-bloom { 0% { transform: scale(0.2); opacity: 0.85; } 100% { transform: scale(1.5); opacity: 0; } }
+.spell-ring { stroke: currentColor; stroke-width: 0.06; opacity: 0; transform-box: fill-box; transform-origin: center; animation: spell-ring both ease-out; }
+@keyframes spell-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.4); opacity: 0; } }
+
+.eclipse-cinema { position: fixed; inset: 0; z-index: 55; pointer-events: none; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, rgba(3, 2, 8, 0.55), rgba(3, 2, 8, 0.9)); animation: cinema-fade both ease-in-out; }
+@keyframes cinema-fade { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+.eclipse-sun { width: min(46vmin, 260px); height: auto; overflow: visible; }
+.eclipse-sun .sun-rays line { stroke: #ffd36b; stroke-width: 2.4; stroke-linecap: round; opacity: 0.9; }
+.eclipse-sun .sun-disc { fill: #ffd36b; filter: drop-shadow(0 0 6px #ffb347); }
+.eclipse-sun .moon-disc { fill: #05030c; stroke: #2b2147; stroke-width: 0.8; animation: moon-cross 2600ms both cubic-bezier(0.5, 0, 0.3, 1); }
+@keyframes moon-cross { 0% { transform: translateX(-90px); } 65% { transform: translateX(0); } 100% { transform: translateX(0); } }
+.eclipse-sun .sun-rays { animation: rays-dim 2600ms both ease-in; transform-origin: center; }
+@keyframes rays-dim { 0% { opacity: 1; transform: scale(1); } 65% { opacity: 0.2; transform: scale(1.15); } 100% { opacity: 0; } }
+
+/* Kill-cam: the final capture again in slow motion, with a push-in and a closing vignette */
+.kill-cam { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(3, 2, 8, 0.92); cursor: pointer; animation: count-fade-in 300ms ease-out both; --t-slow: 1100ms; --t-mid: 700ms; }
+.kill-stage { width: min(92vw, 80vh); animation: kill-push var(--kill-push) ease-in-out both; }
+.kill-stage .board { width: 100%; height: auto; }
+@keyframes kill-push { from { transform: scale(1); } to { transform: scale(var(--kill-zoom)); } }
+.kill-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(3, 2, 8, 0.85) 100%); animation: kill-close calc(var(--kill-push) + var(--kill-play)) ease-in both; }
+@keyframes kill-close { from { opacity: 0.3; } to { opacity: 1; } }
+.kill-skip { position: absolute; right: 16px; bottom: 16px; }
+

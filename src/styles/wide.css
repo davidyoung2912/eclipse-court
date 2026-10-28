@@ -1,0 +1,125 @@
+/* Wide screens (tablets, desktops, phones on their side): the board sits beside the tray instead of above it. */
+@media (min-width: 900px) and (min-height: 480px) and (orientation: landscape) {
+  .app.timed {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    grid-auto-rows: min-content;
+    align-content: start;
+    column-gap: 20px;
+    max-width: 1180px;
+    overflow-y: auto;
+    padding-top: calc(env(safe-area-inset-top) + 26px);
+    /* Room for the board's gilded frame, which sits outside the board box; the scrolling container would otherwise shave its left edge. */
+    padding-inline: 20px;
+  }
+  .app.timed > * { grid-column: 2; }
+  .app.timed > .board {
+    grid-column: 1;
+    grid-row: 1 / span 24;
+    align-self: start;
+    justify-self: center;
+    margin-top: 0;
+    width: min(100%, calc(100vh - 38px - var(--bottom-gap)));
+    max-height: none;
+  }
+  .app.timed > .tray { margin-top: 0; }
+  .app.timed > .tray .buttons { flex-wrap: wrap; }
+  .app.timed > .tray .buttons button { flex: 1 1 auto; min-width: 0; }
+  .duel-frame { padding-top: calc(env(safe-area-inset-top) + 24px); }
+  /* The play timer centres over the right-hand panel (the container's right edge, less its 20px padding and half the 420px panel) instead of the screen, so it clears the board. */
+  body:has(.app.timed) .play-timer { left: calc(50% + min(50%, 590px) - 20px - 210px); top: calc(env(safe-area-inset-top) + 6px); }
+}
+
+/* Desktop menu: the hero and title stand on the left, the cards and shortcuts fill the right, on the board's wide breakpoint. */
+@media (min-width: 900px) and (min-height: 480px) and (orientation: landscape) {
+  .main-menu {
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 40px; align-content: center; align-items: center;
+    max-width: 1080px; padding-inline: 32px; overflow-y: auto;
+  }
+  .menu-side { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+  .menu-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .main-menu .hero { max-height: none; margin-top: 0; }
+  .main-menu .menu-side .menu-buttons { margin-top: 8px; }
+  .main-menu .menu-buttons button.primary { width: 100%; padding-block: 14px; font-size: var(--fs-md); }
+  .main-menu > .tip-card { grid-column: 1 / -1; }
+  .main-menu[data-intro]:not([data-intro='done']) .menu-side > :not(.brand), .main-menu[data-intro]:not([data-intro='done']) .menu-main { opacity: 0; pointer-events: none; }
+  .main-menu[data-intro='done'] .menu-side > :not(.brand), .main-menu[data-intro='done'] .menu-main { animation: fade-in 0.8s ease-out backwards; }
+}
+
+/* Two-pane pages: on phones the panes are transparent wrappers; on desktop the list sits left and the detail right, split by a gilded rule over a dim emblem. */
+.pane-main, .pane-side { display: contents; }
+.pane-detail, .pane-hint { display: none; }
+@media (min-width: 900px) and (min-height: 480px) and (orientation: landscape) {
+  .two-pane {
+    display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: 56px; align-content: start; align-items: start;
+    max-width: 1080px; padding-inline: 32px; overflow-y: auto;
+  }
+  .two-pane > :not(.pane-main, .pane-side) { grid-column: 1 / -1; }
+  .two-pane > .menu-art { max-height: 150px; }
+  .two-pane > .pane-main { grid-column: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .two-pane > .pane-side {
+    grid-column: 2; grid-row: span 1; position: sticky; top: 0; display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0;
+  }
+  .two-pane > .pane-side::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: -28px; width: 1px; pointer-events: none;
+    background: linear-gradient(180deg, transparent, var(--solari-gold) 20%, var(--umbral-violet) 80%, transparent); opacity: 0.35;
+  }
+  .two-pane > .pane-side::after {
+    content: ''; align-self: center; width: min(70%, 260px); aspect-ratio: 1; margin-top: 12px; border-radius: 50%; pointer-events: none; opacity: 0.22;
+    background: radial-gradient(circle, #0f0b26 0 40%, var(--solari-gold) 41% 45%, transparent 47%), radial-gradient(circle, rgba(232, 182, 74, 0.5), transparent 70%);
+  }
+  .two-pane > .pane-detail, .two-pane > .pane-hint { display: flex; }
+  .pane-detail { align-items: center; text-align: center; padding: 20px 12px 0; }
+  .pane-detail svg { width: 56px; height: 56px; color: var(--solari-gold); }
+  .pane-detail h3 { margin: 0; font-family: var(--display); font-size: var(--fs-lg); color: var(--solari-gold); opacity: 1; }
+  .pane-detail p { margin: 0; font-size: var(--fs-md); opacity: 0.85; }
+  .pane-figure { font-family: var(--display); font-size: var(--fs-xl); color: var(--solari-gold); font-variant-numeric: tabular-nums; }
+  .pane-hint { justify-content: center; }
+}
+
+/* Result screens: the banner unrolls, the stats count up, and a win, a loss and a draw each have their own light */
+.result-banner { --res-a: var(--umbral-violet); --res-b: #d9ccff; margin-bottom: 8px; }
+.result-banner.win { --res-a: var(--solari-gold); --res-b: var(--solari-cream); }
+.result-banner.draw { --res-a: #9aa3b8; --res-b: #e4e8f2; }
+.result-banner.plain { --res-a: var(--umbral-violet); --res-b: #d9ccff; }
+.result-scroll {
+  position: relative; padding: 6px 12px; border: 1px solid var(--res-a); border-radius: 8px; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--res-a) 30%, #1d1745), #1d1745);
+  animation: banner-unroll var(--t-slow) var(--ease) 120ms backwards;
+}
+.result-scroll .confirm-title { margin: 0; font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.08em; text-transform: uppercase; color: var(--res-b); }
+.result-banner.win .result-scroll { box-shadow: 0 0 18px rgba(232, 182, 74, 0.45); }
+.result-banner.lose .result-scroll { animation-name: banner-unroll, banner-sink; animation-duration: var(--t-slow), 900ms; }
+.result-banner.lose .result-scroll .confirm-title { opacity: 0.85; }
+.result-banner.draw .result-scroll::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%); animation: banner-sheen 1.6s var(--ease) 500ms both;
+}
+.result-stats { display: flex; justify-content: center; gap: 22px; margin-top: 8px; }
+.result-stat { display: flex; flex-direction: column; align-items: center; animation: story-in var(--t-mid) var(--ease) backwards; }
+.result-stat:nth-child(2) { animation-delay: 160ms; }
+.result-stat:nth-child(3) { animation-delay: 320ms; }
+.result-stat b { font-family: var(--display); font-size: var(--fs-lg); color: var(--res-b); font-variant-numeric: tabular-nums; }
+.result-stat small { font-size: var(--fs-xs); opacity: 0.75; }
+@keyframes banner-unroll { from { clip-path: inset(0 50% 0 50%); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+@keyframes banner-sink { 0% { filter: brightness(1.4); } 100% { filter: brightness(0.85); } }
+@keyframes banner-sheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* The Eclipse as an event: --dusk (0 to 1, the same value that drives the music) tints the HUD as the Eclipse round nears; once it falls the board and HUD desaturate, the edges vignette and the backdrop goes near black. */
+.game-solari, .game-umbral { --dusk: 0; }
+.game-solari .hud, .game-umbral .hud { transition: filter var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); box-shadow: inset 0 -2px 14px -8px rgba(106, 79, 208, calc(var(--dusk) * 0.9)); background: linear-gradient(to bottom, rgba(106, 79, 208, calc(var(--dusk) * 0.22)), transparent); }
+.game-solari .board, .game-umbral .board { transition: filter var(--t-slow) var(--ease); }
+.game-solari::after, .game-umbral::after { content: ''; position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity var(--t-slow) var(--ease); background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%); }
+.eclipsed::after { opacity: 1 !important; }
+.eclipsed .hud, .eclipsed .board { filter: saturate(0.45) brightness(0.85); }
+/* The HUD wears the board's Hour: a warm wash while the light rises, violet as it wanes, and a dawn-to-dusk strip whose marker walks toward the Eclipse disc at its end. */
+.hud-rising { --hour: #ffe9a8; }
+.hud-waning { --hour: #6a4fd0; }
+.hud-eclipse { --hour: #000; }
+.hud::before { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 8px; background: radial-gradient(ellipse at 50% 0%, var(--hour), transparent 80%); opacity: 0.16; transition: opacity var(--t-slow) var(--ease), background var(--t-slow) var(--ease); }
+.hour-strip { position: absolute; left: 0; right: 14px; bottom: -3px; height: 3px; border-radius: 2px; background: linear-gradient(to right, #ffe9a8, #e8b64a 35%, #6a4fd0 80%, #1b1740); opacity: 0.85; }
+.hour-mark { position: absolute; top: -2px; left: calc(var(--at) * 100%); width: 7px; height: 7px; margin-left: -3px; border-radius: 50%; background: #fbf1d4; box-shadow: 0 0 6px #ffe9a8; transition: left var(--t-slow) var(--ease); }
+.hour-end { position: absolute; top: -4px; right: -14px; width: 11px; height: 11px; border-radius: 50%; background: #05030c; box-shadow: 0 0 0 1.5px var(--solari-gold), 0 0 8px rgba(232, 182, 74, 0.55); }
+.hud-eclipse .hour-mark { opacity: 0; }
+body:has(.eclipsed) { --tone-a: #14101f !important; --tone-b: #030208 !important; }
+

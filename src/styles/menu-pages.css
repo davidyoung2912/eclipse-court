@@ -1,0 +1,164 @@
+/* Menu pages: a framed scene on top, ornamented headings, gilded cards */
+.menu-art { width: 100%; flex: 0 0 auto; border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.5); box-shadow: 0 0 18px rgba(122, 92, 200, 0.45); }
+/* Header scene motion: slow and small, so the scene feels alive without pulling the eye from the page. */
+.menu-art .art-star { animation: art-twinkle 1.9s ease-in-out infinite; }
+.menu-art .art-glow, .menu-art .art-bob, .menu-art .art-burst, .menu-art .art-spin, .menu-art .art-flag { transform-box: fill-box; transform-origin: center; }
+.menu-art .art-glow { animation: art-breathe 3.4s ease-in-out infinite; }
+.menu-art .art-bob { animation: art-bob 2.6s ease-in-out infinite, art-sway 5.2s ease-in-out infinite; }
+.menu-art .art-late { animation-delay: -2.2s; }
+.menu-art .art-burst { animation: art-pulse 1.4s ease-in-out infinite, art-flicker 0.9s ease-in-out infinite; }
+.menu-art .art-spin { animation: spin 18s linear infinite; }
+.menu-art .art-road { animation: art-march 3s linear infinite; }
+.menu-art .art-flag { transform-origin: left center; animation: art-wave 2.4s ease-in-out infinite; }
+.menu-art .art-window { animation: art-twinkle 2.8s ease-in-out infinite; }
+@keyframes art-twinkle { 50% { opacity: 0.12; } }
+@keyframes art-breathe { 50% { opacity: 0.7; transform: scale(1.06); } }
+@keyframes art-bob { 50% { transform: translateY(var(--bob, -2px)); } }
+@keyframes art-pulse { 50% { transform: scale(1.08) rotate(4deg); } }
+@keyframes art-march { to { stroke-dashoffset: -20; } }
+@keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
+/* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
+.menu-art .art-mote { animation: art-mote 7s ease-in-out infinite; }
+.menu-art .art-shoot, .hero .art-shoot { opacity: 0; animation: art-shoot 1.2s ease-in both; }
+@keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
+/* A moon that slides back and forth across the sun while the glow dims as it is covered and rises as it clears; both share one clock and turn straight round at each end. */
+.art-moon-slide, .art-dim { animation-duration: 18s; animation-timing-function: linear; animation-iteration-count: infinite; animation-direction: alternate; }
+.art-moon-slide { animation-name: art-moon-slide; }
+.art-dim { animation-name: art-eclipse-dim; }
+.hero-moon, .hero-dim { animation-duration: 26s; }
+@keyframes art-moon-slide { 0% { transform: translateX(calc(var(--reach) * -1)); } 100% { transform: translateX(var(--reach)); } }
+@keyframes art-eclipse-dim { 0%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.1); } }
+/* The joke satellite: a slow crossing near the top, with a blinking light. Its crossing and ripple keyframes are written per pass by Satellite, as the number and place of its stops are random. */
+.menu-art .art-sat, .hero .art-sat { opacity: 0; animation-timing-function: linear; animation-fill-mode: both; }
+.menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
+.menu-art .art-sat-ping, .hero .art-sat-ping { transform-box: fill-box; transform-origin: 50% 0; opacity: 0; animation-timing-function: linear; animation-fill-mode: both; }
+@keyframes art-sat-blink { 50% { opacity: 0; } }
+/* The UFO: a slow steady crossing (keyframes written per pass by Ufo, with its beam and the things it lifts), with a bob and a sway layered on top at different speeds so the path wanders; its lights flash in turn. */
+.menu-art .art-ufo, .hero .art-ufo { opacity: 0; animation-timing-function: linear; animation-fill-mode: both; }
+.menu-art .art-ufo-bob, .hero .art-ufo-bob { animation: art-ufo-bob 2.17s ease-in-out infinite alternate; }
+.menu-art .art-ufo-sway, .hero .art-ufo-sway { transform-box: fill-box; transform-origin: center; animation: art-ufo-sway 3.33s ease-in-out infinite alternate; }
+.menu-art .art-ufo-light, .hero .art-ufo-light { animation: art-ufo-light 1.2s steps(1) infinite; }
+.menu-art .art-ufo-beam, .hero .art-ufo-beam { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); animation-timing-function: linear; animation-fill-mode: both; }
+.menu-art .art-ufo-bit, .hero .art-ufo-bit { transform-box: fill-box; transform-origin: center; opacity: 0; animation-timing-function: linear; animation-fill-mode: both; }
+@keyframes art-ufo-bob { from { transform: translateY(calc(var(--bob) * -1)); } to { transform: translateY(var(--bob)); } }
+@keyframes art-ufo-sway { from { transform: translateX(calc(var(--sway) * -1)) rotate(-7deg); } to { transform: translateX(var(--sway)) rotate(7deg); } }
+@keyframes art-ufo-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
+@keyframes art-shoot { from { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
+@keyframes art-sway { 50% { rotate: 2.5deg; } }
+@keyframes art-flicker { 50% { opacity: 0.7; } }
+.menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
+.menu h2 {
+  text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding-left: 0.22em;
+  background: linear-gradient(90deg, var(--solari-gold), var(--solari-cream) 45%, #b9a2ff 60%, var(--umbral-violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.menu h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--umbral-violet), transparent); }
+.season-banner { --banner: #b08d57; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 16px; padding: 8px 14px; border: 2px solid var(--banner); border-radius: 4px 4px 14px 14px; background: #1c1a24; color: var(--banner); font-weight: 600; }
+.season-banner[data-rank='Knight'] { --banner: #9fb4c8; }
+.season-banner[data-rank='Captain'] { --banner: #6fbf8e; }
+.season-banner[data-rank='Marshal'] { --banner: #d9a441; }
+.season-banner[data-rank='Warden'] { --banner: #c77dff; }
+.season-banner[data-rank='Eclipse Champion'] { --banner: #ff9a3c; box-shadow: 0 0 12px var(--banner); }
+.season-list { margin: 0; padding: 0 0 0 20px; }
+.tier-fold { display: flex; flex-direction: column; gap: 8px; }
+.tier-fold summary { cursor: pointer; list-style: none; }
+.tier-fold summary::-webkit-details-marker { display: none; }
+.tier-fold summary h3::before { content: '\25B8'; }
+.tier-fold[open] summary h3::before { content: '\25BE'; }
+.menu .choice {
+  position: relative; background: linear-gradient(180deg, rgba(74, 58, 150, 0.9), rgba(43, 36, 104, 0.9));
+  border-color: rgba(154, 124, 240, 0.35);
+}
+.menu .choice.solari { background: linear-gradient(100deg, rgba(232, 182, 74, 0.34), rgba(43, 36, 104, 0.44) 70%), rgb(26, 20, 62); }
+.menu .choice.umbral { background: linear-gradient(100deg, rgba(122, 92, 200, 0.48), rgba(13, 10, 34, 0.6) 70%), rgb(26, 20, 62); }
+.menu .choice.on { background: linear-gradient(180deg, rgba(232, 182, 74, 0.34), rgba(232, 182, 74, 0.12)), rgb(26, 20, 62); }
+.menu .choice.solari.on, .menu .choice.umbral.on { box-shadow: 0 0 14px rgba(232, 182, 74, 0.5); }
+.choice .avatar { position: absolute; right: 10px; top: 50%; width: 52px; height: 52px; transform: translateY(-50%); filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6)); }
+.choice:has(.avatar) { padding-right: 72px; }
+.campaign .choice .avatar.locked { filter: grayscale(1) brightness(0.6); }
+.campaign .choice .stars { margin-left: 0; margin-right: 0; }
+.campaign .choice strong { flex-wrap: wrap; }
+
+/* Dialogs over the board: turn announcements and combat results */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px;
+  background: rgba(8, 6, 22, 0.72); animation: fade-in var(--t-mid) var(--ease);
+}
+.modal {
+  width: 100%; max-width: 380px; padding: 18px 16px 12px; text-align: center; border-radius: 16px;
+  background: linear-gradient(180deg, #2b2468, #1d1745); border: 2px solid var(--solari-gold);
+  box-shadow: 0 0 30px rgba(232, 182, 74, 0.45), 0 12px 40px rgba(0, 0, 0, 0.6); animation: pop-in var(--t-mid) var(--ease);
+}
+.modal-kicker { margin: 0; font-size: var(--fs-xs); letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.7; }
+.modal h2 { margin: 4px 0 6px; font-family: var(--display); font-weight: 700; font-size: var(--fs-lg); color: var(--solari-cream); }
+.result-line { margin: 0 0 12px; font-size: var(--fs-md); }
+.result-line b { color: var(--solari-gold); font-size: 1.15em; }
+.result-fighters { display: flex; justify-content: center; gap: 16px; margin-bottom: 14px; }
+.result-fighter {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.result-fighter.won { border-color: var(--solari-gold); box-shadow: 0 0 14px rgba(232, 182, 74, 0.4); }
+.result-fighter.fell { opacity: 0.7; }
+.result-fighter svg { width: 72px; height: 72px; }
+.result-fighter small { opacity: 0.65; font-size: var(--fs-xs); }
+.result-hp { font-weight: 700; font-size: var(--fs-sm); }
+.duel-result .buttons button { padding: 11px 8px; }
+.result-timer { height: 3px; margin-top: 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.result-timer i { display: block; height: 100%; background: var(--solari-gold); transform-origin: left; animation: drain linear forwards; }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* Screens cross-fade in with a small rise; a match opens with an iris instead (no transform, so fixed overlays keep their place). */
+@keyframes iris-in { from { opacity: 0; clip-path: circle(0% at 50% 45%); } to { opacity: 1; clip-path: circle(150% at 50% 45%); } }
+@keyframes iris-result { from { opacity: 0; clip-path: circle(0% at 50% 50%); } to { opacity: 1; clip-path: circle(150% at 50% 50%); } }
+main.app:not(.main-menu) { animation: rise-in var(--t-mid) var(--ease) backwards; }
+main.app.timed { animation: iris-in var(--t-slow) var(--ease) backwards; }
+.modal-backdrop:has(.duel-result) { animation: iris-result var(--t-slow) var(--ease) backwards; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.9); } }
+
+.turn-banner {
+  position: fixed; left: 50%; top: 50%; z-index: 25; pointer-events: none; padding: 9px 26px; border-radius: 12px;
+  transform: translate(-50%, -50%); font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.08em;
+  text-transform: uppercase; white-space: nowrap; animation: banner 1s ease-in-out forwards;
+}
+@keyframes banner {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  18%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.pass-screen {
+  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; border: 0; border-radius: 0; cursor: pointer; background: rgba(20, 16, 43, 0.97); color: var(--solari-cream);
+  font-family: var(--display);
+}
+.pass-screen strong { font-size: var(--fs-xl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--solari-gold); }
+.pass-screen.umbral strong { color: #d9ccff; }
+.pass-screen span { font-size: var(--fs-md); opacity: 0.8; }
+
+.code-box { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgb(14, 10, 34); color: inherit; font: 0.8rem monospace; word-break: break-all; }
+ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+
+/* Blitz: the turn clock */
+.clock-ring { position: relative; width: 52px; height: 52px; margin: 0 auto 6px; display: grid; place-items: center; }
+.clock-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.clock-ring span { font-weight: 700; font-size: var(--fs-md); }
+.clock-ring small { position: absolute; bottom: -9px; font-size: 0.6rem; opacity: 0.8; }
+.clock-track { fill: rgba(0, 0, 0, 0.25); stroke: rgba(255, 255, 255, 0.15); stroke-width: 3; }
+.clock-arc { fill: none; stroke: var(--solari-gold); stroke-width: 3; stroke-linecap: round; }
+.clock-ring.umbral .clock-arc { stroke: var(--umbral-violet); }
+.clock-ring.paused { opacity: 0.55; }
+.clock-ring.urgent .clock-arc { stroke: #e0525a; }
+.clock-ring.urgent span { color: #ff8088; }
+.clock-ring.urgent { animation: clock-pulse 1s ease-in-out infinite; }
+@keyframes clock-pulse { 50% { transform: scale(1.12); } }
+
+.play-timer {
+  position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; opacity: 0.8; pointer-events: none;
+}
+.play-timer svg { width: 14px; height: 14px; }
+

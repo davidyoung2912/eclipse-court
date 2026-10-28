@@ -1,0 +1,212 @@
+/* Game review */
+.eval-bar { width: min(100%, 420px); height: 44px; border-radius: 8px; cursor: pointer; display: block; margin: 8px auto; }
+.eval-solari { fill: rgba(232, 182, 74, 0.25); }
+.eval-umbral { fill: rgba(122, 92, 200, 0.3); }
+.eval-line { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+.eval-now { stroke: var(--solari-gold); stroke-width: 2; }
+.review-note { margin: 0 0 6px; text-align: center; font-size: var(--fs-sm); }
+.review-note.grade-inaccuracy strong { color: #e8d36a; }
+.review-note.grade-mistake strong { color: #f0a050; }
+.review-note.grade-blunder strong { color: #f06a5a; }
+.review-note.grade-best strong, .review-note.grade-good strong { color: #6fe08a; }
+.review-note .link { background: none; border: none; padding: 0; color: var(--solari-gold); text-decoration: underline; font: inherit; cursor: pointer; }
+.review-summary { margin: 6px 0; }
+
+/* Collection: wallet, cost lines and the equipped cosmetics */
+.shard-wallet { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0 8px; font-size: var(--fs-md); }
+.shard-wallet .btn-icon { color: var(--solari-gold); }
+.shard-wallet small { opacity: 0.65; margin-left: 6px; }
+.collection-kind h3 { margin: 14px 0 6px; }
+.choice .cost { font-weight: 700; color: var(--solari-gold); opacity: 1; }
+
+/* Capture effect where a piece fell */
+.fall { pointer-events: none; }
+.shard { stroke: currentColor; stroke-width: 0.025; transform-box: fill-box; transform-origin: center; animation: shard var(--t-slow) var(--ease) both; }
+@keyframes shard { 0% { opacity: 1; translate: 0 0; rotate: 0deg; } 100% { opacity: 0; translate: var(--dx) var(--dy); rotate: var(--spin); } }
+.fall-part { stroke: currentColor; stroke-width: 0.05; stroke-linecap: round; animation: fall-part 0.8s ease-out both; }
+@keyframes fall-part { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: calc(var(--reach, 0.5) * 0.9px) 0; } }
+
+/* Piece sets: recolour the medallions over the theme. The `main .cstage[...]` selectors are the Collection preview stage copies; the extra element outranks the page-wide ones. */
+:root[data-pieces='gilded'] .art-solari .pane-0, :root[data-pieces='gilded'] .art-umbral .pane-0, main .cstage[data-pieces='gilded'] .art-solari .pane-0, main .cstage[data-pieces='gilded'] .art-umbral .pane-0 { fill: #f3d27a; }
+:root[data-pieces='gilded'] .art-solari .pane-1, main .cstage[data-pieces='gilded'] .art-solari .pane-1 { fill: #c8962e; }
+:root[data-pieces='gilded'] .art-solari .pane-2, main .cstage[data-pieces='gilded'] .art-solari .pane-2 { fill: #fff4d6; }
+:root[data-pieces='gilded'] .art-umbral .pane-1, main .cstage[data-pieces='gilded'] .art-umbral .pane-1 { fill: #6e5a2a; }
+:root[data-pieces='gilded'] .art-umbral .pane-2, main .cstage[data-pieces='gilded'] .art-umbral .pane-2 { fill: #d8c9a0; }
+:root[data-pieces='jade'] .art-solari .pane-0, main .cstage[data-pieces='jade'] .art-solari .pane-0 { fill: #a8e8c4; }
+:root[data-pieces='jade'] .art-solari .pane-1, main .cstage[data-pieces='jade'] .art-solari .pane-1 { fill: #48b884; }
+:root[data-pieces='jade'] .art-solari .pane-2, main .cstage[data-pieces='jade'] .art-solari .pane-2 { fill: #e4fff0; }
+:root[data-pieces='jade'] .art-umbral .pane-0, main .cstage[data-pieces='jade'] .art-umbral .pane-0 { fill: #2e7a60; }
+:root[data-pieces='jade'] .art-umbral .pane-1, main .cstage[data-pieces='jade'] .art-umbral .pane-1 { fill: #123c30; }
+:root[data-pieces='jade'] .art-umbral .pane-2, main .cstage[data-pieces='jade'] .art-umbral .pane-2 { fill: #5ab8a0; }
+:root[data-pieces='mono'] .art-solari .pane-0, main .cstage[data-pieces='mono'] .art-solari .pane-0 { fill: #f2efe6; }
+:root[data-pieces='mono'] .art-solari .pane-1, main .cstage[data-pieces='mono'] .art-solari .pane-1 { fill: #cfc9b8; }
+:root[data-pieces='mono'] .art-solari .pane-2, main .cstage[data-pieces='mono'] .art-solari .pane-2 { fill: #ffffff; }
+:root[data-pieces='mono'] .art-umbral .pane-0, main .cstage[data-pieces='mono'] .art-umbral .pane-0 { fill: #3a3a42; }
+:root[data-pieces='mono'] .art-umbral .pane-1, main .cstage[data-pieces='mono'] .art-umbral .pane-1 { fill: #16161c; }
+:root[data-pieces='mono'] .art-umbral .pane-2, main .cstage[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
+
+/* Codex frames on the story scenes */
+:root[data-pieces='aurora'] .art-solari .pane-0, :root[data-pieces='aurora'] .art-umbral .pane-0, main .cstage[data-pieces='aurora'] .art-solari .pane-0, main .cstage[data-pieces='aurora'] .art-umbral .pane-0 { animation: pane-aurora 6s ease-in-out infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-1, :root[data-pieces='aurora'] .art-umbral .pane-1, main .cstage[data-pieces='aurora'] .art-solari .pane-1, main .cstage[data-pieces='aurora'] .art-umbral .pane-1 { animation: pane-aurora 6s ease-in-out -2s infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-2, :root[data-pieces='aurora'] .art-umbral .pane-2, main .cstage[data-pieces='aurora'] .art-solari .pane-2, main .cstage[data-pieces='aurora'] .art-umbral .pane-2 { fill: #f0ffe8; }
+:root[data-pieces='forge'] .art-solari .pane-0, main .cstage[data-pieces='forge'] .art-solari .pane-0 { animation: pane-forge 3.2s ease-in-out infinite alternate; }
+:root[data-pieces='forge'] .art-solari .pane-1, main .cstage[data-pieces='forge'] .art-solari .pane-1 { fill: #e07a2e; }
+:root[data-pieces='forge'] .art-solari .pane-2, main .cstage[data-pieces='forge'] .art-solari .pane-2 { fill: #fff0c8; }
+:root[data-pieces='forge'] .art-umbral .pane-0, main .cstage[data-pieces='forge'] .art-umbral .pane-0 { animation: pane-forge 3.2s ease-in-out -1.6s infinite alternate; filter: brightness(0.6); }
+:root[data-pieces='forge'] .art-umbral .pane-1, main .cstage[data-pieces='forge'] .art-umbral .pane-1 { fill: #3a1a12; }
+:root[data-pieces='forge'] .art-umbral .pane-2, main .cstage[data-pieces='forge'] .art-umbral .pane-2 { fill: #a85a3a; }
+@keyframes pane-aurora { from { fill: #6fe0a8; } to { fill: #a88cf0; } }
+@keyframes pane-forge { from { fill: #f0b04a; } to { fill: #ff6a2a; } }
+:root[data-board='starlit'] .board .sq, main .cstage[data-board='starlit'] .board .sq { animation: sq-twinkle 4s ease-in-out infinite; }
+:root[data-board='starlit'] .board g:nth-child(3n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(3n) .sq { animation-delay: -1.3s; }
+:root[data-board='starlit'] .board g:nth-child(5n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(5n) .sq { animation-delay: -2.6s; }
+:root[data-board='starlit'] .board g:nth-child(7n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(7n) .sq { animation-delay: -0.6s; }
+:root[data-board='tidal'] .board .sq, main .cstage[data-board='tidal'] .board .sq { animation: sq-swell 5s ease-in-out infinite; }
+:root[data-board='tidal'] .board g:nth-child(7n+2) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+2) .sq { animation-delay: -0.7s; }
+:root[data-board='tidal'] .board g:nth-child(7n+3) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+3) .sq { animation-delay: -1.4s; }
+:root[data-board='tidal'] .board g:nth-child(7n+4) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+4) .sq { animation-delay: -2.1s; }
+:root[data-board='tidal'] .board g:nth-child(7n+5) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+5) .sq { animation-delay: -2.8s; }
+:root[data-board='tidal'] .board g:nth-child(7n+6) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+6) .sq { animation-delay: -3.5s; }
+:root[data-board='cinder'] .board .glow, main .cstage[data-board='cinder'] .board .glow { animation: glow-breathe 2.8s ease-in-out infinite alternate; }
+:root[data-board='cinder'] .board g:nth-child(2n) .glow, main .cstage[data-board='cinder'] .board g:nth-child(2n) .glow { animation-delay: -1.4s; }
+@keyframes sq-twinkle { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.22); } }
+@keyframes sq-swell { 0%, 100% { filter: brightness(0.92) saturate(1); } 50% { filter: brightness(1.12) saturate(1.25); } }
+@keyframes glow-breathe { from { opacity: 0.35; } to { opacity: 1; } }
+:root[data-codex='gilt'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 0 0 18px rgba(232, 182, 74, 0.3); }
+:root[data-codex='moon'] .story-stage { border-color: #9ec8f0; box-shadow: 0 0 0 2px rgba(158, 200, 240, 0.5), 0 0 18px rgba(158, 200, 240, 0.35); }
+:root[data-codex='laurel'] .story-stage { border-color: #b8c85a; box-shadow: 0 0 0 2px rgba(184, 200, 90, 0.5), 0 0 18px rgba(214, 190, 80, 0.35); }
+:root[data-codex='ember'] .story-stage { border-color: #f07a4a; box-shadow: 0 0 0 2px rgba(240, 122, 74, 0.5), 0 0 18px rgba(240, 122, 74, 0.35); }
+
+.showcase { width: 100%; }
+.showcase h3 { margin: 0 0 6px; }
+.mastery-tracks { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.mastery-tracks li { display: flex; flex-direction: column; gap: 4px; }
+.mastery-tracks small { opacity: 0.7; }
+.achievements li .link { align-self: flex-start; margin-top: 4px; }
+
+.run-summary { margin: 0.5rem 0; white-space: pre-wrap; font: inherit; font-size: var(--fs-sm); opacity: 0.85; }
+
+/* Board editor */
+.editor .ed-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.editor .ed-tools button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgb(36, 28, 84); color: inherit; font: inherit; font-size: var(--fs-xs); cursor: pointer; }
+.editor .ed-tools button.on { border-color: var(--solari-gold); background: linear-gradient(rgba(232, 182, 74, 0.3), rgba(232, 182, 74, 0.3)), rgb(36, 28, 84); }
+/* A tool that is not available fades its label, not the whole button, so the background stays solid. */
+.editor .ed-tools button:disabled { color: rgba(244, 238, 252, 0.4); background: rgb(24, 18, 56); border-color: rgba(255, 255, 255, 0.1); cursor: not-allowed; }
+.editor .ed-tools button:disabled svg { opacity: 0.4; }
+.editor .ed-tools .piece-tool { display: flex; align-items: center; gap: 4px; }
+.editor .piece-tool svg { width: 26px; height: 26px; }
+.editor .cell-tool { border-left: 4px solid var(--cell); }
+.ed-board { max-width: 480px; margin: 8px auto; flex: 0 0 auto; max-height: none; }
+.ed-sq.even { fill: #2b2552; }
+.ed-sq.odd { fill: #231e45; }
+.ed-sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; cursor: pointer; }
+.ed-goal { fill: none; stroke: #6fe08a; stroke-width: 0.06; stroke-dasharray: 0.14 0.08; pointer-events: none; }
+.ed-piece.ghost { opacity: 0.55; }
+.ed-field { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); }
+.ed-field select, .ed-field input { padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgb(14, 10, 34); color: inherit; font: inherit; }
+.ed-numbers { display: flex; gap: 12px; flex-wrap: wrap; }
+.ed-numbers .ed-field { flex: 1 1 40%; }
+.ed-problems { color: #ffb3b3; }
+
+/* Juice: capture streaks and the win burst; both vanish with reduced motion */
+.combo {
+  position: fixed; left: 50%; top: 22%; z-index: 24; pointer-events: none; transform: translateX(-50%); white-space: nowrap;
+  font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.08em; text-transform: uppercase; animation: combo-pop 1.6s ease-out forwards;
+}
+.combo.mine, .combo.solari { color: var(--solari-gold); text-shadow: 0 0 14px rgba(232, 182, 74, 0.8), 0 2px 0 #1b1740; }
+.combo.theirs, .combo.umbral { color: #d9ccff; text-shadow: 0 0 14px rgba(122, 92, 200, 0.9), 0 2px 0 #1b1740; }
+@keyframes combo-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+  30%, 75% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-18px) scale(1); }
+}
+/* Named moments: a rare, fast banner; tap to skip. */
+.moment {
+  position: fixed; left: 50%; top: 14%; z-index: 24; padding: 6px 22px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.14em; text-transform: uppercase;
+  animation: moment-in 1.4s ease-out forwards;
+}
+.moment.solari { box-shadow: 0 0 24px rgba(232, 182, 74, 0.6); }
+.moment.umbral { box-shadow: 0 0 24px rgba(122, 92, 200, 0.7); }
+.moment.both { background: #0b0820; color: var(--solari-cream); box-shadow: 0 0 24px rgba(242, 197, 92, 0.5), inset 0 0 0 2px rgba(242, 197, 92, 0.6); }
+@keyframes moment-in {
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.7); letter-spacing: 0.4em; }
+  14% { opacity: 1; transform: translateX(-50%) scaleX(1); letter-spacing: 0.14em; }
+  80% { opacity: 1; transform: translateX(-50%); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+.confirm.result { overflow: visible; }
+.win-burst { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
+.win-halo {
+  position: absolute; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 197, 92, 0.55), transparent 70%); animation: win-halo 1.4s ease-out both;
+}
+.win-spark {
+  position: absolute; width: 6px; height: 14px; margin: -7px 0 0 -3px; border-radius: 3px; background: var(--solari-gold);
+  box-shadow: 0 0 8px rgba(232, 182, 74, 0.9); animation: win-spark 1.1s ease-out both;
+}
+.win-spark:nth-child(3n) { background: var(--solari-cream); }
+@keyframes win-halo { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes win-spark {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)); }
+}
+
+/* Onboarding: coaching line in the first battle, advice after losses, first-steps list. */
+.coach-line { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 12px; border-radius: 12px; font-size: var(--fs-sm); background: rgba(255, 212, 90, 0.14); border: 1px solid rgba(255, 212, 90, 0.6); }
+.coach-line svg { flex: none; width: 1.1em; height: 1.1em; color: #ffd45a; margin-top: 2px; }
+/* The main menu's single "Next up" card: the persona face beside whichever of advice, first steps, suggestions or greeting ranks highest. */
+.next-up { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgb(33, 26, 78); border: 1px solid rgba(154, 124, 240, 0.5); font-size: var(--fs-sm); line-height: 1.3; color: #e9e3ff; }
+.next-up[data-slot='steps'] { background: linear-gradient(160deg, rgba(8, 72, 70, 0.97), rgba(4, 42, 44, 0.97)); border-color: rgba(79, 217, 200, 0.55); }
+.next-up[data-slot='greeting'] { align-items: center; background: rgba(30, 22, 64, 0.6); border-color: rgba(205, 191, 255, 0.35); }
+.next-up-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.next-up-body p { margin: 0; }
+.next-up-body p b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
+.next-up-body > button { align-self: flex-end; }
+.next-up h3 { display: flex; justify-content: space-between; margin: 0; }
+.next-up h3::after { display: none; }
+.next-up h3 em { display: inline-flex; align-items: center; gap: 8px; font-style: normal; }
+.next-up h3 span { text-transform: none; letter-spacing: 0.04em; color: var(--solari-gold); }
+.next-up ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.next-up-steps li { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
+.next-up-steps li.done { opacity: 0.55; text-decoration: line-through; }
+.next-up-list { gap: 6px; }
+.next-up-list li { animation: rise-in var(--t-slow) var(--ease) backwards; }
+.next-up-list button {
+  width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left;
+  border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg); font-size: var(--fs-sm);
+  background: linear-gradient(180deg, rgb(74, 58, 150), rgb(43, 36, 104));
+}
+
+/* Last move trail: a soft outline on the square just left, a stronger one on the square reached. */
+.trail { fill: none; pointer-events: none; stroke: #fff6c0; stroke-width: 0.06; }
+.trail-from { stroke-opacity: 0.35; stroke-dasharray: 0.12 0.1; }
+.beacon-reach { fill: none; pointer-events: none; stroke: var(--solari-gold); stroke-width: 0.06; stroke-dasharray: 0.14 0.1; }
+.trail-to { stroke-opacity: 0.85; fill: rgba(255, 246, 192, 0.12); }
+
+/* Keyboard play on the board */
+.kb-cursor { fill: none; stroke: #fff6c0; stroke-width: 0.07; pointer-events: none; }
+svg.board:focus { outline: none; }
+
+/* Online quick chat */
+.chat-bubble {
+  position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%); z-index: 40; padding: 0.4rem 0.9rem;
+  border-radius: 1rem; background: var(--umbral-indigo); color: var(--solari-cream); border: 1px solid var(--solari-gold);
+  animation: chat-fade 3.2s ease-out forwards; pointer-events: none;
+}
+@keyframes chat-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Locked or disabled options dim their contents, not the whole panel, so the checkerboard behind does not show through. */
+.menu .choice:disabled { opacity: 1; background: rgba(26, 20, 62, 0.94); border-color: rgba(154, 124, 240, 0.2); }
+.menu .choice:disabled > * { opacity: 0.4; }
+.row-pick button:disabled, .setup-seg button:disabled { opacity: 0.55; }
+/* Unavailable spells stay opaque too: a solid dim fill with muted text and icon, so the board behind does not show through. */
+.spell:disabled, .buttons .spell:disabled { opacity: 1; background: rgb(30, 24, 70); border-color: rgba(232, 182, 74, 0.3); color: rgba(244, 238, 252, 0.45); }
+.spell:disabled .btn-icon { opacity: 0.5; }
+
+/* The Gauntlet's army picker sits on a solid indigo panel, so it does not turn muddy over the green floor. */
+.gauntlet-menu .draft { background: rgba(32, 26, 78, 0.94); border: 1px solid rgba(154, 124, 240, 0.4); }
+
+.role-goals { margin-bottom: 10px; }
+

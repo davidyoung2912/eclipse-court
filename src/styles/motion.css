@@ -1,0 +1,164 @@
+/* Phase 7, app-wide motion. Where View Transitions exist the browser cross-fades screens and the screens' own entrance steps aside. */
+:root[data-vt='on'] main.app:not(.timed) { animation: none; }
+::view-transition-old(root) { animation: vt-out var(--t-mid) var(--ease) both; }
+::view-transition-new(root) { animation: vt-in var(--t-slow) var(--ease) both; }
+@keyframes vt-out { to { opacity: 0; transform: scale(0.985); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(10px) scale(1.01); } }
+
+/* Tap ripple and hover sheen: overlays added by tapFx.ts and removed when done. */
+.fx-ripple, .fx-sheen { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.fx-ripple::after {
+  content: ''; position: absolute; left: var(--rx, 50%); top: var(--ry, 50%); width: 240%; aspect-ratio: 1; border-radius: 50%;
+  translate: -50% -50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.34), transparent 65%); animation: tap-ripple 520ms var(--ease) both;
+}
+@keyframes tap-ripple { from { scale: 0; opacity: 1; } to { scale: 1; opacity: 0; } }
+.fx-sheen::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 38%; left: -45%; transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent); animation: sheen-sweep 700ms var(--ease) both;
+}
+@keyframes sheen-sweep { to { left: 120%; } }
+
+/* Lists rise in one after another. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
+.mode-cards > *, main.app:not(.main-menu) .choices > * { animation: rise-in var(--t-slow) var(--ease) backwards; }
+.mode-cards > *:nth-child(1), main.app:not(.main-menu) .choices > *:nth-child(1) { animation-delay: 0ms; }
+.mode-cards > *:nth-child(2), main.app:not(.main-menu) .choices > *:nth-child(2), .next-up-list li:nth-child(2) { animation-delay: 45ms; }
+.mode-cards > *:nth-child(3), main.app:not(.main-menu) .choices > *:nth-child(3), .next-up-list li:nth-child(3) { animation-delay: 90ms; }
+.mode-cards > *:nth-child(4), main.app:not(.main-menu) .choices > *:nth-child(4) { animation-delay: 135ms; }
+.mode-cards > *:nth-child(5), main.app:not(.main-menu) .choices > *:nth-child(5) { animation-delay: 180ms; }
+.mode-cards > *:nth-child(6), main.app:not(.main-menu) .choices > *:nth-child(6) { animation-delay: 225ms; }
+.mode-cards > *:nth-child(7), main.app:not(.main-menu) .choices > *:nth-child(7) { animation-delay: 270ms; }
+.mode-cards > *:nth-child(8), main.app:not(.main-menu) .choices > *:nth-child(8) { animation-delay: 315ms; }
+
+/* The menu's sky: a faint drifting starfield that shifts against the pointer, and the hero emblem moving a little less. */
+body:has(.main-menu)::before {
+  content: ''; position: fixed; inset: -24px; z-index: -1; pointer-events: none; opacity: 0.55;
+  background:
+    radial-gradient(1.4px 1.4px at 20px 30px, #fbf1d4, transparent),
+    radial-gradient(1px 1px at 90px 80px, #cdbfff, transparent),
+    radial-gradient(1.2px 1.2px at 150px 20px, #fbf1d4, transparent),
+    radial-gradient(1px 1px at 60px 140px, #fbf1d4, transparent);
+  background-size: 180px 170px; translate: var(--px, 0px) var(--py, 0px); transition: translate 0.4s ease-out;
+  animation: sky-drift 120s linear infinite;
+}
+@keyframes sky-drift { to { background-position: -180px 170px; } }
+.main-menu .hero { translate: calc(var(--px, 0px) * -0.4) calc(var(--py, 0px) * -0.4); transition: translate 0.4s ease-out; }
+
+/* Medallion images shimmer until they load. */
+.persona-frame .persona-photo[data-loading] {
+  background: linear-gradient(100deg, rgba(60, 44, 120, 0.6) 30%, rgba(205, 191, 255, 0.35) 50%, rgba(60, 44, 120, 0.6) 70%) 0 0 / 220% 100%;
+  animation: skeleton 1.4s linear infinite;
+}
+@keyframes skeleton { to { background-position: -220% 0; } }
+
+/* Reward bursts: the shard chip the coins fly to, and first-win confetti */
+.shard-toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; z-index: 69; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--solari-gold); background: rgba(20, 15, 48, 0.92); color: var(--solari-cream); font-family: var(--display); font-variant-numeric: tabular-nums; pointer-events: none; animation: toast-in 300ms var(--ease) both, toast-out 400ms ease-in 2000ms forwards; }
+.shard-toast svg { width: 18px; height: 18px; fill: var(--solari-gold); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-6px); } }
+.confetti { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
+.confetti span { position: absolute; width: 7px; height: 12px; margin: -6px 0 0 -3px; border-radius: 2px; animation: confetti-fly 1.6s ease-out both; }
+@keyframes confetti-fly {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) rotate(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1.6)) rotate(var(--spin)); }
+}
+
+/* Reduce flashes: steady in place of pulsing or brightening */
+:root[data-flashes='reduced'] .leader-danger::before { animation: none; opacity: 0.22; }
+:root[data-flashes='reduced'] .win-shimmer { animation: none; opacity: 0.8; }
+:root[data-flashes='reduced'] .win-halo, :root[data-flashes='reduced'] .confetti { display: none; }
+:root[data-flashes='reduced'] .result-banner.lose .result-scroll { animation-name: banner-unroll; animation-duration: var(--t-slow); }
+:root[data-flashes='reduced'] .choice-row.unlocked::after { animation: none; opacity: 0.6; box-shadow: none; }
+:root[data-flashes='reduced'] .reveal-spark, :root[data-flashes='reduced'] .fx-sheen { display: none; }
+:root[data-flashes='reduced'] .story-ray, :root[data-flashes='reduced'] .story-ray.dim { animation: none; opacity: 0.6; }
+
+/* Numbers that change (dial, clocks, wallet, costs, counts, scores) keep a fixed width so they never jitter. */
+.dial span, .hud-round, .duel-timer, .clock-ring span, .play-timer, .shard-wallet, .shard-toast, .choice .cost, .draft-row .cost, .draft-row .count,
+.stat-tiles dd, .stat-overall strong, .result-stat b, .eclipse-chip, .streak, .odds-tag, .duel-countdown, .piece-stats, .next-up h3 span { font-variant-numeric: tabular-nums; }
+
+/* Rewards listed in the result dialog; lines that pay Shards glow as their coins leave */
+.reward-lines { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); text-align: center; }
+.reward-lines li { opacity: 0.85; }
+.reward-lines li.pays { color: var(--solari-gold); opacity: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Fallen pieces: a row per court under the board, with the material lead beside the court that is ahead. */
+.fallen { display: grid; gap: 4px; margin: 6px auto 0; width: 100%; max-width: 420px; font-size: var(--fs-xs); }
+.fallen-row { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 2px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.fallen-name { flex: none; width: 4.2rem; opacity: 0.7; font-weight: 700; }
+.fallen-row.solari .fallen-name { color: var(--solari-gold); }
+.fallen-row.umbral .fallen-name { color: var(--umbral-violet); }
+.fallen-pieces { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; }
+.fallen-pieces svg { width: 22px; height: 22px; opacity: 0.75; filter: grayscale(0.4); }
+.fallen-pieces svg.drop { animation: fallen-drop 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.fallen-lead { flex: none; font-variant-numeric: tabular-nums; color: var(--solari-gold); }
+@keyframes fallen-drop {
+  0% { transform: translateY(-26px) scale(1.5); opacity: 0; }
+  60% { transform: translateY(2px) scale(0.9); opacity: 1; }
+  100% { transform: none; opacity: 0.75; }
+}
+
+/* The named opponent's face in the HUD: it reacts to captures, losses, danger and the Eclipse, then settles back to calm. */
+.persona-corner { width: 26px; height: 31px; flex: none; transition: filter 0.25s ease, box-shadow 0.25s ease; }
+.persona-corner.mood-pleased { animation: face-nod 0.5s ease-out; box-shadow: 0 0 0 1px rgba(232, 182, 74, 0.9), 0 0 10px rgba(232, 182, 74, 0.7); filter: brightness(1.12); }
+.persona-corner.mood-stung { animation: face-flinch 0.4s ease-out; box-shadow: 0 0 0 1px rgba(214, 90, 90, 0.9), 0 0 10px rgba(214, 90, 90, 0.6); filter: saturate(0.5) brightness(0.85); }
+.persona-corner.mood-alarmed { animation: face-flinch 0.4s ease-out; box-shadow: 0 0 0 1px rgba(240, 150, 70, 0.9), 0 0 10px rgba(240, 150, 70, 0.6); filter: brightness(1.05) contrast(1.1); }
+.persona-corner.mood-awed { box-shadow: 0 0 0 1px rgba(205, 191, 255, 0.9), 0 0 12px rgba(154, 124, 240, 0.8); filter: brightness(0.7) contrast(1.15); }
+@keyframes face-nod { 0% { transform: translateY(0); } 40% { transform: translateY(3px); } 100% { transform: translateY(0); } }
+@keyframes face-flinch { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 60% { transform: translateX(2px); } }
+
+/* Visible progression: rank crest, cosmetic glint, daily stamps */
+.rank-crest { --crest: #8d93aa; --crest-rim: #5d627a; display: grid; justify-items: center; gap: 2px; margin: 0 auto 12px; text-align: center; }
+.rank-crest svg { width: 84px; height: 100px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--crest) 45%, transparent)); }
+.rank-crest strong { font-family: var(--display); letter-spacing: 0.08em; color: var(--crest); font-size: var(--fs-md); }
+.rank-crest small { opacity: 0.75; font-size: var(--fs-xs); }
+.rank-crest.tier-1 { --crest: #6fe08a; --crest-rim: #3d8a50; }
+.rank-crest.tier-2 { --crest: #6fb4ff; --crest-rim: #3c72b0; }
+.rank-crest.tier-3 { --crest: #c58cff; --crest-rim: #7a4cb0; }
+.rank-crest.tier-4 { --crest: #ffc94a; --crest-rim: #a87a1c; }
+.rank-crest.tier-5 { --crest: #fff0b8; --crest-rim: #e8b64a; }
+.crest-shield { fill: rgba(20, 16, 40, 0.9); stroke: var(--crest-rim); stroke-width: 4; stroke-linejoin: round; }
+.crest-inner { fill: none; stroke: var(--crest); stroke-width: 1.5; opacity: 0.7; }
+.crest-sun { fill: var(--crest); }
+.crest-moon { fill: #14102a; }
+.crest-pip { fill: var(--crest); }
+.rank-crest.tier-5 svg { animation: crest-glow 3.6s ease-in-out infinite alternate; }
+@keyframes crest-glow { to { filter: drop-shadow(0 0 14px rgba(255, 224, 140, 0.9)); } }
+
+.choice-row.glint { overflow: hidden; }
+.choice-row.glint::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--rarity) calc(var(--glint-alpha) * 100%), transparent) 50%, transparent 60%);
+  background-size: 250% 100%; background-position: 150% 0;
+  animation: cosmetic-glint var(--glint-period, 6000ms) linear var(--glint-delay, 0ms) infinite;
+}
+@keyframes cosmetic-glint { 0%, 70% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+
+.stamp-week { display: flex; justify-content: center; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.stamp-week li { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 1px dashed rgba(255, 255, 255, 0.3); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); }
+.stamp-week li.today { border-style: solid; border-color: rgba(255, 255, 255, 0.55); }
+.stamp-week li.stamped { border: 2px solid var(--solari-gold); color: transparent; }
+.stamp-week li i { position: absolute; inset: 0; display: grid; place-items: center; color: var(--solari-gold); animation: stamp-in 420ms var(--ease) both; animation-delay: calc(var(--i) * 90ms); }
+.stamp-week li i svg { width: 20px; height: 20px; }
+@keyframes stamp-in { 0% { opacity: 0; transform: scale(2.2) rotate(-18deg); } 60% { opacity: 1; transform: scale(0.9) rotate(4deg); } 100% { opacity: 1; transform: none; } }
+
+/* Title touch: tapping the sun or moon nudges the eclipse and the matching Leader hops. */
+.hero-sun-nudge, .hero-moon-nudge { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+.hero-sun-nudge.poke { animation: hero-sun-poke 0.5s ease-out; }
+.hero-moon-nudge.poke { animation: hero-moon-poke 0.55s ease-out; }
+.hero-sun-nudge.poke-big { animation-name: hero-sun-poke-big; animation-duration: 0.9s; }
+.hero-moon-nudge.poke-big { animation-name: hero-moon-poke-big; animation-duration: 1s; }
+.hero-leader { transform-box: fill-box; transform-origin: 50% 100%; }
+.hero-leader.answer { animation: hero-hop 0.5s ease-out; }
+@keyframes hero-sun-poke { 0% { transform: scale(1); filter: none; } 35% { transform: scale(1.08); filter: brightness(1.25); } 100% { transform: scale(1); filter: none; } }
+@keyframes hero-sun-poke-big { 0% { transform: scale(1); filter: none; } 30% { transform: scale(1.18); filter: brightness(1.6); } 60% { transform: scale(0.97); } 100% { transform: scale(1); filter: none; } }
+@keyframes hero-moon-poke { 0% { transform: translateX(0); } 30% { transform: translateX(-9px); } 65% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+@keyframes hero-moon-poke-big { 0% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-16px, -6px) rotate(-14deg); } 55% { transform: translate(10px, 3px) rotate(8deg); } 100% { transform: translate(0, 0) rotate(0); } }
+@keyframes hero-hop { 0% { transform: translateY(0) scale(1, 1); } 25% { transform: translateY(0) scale(1.06, 0.92); } 55% { transform: translateY(-12px) scale(0.97, 1.05); } 100% { transform: translateY(0) scale(1, 1); } }
+
+/* Reduced motion: effects that are only motion are hidden outright; .moment keeps its centring once its animation is gone */
+:root[data-motion='reduced'] .fall, :root[data-motion='reduced'] .win-burst, :root[data-motion='reduced'] .eclipse-cinema, :root[data-motion='reduced'] .kill-cam, :root[data-motion='reduced'] .confetti { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .fall, .win-burst, .eclipse-cinema, .kill-cam, .confetti { display: none; }
+  .moment { transform: translateX(-50%); }
+}
