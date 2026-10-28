@@ -645,7 +645,7 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
 /* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
 .menu-art .art-mote { animation: art-mote 7s ease-in-out infinite; }
-.menu-art .art-shoot { opacity: 0; animation: art-shoot 1.2s ease-in both; }
+.menu-art .art-shoot, .hero .art-shoot { opacity: 0; animation: art-shoot 1.2s ease-in both; }
 .menu-art .art-glow { animation-duration: 3.4s; }
 .menu-art .art-bob { animation-name: art-bob, art-sway; animation-duration: 2.6s, 5.2s; }
 .menu-art .art-burst { animation-name: art-pulse, art-flicker; animation-duration: 1.4s, 0.9s; }
@@ -655,9 +655,9 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-shoot { from { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
-.menu-art .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art * { animation: none; }
-@media (prefers-reduced-motion: reduce) { .menu-art * { animation: none; } }
+.menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
+[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;

@@ -3,6 +3,7 @@ import { isMuted, setMuted } from '../../audio/synth'
 import { SoundPrompt } from './SoundPrompt'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
+import { Shooter } from './MenuArt'
 import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
@@ -76,6 +77,8 @@ function Hero() {
         {STARS.map((s, i) => (
           <circle key={i} className="star" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${s.delay}s` }} />
         ))}
+        <Shooter first={2} />
+        <Shooter first={7} />
       </g>
       <g transform="translate(160 110) scale(0.9)" className="hero-core">
         <circle r="112" fill="url(#hero-corona)" className="corona" />

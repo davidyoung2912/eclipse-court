@@ -30,7 +30,7 @@ const COURSES = [
 ]
 
 /** A shooting star that flies one of the courses, rests a few seconds, then picks a different one at random. */
-function Shooter({ first }: { first: number }) {
+export function Shooter({ first }: { first: number }) {
   const [course, setCourse] = useState(first)
   const [run, setRun] = useState(0)
   useEffect(() => {
