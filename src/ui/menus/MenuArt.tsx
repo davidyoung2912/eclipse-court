@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { Role } from '../../engine/rules/types'
 import { PieceArt } from '../../art/PieceArt'
 import { IconShape, type IconName } from './icons'
@@ -11,6 +12,42 @@ const SKY = Array.from({ length: 28 }, (_, i) => ({
   y: (i * 29.1 + (i % 4) * 9) % 96,
   r: 0.5 + (i % 3) * 0.4,
 }))
+
+/** Twelve courses for a shooting star: where it enters (x, y), its heading in degrees (0 is right, 90 is down), how far it flies and for how long. */
+const COURSES = [
+  { x: -20, y: 8, a: 10, len: 360, s: 1.2 },
+  { x: 340, y: 14, a: 172, len: 360, s: 1.2 },
+  { x: 60, y: -10, a: 60, len: 150, s: 0.9 },
+  { x: 260, y: -10, a: 118, len: 150, s: 0.9 },
+  { x: -20, y: 78, a: -12, len: 350, s: 1.4 },
+  { x: 340, y: 84, a: 192, len: 350, s: 1.4 },
+  { x: 120, y: -10, a: 80, len: 120, s: 0.8 },
+  { x: 200, y: -10, a: 100, len: 130, s: 0.8 },
+  { x: -20, y: -5, a: 30, len: 260, s: 1.1 },
+  { x: 340, y: -5, a: 150, len: 260, s: 1.1 },
+  { x: 30, y: 52, a: -30, len: 200, s: 1 },
+  { x: 300, y: 64, a: 210, len: 250, s: 1.1 },
+]
+
+/** A shooting star that flies one of the courses, rests a few seconds, then picks a different one at random. */
+function Shooter({ first }: { first: number }) {
+  const [course, setCourse] = useState(first)
+  const [run, setRun] = useState(0)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setCourse((c) => (c + 1 + Math.floor(Math.random() * (COURSES.length - 1))) % COURSES.length)
+      setRun((r) => r + 1)
+    }, (run === 0 ? 800 : 2800) + Math.random() * 4200)
+    return () => clearTimeout(t)
+  }, [run])
+  const c = COURSES[course]
+  return (
+    <g transform={`translate(${c.x} ${c.y}) rotate(${c.a})`}>
+      <path key={run} d="M-18,0L0,0" stroke="#fbf1d4" strokeWidth="1.4" strokeLinecap="round" className="art-shoot"
+        style={{ ['--len' as string]: `${c.len}px`, animationDuration: `${c.s}s`, animationPlayState: run === 0 ? 'paused' : 'running' }} />
+    </g>
+  )
+}
 
 function Sky({ id }: { id: string }) {
   return (
@@ -32,8 +69,8 @@ function Sky({ id }: { id: string }) {
       <rect width="320" height="150" fill={`url(#${id}-sky)`} />
       {SKY.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fbf1d4" opacity="0.5" className={i % 2 ? 'art-star' : undefined} style={i % 2 ? { animationDelay: `${(i * 0.37) % 3}s` } : undefined} />)}
       {MOTES.map((m, i) => <circle key={`m${i}`} cx={m.x} cy={m.y} r={m.r} fill={i % 2 ? '#c9b6ff' : '#ffd77a'} className="art-mote" style={{ animationDuration: `${m.d}s`, animationDelay: `${m.o}s` }} />)}
-      <path d="M-20,0L20,8" stroke="#fbf1d4" strokeWidth="1.4" strokeLinecap="round" className="art-shoot" />
-      <path d="M-20,0L20,8" stroke="#fbf1d4" strokeWidth="1.4" strokeLinecap="round" className="art-shoot art-shoot-b" />
+      <Shooter first={0} />
+      <Shooter first={5} />
     </>
   )
 }

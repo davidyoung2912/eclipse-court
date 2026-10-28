@@ -123,7 +123,7 @@ export function createFx(look: DuelLook): Fx {
   return { look, theme, t: 0, call: 0, particles: [], motes, flash: [0, 0], recoil: [{ x: 0, y: 0 }, { x: 0, y: 0 }], lobStart: new WeakMap(), floor: null, hatch: null, lastIcon: [null, null], punch: 0, punchAt: { x: ARENA_W / 2, y: ARENA_H / 2 }, ghost: [{ value: 1, hold: 0 }, { value: 1, hold: 0 }], ko: null, cam: 0, flare: 0 }
 }
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10)
+const fmt = (n: number) => String(Math.max(1, Math.round(n)))
 
 function push(fx: Fx, p: Particle) {
   if (fx.particles.length < MAX_PARTICLES) fx.particles.push(p)

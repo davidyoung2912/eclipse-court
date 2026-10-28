@@ -232,7 +232,7 @@ const DATA = {
   ],
   'duel-mouse': [
     { id: 'duel-mouse-controls', icon: 'target', title: 'Mouse Controls',
-      text: 'Click the arena to take control with the mouse, then move it to steer and stop moving to stop. Hold the left button to attack, and press Esc to free the mouse. The panel under the arena repeats these controls.' },
+      text: 'Click the arena to take control with the mouse, then move it to steer: you glide on after a flick and ease to a stop, and you always face the foe. Hold the left button to attack, and press Esc to free the mouse. The panel under the arena repeats these controls.' },
   ],
   'duel-defend': [
     { id: 'duel-defend-hold', icon: 'shield', title: 'You Are Defending',

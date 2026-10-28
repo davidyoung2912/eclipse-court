@@ -51,8 +51,16 @@ interface Props {
 const STICK_RADIUS = 56
 /** The AI's walking speed grows by this share of its base per second, so stalling gets harder (about +36% by the time limit). */
 const FOE_SPEED_RAMP = 0.018
-/** How quickly the mouse's virtual stick drifts back to centre, per second. */
-const MOUSE_RETURN = 5
+/** The mouse's virtual stick: pixels of travel for full speed, and the share of raw movement that counts. */
+const MOUSE_RADIUS = 90
+const MOUSE_SENS = 0.7
+/** Movement against the stick's current push counts this much extra, so reversing is quick instead of a fight with the drift. */
+const MOUSE_BRAKE = 2.5
+/** After the mouse stops, the stick holds for this long (seconds), then drifts back to centre at MOUSE_RETURN per second. */
+const MOUSE_HOLD = 0.3
+const MOUSE_RETURN = 2.2
+/** Stick pushes this small (share of full) are ignored so a nudge of the hand does not steer. */
+const MOUSE_DEADZONE = 0.08
 const END_DELAY = 1.1
 /** The pre-fight countdown: each of these shows for COUNT_STEP_MS, then the fight begins. */
 const COUNTDOWN = ['3', '2', '1', 'Go!']
@@ -74,7 +82,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const doneRef = useRef(onDone)
   const stage = useRef<HTMLDivElement>(null)
   /** Mouse steering: the virtual stick offset in pixels, active while the pointer is locked to the stage. */
-  const mouse = useRef({ x: 0, y: 0, locked: false })
+  const mouse = useRef({ x: 0, y: 0, idle: 0, locked: false })
   const [desktop] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches)
   const [locked, setLocked] = useState(false)
   const [count, setCount] = useState(0)
@@ -114,19 +122,27 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     if (!desktop || !el || waiting) return
     const lockChange = () => {
       const on = document.pointerLockElement === el
-      mouse.current = { x: 0, y: 0, locked: on }
+      mouse.current = { x: 0, y: 0, idle: 0, locked: on }
       if (!on) input.current = { ...NO_INPUT }
       setLocked(on)
       setHeld(false)
     }
     const move = (e: MouseEvent) => {
       if (!mouse.current.locked) return
-      let x = mouse.current.x + e.movementX
-      let y = mouse.current.y + e.movementY
+      const dx = e.movementX * MOUSE_SENS
+      const dy = e.movementY * MOUSE_SENS
+      const { x: sx, y: sy } = mouse.current
+      const sl = Math.hypot(sx, sy)
+      // The part of the move that opposes the current push is boosted, so turning back cancels the drift fast.
+      const along = sl > 0 ? (dx * sx + dy * sy) / sl : 0
+      const boost = along < 0 ? (MOUSE_BRAKE - 1) * along / sl : 0
+      let x = sx + dx + sx * boost
+      let y = sy + dy + sy * boost
       const len = Math.hypot(x, y)
-      if (len > STICK_RADIUS) { x = (x * STICK_RADIUS) / len; y = (y * STICK_RADIUS) / len }
+      if (len > MOUSE_RADIUS) { x = (x * MOUSE_RADIUS) / len; y = (y * MOUSE_RADIUS) / len }
       mouse.current.x = x
       mouse.current.y = y
+      mouse.current.idle = 0
     }
     const up = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse' || e.button !== 0 || !mouse.current.locked) return
@@ -190,11 +206,18 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       if (flip) ctx.transform(-1, 0, 0, -1, w, h)
 
       if (mouse.current.locked) {
-        // The mouse drives a virtual stick that drifts back to centre, so moving it steers and stopping it stops you.
-        const k = Math.exp(-dt * MOUSE_RETURN)
-        mouse.current.x *= k
-        mouse.current.y *= k
-        input.current = { ...input.current, mx: mouse.current.x / STICK_RADIUS, my: mouse.current.y / STICK_RADIUS }
+        // The mouse drives a virtual stick that holds briefly, then drifts back to centre: a flick sends you gliding on.
+        mouse.current.idle += dt
+        if (mouse.current.idle > MOUSE_HOLD) {
+          const k = Math.exp(-dt * MOUSE_RETURN)
+          mouse.current.x *= k
+          mouse.current.y *= k
+        }
+        const sx = mouse.current.x / MOUSE_RADIUS
+        const sy = mouse.current.y / MOUSE_RADIUS
+        const sl = Math.hypot(sx, sy)
+        const live = sl <= MOUSE_DEADZONE ? 0 : (sl - MOUSE_DEADZONE) / (1 - MOUSE_DEADZONE) / sl
+        input.current = { ...input.current, mx: sx * live, my: sy * live }
       }
       if (freeze > 0) freeze -= dt
       else if (started.current) acc += dt * (assist && DUEL_SECONDS - state.t <= ASSIST_SLOW_SECONDS ? pace * ASSIST_SLOWDOWN : pace)
@@ -213,7 +236,10 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         acc -= DT
         const mine = flip ? { ...input.current, mx: -input.current.mx, my: -input.current.my } : input.current
         const inputs: [DuelInput, DuelInput] = [NO_INPUT, NO_INPUT]
-        inputs[playerSide] = mine
+        inputs[playerSide] = mouse.current.locked
+          // With the mouse you always face the foe, so steering never turns you away and every attack lands where you look.
+          ? { ...mine, aim: Math.atan2(state.fighters[foeSide].pos.y - state.fighters[playerSide].pos.y, state.fighters[foeSide].pos.x - state.fighters[playerSide].pos.x) }
+          : mine
         inputs[foeSide] = ai(state, foeSide)
         const stepped = stepDuel(state, inputs)
         events.push(...stepped)
@@ -309,7 +335,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   }
 
   const onStagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!desktop || e.pointerType !== 'mouse' || e.button !== 0) return
+    if (briefing || !desktop || e.pointerType !== 'mouse' || e.button !== 0) return
     if (!mouse.current.locked) {
       try { void Promise.resolve(e.currentTarget.requestPointerLock()).catch(() => {}) } catch { /* ignored */ }
       return
@@ -353,7 +379,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           <aside className="duel-info" aria-label="Mouse controls">
             <h3>Mouse controls</h3>
             <ul>
-              <li><strong>Move the mouse</strong> to steer. Stop moving to stop.</li>
+              <li><strong>Move the mouse</strong> to steer; you glide on, then ease to a stop. You always face the foe.</li>
               <li><strong>Hold left click</strong> to attack.</li>
               <li><strong>Esc</strong> frees the mouse.</li>
             </ul>

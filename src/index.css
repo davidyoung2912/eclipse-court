@@ -529,6 +529,8 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .piece-card.empty { display: grid; place-items: center; text-align: center; opacity: 0.75; border-style: dashed; }
 .piece-card.empty p { margin: 0; }
 .piece-card p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.piece-card.cell-card { height: auto; min-height: calc(1.85rem + var(--card-rows, 4) * 1.08rem); }
+.piece-card.cell-card p { white-space: normal; padding-left: 3.4em; text-indent: -3.4em; }
 .piece-card i { font-style: normal; opacity: 0.6; display: inline-block; min-width: 3.4em; }
 .piece-card header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; white-space: nowrap; }
 .piece-card header b { font-size: 0.9rem; }
@@ -644,15 +646,14 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
 /* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
 .menu-art .art-mote { animation: art-mote 7s ease-in-out infinite; }
-.menu-art .art-shoot { opacity: 0; animation: art-shoot 7s ease-in infinite; }
-.menu-art .art-shoot-b { animation-delay: -3.6s; animation-duration: 9s; }
+.menu-art .art-shoot { opacity: 0; animation: art-shoot 1.2s ease-in both; }
 .menu-art .art-glow { animation-duration: 3.4s; }
 .menu-art .art-bob { animation-name: art-bob, art-sway; animation-duration: 2.6s, 5.2s; }
 .menu-art .art-burst { animation-name: art-pulse, art-flicker; animation-duration: 1.4s, 0.9s; }
 .menu-art .art-spin { animation-duration: 18s; }
 .menu-art .art-star { animation-duration: 1.9s; }
 @keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
-@keyframes art-shoot { 0% { transform: translate(-30px, -10px); opacity: 0; } 4% { opacity: 1; } 14% { transform: translate(340px, 80px); opacity: 0; } 100% { transform: translate(340px, 80px); opacity: 0; } }
+@keyframes art-shoot { from { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .menu-art .art-mote { transform-box: view-box; }
@@ -1251,6 +1252,7 @@ svg.board:focus { outline: none; }
     column-gap: 20px;
     max-width: 1180px;
     overflow-y: auto;
+    padding-top: calc(env(safe-area-inset-top) + 16px);
   }
   .app.timed > * { grid-column: 2; }
   .app.timed > .board {
@@ -1258,13 +1260,14 @@ svg.board:focus { outline: none; }
     grid-row: 1 / span 24;
     align-self: start;
     justify-self: center;
-    margin-top: 12px;
-    width: min(100%, calc(100vh - 24px - var(--bottom-gap)));
+    margin-top: 0;
+    width: min(100%, calc(100vh - 28px - var(--bottom-gap)));
     max-height: none;
   }
   .app.timed > .tray { margin-top: 0; }
   .app.timed > .tray .buttons { flex-wrap: wrap; }
   .app.timed > .tray .buttons button { flex: 1 1 auto; min-width: 0; }
+  .duel-frame { padding-top: calc(env(safe-area-inset-top) + 24px); }
 }
 
 /* Desktop menu: the hero and title stand on the left, the cards and shortcuts fill the right, on the board's wide breakpoint. */
