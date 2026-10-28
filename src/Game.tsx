@@ -41,6 +41,7 @@ import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import { narrate } from './narrate'
+import { momentOf, MOMENT_MS, type Moment, type MomentId } from './moments'
 import { lineAllowed, newBanter, speak, triggerFor, type BanterState } from './banter'
 import { personaById } from './engine/data/personas'
 import type { LineCategory } from './engine/data/personaLines'
@@ -296,6 +297,9 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   const [music, setMusic] = useState(isMusicOn)
   /** The capture streak just made, shown for a moment; the key restarts the animation. */
   const [combo, setCombo] = useState<{ key: number; label: string; court: Court } | null>(null)
+  /** The named moment on show (tap to skip); each is named once a game. */
+  const [moment, setMoment] = useState<(Moment & { key: number }) | null>(null)
+  const momentsSeen = useRef(new Set<MomentId>())
   const lastTurn = useRef(state.turn)
   const wasEclipse = useRef(state.eclipse)
   const musicRef = useRef<ReturnType<typeof startMusic> | null>(null)
@@ -326,6 +330,13 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     const timer = setTimeout(() => setCombo(null), 1600)
     return () => clearTimeout(timer)
   }, [combo])
+
+  // The named moment clears itself.
+  useEffect(() => {
+    if (!moment) return
+    const timer = setTimeout(() => setMoment(null), MOMENT_MS)
+    return () => clearTimeout(timer)
+  }, [moment])
 
   // Each court's bell rings as its turn begins.
   useEffect(() => {
@@ -447,6 +458,11 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     const steps = [...history, { state: s, action }]
     setHistory(steps)
     celebrate(steps, state, s)
+    const named = momentOf(steps, momentsSeen.current)
+    if (named) {
+      momentsSeen.current.add(named.id)
+      setMoment({ ...named, key: steps.length })
+    }
     if (!getSettings().reduceMotion) setKill(killShotOf(steps))
     say(steps, state, action, s)
     if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
@@ -725,6 +741,9 @@ export function Game({ controllers, opening, record, session, context, coach, fi
         </div>
       )}
       {combo && !ended && <div key={combo.key} className={`combo ${hotSeat ? combo.court : combo.court === human ? 'mine' : 'theirs'}`} role="status">{combo.label}</div>}
+      {moment && !ended && (
+        <button key={moment.key} className={`moment ${moment.court ?? 'both'}`} role="status" onClick={() => setMoment(null)}>{t(`moment.${moment.id}`)}</button>
+      )}
       {lost && (
         <div className="confirm result" role="dialog" aria-label="Connection lost">
           <p className="confirm-title">Connection lost</p>

@@ -15,7 +15,7 @@ const URGENT: readonly LineCategory[] = ['win', 'lose', 'draw', 'eclipse']
 /** Whether the Banter setting lets a line of this category be shown: Quiet keeps only the urgent moments. */
 export const lineAllowed = (level: BanterLevel, category: LineCategory): boolean => level === 'full' || (level === 'quiet' && URGENT.includes(category))
 
-const isLeaderThreatened = (state: GameState, court: Court): boolean => {
+export const isLeaderThreatened = (state: GameState, court: Court): boolean => {
   const leader = state.pieces.find((p) => p.court === court && p.role === 'leader')
   if (!leader || leader.shrouded) return false
   return state.pieces.some((p) => p.court === otherCourt(court) && legalMoves(state, p).some((to) => to.x === leader.pos.x && to.y === leader.pos.y))

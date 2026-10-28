@@ -1196,6 +1196,22 @@ body:has(.duel) .play-timer { display: none; }
   30%, 75% { opacity: 1; transform: translateX(-50%) scale(1); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-18px) scale(1); }
 }
+/* Named moments: a rare, fast banner; tap to skip. */
+.moment {
+  position: fixed; left: 50%; top: 14%; z-index: 24; padding: 6px 22px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.14em; text-transform: uppercase;
+  animation: moment-in 1.4s ease-out forwards;
+}
+.moment.solari { background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; box-shadow: 0 0 24px rgba(232, 182, 74, 0.6); }
+.moment.umbral { background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; box-shadow: 0 0 24px rgba(122, 92, 200, 0.7); }
+.moment.both { background: #0b0820; color: var(--solari-cream); box-shadow: 0 0 24px rgba(242, 197, 92, 0.5), inset 0 0 0 2px rgba(242, 197, 92, 0.6); }
+@keyframes moment-in {
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.7); letter-spacing: 0.4em; }
+  14% { opacity: 1; transform: translateX(-50%) scaleX(1); letter-spacing: 0.14em; }
+  80% { opacity: 1; transform: translateX(-50%); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) { .moment { animation: none; transform: translateX(-50%); } }
 .confirm.result { overflow: visible; }
 .win-burst { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
 .win-halo {
