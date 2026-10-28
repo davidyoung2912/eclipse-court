@@ -32,6 +32,13 @@ function Sky({ id }: { id: string }) {
   )
 }
 
+/** A jagged starburst for the moment the two courts clash: sixteen points, alternately long and short. */
+const clashBurst = `M${Array.from({ length: 32 }, (_, i) => {
+  const a = (i / 32) * Math.PI * 2 - Math.PI / 2
+  const r = i % 2 ? 17 : 36
+  return `${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`
+}).join('L')}Z`
+
 /** Two courts face off across a lit and a darkened strip of the board. */
 export function SkirmishArt() {
   return (
@@ -45,10 +52,9 @@ export function SkirmishArt() {
       <path d="M0,112H320" stroke="#9a7cf0" strokeOpacity="0.6" />
       <g transform="translate(62 82) scale(96)"><PieceArt role="leader" court="solari" /></g>
       <g transform="translate(258 82) scale(96)"><PieceArt role="leader" court="umbral" /></g>
-      <g transform="translate(160 76)" stroke="#fbf1d4" strokeWidth="5" strokeLinecap="round" fill="none">
-        <path d="M-26,-30L26,30M26,-30L-26,30" />
-        <path d="M-34,-36l9,2-2,9M34,-36l-9,2 2,9" strokeWidth="3" />
-      </g>
+      <path d={clashBurst} transform="translate(160 76)" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="160" cy="76" r="14" fill="#fff1b8" />
+      <circle cx="166" cy="72" r="13" fill="#14102b" />
       <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" />
     </svg>
   )

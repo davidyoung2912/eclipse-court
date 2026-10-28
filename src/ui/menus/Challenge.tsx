@@ -38,7 +38,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
             <Icon name={LEVEL_ICON[d]} />Against the AI: {d[0].toUpperCase() + d.slice(1)}
           </button>
         ))}
-        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a Friend on This Device</button>
+        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="versus" />With a Friend on This Device</button>
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="challenge" />

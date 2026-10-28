@@ -164,10 +164,11 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     summary: summaries[id], changed: changed.has(id), open: openSections[id],
     onToggle: (o: boolean) => setOpenSections((cur) => ({ ...cur, [id]: o })),
   })
-  const players: SegOption<'one' | 'two' | 'online'>[] = [
+  const onlineOption: SegOption<'one' | 'two' | 'online'> = { value: 'online', label: 'Online', icon: 'chain', hint: 'Host a game for a friend on another device. Duels are settled automatically.' }
+  // Hosting a game is already an online choice, so it is the only one offered then.
+  const players: SegOption<'one' | 'two' | 'online'>[] = onHost ? [onlineOption] : [
     { value: 'one', label: 'One Player', icon: 'swords', hint: 'Play against the AI.' },
-    { value: 'two', label: 'Two Players', icon: 'banner', hint: 'Share this device, taking turns. Duels are settled automatically.' },
-    ...(onHost ? [{ value: 'online' as const, label: 'Online', icon: 'chain' as const, hint: 'Host a game for a friend on another device. Duels are settled automatically.' }] : []),
+    { value: 'two', label: 'Two Players', icon: 'versus', hint: 'Share this device, taking turns. Duels are settled automatically.' },
   ]
   const opponents: SegOption<Difficulty>[] = DIFFICULTY_LIST.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1), icon: LEVEL_ICON[d], hint: LEVEL_TEXT[d] }))
   const tiers: SegOption<RulesetId>[] = RULESETS.map((t) => ({ value: t.id, label: t.name, icon: t.icon, hint: t.text }))
