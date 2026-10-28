@@ -20,6 +20,9 @@ import { TipCard } from '../tips/TipCard'
 import { SkirmishArt } from './MenuArt'
 import { BOARD_STARS, GRAND_STARS, boardUnlocked, presetUnlocked, totalStars, type Progress } from '../../progress'
 import type { Court, MatchMode, Role, Spell } from '../../engine/rules/types'
+import { bountiesFor } from '../../engine/data/bounties'
+import { claimedOn } from '../../bounties'
+import { dailySeed } from '../../engine/data/setups'
 import { BackButton } from './BackButton'
 
 interface Props {
@@ -216,6 +219,17 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     <main className="app menu setup">
       <SkirmishArt />
       <h2>Skirmish</h2>
+      {!hotSeat && (
+        <details className="tier-fold">
+          <summary><h3>Today’s bounties ({claimedOn().length}/{bountiesFor(dailySeed()).length})</h3></summary>
+          <ul className="setup-card">
+            {bountiesFor(dailySeed()).map((b) => (
+              <li key={b.id}>{claimedOn().includes(b.id) ? '✓ ' : ''}{b.text} · +{b.shards} Shards</li>
+            ))}
+          </ul>
+          <p className="setup-hint">Claimed in any skirmish against a Normal or Hard AI.</p>
+        </details>
+      )}
       <div className="setup-card">
         <strong>{tier.name} rules · {grand ? 'Grand' : SETUP_INFO[mode].name} army on {boardLabel} · {online ? (byLink ? 'By link' : 'Online') : hotSeat ? 'Two players' : `${difficulty[0].toUpperCase() + difficulty.slice(1)} AI`}.</strong> {summary}
       </div>

@@ -15,6 +15,7 @@ import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
+import { claimBounties } from './bounties'
 import { recordRush, rushOrder, RUSH_SHARD_CAP } from './rush'
 import { CLASSIC_ROLES } from './engine/data/draft'
 import { dailyGame, dailyMatch, DAILY_COURT, isDailyMatch } from './engine/data/daily'
@@ -585,7 +586,12 @@ export default function App() {
         earnShards(settled.shards + rated.shards)
         return { ...settled, lines: [...rated.lines, ...settled.lines] }
       }
-      earnShards(settled.shards + (extra?.shards ?? 0))
+      // Side goals pay only in plain skirmishes against an AI that is not the easiest.
+      const bounties = stats && settled.summary && scenario === undefined && campaignIndex === null && !daily && !weekly && !custom && difficulty !== 'easy'
+        ? claimBounties(settled.summary) : []
+      const bountyShards = bounties.reduce((n, b) => n + b.shards, 0)
+      earnShards(settled.shards + (extra?.shards ?? 0) + bountyShards)
+      if (bounties.length > 0) return { ...settled, lines: [...bounties.map((b) => `Bounty: ${b.text}. +${b.shards} Shards.`), ...settled.lines] }
       return extra ? { ...settled, lines: [...extra.lines, ...settled.lines] } : settled
     }
 
