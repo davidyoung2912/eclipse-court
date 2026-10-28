@@ -393,7 +393,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .corona { animation: breathe 4.35s ease-in-out infinite; }
 .rays { animation: spin 78.3s linear infinite; }
 .ray { fill: #ffd77a; }
-.hero-halo, .hero-link { animation: breathe 5.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.hero-halo { animation: breathe 5.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .hero-halo-late { animation-delay: -2.6s; }
 .moon { animation: drift 7.83s ease-in-out infinite alternate; }
 .main-menu h1 {
@@ -488,7 +488,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 @keyframes drift { from { transform: translate(-16px, 4px); } to { transform: translate(15px, -3px); } }
 @keyframes glow { 50% { box-shadow: 0 0 22px rgba(232, 182, 74, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); } }
 @media (prefers-reduced-motion: reduce) {
-  .star, .corona, .rays, .moon, .hero-halo, .hero-link, .main-menu .menu-buttons button.primary { animation: none; }
+  .star, .corona, .rays, .moon, .hero-halo, .main-menu .menu-buttons button.primary { animation: none; }
 }
 
 .menu h2, .menu h3 { margin: 0; }

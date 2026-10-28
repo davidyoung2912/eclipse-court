@@ -105,14 +105,6 @@ function Hero() {
           <stop offset="0.6" stopColor="#7a5cc8" stopOpacity="0.12" />
           <stop offset="1" stopColor="#7a5cc8" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="hero-link-solari" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#ffd77a" stopOpacity="0.5" />
-          <stop offset="1" stopColor="#ffd77a" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="hero-link-umbral" x1="1" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#b9a2ff" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#b9a2ff" stopOpacity="0" />
-        </linearGradient>
       </defs>
       <g className="hero-late">
         <ellipse cx="160" cy="105" rx="190" ry="120" fill="url(#hero-neb)" />
@@ -147,8 +139,6 @@ function Hero() {
       <g className="hero-late">
         <circle cx="56" cy="200" r="84" fill="url(#hero-halo-solari)" className="hero-halo" />
         <circle cx="264" cy="200" r="84" fill="url(#hero-halo-umbral)" className="hero-halo hero-halo-late" />
-        <path d="M82,166Q96,120 116,92" fill="none" stroke="url(#hero-link-solari)" strokeWidth="1.4" strokeLinecap="round" className="hero-link" />
-        <path d="M238,166Q224,120 204,92" fill="none" stroke="url(#hero-link-umbral)" strokeWidth="1.4" strokeLinecap="round" className="hero-link hero-halo-late" />
         <g transform="translate(56 200) scale(104)"><PieceArt role="leader" court="solari" /></g>
         <g transform="translate(264 200) scale(104)"><PieceArt role="leader" court="umbral" /></g>
       </g>
