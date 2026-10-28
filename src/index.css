@@ -1790,3 +1790,19 @@ body:has(.main-menu)::before {
 .stamp-week li i { position: absolute; inset: 0; display: grid; place-items: center; color: var(--solari-gold); animation: stamp-in 420ms var(--ease) both; animation-delay: calc(var(--i) * 90ms); }
 .stamp-week li i svg { width: 20px; height: 20px; }
 @keyframes stamp-in { 0% { opacity: 0; transform: scale(2.2) rotate(-18deg); } 60% { opacity: 1; transform: scale(0.9) rotate(4deg); } 100% { opacity: 1; transform: none; } }
+
+/* Title touch: tapping the sun or moon nudges the eclipse and the matching Leader hops. */
+.hero-sun-nudge, .hero-moon-nudge { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+.hero-sun-nudge.poke { animation: hero-sun-poke 0.5s ease-out; }
+.hero-moon-nudge.poke { animation: hero-moon-poke 0.55s ease-out; }
+.hero-sun-nudge.poke-big { animation-name: hero-sun-poke-big; animation-duration: 0.9s; }
+.hero-moon-nudge.poke-big { animation-name: hero-moon-poke-big; animation-duration: 1s; }
+.hero-leader { transform-box: fill-box; transform-origin: 50% 100%; }
+.hero-leader.answer { animation: hero-hop 0.5s ease-out; }
+@keyframes hero-sun-poke { 0% { transform: scale(1); filter: none; } 35% { transform: scale(1.08); filter: brightness(1.25); } 100% { transform: scale(1); filter: none; } }
+@keyframes hero-sun-poke-big { 0% { transform: scale(1); filter: none; } 30% { transform: scale(1.18); filter: brightness(1.6); } 60% { transform: scale(0.97); } 100% { transform: scale(1); filter: none; } }
+@keyframes hero-moon-poke { 0% { transform: translateX(0); } 30% { transform: translateX(-9px); } 65% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+@keyframes hero-moon-poke-big { 0% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-16px, -6px) rotate(-14deg); } 55% { transform: translate(10px, 3px) rotate(8deg); } 100% { transform: translate(0, 0) rotate(0); } }
+@keyframes hero-hop { 0% { transform: translateY(0) scale(1, 1); } 25% { transform: translateY(0) scale(1.06, 0.92); } 55% { transform: translateY(-12px) scale(0.97, 1.05); } 100% { transform: translateY(0) scale(1, 1); } }
+[data-motion='reduced'] .hero .poke, [data-motion='reduced'] .hero .answer { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hero .poke, .hero .answer { animation: none; } }

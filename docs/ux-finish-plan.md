@@ -1,6 +1,6 @@
 # UX finish: more professional, still fun
 
-Status: **in progress.** Written 2026-10-28 from the UX review. Items are the ones the owner approved; palette consolidation, noise cuts, the top bar and the brand lockup were not chosen and are out of scope.
+Status: **done.** Written 2026-10-28 from the UX review. Items are the ones the owner approved; palette consolidation, noise cuts, the top bar and the brand lockup were not chosen and are out of scope.
 
 ## Ground rules
 
@@ -99,3 +99,5 @@ Phase 10 done: `moodFor` in `mood.ts` (tested) maps the banter events (a capture
 Phase 11 done: `courtRank` in `progression.ts` (tested) turns the summed mastery levels into one of six Court ranks (Squire to Archon); `RankCrest` draws a shield whose colour, inner rim, pips and eclipse disc advance with the rank, at the top of Stats' side pane. Collection rows above Common carry a `.glint` sheen whose period, strength and phase come from `glintOf` (rarity) and the cosmetic's id. The Daily page shows `stampWeek`, the last seven days, with a sun stamp that thumps in, staggered, on each day the streak covers. Reduce motion drops the animations through the global rule.
 
 Phase 12 done: `audio/cues.ts` (tested) holds `uiCueFor` (a primary button confirms, a disabled one denies, the rest tap), a 60 ms `cueDue` gap and `hourBed`, which reads the centre ring's luminance, the direction and the Eclipse. `tapFx` plays the cue on every button press (silent while muted, volume from the effects slider). The music bed's `setHour` glides the shimmer's pitch and loudness with the light and turns the fifth minor as the day wanes, and the Eclipse hushes it; `musicLevel` still builds the bed toward the Eclipse. The result dialog sounds `sfx.reward` for any paying line, with or without the coin flight.
+
+Phase 13 done: tapping the sun pulses it and the Solarch hops; tapping the moon jolts it and the Duskmother hops (`heroReaction` and `nextRun` in `heroTouch.ts`, tested). Every fifth tap in a run (taps under 1.6 s apart) is a bigger flare with a cast chime. Reduce motion (setting or OS) ignores taps.

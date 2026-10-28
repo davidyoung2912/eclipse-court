@@ -15,6 +15,8 @@ import { t } from '../../i18n'
 import { getSettings } from '../../settings'
 import { PersonaFace } from '../../art/PersonaFace'
 import { menuLine, personaOfTheDay } from '../../personaMenu'
+import { heroReaction, nextRun, type HeroTarget } from './heroTouch'
+import { sfx } from '../../audio/synth'
 
 interface Props {
   progress: Progress
@@ -68,6 +70,20 @@ const DUST = Array.from({ length: 60 }, (_, i) => ({
 
 /** An eclipse over the two courts' Leaders: the sun with a moon sliding across it. */
 function Hero() {
+  const [poke, setPoke] = useState<{ target: HeroTarget; leader: 'solari' | 'umbral'; n: number; big: boolean } | null>(null)
+  const last = useRef({ run: 0, at: 0 })
+  const tap = (target: HeroTarget) => () => {
+    if (document.documentElement.dataset.motion === 'reduced' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const now = performance.now()
+    const run = nextRun(last.current.run, now - last.current.at)
+    last.current = { run, at: now }
+    const { leader, big } = heroReaction(target, run)
+    setPoke((p) => ({ target, leader, n: (p?.n ?? 0) + 1, big }))
+    sfx.select()
+    if (big) sfx.cast()
+  }
+  const hit = (target: HeroTarget) => (poke?.target === target ? `poke${poke.big ? ' poke-big' : ''}` : undefined)
+  const answer = (leader: 'solari' | 'umbral') => (poke?.leader === leader ? 'hero-leader answer' : 'hero-leader')
   return (
     <svg className="hero" viewBox="0 0 320 250" role="img" aria-label={t('menu.heroLabel')}>
       <defs>
@@ -127,8 +143,11 @@ function Hero() {
             ))}
           </g>
         </g>
-        <circle r="56" fill="url(#hero-sun)" />
-        <g className="moon art-moon-slide hero-moon" style={{ ['--reach' as string]: '94px' }}>
+        <g key={`s${poke?.target === 'sun' ? poke.n : 0}`} className={`hero-sun-nudge ${hit('sun') ?? ''}`} onClick={tap('sun')}>
+          <circle r="56" fill="url(#hero-sun)" />
+        </g>
+        <g className="moon art-moon-slide hero-moon" style={{ ['--reach' as string]: '94px' }} onClick={tap('moon')}>
+        <g key={`m${poke?.target === 'moon' ? poke.n : 0}`} className={`hero-moon-nudge ${hit('moon') ?? ''}`}>
           <circle r="54" fill="url(#hero-moon)" />
           <circle r="54" fill="url(#hero-earthshine)" />
           <circle cx="-18" cy="-14" r="7" fill="#000" opacity="0.18" />
@@ -138,12 +157,13 @@ function Hero() {
           <circle cx="-28" cy="12" r="3.5" fill="#000" opacity="0.14" />
           <circle r="54" fill="none" stroke="#9a7cf0" strokeWidth="1" opacity="0.35" />
         </g>
+        </g>
       </g>
       <g className="hero-late">
         <circle cx="56" cy="200" r="84" fill="url(#hero-halo-solari)" className="hero-halo" />
         <circle cx="264" cy="200" r="84" fill="url(#hero-halo-umbral)" className="hero-halo hero-halo-late" />
-        <g transform="translate(56 200) scale(104)"><PieceArt role="leader" court="solari" /></g>
-        <g transform="translate(264 200) scale(104)"><PieceArt role="leader" court="umbral" /></g>
+        <g transform="translate(56 200)"><g key={`a${poke?.target === 'sun' ? poke.n : 0}`} className={answer('solari')}><g transform="scale(104)"><PieceArt role="leader" court="solari" /></g></g></g>
+        <g transform="translate(264 200)"><g key={`b${poke?.target === 'moon' ? poke.n : 0}`} className={answer('umbral')}><g transform="scale(104)"><PieceArt role="leader" court="umbral" /></g></g></g>
       </g>
     </svg>
   )
