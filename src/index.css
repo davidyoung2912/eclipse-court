@@ -584,6 +584,26 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 
 /* Menu pages: a framed scene on top, ornamented headings, gilded cards */
 .menu-art { width: 100%; flex: 0 0 auto; border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.5); box-shadow: 0 0 18px rgba(122, 92, 200, 0.45); }
+/* Header scene motion: slow and small, so the scene feels alive without pulling the eye from the page. */
+.menu-art .art-star { animation: art-twinkle 3.2s ease-in-out infinite; }
+.menu-art .art-glow, .menu-art .art-bob, .menu-art .art-burst, .menu-art .art-spin, .menu-art .art-flag { transform-box: fill-box; transform-origin: center; }
+.menu-art .art-glow { animation: art-breathe 6s ease-in-out infinite; }
+.menu-art .art-bob { animation: art-bob 4.5s ease-in-out infinite; }
+.menu-art .art-late { animation-delay: -2.2s; }
+.menu-art .art-burst { animation: art-pulse 2.4s ease-in-out infinite; }
+.menu-art .art-spin { animation: art-turn 40s linear infinite; }
+.menu-art .art-road { animation: art-march 3s linear infinite; }
+.menu-art .art-flag { transform-origin: left center; animation: art-wave 2.4s ease-in-out infinite; }
+.menu-art .art-window { animation: art-twinkle 2.8s ease-in-out infinite; }
+@keyframes art-twinkle { 50% { opacity: 0.12; } }
+@keyframes art-breathe { 50% { opacity: 0.7; transform: scale(1.06); } }
+@keyframes art-bob { 50% { transform: translateY(var(--bob, -2px)); } }
+@keyframes art-pulse { 50% { transform: scale(1.08) rotate(4deg); } }
+@keyframes art-turn { to { transform: rotate(360deg); } }
+@keyframes art-march { to { stroke-dashoffset: -20; } }
+@keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
+[data-motion='reduced'] .menu-art * { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art * { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;

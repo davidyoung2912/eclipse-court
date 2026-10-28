@@ -27,7 +27,7 @@ function Sky({ id }: { id: string }) {
         </radialGradient>
       </defs>
       <rect width="320" height="150" fill={`url(#${id}-sky)`} />
-      {SKY.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fbf1d4" opacity="0.5" />)}
+      {SKY.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fbf1d4" opacity="0.5" className={i % 2 ? 'art-star' : undefined} style={i % 2 ? { animationDelay: `${(i * 0.37) % 3}s` } : undefined} />)}
     </>
   )
 }
@@ -44,18 +44,18 @@ export function SkirmishArt() {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" role="img" aria-label="The Solarch and the Duskmother face off">
       <Sky id="sk" />
-      <circle cx="58" cy="62" r="62" fill="url(#sk-sun)" />
-      <circle cx="262" cy="62" r="62" fill="url(#sk-moon)" />
+      <circle cx="58" cy="62" r="62" fill="url(#sk-sun)" className="art-glow" />
+      <circle cx="262" cy="62" r="62" fill="url(#sk-moon)" className="art-glow art-late" />
       {Array.from({ length: 10 }, (_, i) => (
         <rect key={i} x={i * 32} y="112" width="32" height="38" fill={i % 2 ? '#3b2f8a' : '#e8b64a'} opacity={0.35 + (i < 5 ? 0.04 * (4 - i) : 0.04 * (i - 5))} />
       ))}
       <path d="M0,112H320" stroke="#9a7cf0" strokeOpacity="0.6" />
-      <g transform="translate(62 82) scale(96)"><PieceArt role="leader" court="solari" /></g>
-      <g transform="translate(258 82) scale(96)"><PieceArt role="leader" court="umbral" /></g>
-      <path d={clashBurst} transform="translate(160 76)" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" />
+      <g transform="translate(62 82) scale(96)"><g className="art-bob" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="solari" /></g></g>
+      <g transform="translate(258 82) scale(96)"><g className="art-bob art-late" style={{ ['--bob' as string]: '-0.025px' }}><PieceArt role="leader" court="umbral" /></g></g>
+      <g transform="translate(160 76)"><path d={clashBurst} className="art-burst" fill="#ffd77a" fillOpacity="0.85" stroke="#fbf1d4" strokeWidth="2" strokeLinejoin="round" /></g>
       <circle cx="160" cy="76" r="14" fill="#fff1b8" />
       <circle cx="166" cy="72" r="13" fill="#14102b" />
-      <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" />
+      <circle cx="160" cy="76" r="34" fill="none" stroke="#ffd77a" strokeOpacity="0.5" strokeDasharray="3 5" className="art-spin" />
     </svg>
   )
 }
@@ -66,21 +66,21 @@ export function CampaignArt() {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" role="img" aria-label="The road to the Eclipse Court">
       <Sky id="cp" />
-      <circle cx="262" cy="34" r="46" fill="url(#cp-sun)" />
+      <circle cx="262" cy="34" r="46" fill="url(#cp-sun)" className="art-glow" />
       <circle cx="262" cy="34" r="19" fill="#ffe08a" />
       <circle cx="268" cy="31" r="18" fill="#0d0a22" />
       <path d="M0,150V104L38,78L74,104L120,66L170,108L214,76L260,104L320,70V150Z" fill="#241d58" />
       <path d="M0,150V124L50,102L96,124L150,92L206,124L258,98L320,118V150Z" fill="#1a1442" />
-      <path d="M-4,140C60,150 80,100 130,118S190,96 232,100 276,92 290,66" fill="none" stroke="#e8b64a" strokeWidth="5" strokeOpacity="0.75" strokeLinecap="round" strokeDasharray="1 9" />
+      <path d="M-4,140C60,150 80,100 130,118S190,96 232,100 276,92 290,66" fill="none" stroke="#e8b64a" strokeWidth="5" strokeOpacity="0.75" strokeLinecap="round" strokeDasharray="1 9" className="art-road" />
       {flags.map(([x, y], i) => (
         <g key={i} transform={`translate(${x} ${y})`}>
           <path d="M0,0V-20" stroke="#fbf1d4" strokeWidth="1.6" />
-          <path d={`M0,-20h12l-3,4 3,4H0Z`} fill={i % 2 ? '#7a5cc8' : '#e8b64a'} />
+          <path d={`M0,-20h12l-3,4 3,4H0Z`} fill={i % 2 ? '#7a5cc8' : '#e8b64a'} className="art-flag" style={{ animationDelay: `${-i * 0.45}s` }} />
         </g>
       ))}
       <g transform="translate(296 76)" fill="#0d0a22" stroke="#9a7cf0" strokeWidth="1">
         <path d="M-12,0V-22H-8V-26H-4V-22H4V-26H8V-22H12V0Z" />
-        <path d="M-3,0V-8Q0,-12 3,-8V0Z" fill="#ffd77a" stroke="none" />
+        <path d="M-3,0V-8Q0,-12 3,-8V0Z" fill="#ffd77a" stroke="none" className="art-window" />
       </g>
     </svg>
   )
@@ -103,11 +103,13 @@ export function PageArt({ icon }: { icon: IconName }) {
   return (
     <svg className="menu-art" viewBox="0 0 320 150" aria-hidden="true">
       <Sky id={id} />
-      <circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} />
+      <circle cx="160" cy="150" r="96" fill={`url(#${id}-sun)`} className="art-glow" />
       <circle cx="160" cy="150" r="46" fill="#ffe08a" opacity="0.9" />
       <circle cx="170" cy="142" r="44" fill="#0d0a22" />
-      <g transform="translate(160 68) scale(3.6) translate(-12 -12)" fill="none" stroke="#fbf1d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <IconShape name={icon} />
+      <g transform="translate(160 68) scale(3.6) translate(-12 -12)">
+        <g className="art-bob" style={{ ['--bob' as string]: '-0.6px' }} fill="none" stroke="#fbf1d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <IconShape name={icon} />
+        </g>
       </g>
     </svg>
   )
