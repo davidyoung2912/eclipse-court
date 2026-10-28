@@ -25,6 +25,7 @@ import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
 import { TipCard } from './ui/tips/TipCard'
+import { CoachMarks } from './ui/tips/CoachMarks'
 import { CHAT_IDS, CHAT_LINES } from './net/protocol'
 import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
@@ -519,6 +520,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     clearHint()
   }
 
+  const [coaching, setCoaching] = useState(false)
   const dusk = musicLevel(state)
   const eclipseFallen = state.eclipse && !state.winner
   return (
@@ -683,7 +685,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           </section>
         </div>
       )}
-      <TipCard float hidden={briefing || !!banner || !!pending || !!settled || !!asking || ended}
+      <CoachMarks hidden={briefing || !!banner || !!pending || !!settled || !!asking || ended} onActive={setCoaching} />
+      <TipCard float hidden={coaching || briefing || !!banner || !!pending || !!settled || !!asking || ended}
         page={[
           'game', !!state.config.cells?.length && 'game-cells', hotSeat && 'game-hotseat', online && 'game-online',
           puzzleLimit !== undefined && 'game-puzzle', !!state.config.objective && context?.kind !== 'story' && 'game-scenario',

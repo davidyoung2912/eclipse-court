@@ -1312,3 +1312,22 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 @media (prefers-reduced-motion: reduce) {
   main .cstage[data-pieces] [class*='pane-'], main .cstage[data-board] .board .sq, main .cstage[data-board] .board .glow { animation: none !important; }
 }
+
+/* First-run coach-marks: a ring on the real element and a callout beside it */
+.coach { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.coach-ring {
+  position: fixed; border-radius: 14px; border: 2px solid var(--tip-accent);
+  box-shadow: 0 0 0 9999px rgba(6, 4, 18, 0.55), 0 0 14px rgba(79, 217, 200, 0.6);
+  transition: top var(--t-mid) var(--ease), left var(--t-mid) var(--ease), width var(--t-mid) var(--ease), height var(--t-mid) var(--ease);
+}
+.coach-bubble {
+  position: fixed; left: 20px; right: 20px; max-width: 420px; margin: 0 auto; pointer-events: auto; text-align: left;
+  padding: 12px 14px 10px; border-radius: 14px; background: var(--tip-bg); border: 1px solid var(--tip-border);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); animation: tip-in var(--t-mid) var(--ease) both;
+}
+.coach-bubble h4 { margin: 0 0 4px; font-family: var(--display); font-size: 1rem; color: var(--tip-accent); }
+.coach-bubble p { margin: 0; font-size: 0.82rem; line-height: 1.42; }
+.coach-bubble .tip-foot button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6; }
+.coach-bubble .tip-foot .coach-skip { background: transparent; color: var(--tip-accent); border-color: transparent; margin-right: auto; }
+[data-motion='reduced'] .coach-ring, [data-motion='reduced'] .coach-bubble { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) { .coach-ring, .coach-bubble { transition: none; animation: none; } }

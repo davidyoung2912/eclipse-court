@@ -6,7 +6,7 @@ import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
-import { resetTips } from '../../tips'
+import { resetCoach, resetTips } from '../../tips'
 import { resetOnboarding } from '../../onboarding'
 import { BackButton } from './BackButton'
 import { getVolumes, setVolumes, isMuted, setMuted, sfx, unlockAudio } from '../../audio/synth'
@@ -88,6 +88,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <h3>{t('settings.guidance')}</h3>
       <div className="menu-buttons">
         <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote(t('settings.tipsBack')) }}><Icon name="bulb" />{t('settings.showTips')}</button>
+        <button onClick={() => { resetCoach(); setNote(t('settings.coachBack')) }}><Icon name="target" />{t('settings.showCoach')}</button>
       </div>
       <h3>{t('settings.save')}</h3>
       <p className="setup-hint">{t('settings.saveHint')}</p>

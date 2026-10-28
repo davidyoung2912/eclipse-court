@@ -28,3 +28,19 @@ describe('tips', () => {
     }
   })
 })
+
+describe('coach-marks', () => {
+  beforeEach(() => resetTips())
+
+  it('uses unique coach- ids that resetCoach clears without touching other cards', async () => {
+    const { COACH } = await import('./ui/tips/coachData')
+    const { resetCoach, COACH_PREFIX } = await import('./tips')
+    expect(new Set(COACH.map((s) => s.id)).size).toBe(COACH.length)
+    for (const s of COACH) expect(s.id.startsWith(COACH_PREFIX)).toBe(true)
+    markTipSeen('menu-1')
+    markTipSeen(COACH[0].id)
+    resetCoach()
+    expect(tipSeen(COACH[0].id)).toBe(false)
+    expect(tipSeen('menu-1')).toBe(true)
+  })
+})

@@ -46,3 +46,18 @@ export const subscribeTips = (l: Listener) => {
 
 /** Identity changes whenever the set does, for `useSyncExternalStore`. */
 export const tipsSnapshot = () => seen
+
+/** Coach-marks share the card store under a `coach-` prefix, so Show Tips Again brings them back with everything else. */
+export const COACH_PREFIX = 'coach-'
+
+/** Brings back only the on-board coach-marks. */
+export function resetCoach() {
+  seen = new Set([...seen].filter((id) => !id.startsWith(COACH_PREFIX)))
+  try {
+    if (seen.size) localStorage.setItem(KEY, JSON.stringify([...seen]))
+    else localStorage.removeItem(KEY)
+  } catch {
+    // Nothing was stored.
+  }
+  listeners.forEach((l) => l())
+}
