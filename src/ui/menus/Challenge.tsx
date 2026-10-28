@@ -10,6 +10,7 @@ import { LEVEL_ICON } from './levels'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   challenge: ChallengeCode
@@ -25,23 +26,23 @@ export function Challenge({ challenge, onPlay, onEdit, onBack }: Props) {
   return (
     <main className="app menu">
       <PageArt icon="swords" />
-      <h2>Challenge</h2>
-      <p className="tagline">Someone sent you this match. Every game from this link begins from the same position.</p>
+      <h2>{t('challenge.title')}</h2>
+      <p className="tagline">{t('challenge.tagline')}</p>
       <ul className="setup-card">
-        <li>Rules: {rulesetById(tierOfConfig(challenge.config))?.name}</li>
+        <li>{t('challenge.rules', { name: rulesetById(tierOfConfig(challenge.config))?.name ?? '' })}</li>
         {describeConfig(challenge).map((line) => <li key={line}>{line}</li>)}
       </ul>
-      <h3>Your court</h3>
+      <h3>{t('challenge.court')}</h3>
       <CourtPicker value={court} onChange={setCourt} />
-      <h3>Play</h3>
+      <h3>{t('challenge.play')}</h3>
       <div className="menu-buttons stacked">
         {DIFFICULTY_LIST.map((d) => (
           <button key={d} className={d === 'normal' ? 'primary' : undefined} onClick={() => onPlay(court, d, false)}>
-            <Icon name={LEVEL_ICON[d]} />Against the AI: {d[0].toUpperCase() + d.slice(1)}
+            <Icon name={LEVEL_ICON[d]} />{t('challenge.againstAi', { level: t(`level.${d}`) })}
           </button>
         ))}
-        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="versus" />With a Friend on This Device</button>
-        {onEdit && <button onClick={onEdit}><Icon name="grid" />Open in the Editor</button>}
+        <button onClick={() => onPlay(court, 'normal', true)}><Icon name="versus" />{t('challenge.friend')}</button>
+        {onEdit && <button onClick={onEdit}><Icon name="grid" />{t('challenge.editor')}</button>}
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="challenge" />

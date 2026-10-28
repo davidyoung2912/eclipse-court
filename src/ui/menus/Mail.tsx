@@ -6,6 +6,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
+import { t, type StringKey } from '../../i18n'
 
 interface Props {
   /** A move that arrived by link, waiting to be accepted. */
@@ -19,20 +20,20 @@ interface Props {
   onBack: () => void
 }
 
-const STATUS_TEXT: Record<MailStatus, string> = {
-  yours: 'Your move',
-  theirs: 'Waiting for them',
-  won: 'You won',
-  lost: 'You lost',
-  draw: 'Drawn',
+const STATUS_TEXT: Record<MailStatus, StringKey> = {
+  yours: 'mail.yours',
+  theirs: 'mail.theirs',
+  won: 'mail.won',
+  lost: 'mail.lost',
+  draw: 'mail.draw',
 }
 
-const COURT_NAME = { solari: 'Solari', umbral: 'Umbral' } as const
+const COURT_NAME = { solari: 'court.solari', umbral: 'court.umbral' } as const satisfies Record<string, StringKey>
 
-const NOTE: Record<Exclude<Receipt['kind'], 'new' | 'update'>, string> = {
-  over: 'That game is already over. You can watch it, but there is nothing left to play.',
-  known: 'You already have this move. Send your own move, or wait for theirs.',
-  clash: 'That link does not continue the game you hold. It may belong to a different game, or one of you went back and played another move.',
+const NOTE: Record<Exclude<Receipt['kind'], 'new' | 'update'>, StringKey> = {
+  over: 'mail.noteOver',
+  known: 'mail.noteKnown',
+  clash: 'mail.noteClash',
 }
 
 /** Games passed back and forth by link: the list, a way to start one, and where a pasted move is accepted. */
@@ -59,56 +60,56 @@ export function Mail({ incoming: arrived, onNew, onPlay, onSend, onReplay, onBac
   return (
     <main className="app menu battle-menu">
       <PageArt icon="chain" />
-      <h2>Play by Link</h2>
-      <p className="tagline">No connection needed. Make a move, send your friend the link, and wait for the link that comes back.</p>
+      <h2>{t('mail.title')}</h2>
+      <p className="tagline">{t('mail.tagline')}</p>
       {incoming && receipt && (
         <div className="setup-card" role="status">
-          <strong>A move arrived</strong>
-          {receipt.kind === 'new' ? <p>A new game, and it is your move as {COURT_NAME[receipt.me]}.</p>
-            : receipt.kind === 'update' ? <p>Your opponent has moved in a game you hold.</p>
-            : <p>{NOTE[receipt.kind]}</p>}
+          <strong>{t('mail.arrived')}</strong>
+          {receipt.kind === 'new' ? <p>{t('mail.newGame', { court: t(COURT_NAME[receipt.me]) })}</p>
+            : receipt.kind === 'update' ? <p>{t('mail.updated')}</p>
+            : <p>{t(NOTE[receipt.kind])}</p>}
           <div className="menu-buttons">
-            {receipt.kind === 'new' && <button className="primary" onClick={() => accept(incoming, receipt.me)}><Icon name="play" />Play</button>}
-            {receipt.kind === 'update' && held && <button className="primary" onClick={() => accept(incoming, held.me)}><Icon name="play" />Open</button>}
-            {(receipt.kind === 'clash' || receipt.kind === 'over') && <button onClick={() => onReplay(incoming)}><Icon name="replay" />Watch It</button>}
-            <button onClick={() => setIncoming(null)}>Dismiss</button>
+            {receipt.kind === 'new' && <button className="primary" onClick={() => accept(incoming, receipt.me)}><Icon name="play" />{t('mail.play')}</button>}
+            {receipt.kind === 'update' && held && <button className="primary" onClick={() => accept(incoming, held.me)}><Icon name="play" />{t('mail.open')}</button>}
+            {(receipt.kind === 'clash' || receipt.kind === 'over') && <button onClick={() => onReplay(incoming)}><Icon name="replay" />{t('mail.watchIt')}</button>}
+            <button onClick={() => setIncoming(null)}>{t('mail.dismiss')}</button>
           </div>
         </div>
       )}
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={onNew}><Icon name="plus" />New Game</button>
+        <button className="primary" onClick={onNew}><Icon name="plus" />{t('mail.new')}</button>
       </div>
-      <h3>Your games</h3>
-      {games.length === 0 && <p className="tagline">No games yet. Start one, or paste a move below.</p>}
+      <h3>{t('mail.yourGames')}</h3>
+      {games.length === 0 && <p className="tagline">{t('mail.none')}</p>}
       <ul className="setup-card">
         {games.map((game) => {
           const record = recordOfGame(game)
           if (!record) return (
-            <li key={game.id}>A game from another version of Eclipse Court. <button onClick={() => { dropMail(game.id); refresh((n) => n + 1) }}>Remove</button></li>
+            <li key={game.id}>{t('mail.otherVersion')} <button onClick={() => { dropMail(game.id); refresh((n) => n + 1) }}>{t('mail.remove')}</button></li>
           )
           const status = statusOf(record, game.me)
           const round = replay(record)?.round ?? 1
           return (
             <li key={game.id}>
-              <strong>{COURT_NAME[game.me]}</strong> · round {round} · {STATUS_TEXT[status]}{' '}
+              <strong>{t(COURT_NAME[game.me])}</strong> · {t('mail.round', { round })} · {t(STATUS_TEXT[status])}{' '}
               <button className={status === 'yours' ? 'primary' : undefined} onClick={() => (status === 'yours' ? onPlay(game) : onSend(game))}>
-                {status === 'yours' ? 'Play' : status === 'theirs' ? 'Link' : 'Open'}
+                {status === 'yours' ? t('mail.play') : status === 'theirs' ? t('mail.link') : t('mail.open')}
               </button>{' '}
-              <button onClick={() => { dropMail(game.id); refresh((n) => n + 1) }}>Remove</button>
+              <button onClick={() => { dropMail(game.id); refresh((n) => n + 1) }}>{t('mail.remove')}</button>
             </li>
           )
         })}
       </ul>
-      <h3>Paste a move</h3>
-      <textarea className="code-box" rows={4} value={text} spellCheck={false} aria-label="Link or code from your opponent"
+      <h3>{t('mail.paste')}</h3>
+      <textarea className="code-box" rows={4} value={text} spellCheck={false} aria-label={t('mail.pasteLabel')}
         onChange={(e) => { setText(e.target.value); setError(false) }} />
-      {error && <p role="alert">That is not a valid move link for this version of the game.</p>}
+      {error && <p role="alert">{t('mail.invalid')}</p>}
       <div className="menu-buttons stacked">
         <button disabled={!text.trim()} onClick={() => {
           const shared = parseShared(text)
           if (shared && shared.kind !== 'challenge') { setIncoming(shared.record); setText('') }
           else setError(true)
-        }}><Icon name="chain" />Open Move</button>
+        }}><Icon name="chain" />{t('mail.openMove')}</button>
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="mail" />

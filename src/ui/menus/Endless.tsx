@@ -4,6 +4,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
 import { ResetButton } from './ResetButton'
+import { t } from '../../i18n'
 
 interface Props {
   /** Lines about the puzzle just played. */
@@ -32,27 +33,27 @@ export function Endless({ report, onStart, onReset, onBack }: Props) {
   return (
     <main className="app menu endless-menu">
       <PageArt icon="puzzle" />
-      <h2>Endless Puzzles</h2>
-      <p className="tagline">Fresh puzzles found on the spot, each with a rating. Solve to climb; a miss costs points. One try each.</p>
+      <h2>{t('endless.title')}</h2>
+      <p className="tagline">{t('endless.tagline')}</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}
       <dl className="stat-tiles">
         {[
           { label: endlessTitle(record.rating), value: record.rating },
-          { label: 'solved', value: record.solved },
-          { label: `streak (best ${record.bestStreak})`, value: record.streak },
-          { label: 'peak rating', value: record.best },
+          { label: t('endless.solved'), value: record.solved },
+          { label: t('endless.streak', { best: record.bestStreak }), value: record.streak },
+          { label: t('endless.peak'), value: record.best },
         ].map(({ label, value }) => <div key={label}><dd>{value}</dd><dt>{label}</dt></div>)}
       </dl>
       <div className="choices">
         <button className="choice" onClick={play} disabled={busy}>
-          <strong><Icon name="bolt" />{busy ? 'Finding a puzzle…' : `Puzzle ${record.n + 1}`} <span className="pill">{band.name}</span></strong>
-          <span>{busy ? 'Setting the board; this can take a moment.' : `Win within ${band.lo === band.hi ? band.lo : `${band.lo} to ${band.hi}`} turns. Solving pays 2 Shards.`}</span>
+          <strong><Icon name="bolt" />{busy ? t('endless.finding') : t('endless.puzzleN', { n: record.n + 1 })} <span className="pill">{band.name}</span></strong>
+          <span>{busy ? t('endless.setting') : t('endless.winWithin', { turns: band.lo === band.hi ? band.lo : t('endless.range', { lo: band.lo, hi: band.hi }) })}</span>
         </button>
       </div>
       <div className="menu-buttons stacked">
-        <ResetButton label="Reset Endless" disabled={record.n === 0} warning="Set your Endless rating and record back to the start?" onReset={() => { onReset(); setRecord(loadEndless()) }} />
+        <ResetButton label={t('endless.reset')} disabled={record.n === 0} warning={t('endless.resetWarning')} onReset={() => { onReset(); setRecord(loadEndless()) }} />
         <BackButton onClick={onBack} />
       </div>
     </main>

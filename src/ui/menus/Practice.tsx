@@ -14,6 +14,7 @@ import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
 import { loadChoices, oneOf, saveChoices } from '../../lastChoices'
+import { t } from '../../i18n'
 
 interface Props {
   onPlaytime: (seconds: number) => void
@@ -59,8 +60,8 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
       </>
     )
 
-  const result = outcome && (outcome.defenderHp <= 0 ? (outcome.attackerHp > 0 ? 'You won' : 'Both fell')
-    : outcome.attackerHp <= 0 ? 'You lost' : 'A draw: the defender holds')
+  const result = outcome && (outcome.defenderHp <= 0 ? (outcome.attackerHp > 0 ? t('practice.won') : t('practice.bothFell'))
+    : outcome.attackerHp <= 0 ? t('practice.lost') : t('practice.draw'))
   const pick = (value: Role, set: (r: Role) => void, owner: Court, label: string) => (
     <div className="row-pick" role="group" aria-label={label}>
       {ROLES.map((r) => (
@@ -74,38 +75,38 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
   return (
     <main className="app menu battle-menu">
       <PageArt icon="target" />
-      <h2>Practice Arena</h2>
-      <p className="tagline">Fight any piece against any other. Nothing is saved.</p>
-      <h3>Your court</h3>
+      <h2>{t('practice.title')}</h2>
+      <p className="tagline">{t('practice.tagline')}</p>
+      <h3>{t('practice.court')}</h3>
       <CourtPicker value={court} onChange={(c) => { setCourt(c); setOutcome(null) }} />
-      <h3>Your piece (attacks)</h3>
-      {pick(mine, setMine, court, 'Your piece')}
-      <h3>Opponent piece (defends)</h3>
-      {pick(theirs, setTheirs, foe, 'Opponent piece')}
-      <h3>Light on the square</h3>
+      <h3>{t('practice.yourPiece')}</h3>
+      {pick(mine, setMine, court, t('practice.yourPieceLabel'))}
+      <h3>{t('practice.theirPiece')}</h3>
+      {pick(theirs, setTheirs, foe, t('practice.theirPieceLabel'))}
+      <h3>{t('practice.light')}</h3>
       <div className="row-pick">
         {LIGHTS.map((l) => (
           <button key={l} className={light === l ? 'on' : undefined} onClick={() => { setLight(l); setOutcome(null) }}>{l > 0 ? `+${l}` : l}</button>
         ))}
       </div>
-      <h3>Opponent skill</h3>
+      <h3>{t('practice.skill')}</h3>
       <div className="row-pick">
         {DIFFICULTY_LIST.map((d) => (
-          <button key={d} className={difficulty === d ? 'on' : undefined} onClick={() => setDifficulty(d)}><Icon name={LEVEL_ICON[d]} />{d[0].toUpperCase() + d.slice(1)}</button>
+          <button key={d} className={difficulty === d ? 'on' : undefined} onClick={() => setDifficulty(d)}><Icon name={LEVEL_ICON[d]} />{t(`level.${d}`)}</button>
         ))}
       </div>
       <div className="setup-card">
-        <div className="odds" aria-label="Win odds">
+        <div className="odds" aria-label={t('practice.odds')}>
           <span className={`odds-a ${court}`} style={{ flexGrow: odds.attacker }} />
           <span className="odds-o" style={{ flexGrow: odds.other }} />
           <span className={`odds-d ${foe}`} style={{ flexGrow: odds.defender }} />
         </div>
-        <p className="odds-text">You {pct(odds.attacker)} · Draw {pct(odds.other)} · Opponent {pct(odds.defender)}</p>
-        <p className="odds-note">Typical odds for these pieces and this light. They do not change with the opponent's skill.</p>
+        <p className="odds-text">{t('practice.oddsText', { you: pct(odds.attacker), draw: pct(odds.other), foe: pct(odds.defender) })}</p>
+        <p className="odds-note">{t('practice.oddsNote')}</p>
         {result && <p className="practice-out" role="status">{result}</p>}
       </div>
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={() => { saveChoices('practice', { mine, theirs, court, light, difficulty }); setSeed(Date.now()); setOutcome(null); setFighting(true) }}><Icon name="swords" />Fight</button>
+        <button className="primary" onClick={() => { saveChoices('practice', { mine, theirs, court, light, difficulty }); setSeed(Date.now()); setOutcome(null); setFighting(true) }}><Icon name="swords" />{t('practice.fight')}</button>
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="practice" />

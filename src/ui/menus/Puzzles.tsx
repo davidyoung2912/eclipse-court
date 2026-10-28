@@ -7,6 +7,7 @@ import { ResetButton } from './ResetButton'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   progress: Progress
@@ -30,34 +31,34 @@ export function Puzzles({ progress, report, resume, onPlay, onRush, onEndless, o
   return (
     <main className="app menu puzzles-menu">
       <PageArt icon="puzzle" />
-      <h2>Puzzles</h2>
-      <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you. Stuck? The Hint button helps, at no cost.</p>
+      <h2>{t('puzzles.title')}</h2>
+      <p className="tagline">{t('puzzles.tagline', { solved, total: PUZZLES.length })}</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}
       {resume && (
         <div className="choices">
           <button className="choice" onClick={resume.onResume}>
-            <strong><Icon name="onward" />Resume {resume.rush ? 'Puzzle Rush' : 'Puzzle'}</strong>
-            <span>Pick up {resume.name} where you left it.</span>
+            <strong><Icon name="onward" />{t(resume.rush ? 'puzzles.resumeRush' : 'puzzles.resume')}</strong>
+            <span>{t('puzzles.pickUp', { name: resume.name })}</span>
           </button>
         </div>
       )}
-      <h3>Puzzle Rush</h3>
+      <h3>{t('puzzles.rush')}</h3>
       <div className="choices">
         <button className="choice" onClick={onRush}>
-          <strong><Icon name="bolt" />Start a Rush <span className="pill">best {rushBest()}</span></strong>
-          <span>Puzzle after puzzle, easy to hard, in a random order. One failed puzzle ends the run.</span>
+          <strong><Icon name="bolt" />{t('puzzles.startRush')} <span className="pill">{t('puzzles.best', { value: rushBest() })}</span></strong>
+          <span>{t('puzzles.rushText')}</span>
         </button>
       </div>
-      <h3>Endless</h3>
+      <h3>{t('puzzles.endless')}</h3>
       <div className="choices">
         <button className="choice" onClick={onEndless}>
-          <strong><Icon name="puzzle" />Endless Puzzles <span className="pill">rated {loadEndless().rating}</span></strong>
-          <span>Fresh puzzles made for you, with a rating that climbs as you solve.</span>
+          <strong><Icon name="puzzle" />{t('puzzles.endlessPuzzles')} <span className="pill">{t('puzzles.rated', { value: loadEndless().rating })}</span></strong>
+          <span>{t('puzzles.endlessText')}</span>
         </button>
       </div>
-      <h3>Puzzle of the day</h3>
+      <h3>{t('puzzles.daily')}</h3>
       <div className="choices">
         <PuzzleButton index={daily} number={null} solved={isSolved(PUZZLES[daily].id)} onPlay={() => onPlay(daily, true)} />
       </div>
@@ -78,7 +79,7 @@ export function Puzzles({ progress, report, resume, onPlay, onRush, onEndless, o
         )
       })}
       <div className="menu-buttons stacked">
-        <ResetButton label="Reset Puzzles" disabled={solved === 0} warning="Mark every puzzle as unsolved so you can retry them all?" onReset={onReset} />
+        <ResetButton label={t('puzzles.reset')} disabled={solved === 0} warning={t('puzzles.resetWarning')} onReset={onReset} />
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="puzzles" />
@@ -90,7 +91,7 @@ function PuzzleButton({ index, number, solved, onPlay }: { index: number; number
   const p = PUZZLES[index]
   return (
     <button className={`choice${solved ? ' won' : ''}`} onClick={onPlay}>
-      <strong><Icon name={solved ? 'check' : 'puzzle'} />{number === null ? '' : `${number}. `}{p.name} <span className="pill">win in {p.limit}</span></strong>
+      <strong><Icon name={solved ? 'check' : 'puzzle'} />{number === null ? '' : `${number}. `}{p.name} <span className="pill">{t('puzzles.winIn', { count: p.limit })}</span></strong>
       <span>{p.text}</span>
     </button>
   )

@@ -3,6 +3,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   onHost: () => void
@@ -16,17 +17,17 @@ export function Online({ onHost, onJoin, onBack }: Props) {
   return (
     <main className="app menu battle-menu">
       <PageArt icon="chain" />
-      <h2>Play Online</h2>
-      <p className="tagline">Connect straight to a friend, with no account and no game server.</p>
-      {!supported && <p role="alert">This browser cannot make direct connections, so online play is not available here.</p>}
+      <h2>{t('online.title')}</h2>
+      <p className="tagline">{t('online.tagline')}</p>
+      {!supported && <p role="alert">{t('online.unsupported')}</p>}
       <div className="choices">
         <button className="choice" disabled={!supported} onClick={onHost}>
-          <strong><Icon name="swords" />Host a Game</strong>
-          <span>Set up the match, then send your friend a link or code.</span>
+          <strong><Icon name="swords" />{t('online.host')}</strong>
+          <span>{t('online.hostText')}</span>
         </button>
         <button className="choice" disabled={!supported} onClick={onJoin}>
-          <strong><Icon name="chain" />Join a Game</strong>
-          <span>Paste the link or code your friend sent you.</span>
+          <strong><Icon name="chain" />{t('online.join')}</strong>
+          <span>{t('online.joinText')}</span>
         </button>
       </div>
       <div className="menu-buttons stacked">

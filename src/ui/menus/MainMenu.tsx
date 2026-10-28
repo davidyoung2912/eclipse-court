@@ -9,6 +9,7 @@ import { TipCard } from '../tips/TipCard'
 import { cardSummaries, primaryAction, suggestions, type CardInfo, type SuggestionTarget } from './menuModel'
 import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
+import { t } from '../../i18n'
 
 interface Props {
   progress: Progress
@@ -51,7 +52,7 @@ const RAYS = Array.from({ length: 24 }, (_, i) => i * 15)
 /** An eclipse over the two courts' Leaders: the sun with a moon sliding across it. */
 function Hero() {
   return (
-    <svg className="hero" viewBox="0 0 320 250" role="img" aria-label="An eclipse between the Solarch and the Duskmother">
+    <svg className="hero" viewBox="0 0 320 250" role="img" aria-label={t('menu.heroLabel')}>
       <defs>
         <radialGradient id="hero-corona">
           <stop offset="0.35" stopColor="#ffd77a" stopOpacity="0.9" />
@@ -95,6 +96,7 @@ function Hero() {
 
 interface Card {
   icon: IconName
+  id: string
   title: string
   info: CardInfo
   onClick: () => void
@@ -117,11 +119,11 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const next = firstRun ? [] : suggestions(progress, dailyDone)
   const go: Record<SuggestionTarget, () => void> = { daily: onDaily, dailyPuzzle: onDailyPuzzle, weekly: onWeekly, puzzles: onPuzzles, campaign: onCampaign }
   const cards: Card[] = [
-    { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
-    { icon: 'swords', title: 'Battle', info: summary.battle, onClick: onBattle },
-    { icon: 'banner', title: 'Campaign', info: summary.campaign, onClick: onCampaign },
-    { icon: 'flame', title: 'Gauntlet', info: summary.gauntlet, onClick: onGauntlet },
-    { icon: 'puzzle', title: 'Puzzles', info: summary.puzzles, onClick: onPuzzles },
+    { icon: 'book', id: 'story', title: t('menu.story'), info: summary.story, onClick: onStory, wide: true },
+    { icon: 'swords', id: 'battle', title: t('menu.battle'), info: summary.battle, onClick: onBattle },
+    { icon: 'banner', id: 'campaign', title: t('menu.campaign'), info: summary.campaign, onClick: onCampaign },
+    { icon: 'flame', id: 'gauntlet', title: t('menu.gauntlet'), info: summary.gauntlet, onClick: onGauntlet },
+    { icon: 'puzzle', id: 'puzzles', title: t('menu.puzzles'), info: summary.puzzles, onClick: onPuzzles },
   ]
   useLayoutEffect(() => {
     if (intro === 'done') { introPlayed = true; return }
@@ -140,60 +142,60 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
     <main ref={menuRef} className="app menu main-menu" data-intro={intro}>
       <div ref={brandRef} className="brand">
         <Hero />
-        <h1><span>Eclipse</span> Court</h1>
+        <h1><span>{t('menu.titleLead')}</span> {t('menu.titleTail')}</h1>
         <div className="divider" aria-hidden="true"><i /></div>
       </div>
       <div className="menu-buttons">
         <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
       </div>
       {advice && (
-        <aside className="coach-card" role="note" aria-label="A suggestion">
+        <aside className="coach-card" role="note" aria-label={t('menu.suggestion')}>
           <Icon name="bulb" />
           <p>{advice.text}</p>
-          <button className="primary" onClick={hideAdvice}><Icon name="check" />Thanks</button>
+          <button className="primary" onClick={hideAdvice}><Icon name="check" />{t('menu.thanks')}</button>
         </aside>
       )}
       {showChecklist(steps, onboarding) && (
-        <section className="first-steps" aria-label="First steps">
-          <h3><em><Icon name="checklist" />First steps</em><span>{steps.filter((s) => s.done).length} of {steps.length}</span></h3>
+        <section className="first-steps" aria-label={t('menu.firstSteps')}>
+          <h3><em><Icon name="checklist" />{t('menu.firstSteps')}</em><span>{t('menu.stepsDone', { done: steps.filter((s) => s.done).length, total: steps.length })}</span></h3>
           <ul>
             {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
           </ul>
-          <button className="primary" onClick={hideChecklist}><Icon name="check" />Hide</button>
+          <button className="primary" onClick={hideChecklist}><Icon name="check" />{t('menu.hide')}</button>
         </section>
       )}
       {next.length > 0 && !showChecklist(steps, onboarding) && (
-        <section className="suggested" aria-label="Suggested">
-          <h3>Suggested</h3>
+        <section className="suggested" aria-label={t('menu.suggested')}>
+          <h3>{t('menu.suggested')}</h3>
           <ul>
             {next.map((x) => <li key={x.target}><button onClick={go[x.target]}><Icon name={x.icon} />{x.text}</button></li>)}
           </ul>
         </section>
       )}
-      <section className="today" aria-label="Today">
-        <h3>Today{summary.streak > 0 && <span className="streak"><Icon name="flame" />{summary.streak} day streak</span>}</h3>
+      <section className="today" aria-label={t('menu.today')}>
+        <h3>{t('menu.today')}{summary.streak > 0 && <span className="streak"><Icon name="flame" />{t('menu.dayStreak', { count: summary.streak })}</span>}</h3>
         <div className="today-row">
-          <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily Match</button>
-          <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
-          <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />Weekly</button>
+          <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />{t('menu.dailyMatch')}</button>
+          <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />{t('menu.dailyPuzzle')}</button>
+          <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />{t('menu.weekly')}</button>
         </div>
       </section>
       <div className="mode-cards">
         {cards.map((c) => (
-          <button key={c.title} className={`mode-card card-${c.title.toLowerCase()}${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
+          <button key={c.id} className={`mode-card card-${c.id}${c.wide ? ' wide' : ''}`} onClick={c.onClick}>
             <strong><Icon name={c.icon} />{c.title}</strong>
             {c.info.lines.map((line) => <span key={line}>{line}</span>)}
             {c.info.fraction !== null && <Bar fraction={c.info.fraction} thin />}
           </button>
         ))}
       </div>
-      <nav className="utility" aria-label="More">
-        <button onClick={onStats}><Icon name="trophy" /><span>Stats</span></button>
-        <button onClick={onCollection}><Icon name="star" /><span>Collection</span></button>
-        <button onClick={onSettings}><Icon name="gear" /><span>Settings</span></button>
-        <button onClick={onTutorial}><Icon name="book" /><span>How to Play</span></button>
+      <nav className="utility" aria-label={t('menu.more')}>
+        <button onClick={onStats}><Icon name="trophy" /><span>{t('menu.stats')}</span></button>
+        <button onClick={onCollection}><Icon name="star" /><span>{t('menu.collection')}</span></button>
+        <button onClick={onSettings}><Icon name="gear" /><span>{t('menu.settings')}</span></button>
+        <button onClick={onTutorial}><Icon name="book" /><span>{t('menu.howToPlay')}</span></button>
         <button onClick={() => { setMuted(sound); setSound(!sound) }} aria-pressed={sound}>
-          <Icon name={sound ? 'speakerOn' : 'speakerOff'} /><span>Sound {sound ? 'On' : 'Off'}</span>
+          <Icon name={sound ? 'speakerOn' : 'speakerOff'} /><span>{t(sound ? 'menu.soundOn' : 'menu.soundOff')}</span>
         </button>
       </nav>
       <TipCard page="menu" />

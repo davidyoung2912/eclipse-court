@@ -2,6 +2,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   onSkirmish: () => void
@@ -19,36 +20,36 @@ export function Battle({ onSkirmish, onPractice, onPaste, onEditor, onOnline, on
   return (
     <main className="app menu battle-menu">
       <PageArt icon="swords" />
-      <h2>Battle</h2>
-      <p className="tagline">One-off matches, no campaign attached.</p>
+      <h2>{t('battle.title')}</h2>
+      <p className="tagline">{t('battle.tagline')}</p>
       <div className="choices">
         <button className="choice" onClick={onSkirmish}>
-          <strong><Icon name="clash" />Skirmish</strong>
-          <span>Set up a match against the AI or a friend: board, rules, presets and Blitz.</span>
+          <strong><Icon name="clash" />{t('battle.skirmish')}</strong>
+          <span>{t('battle.skirmishText')}</span>
         </button>
         <button className="choice" onClick={onLadder}>
-          <strong><Icon name="trophy" />Ranked Ladder</strong>
-          <span>Earn a rating against the AI personas and climb the ranks.</span>
+          <strong><Icon name="trophy" />{t('battle.ladder')}</strong>
+          <span>{t('battle.ladderText')}</span>
         </button>
         <button className="choice" onClick={onOnline}>
-          <strong><Icon name="chain" />Play Online</strong>
-          <span>Host or join a live match with a friend on another device.</span>
+          <strong><Icon name="chain" />{t('battle.online')}</strong>
+          <span>{t('battle.onlineText')}</span>
         </button>
         <button className="choice" onClick={onMail}>
-          <strong><Icon name="chain" />Play by Link</strong>
-          <span>Trade one move at a time with a friend by sending links back and forth.</span>
+          <strong><Icon name="chain" />{t('battle.mail')}</strong>
+          <span>{t('battle.mailText')}</span>
         </button>
         <button className="choice" onClick={onPractice}>
-          <strong><Icon name="target" />Practice</strong>
-          <span>Try a duel on its own to learn how pieces and spells fight.</span>
+          <strong><Icon name="target" />{t('battle.practice')}</strong>
+          <span>{t('battle.practiceText')}</span>
         </button>
         <button className="choice" onClick={onEditor}>
-          <strong><Icon name="grid" />Board Editor</strong>
-          <span>Draw a board or a puzzle, test it against the AI and send it as a link.</span>
+          <strong><Icon name="grid" />{t('battle.editor')}</strong>
+          <span>{t('battle.editorText')}</span>
         </button>
         <button className="choice" onClick={onPaste}>
-          <strong><Icon name="chain" />Paste Code</strong>
-          <span>Open a challenge or replay someone sent you.</span>
+          <strong><Icon name="chain" />{t('battle.paste')}</strong>
+          <span>{t('battle.pasteText')}</span>
         </button>
       </div>
       <div className="menu-buttons stacked">

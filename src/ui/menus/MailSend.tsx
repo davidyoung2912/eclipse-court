@@ -7,6 +7,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
+import { t, type StringKey } from '../../i18n'
 
 interface Props {
   game: MailGame
@@ -16,12 +17,12 @@ interface Props {
 }
 
 const HEADLINE = {
-  theirs: 'Send this link to your opponent',
-  won: 'You won. Send the link so they can see it.',
-  lost: 'You lost. Send the link back if you like.',
-  draw: 'Drawn. Send the link so they can see it.',
-  yours: 'It is your move',
-} as const
+  theirs: 'mailSend.theirs',
+  won: 'mailSend.won',
+  lost: 'mailSend.lost',
+  draw: 'mailSend.draw',
+  yours: 'mailSend.yours',
+} as const satisfies Record<string, StringKey>
 
 /** The link that carries the game so far, to hand to the other player. */
 export function MailSend({ game, record, onReplay, onBack }: Props) {
@@ -32,19 +33,19 @@ export function MailSend({ game, record, onReplay, onBack }: Props) {
   return (
     <main className="app menu battle-menu">
       <PageArt icon="chain" />
-      <h2>{HEADLINE[status]}</h2>
+      <h2>{t(HEADLINE[status])}</h2>
       <p className="tagline">
-        Round {round}. The link holds the whole game, so there is nothing to upload. They open it, make their move, and send one back.
+        {t('mailSend.tagline', { round })}
       </p>
-      <textarea className="code-box" rows={5} readOnly value={link} aria-label="Link to send" onFocus={(e) => e.target.select()} />
+      <textarea className="code-box" rows={5} readOnly value={link} aria-label={t('mailSend.linkLabel')} onFocus={(e) => e.target.select()} />
       <div className="menu-buttons stacked">
-        <ShareButton label="Share Link" title="Eclipse Court move" link={() => link} text="My move in Eclipse Court:" />
+        <ShareButton label={t('mailSend.share')} title={t('mailSend.shareTitle')} link={() => link} text={t('mailSend.shareText')} />
         <button onClick={async () => {
-          try { await navigator.clipboard.writeText(link); setNote('Copied.') } catch { setNote('Could not copy; select the link above.') }
-        }}><Icon name="chain" />{note ?? 'Copy Link'}</button>
-        <button onClick={() => onReplay(record)}><Icon name="replay" />Watch the Game</button>
-        {status === 'yours' && <button className="primary" onClick={onBack}>Back to Games</button>}
-        {status !== 'yours' && <BackButton onClick={onBack} label="Back to Games" />}
+          try { await navigator.clipboard.writeText(link); setNote(t('mailSend.copied')) } catch { setNote(t('mailSend.copyFailed')) }
+        }}><Icon name="chain" />{note ?? t('mailSend.copy')}</button>
+        <button onClick={() => onReplay(record)}><Icon name="replay" />{t('mailSend.watch')}</button>
+        {status === 'yours' && <button className="primary" onClick={onBack}>{t('mailSend.backToGames')}</button>}
+        {status !== 'yours' && <BackButton onClick={onBack} label={t('mailSend.backToGames')} />}
       </div>
       <TipCard page="mail-send" />
     </main>

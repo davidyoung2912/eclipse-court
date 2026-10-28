@@ -7,6 +7,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
+import { t } from '../../i18n'
 
 interface Props {
   onBack: () => void
@@ -27,9 +28,9 @@ export function Collection({ onBack }: Props) {
   return (
     <main className="app menu blue-menu">
       <PageArt icon="star" />
-      <h2>Collection</h2>
-      <p className="tagline">Spend Shards, earned from games, puzzles and achievements. Cosmetics change how the game looks and sounds, never how it plays.</p>
-      <p className="shard-wallet" role="status"><Icon name="star" /><strong>{shop.shards}</strong> Shards<small>{shop.earned} earned in all</small></p>
+      <h2>{t('collection.title')}</h2>
+      <p className="tagline">{t('collection.tagline')}</p>
+      <p className="shard-wallet" role="status"><Icon name="star" /><strong>{shop.shards}</strong> {t('collection.shards')}<small>{t('collection.earned', { count: shop.earned })}</small></p>
       {KINDS.map((kind) => (
         <section key={kind} className="collection-kind">
           <h3>{KIND_TITLES[kind]}</h3>
@@ -47,14 +48,14 @@ export function Collection({ onBack }: Props) {
                     {c.name}
                   </strong>
                   <span>{c.text}</span>
-                  <span className="cost">{on ? 'Equipped' : have ? (kind === 'theme' || kind === 'sound' ? 'Owned · tap to use' : 'Owned · tap to equip') : `${c.cost} Shards${shop.shards < c.cost ? ` · ${c.cost - shop.shards} short` : ''}`}</span>
+                  <span className="cost">{on ? t('collection.equipped') : have ? t(kind === 'theme' || kind === 'sound' ? 'collection.ownedUse' : 'collection.ownedEquip') : t('collection.cost', { cost: c.cost }) + (shop.shards < c.cost ? t('collection.short', { count: c.cost - shop.shards }) : '')}</span>
                 </button>
               )
             })}
           </div>
         </section>
       ))}
-      <p className="tagline">The four star-themes (Ember, Frost, Verdant) stay free: they open in Settings as campaign stars are earned.</p>
+      <p className="tagline">{t('collection.freeThemes')}</p>
       <div className="menu-buttons">
         <BackButton onClick={onBack} />
       </div>
