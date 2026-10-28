@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
-import { BANTER_LEVELS, DUEL_SPEEDS, HINT_LIMITS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
+import { BANTER_LEVELS, DUEL_SPEEDS, HINT_LIMITS, FIGHT_LEVELS, getSettings, TAKE_BACK_RULES, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
@@ -17,6 +17,7 @@ import { haptic } from '../../haptics'
 const SPEED_ICONS: Record<(typeof DUEL_SPEEDS)[number], IconName> = { normal: 'play', fast: 'onward', instant: 'bolt' }
 const BANTER_ICONS: Record<(typeof BANTER_LEVELS)[number], IconName> = { full: 'speakerOn', quiet: 'moon', off: 'speakerOff' }
 const HINT_ICONS: Record<(typeof HINT_LIMITS)[number], IconName> = { unlimited: 'bulb', three: 'checklist', off: 'close' }
+const TAKE_BACK_ICONS: Record<(typeof TAKE_BACK_RULES)[number], IconName> = { always: 'undo', casual: 'leaf', off: 'close' }
 const FIGHT_ICONS: Record<(typeof FIGHT_LEVELS)[number], IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 interface Props {
@@ -94,6 +95,13 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <div className="choices row">
         {HINT_LIMITS.map((l) => (
           <button key={l} className={`choice${settings.hints === l ? ' on' : ''}`} aria-pressed={settings.hints === l} onClick={() => change({ hints: l })}><strong><Icon name={HINT_ICONS[l]} />{t(`settings.hints.${l}`)}</strong></button>
+        ))}
+      </div>
+      <h3>{t('settings.takeBacks')}</h3>
+      <p className="setup-hint">{t('settings.takeBacksHint')}</p>
+      <div className="choices row">
+        {TAKE_BACK_RULES.map((r) => (
+          <button key={r} className={`choice${settings.takeBacks === r ? ' on' : ''}`} aria-pressed={settings.takeBacks === r} onClick={() => change({ takeBacks: r })}><strong><Icon name={TAKE_BACK_ICONS[r]} />{t(`settings.takeBacks.${r}`)}</strong></button>
         ))}
       </div>
       <h3>{t('settings.duels')}</h3>

@@ -253,6 +253,10 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     askHintRaw()
   }
 
+  const takeBacks = getSettings().takeBacks
+  /** Casual games are skirmishes and hot-seat; Undo stays hidden elsewhere under Casual games only. */
+  const takeBackOk = takeBacks === 'always' || (takeBacks === 'casual' && (hotSeat || context?.kind === 'skirmish'))
+
   const clock = state.config.turnClock
   /** The clock stops for duels, dialogs, the pass screen and the AI's turn. */
   const clockRunning = !!clock && myTurn && !ended && !pending && !banner && !asking && !settled
@@ -740,7 +744,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">
-          {!online && !mail && context?.kind !== 'daily' && !context?.scored && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {!online && !mail && context?.kind !== 'daily' && !context?.scored && takeBackOk && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
           {online && !ended && net?.status === 'playing' && (
             <>
               <button disabled={net.draw !== 'none'} onClick={() => session!.offerDraw()}><Icon name="swap" />{net.draw === 'offered' ? 'Draw Offered' : 'Offer Draw'}</button>
