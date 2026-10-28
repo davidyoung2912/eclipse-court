@@ -66,15 +66,9 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
     ?? (totalStars(progress) >= GRAND_STARS && grandBattles().some((o) => !((progress.battles[o.id] ?? 0) & STAR_WIN)) ? 'grand' : undefined)
   const currentScenarioTier = CAMPAIGN_TIERS.find(({ difficulty }) => scenariosIn(difficulty).some((x) => !((progress.scenarios[x.id] ?? 0) & STAR_WIN)))?.difficulty
   return (
-    <main className="app menu campaign-menu two-pane">
+    <main className="app menu campaign-menu">
       <CampaignArt />
       <h2>Campaign</h2>
-      <div className="pane-side pane-detail" aria-hidden="true">
-        <Icon name="swords" />
-        <strong className="pane-figure">{tab === 'coop' ? coopStars(progress) : tab === 'scenarios' ? scenarioStars(progress) : totalStars(progress)}</strong>
-        <p>{tab === 'coop' ? `of ${COOP_SCENARIOS.length * 3} stars` : tab === 'scenarios' ? `of ${SCENARIOS.length * 3} stars` : `of ${CAMPAIGN.length * 3} stars · ${cleared} battles cleared`}</p>
-      </div>
-      <div className="pane-main">
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'battles'} className={tab === 'battles' ? 'on' : ''} onClick={() => onTab?.('battles')}>Battles</button>
         <button role="tab" aria-selected={tab === 'scenarios'} className={tab === 'scenarios' ? 'on' : ''} onClick={() => onTab?.('scenarios')}>Scenarios</button>
@@ -174,7 +168,6 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
       })}
       </>
       )}
-      </div>
       <div className="menu-buttons stacked">
         {tab === 'coop'
           ? <ResetButton label="Reset Co-op" disabled={coopStars(progress) === 0} warning="Clear every co-op star so you can retry them all?" onReset={() => onReset('coop')} />

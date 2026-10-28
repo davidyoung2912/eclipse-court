@@ -46,37 +46,6 @@
   .main-menu[data-intro='done'] .menu-side > :not(.brand), .main-menu[data-intro='done'] .menu-main { animation: fade-in 0.8s ease-out backwards; }
 }
 
-/* Two-pane pages: on phones the panes are transparent wrappers; on desktop the list sits left and the detail right, split by a gilded rule over a dim emblem. */
-.pane-main, .pane-side { display: contents; }
-.pane-detail, .pane-hint { display: none; }
-@media (min-width: 900px) and (min-height: 480px) and (orientation: landscape) {
-  .two-pane {
-    display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: 56px; align-content: start; align-items: start;
-    max-width: 1080px; padding-inline: 32px; overflow-y: auto;
-  }
-  .two-pane > :not(.pane-main, .pane-side) { grid-column: 1 / -1; }
-  .two-pane > .menu-art { max-height: 150px; }
-  .two-pane > .pane-main { grid-column: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .two-pane > .pane-side {
-    grid-column: 2; grid-row: span 1; position: sticky; top: 0; display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0;
-  }
-  .two-pane > .pane-side::before {
-    content: ''; position: absolute; top: 0; bottom: 0; left: -28px; width: 1px; pointer-events: none;
-    background: linear-gradient(180deg, transparent, var(--solari-gold) 20%, var(--umbral-violet) 80%, transparent); opacity: 0.35;
-  }
-  .two-pane > .pane-side::after {
-    content: ''; align-self: center; width: min(70%, 260px); aspect-ratio: 1; margin-top: 12px; border-radius: 50%; pointer-events: none; opacity: 0.22;
-    background: radial-gradient(circle, #0f0b26 0 40%, var(--solari-gold) 41% 45%, transparent 47%), radial-gradient(circle, rgba(232, 182, 74, 0.5), transparent 70%);
-  }
-  .two-pane > .pane-detail, .two-pane > .pane-hint { display: flex; }
-  .pane-detail { align-items: center; text-align: center; padding: 20px 12px 0; }
-  .pane-detail svg { width: 56px; height: 56px; color: var(--solari-gold); }
-  .pane-detail h3 { margin: 0; font-family: var(--display); font-size: var(--fs-lg); color: var(--solari-gold); opacity: 1; }
-  .pane-detail p { margin: 0; font-size: var(--fs-md); opacity: 0.85; }
-  .pane-figure { font-family: var(--display); font-size: var(--fs-xl); color: var(--solari-gold); font-variant-numeric: tabular-nums; }
-  .pane-hint { justify-content: center; }
-}
-
 /* Result screens: the banner unrolls, the stats count up, and a win, a loss and a draw each have their own light */
 .result-banner { --res-a: var(--umbral-violet); --res-b: #d9ccff; margin-bottom: 8px; }
 .result-banner.win { --res-a: var(--solari-gold); --res-b: var(--solari-cream); }

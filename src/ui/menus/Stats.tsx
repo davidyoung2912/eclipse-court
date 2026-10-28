@@ -58,10 +58,9 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
     ...(rushBest() > 0 ? [{ label: 'Puzzle Rush best', value: String(rushBest()) }] : []),
   ]
   return (
-    <main className="app menu blue-menu two-pane">
+    <main className="app menu blue-menu">
       <PageArt icon="trophy" />
       <h2>Stats</h2>
-      <div className="pane-side">
       <RankCrest rank={rank} />
       <div className="stat-overall" role="group" aria-label="Overall completion">
         <strong>{percent(done)}</strong>
@@ -77,8 +76,6 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
       <dl className="stat-tiles">
         {tiles.map(({ label, value }) => <div key={label}><dd>{value}</dd><dt>{label}</dt></div>)}
       </dl>
-      </div>
-      <div className="pane-main">
       {bests.length > 0 && (
         <details className="stat-section" open>
           <summary><h3><Icon name="trophy" />Personal bests</h3></summary>
@@ -170,7 +167,6 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
           </details>
         )
       })}
-      </div>
       <div className="menu-buttons stacked">
         {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay Last Game</button>}
         {progress.last && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => shareLink('r', progress.last!)} />}

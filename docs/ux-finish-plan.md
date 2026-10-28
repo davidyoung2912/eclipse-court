@@ -33,9 +33,7 @@ Status: **done.** Written 2026-10-28 from the UX review. Items are the ones the 
 
 ## Phase 5: Desktop pages
 
-- At the 900 px breakpoint, Battle, Campaign, Story, Collection, Settings and Stats use a two-pane layout: list on the left, detail or preview on the right (the Collection's Showcase becomes the right pane).
-- The empty gutters get a faint vertical gilded rule and a large dim emblem so the column looks intentional.
-- Phone layouts are unchanged.
+- Reverted: the two-pane layout did not look right; these pages stay single column.
 
 ## Phase 6: Rewards fly to the wallet
 
@@ -84,7 +82,7 @@ Phase 3 done: the main menu's greeting, coach card, first-steps list and suggest
 
 Phase 4 done: `PersonaFace` wraps the WebP portrait in an arched `.persona-frame` with a house tint overlay (solari, umbral, marches, hour), lead lines and a corner highlight; the size class now sits on the frame. The SVG bust fallback is unchanged.
 
-Phase 5 done: Battle, Campaign, Story, Collection, Settings and Stats carry a `two-pane` class with `pane-main` and `pane-side` wrappers (transparent on phones). At the 900 px landscape breakpoint the list sits left and a sticky side pane right, split by a faint gilded rule with a dim eclipse emblem below the side content. The side pane is the Collection's Showcase, Stats' overview, Story's Company/Bonds/Achievements, Settings' second half, and a hover/focus preview on Battle and a star summary on Campaign.
+Phase 5 reverted: the two-pane layout on Battle, Campaign, Story, Collection, Settings and Stats did not look right, so those pages are back to a single column.
 
 Phase 6 done: plain games (skirmish, campaign, scenario, daily, weekly, ladder) settle when the result opens: `Game` calls `onEnded` once, `App` runs `finishGame` and keeps it in `settledGame` so Continue does not pay twice. The dialog lists the reward lines (`RewardLines`); each line that pays Shards flies coins from itself to the wallet chip (`flyCoins`, `shardsIn` and the toast's flight claim in `rewardFx.ts`, tested). Reduce motion shows the lines without the flight. Tournaments, gauntlet, story, puzzles, online and hot-seat still settle on Continue. First-win confetti reads `firstWin` as it was at the start of the game.
 
