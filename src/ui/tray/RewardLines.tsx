@@ -13,8 +13,10 @@ const LINE_GAP_MS = 220
 export function RewardLines({ lines }: { lines: string[] }) {
   const rows = useRef<(HTMLLIElement | null)[]>([])
   useEffect(() => {
-    if (getSettings().reduceMotion) return
     const timers: number[] = []
+    // The reward chime sounds even when the coins do not fly.
+    if (lines.some((line) => shardsIn(line) > 0)) timers.push(window.setTimeout(sfx.reward, CHIP_WAIT_MS))
+    if (getSettings().reduceMotion) return () => timers.forEach((t) => window.clearTimeout(t))
     let paid = 0
     lines.forEach((line, i) => {
       const n = shardsIn(line)

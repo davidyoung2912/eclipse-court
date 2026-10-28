@@ -1,5 +1,7 @@
 /** Tap ripple and hover sheen on buttons, and the menu's light parallax. They are DOM overlays that never take a click and vanish when done. */
 import { parallaxShift, rippleSpot, RIPPLE_MS, SHEEN_MS } from './appMotion'
+import { cueDue, uiCueFor } from './audio/cues'
+import { sfx } from './audio/synth'
 import { getSettings } from './settings'
 
 /** The buttons that get the tap and hover treatment; other controls (sliders, tabs in the board) stay plain. */
@@ -20,10 +22,16 @@ function overlay(button: HTMLElement, kind: 'ripple' | 'sheen', ms: number, x?: 
 
 /** Starts the effects; returns a function that stops them. */
 export function installTapFx(): () => void {
+  let lastCue = -Infinity
   const onDown = (e: PointerEvent) => {
-    if (getSettings().reduceMotion) return
     const button = (e.target as Element | null)?.closest<HTMLElement>(TARGETS)
-    if (!button || (button as HTMLButtonElement).disabled) return
+    if (!button) return
+    const disabled = (button as HTMLButtonElement).disabled || button.getAttribute('aria-disabled') === 'true'
+    if (cueDue(e.timeStamp, lastCue)) {
+      lastCue = e.timeStamp
+      sfx[uiCueFor({ primary: button.classList.contains('primary'), disabled })]()
+    }
+    if (getSettings().reduceMotion || disabled) return
     const spot = rippleSpot(button.getBoundingClientRect(), e.clientX, e.clientY)
     overlay(button, 'ripple', RIPPLE_MS, spot.x, spot.y)
   }

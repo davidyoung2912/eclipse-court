@@ -1,5 +1,7 @@
 /** Web Audio synthesis: no samples are shipped. Everything is created lazily after the first user gesture. */
 
+import type { HourBed } from './cues'
+
 const MUTE_KEY = 'eclipse-court:muted'
 
 let ctx: AudioContext | null = null
@@ -170,6 +172,8 @@ export function turnBell(court: 'solari' | 'umbral') {
 }
 
 export const sfx = {
+  /** A soft wooden tick under any button press. */
+  tap: () => tone(980, 0.04, { type: 'triangle', gain: 0.05 }),
   select: () => tone(660, 0.06, { type: 'triangle', gain: 0.08 }),
   move: () => {
     tone(240, 0.09, { type: 'triangle', gain: 0.16, to: 160 })
@@ -276,9 +280,9 @@ export function setMusicOn(value: boolean) {
  * A quiet bed of layers that builds as `setLevel` rises from 0 to 1: a drone, a fifth above it, a shimmer, and a
  * pulse that appears at the halfway mark and quickens toward the Eclipse. Returns a stop function.
  */
-export function startMusic(): { setLevel: (n: number) => void; stop: () => void } {
+export function startMusic(): { setLevel: (n: number) => void; setHour: (bed: HourBed) => void; stop: () => void } {
   const c = audio()
-  if (!c || !musicOut || !music) return { setLevel: () => {}, stop: () => {} }
+  if (!c || !musicOut || !music) return { setLevel: () => {}, setHour: () => {}, stop: () => {} }
   const bus = c.createGain()
   bus.gain.value = 0
   bus.gain.setTargetAtTime(1, c.currentTime, 1.5)
@@ -304,12 +308,15 @@ export function startMusic(): { setLevel: (n: number) => void; stop: () => void 
   lfo.connect(depth).connect(shimmer.g.gain)
   lfo.start()
   let level = 0
+  let hour: HourBed = { shimmerHz: shimmer.o.frequency.value, shimmerMul: 1, fifthHz: fifth.o.frequency.value }
   let timer = 0
   const apply = () => {
     const t = c.currentTime
     drone.g.gain.setTargetAtTime(drone.base * (0.6 + level * 0.8), t, 0.8)
     fifth.g.gain.setTargetAtTime(fifth.base * Math.min(1, level * 2), t, 0.8)
-    shimmer.g.gain.setTargetAtTime(shimmer.base * Math.max(0, level * 1.6 - 0.2), t, 0.8)
+    shimmer.g.gain.setTargetAtTime(shimmer.base * hour.shimmerMul * Math.max(0, level * 1.6 - 0.2), t, 0.8)
+    shimmer.o.frequency.setTargetAtTime(hour.shimmerHz, t, 1.5)
+    fifth.o.frequency.setTargetAtTime(hour.fifthHz, t, 1.5)
     drone.o.frequency.setTargetAtTime(55 * (1 - level * 0.12), t, 2)
   }
   const pulse = () => {
@@ -321,6 +328,10 @@ export function startMusic(): { setLevel: (n: number) => void; stop: () => void 
   return {
     setLevel: (n) => {
       level = Math.min(1, Math.max(0, n))
+      apply()
+    },
+    setHour: (bed) => {
+      hour = bed
       apply()
     },
     stop: () => {

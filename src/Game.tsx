@@ -10,6 +10,7 @@ import { KillCam } from './ui/board/KillCam'
 import { killShotOf, type KillShot } from './killCam'
 import { flyBeacon } from './ui/board/flyBeacon'
 import { beaconPickups, castPath, eclipseCinemaMs, type CastFx } from './spellFx'
+import { hourBed } from './audio/cues'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { flashesReduced, getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
@@ -318,6 +319,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     }
   }, [sound, music])
   useEffect(() => musicRef.current?.setLevel(musicLevel(state)), [state, sound, music])
+  useEffect(() => musicRef.current?.setHour(hourBed({ phase: state.phase, dir: state.dir, eclipse: state.eclipse })), [state.phase, state.dir, state.eclipse, sound, music])
 
   // A slow heartbeat thuds while the Leader is in danger.
   useEffect(() => {
