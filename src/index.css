@@ -1086,49 +1086,49 @@ body:has(.duel) .play-timer { display: none; }
 @keyframes fall-part { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: calc(var(--reach, 0.5) * 0.9px) 0; } }
 :root[data-motion='reduced'] .fall { display: none; }
 
-/* Piece sets: recolour the medallions over the theme */
-:root[data-pieces='gilded'] .art-solari .pane-0, :root[data-pieces='gilded'] .art-umbral .pane-0 { fill: #f3d27a; }
-:root[data-pieces='gilded'] .art-solari .pane-1 { fill: #c8962e; }
-:root[data-pieces='gilded'] .art-solari .pane-2 { fill: #fff4d6; }
-:root[data-pieces='gilded'] .art-umbral .pane-1 { fill: #6e5a2a; }
-:root[data-pieces='gilded'] .art-umbral .pane-2 { fill: #d8c9a0; }
-:root[data-pieces='jade'] .art-solari .pane-0 { fill: #a8e8c4; }
-:root[data-pieces='jade'] .art-solari .pane-1 { fill: #48b884; }
-:root[data-pieces='jade'] .art-solari .pane-2 { fill: #e4fff0; }
-:root[data-pieces='jade'] .art-umbral .pane-0 { fill: #2e7a60; }
-:root[data-pieces='jade'] .art-umbral .pane-1 { fill: #123c30; }
-:root[data-pieces='jade'] .art-umbral .pane-2 { fill: #5ab8a0; }
-:root[data-pieces='mono'] .art-solari .pane-0 { fill: #f2efe6; }
-:root[data-pieces='mono'] .art-solari .pane-1 { fill: #cfc9b8; }
-:root[data-pieces='mono'] .art-solari .pane-2 { fill: #ffffff; }
-:root[data-pieces='mono'] .art-umbral .pane-0 { fill: #3a3a42; }
-:root[data-pieces='mono'] .art-umbral .pane-1 { fill: #16161c; }
-:root[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
+/* Piece sets: recolour the medallions over the theme. The `main .cstage[...]` selectors are the Collection preview stage copies; the extra element outranks the page-wide ones. */
+:root[data-pieces='gilded'] .art-solari .pane-0, :root[data-pieces='gilded'] .art-umbral .pane-0, main .cstage[data-pieces='gilded'] .art-solari .pane-0, main .cstage[data-pieces='gilded'] .art-umbral .pane-0 { fill: #f3d27a; }
+:root[data-pieces='gilded'] .art-solari .pane-1, main .cstage[data-pieces='gilded'] .art-solari .pane-1 { fill: #c8962e; }
+:root[data-pieces='gilded'] .art-solari .pane-2, main .cstage[data-pieces='gilded'] .art-solari .pane-2 { fill: #fff4d6; }
+:root[data-pieces='gilded'] .art-umbral .pane-1, main .cstage[data-pieces='gilded'] .art-umbral .pane-1 { fill: #6e5a2a; }
+:root[data-pieces='gilded'] .art-umbral .pane-2, main .cstage[data-pieces='gilded'] .art-umbral .pane-2 { fill: #d8c9a0; }
+:root[data-pieces='jade'] .art-solari .pane-0, main .cstage[data-pieces='jade'] .art-solari .pane-0 { fill: #a8e8c4; }
+:root[data-pieces='jade'] .art-solari .pane-1, main .cstage[data-pieces='jade'] .art-solari .pane-1 { fill: #48b884; }
+:root[data-pieces='jade'] .art-solari .pane-2, main .cstage[data-pieces='jade'] .art-solari .pane-2 { fill: #e4fff0; }
+:root[data-pieces='jade'] .art-umbral .pane-0, main .cstage[data-pieces='jade'] .art-umbral .pane-0 { fill: #2e7a60; }
+:root[data-pieces='jade'] .art-umbral .pane-1, main .cstage[data-pieces='jade'] .art-umbral .pane-1 { fill: #123c30; }
+:root[data-pieces='jade'] .art-umbral .pane-2, main .cstage[data-pieces='jade'] .art-umbral .pane-2 { fill: #5ab8a0; }
+:root[data-pieces='mono'] .art-solari .pane-0, main .cstage[data-pieces='mono'] .art-solari .pane-0 { fill: #f2efe6; }
+:root[data-pieces='mono'] .art-solari .pane-1, main .cstage[data-pieces='mono'] .art-solari .pane-1 { fill: #cfc9b8; }
+:root[data-pieces='mono'] .art-solari .pane-2, main .cstage[data-pieces='mono'] .art-solari .pane-2 { fill: #ffffff; }
+:root[data-pieces='mono'] .art-umbral .pane-0, main .cstage[data-pieces='mono'] .art-umbral .pane-0 { fill: #3a3a42; }
+:root[data-pieces='mono'] .art-umbral .pane-1, main .cstage[data-pieces='mono'] .art-umbral .pane-1 { fill: #16161c; }
+:root[data-pieces='mono'] .art-umbral .pane-2, main .cstage[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
 
 /* Codex frames on the story scenes */
-:root[data-pieces='aurora'] .art-solari .pane-0, :root[data-pieces='aurora'] .art-umbral .pane-0 { animation: pane-aurora 6s ease-in-out infinite alternate; }
-:root[data-pieces='aurora'] .art-solari .pane-1, :root[data-pieces='aurora'] .art-umbral .pane-1 { animation: pane-aurora 6s ease-in-out -2s infinite alternate; }
-:root[data-pieces='aurora'] .art-solari .pane-2, :root[data-pieces='aurora'] .art-umbral .pane-2 { fill: #f0ffe8; }
-:root[data-pieces='forge'] .art-solari .pane-0 { animation: pane-forge 3.2s ease-in-out infinite alternate; }
-:root[data-pieces='forge'] .art-solari .pane-1 { fill: #e07a2e; }
-:root[data-pieces='forge'] .art-solari .pane-2 { fill: #fff0c8; }
-:root[data-pieces='forge'] .art-umbral .pane-0 { animation: pane-forge 3.2s ease-in-out -1.6s infinite alternate; filter: brightness(0.6); }
-:root[data-pieces='forge'] .art-umbral .pane-1 { fill: #3a1a12; }
-:root[data-pieces='forge'] .art-umbral .pane-2 { fill: #a85a3a; }
+:root[data-pieces='aurora'] .art-solari .pane-0, :root[data-pieces='aurora'] .art-umbral .pane-0, main .cstage[data-pieces='aurora'] .art-solari .pane-0, main .cstage[data-pieces='aurora'] .art-umbral .pane-0 { animation: pane-aurora 6s ease-in-out infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-1, :root[data-pieces='aurora'] .art-umbral .pane-1, main .cstage[data-pieces='aurora'] .art-solari .pane-1, main .cstage[data-pieces='aurora'] .art-umbral .pane-1 { animation: pane-aurora 6s ease-in-out -2s infinite alternate; }
+:root[data-pieces='aurora'] .art-solari .pane-2, :root[data-pieces='aurora'] .art-umbral .pane-2, main .cstage[data-pieces='aurora'] .art-solari .pane-2, main .cstage[data-pieces='aurora'] .art-umbral .pane-2 { fill: #f0ffe8; }
+:root[data-pieces='forge'] .art-solari .pane-0, main .cstage[data-pieces='forge'] .art-solari .pane-0 { animation: pane-forge 3.2s ease-in-out infinite alternate; }
+:root[data-pieces='forge'] .art-solari .pane-1, main .cstage[data-pieces='forge'] .art-solari .pane-1 { fill: #e07a2e; }
+:root[data-pieces='forge'] .art-solari .pane-2, main .cstage[data-pieces='forge'] .art-solari .pane-2 { fill: #fff0c8; }
+:root[data-pieces='forge'] .art-umbral .pane-0, main .cstage[data-pieces='forge'] .art-umbral .pane-0 { animation: pane-forge 3.2s ease-in-out -1.6s infinite alternate; filter: brightness(0.6); }
+:root[data-pieces='forge'] .art-umbral .pane-1, main .cstage[data-pieces='forge'] .art-umbral .pane-1 { fill: #3a1a12; }
+:root[data-pieces='forge'] .art-umbral .pane-2, main .cstage[data-pieces='forge'] .art-umbral .pane-2 { fill: #a85a3a; }
 @keyframes pane-aurora { from { fill: #6fe0a8; } to { fill: #a88cf0; } }
 @keyframes pane-forge { from { fill: #f0b04a; } to { fill: #ff6a2a; } }
-:root[data-board='starlit'] .board .sq { animation: sq-twinkle 4s ease-in-out infinite; }
-:root[data-board='starlit'] .board g:nth-child(3n) .sq { animation-delay: -1.3s; }
-:root[data-board='starlit'] .board g:nth-child(5n) .sq { animation-delay: -2.6s; }
-:root[data-board='starlit'] .board g:nth-child(7n) .sq { animation-delay: -0.6s; }
-:root[data-board='tidal'] .board .sq { animation: sq-swell 5s ease-in-out infinite; }
-:root[data-board='tidal'] .board g:nth-child(7n+2) .sq { animation-delay: -0.7s; }
-:root[data-board='tidal'] .board g:nth-child(7n+3) .sq { animation-delay: -1.4s; }
-:root[data-board='tidal'] .board g:nth-child(7n+4) .sq { animation-delay: -2.1s; }
-:root[data-board='tidal'] .board g:nth-child(7n+5) .sq { animation-delay: -2.8s; }
-:root[data-board='tidal'] .board g:nth-child(7n+6) .sq { animation-delay: -3.5s; }
-:root[data-board='cinder'] .board .glow { animation: glow-breathe 2.8s ease-in-out infinite alternate; }
-:root[data-board='cinder'] .board g:nth-child(2n) .glow { animation-delay: -1.4s; }
+:root[data-board='starlit'] .board .sq, main .cstage[data-board='starlit'] .board .sq { animation: sq-twinkle 4s ease-in-out infinite; }
+:root[data-board='starlit'] .board g:nth-child(3n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(3n) .sq { animation-delay: -1.3s; }
+:root[data-board='starlit'] .board g:nth-child(5n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(5n) .sq { animation-delay: -2.6s; }
+:root[data-board='starlit'] .board g:nth-child(7n) .sq, main .cstage[data-board='starlit'] .board g:nth-child(7n) .sq { animation-delay: -0.6s; }
+:root[data-board='tidal'] .board .sq, main .cstage[data-board='tidal'] .board .sq { animation: sq-swell 5s ease-in-out infinite; }
+:root[data-board='tidal'] .board g:nth-child(7n+2) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+2) .sq { animation-delay: -0.7s; }
+:root[data-board='tidal'] .board g:nth-child(7n+3) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+3) .sq { animation-delay: -1.4s; }
+:root[data-board='tidal'] .board g:nth-child(7n+4) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+4) .sq { animation-delay: -2.1s; }
+:root[data-board='tidal'] .board g:nth-child(7n+5) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+5) .sq { animation-delay: -2.8s; }
+:root[data-board='tidal'] .board g:nth-child(7n+6) .sq, main .cstage[data-board='tidal'] .board g:nth-child(7n+6) .sq { animation-delay: -3.5s; }
+:root[data-board='cinder'] .board .glow, main .cstage[data-board='cinder'] .board .glow { animation: glow-breathe 2.8s ease-in-out infinite alternate; }
+:root[data-board='cinder'] .board g:nth-child(2n) .glow, main .cstage[data-board='cinder'] .board g:nth-child(2n) .glow { animation-delay: -1.4s; }
 @keyframes sq-twinkle { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.22); } }
 @keyframes sq-swell { 0%, 100% { filter: brightness(0.92) saturate(1); } 50% { filter: brightness(1.12) saturate(1.25); } }
 @keyframes glow-breathe { from { opacity: 0.35; } to { opacity: 1; } }
@@ -1410,47 +1410,8 @@ body:has(.eclipsed) { --tone-a: #14101f !important; --tone-b: #030208 !important
 @media (prefers-reduced-motion: reduce) { .game-solari .hud, .game-umbral .hud, .game-solari .board, .game-umbral .board, .game-solari::after, .game-umbral::after { transition: none; } }
 
 /* Collection showcase: a preview stage, rarity frames and the unlock flash */
-/* Stage copies of the piece set and board effect rules; the extra element in the selector outranks the page-wide ones. */
-main .cstage[data-pieces='gilded'] .art-solari .pane-0, main .cstage[data-pieces='gilded'] .art-umbral .pane-0 { fill: #f3d27a; }
-main .cstage[data-pieces='gilded'] .art-solari .pane-1 { fill: #c8962e; }
-main .cstage[data-pieces='gilded'] .art-solari .pane-2 { fill: #fff4d6; }
-main .cstage[data-pieces='gilded'] .art-umbral .pane-1 { fill: #6e5a2a; }
-main .cstage[data-pieces='gilded'] .art-umbral .pane-2 { fill: #d8c9a0; }
-main .cstage[data-pieces='jade'] .art-solari .pane-0 { fill: #a8e8c4; }
-main .cstage[data-pieces='jade'] .art-solari .pane-1 { fill: #48b884; }
-main .cstage[data-pieces='jade'] .art-solari .pane-2 { fill: #e4fff0; }
-main .cstage[data-pieces='jade'] .art-umbral .pane-0 { fill: #2e7a60; }
-main .cstage[data-pieces='jade'] .art-umbral .pane-1 { fill: #123c30; }
-main .cstage[data-pieces='jade'] .art-umbral .pane-2 { fill: #5ab8a0; }
-main .cstage[data-pieces='mono'] .art-solari .pane-0 { fill: #f2efe6; }
-main .cstage[data-pieces='mono'] .art-solari .pane-1 { fill: #cfc9b8; }
-main .cstage[data-pieces='mono'] .art-solari .pane-2 { fill: #ffffff; }
-main .cstage[data-pieces='mono'] .art-umbral .pane-0 { fill: #3a3a42; }
-main .cstage[data-pieces='mono'] .art-umbral .pane-1 { fill: #16161c; }
-main .cstage[data-pieces='mono'] .art-umbral .pane-2 { fill: #5a5a66; }
 
 /* Codex frames on the story scenes */
-main .cstage[data-pieces='aurora'] .art-solari .pane-0, main .cstage[data-pieces='aurora'] .art-umbral .pane-0 { animation: pane-aurora 6s ease-in-out infinite alternate; }
-main .cstage[data-pieces='aurora'] .art-solari .pane-1, main .cstage[data-pieces='aurora'] .art-umbral .pane-1 { animation: pane-aurora 6s ease-in-out -2s infinite alternate; }
-main .cstage[data-pieces='aurora'] .art-solari .pane-2, main .cstage[data-pieces='aurora'] .art-umbral .pane-2 { fill: #f0ffe8; }
-main .cstage[data-pieces='forge'] .art-solari .pane-0 { animation: pane-forge 3.2s ease-in-out infinite alternate; }
-main .cstage[data-pieces='forge'] .art-solari .pane-1 { fill: #e07a2e; }
-main .cstage[data-pieces='forge'] .art-solari .pane-2 { fill: #fff0c8; }
-main .cstage[data-pieces='forge'] .art-umbral .pane-0 { animation: pane-forge 3.2s ease-in-out -1.6s infinite alternate; filter: brightness(0.6); }
-main .cstage[data-pieces='forge'] .art-umbral .pane-1 { fill: #3a1a12; }
-main .cstage[data-pieces='forge'] .art-umbral .pane-2 { fill: #a85a3a; }
-main .cstage[data-board='starlit'] .board .sq { animation: sq-twinkle 4s ease-in-out infinite; }
-main .cstage[data-board='starlit'] .board g:nth-child(3n) .sq { animation-delay: -1.3s; }
-main .cstage[data-board='starlit'] .board g:nth-child(5n) .sq { animation-delay: -2.6s; }
-main .cstage[data-board='starlit'] .board g:nth-child(7n) .sq { animation-delay: -0.6s; }
-main .cstage[data-board='tidal'] .board .sq { animation: sq-swell 5s ease-in-out infinite; }
-main .cstage[data-board='tidal'] .board g:nth-child(7n+2) .sq { animation-delay: -0.7s; }
-main .cstage[data-board='tidal'] .board g:nth-child(7n+3) .sq { animation-delay: -1.4s; }
-main .cstage[data-board='tidal'] .board g:nth-child(7n+4) .sq { animation-delay: -2.1s; }
-main .cstage[data-board='tidal'] .board g:nth-child(7n+5) .sq { animation-delay: -2.8s; }
-main .cstage[data-board='tidal'] .board g:nth-child(7n+6) .sq { animation-delay: -3.5s; }
-main .cstage[data-board='cinder'] .board .glow { animation: glow-breathe 2.8s ease-in-out infinite alternate; }
-main .cstage[data-board='cinder'] .board g:nth-child(2n) .glow { animation-delay: -1.4s; }
 .cstage { margin: 6px 0 12px; padding: 12px; border-radius: var(--radius-lg, 14px); border: 2px solid var(--rarity, rgba(255, 255, 255, 0.25)); background: rgba(0, 0, 0, 0.28); box-shadow: var(--shadow-2); text-align: center; position: sticky; top: 0; z-index: 3; backdrop-filter: blur(6px); }
 .cstage-view { min-height: 110px; display: flex; align-items: center; justify-content: center; animation: stage-in var(--t-mid) var(--ease) both; }
 .cstage-name { margin: 6px 0 0; font-family: var(--display); }

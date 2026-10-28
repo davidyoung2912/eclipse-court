@@ -48,6 +48,6 @@ Each as a selector list, subject to the move rule:
 ## Progress
 
 - [x] Phase 1: done. 1808 to 1786 lines; source 134,344 to 132,032 bytes; built CSS 111,253 to 109,256; gzip 22,962 to 22,683. Ledger diff showed only the intended removals and renames.
-- [ ] Phase 2
+- [x] Phase 2: done. 38 `.cstage` rules joined into the 38 root rules (ledger multiset identical; only order moved, and nothing between the positions touches `.pane-0/1/2`, `.sq`, `.glow`).
 - [ ] Phase 3
 - [ ] Phase 4
