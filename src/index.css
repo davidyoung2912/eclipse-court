@@ -8,7 +8,8 @@
   --tip-bg: linear-gradient(160deg, rgba(12, 98, 104, 0.97), rgba(7, 58, 66, 0.97));
   --tip-border: #4fd9c8;
   --tip-accent: #8ff3e4;
-  --display: 'Nunito', ui-rounded, 'Trebuchet MS', system-ui, sans-serif;
+  --display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --body: 'Nunito', ui-rounded, 'Trebuchet MS', system-ui, sans-serif;
   --solari-gold: #e8b64a;
   --solari-cream: #fbf1d4;
   --umbral-indigo: #2b2468;
@@ -37,7 +38,7 @@ html, body, #root { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, sans-serif;
+  font-family: var(--body);
   overscroll-behavior: none;
   touch-action: manipulation;
   -webkit-user-select: none;
@@ -295,7 +296,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-inline: 24px; padding-top: max(env(safe-area-inset-top), 12px); }
 /* Pages opening with an art box all start at the same height as the long Story page. */
 .menu:has(> .menu-art:first-child) { justify-content: flex-start; }
-.menu h1 { margin: 0; text-align: center; font-size: 2.2rem; color: var(--solari-gold); }
+.menu h1 { margin: 0; font-family: var(--display); text-align: center; font-size: 2.2rem; color: var(--solari-gold); }
 
 /* Title screen */
 .main-menu {
@@ -458,7 +459,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .lesson { display: grid; }
 .lesson > * { grid-area: 1 / 1; }
 .lesson-hidden { visibility: hidden; }
-.lesson h2 { margin: 0 0 4px; font-size: 1rem; color: var(--solari-gold); }
+.lesson h2 { margin: 0 0 4px; font-family: var(--display); font-size: 1rem; color: var(--solari-gold); }
 .lesson p { margin: 0; font-size: 0.85rem; line-height: 1.35; }
 
 /* Selected-piece summary: a fixed-height strip under the board, so selecting never shifts the layout. --card-rows reserves a line for each optional row (cell, gift, record) the match can show. */
