@@ -704,6 +704,12 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .setup-seg button:disabled { opacity: 0.35; }
 .setup-hint { margin: 0; font-size: 0.8rem; line-height: 1.4; opacity: 0.75; }
 .setup-presets .choice { flex: 1 1 45%; }
+.setup-mine { flex: 1 1 45%; display: flex; gap: 4px; }
+.setup-mine .choice { flex: 1; }
+.setup-mine-delete { flex: 0 0 auto; min-width: 40px; background: #5a1818; color: #fff; border: 1px solid #a03030; border-radius: 8px; font-size: 1.2rem; }
+.setup-mine-save { display: flex; gap: 8px; margin: 6px 0; }
+.setup-mine-save input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid #556; background: #14141f; color: inherit; font: inherit; }
+.setup-mine-save button { padding: 8px 16px; border-radius: 8px; }
 .setup-section { border-radius: 10px; border: 1px solid rgba(154, 124, 240, 0.35); background: rgb(33, 26, 78); }
 .setup-section summary {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; cursor: pointer; list-style: none;

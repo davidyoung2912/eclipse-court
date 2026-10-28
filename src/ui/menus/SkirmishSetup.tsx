@@ -25,6 +25,7 @@ import { claimedOn } from '../../bounties'
 import { dailySeed } from '../../engine/data/setups'
 import { BackButton } from './BackButton'
 import { bool, list, loadChoices, oneOf, saveChoices } from '../../lastChoices'
+import { MAX_NAME, MAX_SAVED_PRESETS, deletePreset, loadPresets, savePreset, type SavedPreset } from '../../savedPresets'
 
 interface Props {
   progress: Progress
@@ -130,6 +131,52 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     court, difficulty, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
     clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, presetId, rulesId,
   })
+  const [mine, setMine] = useState<SavedPreset[]>(loadPresets)
+  const [mineName, setMineName] = useState('')
+  const [mineId, setMineId] = useState<string | null>(null)
+  /** What a named preset keeps: the match's rules, army, board and twists, not who plays or which court. */
+  const presetChoices = () => ({
+    mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, rulesId,
+  })
+  const applyMine = (p: SavedPreset) => {
+    const c = p.choices
+    const wantGrand = bool(c.grand, false) && grandOpen
+    const boards = wantGrand ? GRAND_BOARDS : BOARDS
+    const picked = list(c.roles, DRAFT_ROLES)
+    const wantMode = oneOf(c.mode, Object.keys(SETUP_INFO) as SetupMode[], 'classic')
+    setGrand(wantGrand)
+    setBoardId(oneOf(c.boardId, boards.map((b) => b.id).filter((id) => boardUnlocked(progress, id)), wantGrand ? GRAND_BOARDS[0].id : 'classic'))
+    setMode(wantGrand || (wantMode === 'draft' && hotSeat) ? 'classic' : wantMode)
+    setRoles(picked && !draftProblem(picked) ? picked : [...CLASSIC_ROLES])
+    const wantLoadout = list(c.loadout, spellPool(court))
+    const useLoadout = !hotSeat && c.spellMode === 'loadout' && !!wantLoadout && wantLoadout.length <= LOADOUT_SIZE
+    setSpellMode(useLoadout ? 'loadout' : 'classic')
+    setLoadout(useLoadout && wantLoadout ? wantLoadout : [])
+    setRecharge(bool(c.recharge, false))
+    setWinMode(oneOf(c.winMode, Object.keys(MODE_INFO) as MatchMode[], 'beacons'))
+    setEvents(bool(c.events, false))
+    setShowdown(bool(c.showdown, false))
+    setCycle(oneOf(c.cycle, CYCLES.map((x) => x.id), 'standard'))
+    setReverse(bool(c.reverse, false))
+    setClockSeconds(oneOf(c.clockSeconds, CLOCKS.map((x) => x.seconds), 0))
+    setExtraTime(bool(c.extraTime, false))
+    setGrowth(bool(c.growth, false))
+    setPromotion(bool(c.promotion, false))
+    setFog(bool(c.fog, false))
+    setSuddenDeath(oneOf<number>(c.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
+    setHeadStart(oneOf<number>(c.headStart, [0, ...HEAD_START_LEVELS], 0))
+    setRulesId(oneOf(c.rulesId, RULESETS.map((t) => t.id), 'standard'))
+    setPresetId(null)
+    setMineId(p.id)
+    reveal('army', 'spells', 'win', 'hazards', 'clock', 'twists')
+  }
+  const saveMine = () => {
+    const next = savePreset(mineName, presetChoices())
+    setMine(next)
+    setMineId(next.find((p) => p.name.toLowerCase() === mineName.trim().toLowerCase())?.id ?? null)
+    setMineName('')
+  }
   const applyRules = (r: PresetRules) => {
     setWinMode(r.winMode ?? 'beacons')
     setEvents(!!r.events)
@@ -274,6 +321,21 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
           )
         })}
       </div>}
+      <h3>My presets</h3>
+      {mine.length > 0 && <div className="choices row setup-presets">
+        {mine.map((p) => (
+          <div key={p.id} className="setup-mine">
+            <button className={`choice${mineId === p.id ? ' on' : ''}`} onClick={() => applyMine(p)}><strong>{p.name}</strong></button>
+            <button className="setup-mine-delete" aria-label={`Delete ${p.name}`} onClick={() => { setMine(deletePreset(p.id)); if (mineId === p.id) setMineId(null) }}>×</button>
+          </div>
+        ))}
+      </div>}
+      <div className="setup-mine-save">
+        <input type="text" value={mineName} maxLength={MAX_NAME} placeholder="Name this setup" aria-label="Preset name"
+          onChange={(e) => setMineName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && mineName.trim()) saveMine() }} />
+        <button disabled={!mineName.trim() || (mine.length >= MAX_SAVED_PRESETS && !mine.some((p) => p.name.toLowerCase() === mineName.trim().toLowerCase()))} onClick={saveMine}>Save</button>
+      </div>
+      <p className="setup-hint">Keeps the rules, army, board and twists below. Saving a name already used replaces it.</p>
       <h3>Options</h3>
       <Section title="Army & Board" {...sectionProps('army')}>
         <Segmented label="Board size" options={sizes} value={grand ? 'grand' : 'standard'} onChange={setSize}
