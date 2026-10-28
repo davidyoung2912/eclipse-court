@@ -5,6 +5,8 @@ import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } f
 import { HEARTBEAT_S, leaderInDanger, leaderStopMs, streaksOf, winningSquares } from './boardDrama'
 import { StreakMeter } from './ui/board/StreakMeter'
 import { EclipseCinematic } from './ui/board/EclipseCinematic'
+import { KillCam } from './ui/board/KillCam'
+import { killShotOf, type KillShot } from './killCam'
 import { flyBeacon } from './ui/board/flyBeacon'
 import { beaconPickups, castPath, eclipseCinemaMs, type CastFx } from './spellFx'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
@@ -151,6 +153,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   /** The latest spell's effect on the board, and the Eclipse cinematic while it plays. */
   const [castFx, setCastFx] = useState<CastFx | null>(null)
   const [cinema, setCinema] = useState(false)
+  const [kill, setKill] = useState<KillShot | null>(null)
   /** The side whose turn is being announced; play waits until it clears. */
   const [banner, setBanner] = useState<{ court: Court } | null>(() => {
     const last = history[history.length - 1].state
@@ -421,6 +424,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     const steps = [...history, { state: s, action }]
     setHistory(steps)
     celebrate(steps, state, s)
+    if (!getSettings().reduceMotion) setKill(killShotOf(steps))
     say(steps, state, action, s)
     if (s.turn !== state.turn && !s.winner) setBanner({ court: s.turn })
     setSettled(null)
@@ -663,6 +667,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} nextOdds={nextOdds} nextLight={nextLight} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} cast={castFx} />
       {cinema && <EclipseCinematic onDone={() => setCinema(false)} />}
+      {kill && <KillCam shot={kill} flip={human === 'umbral' && (!hotSeat || flipBoard)} onDone={() => setKill(null)} />}
       {!ended && <StreakMeter court={meterCourt} count={streaks[meterCourt]} />}
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (

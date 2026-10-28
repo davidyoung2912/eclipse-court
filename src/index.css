@@ -1488,3 +1488,15 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 @keyframes rays-dim { 0% { opacity: 1; transform: scale(1); } 65% { opacity: 0.2; transform: scale(1.15); } 100% { opacity: 0; } }
 :root[data-motion='reduced'] .eclipse-cinema { display: none; }
 @media (prefers-reduced-motion: reduce) { .eclipse-cinema { display: none; } }
+
+/* Kill-cam: the final capture again in slow motion, with a push-in and a closing vignette */
+.kill-cam { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(3, 2, 8, 0.92); cursor: pointer; animation: kill-in 300ms ease-out both; --t-slow: 1100ms; --t-mid: 700ms; }
+@keyframes kill-in { from { opacity: 0; } to { opacity: 1; } }
+.kill-stage { width: min(92vw, 80vh); animation: kill-push var(--kill-push) ease-in-out both; }
+.kill-stage .board { width: 100%; height: auto; }
+@keyframes kill-push { from { transform: scale(1); } to { transform: scale(var(--kill-zoom)); } }
+.kill-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(3, 2, 8, 0.85) 100%); animation: kill-close calc(var(--kill-push) + var(--kill-play)) ease-in both; }
+@keyframes kill-close { from { opacity: 0.3; } to { opacity: 1; } }
+.kill-skip { position: absolute; right: 16px; bottom: 16px; }
+:root[data-motion='reduced'] .kill-cam { display: none; }
+@media (prefers-reduced-motion: reduce) { .kill-cam { display: none; } }

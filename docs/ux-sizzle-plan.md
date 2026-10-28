@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-5 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-6 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -61,6 +61,8 @@ Phase 5 notes: pure numbers are in `src/spellFx.ts`. The Eclipse cinematic (`Ecl
 
 - After a win, a slow-motion replay of the final capture with zoom and vignette, built from the step log the game already keeps.
 - Skippable, off under reduce motion.
+
+Phase 6 notes: pure numbers and the choice of shot are in `src/killCam.ts`. `KillCam.tsx` shows a second, read-only board on the position before the final capture, pushes the camera in on the square, then switches to the position after so the board's own slowed move, lunge and slash animations play. It runs only when a court won by a capture (not a draw, beacon or resignation), and a tap, Escape or Skip ends it. The step log is not stored separately: the shot is read from the last two history steps, so engine and replays are unchanged. Under reduce motion it never opens.
 
 ## Phase 7: App-wide motion
 
