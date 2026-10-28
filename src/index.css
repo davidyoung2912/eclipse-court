@@ -324,7 +324,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .spell-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .spell {
   padding: 8px 10px; border-radius: 8px; border: 1px solid var(--solari-gold);
-  background: transparent; color: var(--solari-cream); font-size: 0.8rem;
+  background: var(--umbral-indigo); color: var(--solari-cream); font-size: 0.8rem;
 }
 .spell.active { background: var(--solari-gold); color: #1b1740; }
 .spell:disabled { opacity: 0.3; }
