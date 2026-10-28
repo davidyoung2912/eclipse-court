@@ -529,8 +529,10 @@ body:has(.puzzles-menu) {
 .campaign .stars i.got { opacity: 1; color: var(--solari-gold); }
 .campaign .boss { color: var(--solari-gold); opacity: 1; }
 .achievements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.achievements li { display: flex; flex-direction: column; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; opacity: 0.5; }
-.achievements li.got { opacity: 1; border-color: var(--solari-gold); }
+.achievements li { display: flex; flex-direction: column; padding: 8px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; background: rgba(26, 20, 62, 0.92); }
+.achievements li > * { opacity: 0.5; }
+.achievements li.got { border-color: var(--solari-gold); }
+.achievements li.got > * { opacity: 1; }
 .achievements strong { display: flex; align-items: center; gap: 8px; }
 .achievements span { font-size: 0.8rem; opacity: 0.75; }
 
@@ -816,13 +818,13 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .story-narrate { font-style: italic; opacity: 0.92; }
 .story-cast { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 6px; }
 .story-cast h3 { margin: 0; text-align: center; letter-spacing: 0.06em; }
-.story-member { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); }
+.story-member { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(32, 26, 78, 0.92); border: 1px solid rgba(154, 124, 240, 0.25); }
 .story-member svg { width: 40px; height: 40px; flex: none; }
 .story-member span { flex: 1; font-size: 0.9rem; }
 .story-member small { display: block; opacity: 0.7; font-size: 0.75rem; }
 .story-member em { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .story-member.wounded em { color: #e8b64a; }
-.story-member.fallen { opacity: 0.55; }
+.story-member.fallen > * { opacity: 0.55; }
 .story-member.fallen em { color: #d36a6a; }
 .story-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .story-progress i { display: block; height: 100%; background: var(--solari-gold); transition: width 0.2s; }
