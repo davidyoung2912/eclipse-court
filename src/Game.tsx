@@ -46,6 +46,7 @@ import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 import { WinBurst } from './ui/tray/WinBurst'
+import { ResultBanner, type ResultStat, type ResultTone } from './ui/tray/ResultBanner'
 
 interface Props {
   /** Who plays each court: a person at the screen, or the AI. Two people make a hot-seat game. */
@@ -468,6 +469,13 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     : winner === 'draw' ? 'Draw'
     : hotSeat ? `${COURT_NAME[winner ?? 'solari']} wins`
     : winner === human ? 'Victory' : 'Defeat'
+  const resultTone: ResultTone = dropped || puzzleLimit !== undefined && winner !== human ? 'plain'
+    : winner === 'draw' ? 'draw' : hotSeat ? 'win' : winner === human ? 'win' : 'lose'
+  const resultStats: ResultStat[] = hotSeat || dropped || puzzleLimit !== undefined ? [] : [
+    { label: 'Rounds', value: state.round },
+    { label: 'Felled', value: history[0].state.pieces.filter((p) => p.court !== human).length - state.pieces.filter((p) => p.court !== human).length },
+    { label: 'Standing', value: state.pieces.filter((p) => p.court === human).length },
+  ]
   /** One line on what this battle is for: a puzzle's first sentence, else the goal followed by where the game comes from. */
   const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
     : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label, coop && state.turn === 'solari' ? `Player ${coopTurn}` : null].filter(Boolean).join(' · ')
@@ -552,7 +560,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
-          <p className="confirm-title">{result}</p>
+          <ResultBanner title={result} tone={resultTone} stats={resultStats} />
           <div className="buttons">
             {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
             {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
