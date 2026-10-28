@@ -278,3 +278,43 @@ export function chooseAction(state: GameState, difficulty: Difficulty, seed: num
   }
   return candidates[best]
 }
+
+/** What the search makes of one decision: the best action available and the worth of it against the action actually played. */
+export interface Judgement {
+  best: Action
+  /** Values are for the side to move; a bigger number is better. */
+  bestValue: number
+  playedValue: number
+}
+
+const sameChoice = (a: Action, b: Action) =>
+  a.type === b.type && (a.type === 'pass' || (a.type === 'move' && b.type === 'move' && a.pieceId === b.pieceId && a.to.x === b.to.x && a.to.y === b.to.y)
+    || (a.type === 'cast' && b.type === 'cast' && a.spell === b.spell && a.pieceId === b.pieceId && a.to?.x === b.to?.x && a.to?.y === b.to?.y))
+
+/**
+ * Judges a move that was played: searches the position with no noise, then values the played
+ * action the same way. Duel luck is averaged over, so only the decision is judged, not the dice.
+ */
+export function judgeMove(state: GameState, played: Action, difficulty: Difficulty = 'normal'): Judgement {
+  const { depth, beam } = DIFFICULTY[difficulty]
+  const w = NEUTRAL
+  const court = state.turn
+  const candidates = [...moveActions(state, court), ...spellActions(state, court), { type: 'pass' } as Action]
+  const order = candidates.map((a, i) => [i, hint(state, a)] as const).sort((x, y) => y[1] - x[1])
+  let best = 0
+  let bestScore = -Infinity
+  for (const [i] of order) {
+    const a = candidates[i]
+    const bonus = a.type === 'cast' ? w.spells : 0
+    const score = valueOf(state, a, court, depth, beam, w, bestScore - bonus - 1e-6, Infinity) + bonus
+    if (score > bestScore || (score === bestScore && i < best)) {
+      bestScore = score
+      best = i
+    }
+  }
+  const bestAction = candidates[best]
+  if (sameChoice(bestAction, played)) return { best: bestAction, bestValue: bestScore, playedValue: bestScore }
+  const bonus = played.type === 'cast' ? w.spells : 0
+  // The played action can never be worth more than the best one found; the cap absorbs the pruned search's rounding.
+  return { best: bestAction, bestValue: bestScore, playedValue: Math.min(bestScore, valueOf(state, played, court, depth, beam, w, -Infinity, Infinity) + bonus) }
+}

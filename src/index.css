@@ -776,3 +776,17 @@ body:has(.duel) .play-timer { display: none; }
 .row-pick button { display: inline-flex; align-items: center; gap: 6px; }
 .row-pick .role-icon { width: 2.3em; height: 2.3em; flex: none; }
 .odds-note { margin: 0 0 6px; text-align: center; font-size: 0.7rem; opacity: 0.65; }
+
+/* Game review */
+.eval-bar { width: min(100%, 420px); height: 44px; border-radius: 8px; cursor: pointer; display: block; margin: 8px auto; }
+.eval-solari { fill: rgba(232, 182, 74, 0.25); }
+.eval-umbral { fill: rgba(122, 92, 200, 0.3); }
+.eval-line { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+.eval-now { stroke: var(--solari-gold); stroke-width: 2; }
+.review-note { margin: 0 0 6px; text-align: center; font-size: 0.9rem; }
+.review-note.grade-inaccuracy strong { color: #e8d36a; }
+.review-note.grade-mistake strong { color: #f0a050; }
+.review-note.grade-blunder strong { color: #f06a5a; }
+.review-note.grade-best strong, .review-note.grade-good strong { color: #6fe08a; }
+.review-note .link { background: none; border: none; padding: 0; color: var(--solari-gold); text-decoration: underline; font: inherit; cursor: pointer; }
+.review-summary { margin: 6px 0; }
