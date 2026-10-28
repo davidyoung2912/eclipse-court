@@ -1,4 +1,6 @@
 import { lazy, useEffect, useRef, useState, type ComponentProps } from 'react'
+import { installTapFx } from './tapFx'
+import { markTransitions, withTransition } from './viewTransition'
 import { challengeLink, parseShared, type Shared } from './share'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
@@ -223,7 +225,9 @@ function skirmishRecord(setup: SetupChoice, human: Court, difficulty: Difficulty
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>(() => takeLinkScreen() ?? { name: 'menu' })
+  const [screen, setScreenNow] = useState<Screen>(() => takeLinkScreen() ?? { name: 'menu' })
+  /** Changes screen with a cross-fade where the browser supports it. */
+  const setScreen = (next: Screen) => withTransition(() => setScreenNow(next))
   const [progress, setProgress] = useState(loadProgress)
   const [design, setDesign] = useState(editorDraft)
   const changeDesign = (next: Design) => { setDesign(next); saveDraft(next) }
@@ -253,6 +257,12 @@ export default function App() {
   }
   const [campaignTab, setCampaignTab] = useState<CampaignTab>(() => oneOf<CampaignTab>(loadChoices('campaign').tab, ['battles', 'scenarios', 'coop'], 'battles'))
 
+  // Button ripples and sheen, the menu's light parallax, and the hand-over of screen entrances to View Transitions.
+  useEffect(() => {
+    markTransitions()
+    return installTapFx()
+  }, [])
+
   // Browsers only allow sound after a gesture, so audio unlocks on the first touch.
   useEffect(() => {
     window.addEventListener('pointerdown', unlockAudio, { once: true })
@@ -263,7 +273,7 @@ export default function App() {
   useEffect(() => {
     const onHash = () => {
       const next = takeLinkScreen()
-      if (next) setScreen(next)
+      if (next) setScreenNow(next)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)

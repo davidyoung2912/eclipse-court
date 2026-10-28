@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from 'react'
+import { CountUp } from '../CountUp'
 import { buy, equip, equippedId, owns, shopSnapshot, subscribeShop } from '../../shop'
 import { cosmeticKey, cosmeticsOf, KIND_TITLES, KINDS, rarityOf, type Cosmetic } from '../../engine/data/cosmetics'
 import { getSettings, themeById, updateSettings } from '../../settings'
@@ -34,7 +35,7 @@ export function Collection({ onBack }: Props) {
       <PageArt icon="star" />
       <h2>{t('collection.title')}</h2>
       <p className="tagline">{t('collection.tagline')}</p>
-      <p className="shard-wallet" role="status"><Icon name="star" /><strong>{shop.shards}</strong> {t('collection.shards')}<small>{t('collection.earned', { count: shop.earned })}</small></p>
+      <p className="shard-wallet" role="status"><Icon name="star" /><strong><CountUp value={shop.shards} /></strong> {t('collection.shards')}<small>{t('collection.earned', { count: shop.earned })}</small></p>
       {preview && <Showcase cosmetic={preview} />}
       {KINDS.map((kind) => (
         <section key={kind} className="collection-kind">

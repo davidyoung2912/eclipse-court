@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-6 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **phases 1-7 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -70,6 +70,8 @@ Phase 6 notes: pure numbers and the choice of shot are in `src/killCam.ts`. `Kil
 - Button micro-interactions: press squash, hover sheen, tap ripple; numbers count up; staggered list entrances.
 - Ambient menu life: drifting starfield, court emblem lit and shadowed, light parallax.
 - Shimmer skeletons and a themed loader for medallion images.
+
+Phase 7 notes: pure numbers are in `src/appMotion.ts`. Screen changes go through `withTransition` (`viewTransition.ts`), a View Transitions cross-fade where the browser has it; elsewhere the existing screen-in rise still plays. The persona-card-to-briefing shared-element expansion was left out (it needs per-card transition names across screens). `tapFx.ts` adds a tap ripple and a mouse hover sheen as short-lived overlays on buttons and cards, and drives the menu's pointer parallax (a drifting starfield and the hero emblem shifting against the pointer). Lists (mode cards, suggestions, choices) rise in on a 45ms stagger, the shard wallet counts up (`CountUp`), and persona images shimmer until they load. Reduce motion skips all of it.
 
 ## Phase 8: Rewards, haptics and accessibility
 

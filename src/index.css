@@ -1500,3 +1500,72 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .kill-skip { position: absolute; right: 16px; bottom: 16px; }
 :root[data-motion='reduced'] .kill-cam { display: none; }
 @media (prefers-reduced-motion: reduce) { .kill-cam { display: none; } }
+
+/* Phase 7, app-wide motion. Where View Transitions exist the browser cross-fades screens and the screens' own entrance steps aside. */
+:root[data-vt='on'] main.app:not(.timed) { animation: none; }
+::view-transition-old(root) { animation: vt-out var(--t-mid) var(--ease) both; }
+::view-transition-new(root) { animation: vt-in var(--t-slow) var(--ease) both; }
+@keyframes vt-out { to { opacity: 0; transform: scale(0.985); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(10px) scale(1.01); } }
+
+/* Tap ripple and hover sheen: overlays added by tapFx.ts and removed when done. */
+.fx-ripple, .fx-sheen { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.fx-ripple::after {
+  content: ''; position: absolute; left: var(--rx, 50%); top: var(--ry, 50%); width: 240%; aspect-ratio: 1; border-radius: 50%;
+  translate: -50% -50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.34), transparent 65%); animation: tap-ripple 520ms var(--ease) both;
+}
+@keyframes tap-ripple { from { scale: 0; opacity: 1; } to { scale: 1; opacity: 0; } }
+.fx-sheen::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 38%; left: -45%; transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent); animation: sheen-sweep 700ms var(--ease) both;
+}
+@keyframes sheen-sweep { to { left: 120%; } }
+
+/* Lists rise in one after another. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
+.mode-cards > *, .suggested li, main.app:not(.main-menu) .choices > * { animation: rise-in var(--t-slow) var(--ease) backwards; }
+.mode-cards > *:nth-child(1) { animation-delay: 0ms; }
+.mode-cards > *:nth-child(2) { animation-delay: 45ms; }
+.mode-cards > *:nth-child(3) { animation-delay: 90ms; }
+.mode-cards > *:nth-child(4) { animation-delay: 135ms; }
+.mode-cards > *:nth-child(5) { animation-delay: 180ms; }
+.mode-cards > *:nth-child(6) { animation-delay: 225ms; }
+.mode-cards > *:nth-child(7) { animation-delay: 270ms; }
+.mode-cards > *:nth-child(8) { animation-delay: 315ms; }
+.suggested li:nth-child(1) { animation-delay: 0ms; }
+.suggested li:nth-child(2) { animation-delay: 45ms; }
+.suggested li:nth-child(3) { animation-delay: 90ms; }
+.suggested li:nth-child(4) { animation-delay: 135ms; }
+.suggested li:nth-child(5) { animation-delay: 180ms; }
+.suggested li:nth-child(6) { animation-delay: 225ms; }
+.suggested li:nth-child(7) { animation-delay: 270ms; }
+.suggested li:nth-child(8) { animation-delay: 315ms; }
+main.app:not(.main-menu) .choices > *:nth-child(1) { animation-delay: 0ms; }
+main.app:not(.main-menu) .choices > *:nth-child(2) { animation-delay: 45ms; }
+main.app:not(.main-menu) .choices > *:nth-child(3) { animation-delay: 90ms; }
+main.app:not(.main-menu) .choices > *:nth-child(4) { animation-delay: 135ms; }
+main.app:not(.main-menu) .choices > *:nth-child(5) { animation-delay: 180ms; }
+main.app:not(.main-menu) .choices > *:nth-child(6) { animation-delay: 225ms; }
+main.app:not(.main-menu) .choices > *:nth-child(7) { animation-delay: 270ms; }
+main.app:not(.main-menu) .choices > *:nth-child(8) { animation-delay: 315ms; }
+
+/* The menu's sky: a faint drifting starfield that shifts against the pointer, and the hero emblem moving a little less. */
+body:has(.main-menu)::before {
+  content: ''; position: fixed; inset: -24px; z-index: -1; pointer-events: none; opacity: 0.55;
+  background:
+    radial-gradient(1.4px 1.4px at 20px 30px, #fbf1d4, transparent),
+    radial-gradient(1px 1px at 90px 80px, #cdbfff, transparent),
+    radial-gradient(1.2px 1.2px at 150px 20px, #fbf1d4, transparent),
+    radial-gradient(1px 1px at 60px 140px, #fbf1d4, transparent);
+  background-size: 180px 170px; translate: var(--px, 0px) var(--py, 0px); transition: translate 0.4s ease-out;
+  animation: sky-drift 120s linear infinite;
+}
+@keyframes sky-drift { to { background-position: -180px 170px; } }
+.main-menu .hero { translate: calc(var(--px, 0px) * -0.4) calc(var(--py, 0px) * -0.4); transition: translate 0.4s ease-out; }
+
+/* Medallion images shimmer until they load. */
+.persona-photo[data-loading] {
+  background: linear-gradient(100deg, rgba(60, 44, 120, 0.6) 30%, rgba(205, 191, 255, 0.35) 50%, rgba(60, 44, 120, 0.6) 70%) 0 0 / 220% 100%;
+  animation: skeleton 1.4s linear infinite;
+}
+@keyframes skeleton { to { background-position: -220% 0; } }
