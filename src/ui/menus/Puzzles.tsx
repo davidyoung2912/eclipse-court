@@ -1,5 +1,6 @@
 import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzlesIn } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
+import { rushBest } from '../../rush'
 import { Icon } from './icons'
 import { ResetButton } from './ResetButton'
 import { PageArt } from './MenuArt'
@@ -11,11 +12,12 @@ interface Props {
   /** Lines about the puzzle just played, such as an achievement. */
   report?: string[]
   onPlay: (index: number, daily: boolean) => void
+  onRush: () => void
   onReset: () => void
   onBack: () => void
 }
 
-export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
+export function Puzzles({ progress, report, onPlay, onRush, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const isSolved = (id: string) => progress.puzzles.includes(id)
   const solved = PUZZLES.filter((p) => isSolved(p.id)).length
@@ -29,6 +31,13 @@ export function Puzzles({ progress, report, onPlay, onReset, onBack }: Props) {
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}
+      <h3>Puzzle Rush</h3>
+      <div className="choices">
+        <button className="choice" onClick={onRush}>
+          <strong><Icon name="bolt" />Start a Rush <span className="pill">best {rushBest()}</span></strong>
+          <span>Puzzle after puzzle, easy to hard, in a random order. One failed puzzle ends the run.</span>
+        </button>
+      </div>
       <h3>Puzzle of the day</h3>
       <div className="choices">
         <PuzzleButton index={daily} number={null} solved={isSolved(PUZZLES[daily].id)} onPlay={() => onPlay(daily, true)} />

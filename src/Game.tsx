@@ -56,7 +56,7 @@ interface Props {
   /** The player's first campaign battle: a line of coaching sits above the board's cards. */
   coach?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
-  puzzle?: { name: string; text: string }
+  puzzle?: { name: string; text: string; /** A Puzzle Rush run: a failed puzzle ends it, so there is no retry. */ rush?: boolean }
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
   puzzleHelp?: PuzzleHelp
   /** Called after every action with the game so far, or null once it has ended. */
@@ -511,7 +511,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
           <p className="confirm-title">{result}</p>
           <div className="buttons">
-            {puzzleLimit !== undefined && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
+            {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
             {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
             {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
             {online && net && net.rematch !== 'none' && (

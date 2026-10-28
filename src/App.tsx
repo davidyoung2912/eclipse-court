@@ -15,6 +15,7 @@ import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
+import { recordRush, rushOrder, RUSH_SHARD_CAP } from './rush'
 import { CLASSIC_ROLES } from './engine/data/draft'
 import { dailyGame, dailyMatch, DAILY_COURT, isDailyMatch } from './engine/data/daily'
 import { dailySeed } from './engine/data/setups'
@@ -111,7 +112,7 @@ type Screen =
     /** The other player is across an online connection; `human` is your court. */
     online?: Session
     /** Set when the game is a puzzle: its index, whether it is the day's, and the turns allowed. */
-    puzzle?: { index: number; daily: boolean }
+    puzzle?: { index: number; daily: boolean; /** A Puzzle Rush run: its order and the puzzles solved so far. */ rush?: { order: number[]; score: number } }
     /** Set in a best-of-three: the opponent and the games won and lost so far. */
     series?: { wins: number; losses: number }
     /** A fight of the gauntlet run; the run itself is kept apart from the saved game. */
@@ -329,6 +330,12 @@ export default function App() {
       <Puzzles progress={progress} report={report}
         onReset={() => { const next = resetPuzzles(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
+        onRush={() => {
+          const order = rushOrder(Date.now() % 1000000007)
+          const index = order[0]
+          setReport([])
+          setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty, record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily: false, rush: { order, score: 0 } } })
+        }}
         onPlay={(index, daily) => {
           setReport([])
           setScreen({
@@ -542,6 +549,19 @@ export default function App() {
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
+      if (puzzle!.rush) {
+        const { order, score } = puzzle!.rush
+        const next = solved ? score + 1 : score
+        if (solved && next < order.length) {
+          const index = order[next]
+          return setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[index].difficulty, record: { initial: PUZZLES[index].build(), actions: [] }, campaignIndex: null, puzzle: { index, daily: false, rush: { order, score: next } } })
+        }
+        const best = recordRush(next)
+        const shards = Math.min(next, RUSH_SHARD_CAP)
+        earnShards(shards)
+        setReport([`Puzzle Rush: ${next} solved${best ? ' — a new best!' : ''}.`, ...(shards > 0 ? [`Shards: +${shards}.`] : [])])
+        return setScreen({ name: 'puzzles' })
+      }
       if (solved) {
         const { progress: next, earned } = recordPuzzle(progress, PUZZLES[puzzle!.index].id, puzzle!.daily && puzzle!.index === dailyPuzzleIndex())
         setProgress(next)
@@ -661,7 +681,7 @@ export default function App() {
         mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}
         context={context}
         coach={!series && isFirstBattle(progress, campaignIndex)}
-        puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text }}
+        puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text, rush: !!puzzle.rush }}
         onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
