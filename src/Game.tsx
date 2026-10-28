@@ -16,11 +16,12 @@ import { matchGoal, modeOf } from './engine/rules/events'
 import { estimateOdds, reduce } from './engine/reducer'
 import { otherCourt, samePos, sizeOf } from './engine/rules/board'
 import { duelCells } from './engine/rules/cells'
+import { FIGHT_TUNING, tuneCells } from './fightDifficulty'
 import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
 import { spellTargets } from './engine/rules/spells'
-import type { Action, Court, DuelOutcome, GameState, Pos, Spell } from './engine/rules/types'
+import type { Action, Court, DuelOutcome, GameState, Piece, Pos, Spell } from './engine/rules/types'
 import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
@@ -149,10 +150,14 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const aiFoe = typeof foeController === 'object' ? foeController : null
   const difficulty = aiFoe ? aiFoe.ai : 'normal'
   const personality = aiFoe?.personality
-  const foeSkill = DIFFICULTY[difficulty].skill
-  const foeAggression = DIFFICULTY[difficulty].aggression
   /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
   const even = hotSeat || online || !!mail
+  /** The fight-difficulty setting only tunes fights against the AI; games between people stay even. */
+  const tuning = FIGHT_TUNING[even ? 'normal' : getSettings().fightDifficulty]
+  const foeSkill = Math.min(1, Math.max(0, DIFFICULTY[difficulty].skill + tuning.foeSkill))
+  const foeAggression = Math.min(1, Math.max(0, DIFFICULTY[difficulty].aggression + tuning.foeAggression))
+  /** The cells under a capture's fighters, with the fight difficulty applied to the human's side. */
+  const fightCells = (attacker: Piece, defender: Piece, byAi: boolean) => tuneCells(duelCells(state, attacker, defender), byAi ? 1 : 0, tuning)
   /** The person at the screen for Solari's turn in a co-op game: the first on odd rounds. */
   const coopTurn = coopPlayer(state.round)
   /** The device changes hands: hot-seat before every turn, co-op before each of Solari's. */
@@ -363,7 +368,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     if (!attacker || !defender) return
     const skills: [number, number] = even ? [AUTO_DUEL_SKILL, AUTO_DUEL_SKILL] : p.byAi ? [foeSkill, AUTO_DUEL_SKILL] : [AUTO_DUEL_SKILL, foeSkill]
     const duel = autoDuel(attacker, defender, squareLuminance(state, p.to), skills, state.rng + state.round,
-      even ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression], duelCells(state, attacker, defender))
+      even ? [1, 1] : p.byAi ? [foeAggression, 1] : [1, foeAggression], fightCells(attacker, defender, !!p.byAi))
     setPending({ ...p, confirmed: true })
     setSettled({ pending: p, outcome: duel })
   }
@@ -533,9 +538,9 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
-        <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={duelCells(state, attacker, defender)}
+        <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={fightCells(attacker, defender, !!pending.byAi)}
           boardId={state.config.board} cellEffects={[cellAt(state.config, attacker.pos), cellAt(state.config, defender.pos)]}
-          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression}
+          options={options} playerSide={pending.byAi ? 1 : 0} opponentSkill={foeSkill} opponentAggression={foeAggression} foeRamp={tuning.foeRamp}
           seed={state.rng + state.round} onDone={finishDuel} />
       )}
       {settled && !asking && attacker && defender && (
@@ -670,7 +675,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
             cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}
             luminance={squareLuminance(state, pending.to)}
-            odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, duelCells(state, attacker, defender))}
+            odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, fightCells(attacker, defender, !!pending.byAi))}
             onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
         )}
       </footer>

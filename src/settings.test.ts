@@ -5,7 +5,7 @@ describe('settings', () => {
   it('falls back to the defaults for damaged data', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings({ theme: 'nope', reduceMotion: 'yes', marks: 1 })).toEqual(DEFAULT_SETTINGS)
-    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal', haptics: true })
+    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal' })
   })
 
   it('keeps a known duel speed and ignores an unknown one', () => {
@@ -31,5 +31,13 @@ describe('settings', () => {
   it('gives every themed palette the same variables', () => {
     const keys = Object.keys(THEMES[1].vars).sort()
     for (const t of THEMES.slice(1)) expect(Object.keys(t.vars).sort(), t.id).toEqual(keys)
+  })
+})
+
+describe('fight difficulty setting', () => {
+  it('defaults to normal and ignores unknown values', () => {
+    expect(parseSettings({}).fightDifficulty).toBe('normal')
+    expect(parseSettings({ fightDifficulty: 'hard' }).fightDifficulty).toBe('hard')
+    expect(parseSettings({ fightDifficulty: 'brutal' }).fightDifficulty).toBe('normal')
   })
 })

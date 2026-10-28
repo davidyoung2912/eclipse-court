@@ -37,6 +37,8 @@ interface Props {
   opponentSkill: number
   /** How readily (0..1) the AI fighter presses its attack. */
   opponentAggression?: number
+  /** Scales how fast the AI fighter speeds up over the fight (1 is the standard ramp). */
+  foeRamp?: number
   seed: number
   onDone: (outcome: DuelOutcome) => void
 }
@@ -54,7 +56,7 @@ const COUNT_STEP_MS = 750
 /** The stats briefing leads the countdown for this long (tap to skip). */
 const BRIEF_MS = 3200
 
-export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, seed, onDone }: Props) {
+export function DuelView({ attacker, defender, luminance, cells, boardId, cellEffects, options, playerSide = 0, opponentSkill, opponentAggression = 1, foeRamp = 1, seed, onDone }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
@@ -147,7 +149,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     const pace = DUEL_PACE[getSettings().duelSpeed]
     const myAi = createDuelAi(profileForSkill(AUTO_DUEL_SKILL, 1), seed + 1)
     skipping.current = false
-    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP }, pickups: { seed: seed ^ 0x9e3779b9 } }
+    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP * foeRamp }, pickups: { seed: seed ^ 0x9e3779b9 } }
     const state = createDuel(attacker, defender, luminance, cfg, cells)
     const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
     // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
@@ -255,7 +257,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       cancelAnimationFrame(raf)
       drums.stop()
     }
-  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, seed, waiting])
+  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, seed, waiting])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return
