@@ -744,8 +744,8 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 
 /* One-time tip cards */
 .tip-card {
-  display: flex; gap: 12px; align-items: flex-start; flex-shrink: 0; width: 100%;
-  position: sticky; bottom: 4px; margin-top: auto; z-index: 15;
+  display: flex; gap: 12px; align-items: flex-start; flex-shrink: 0; width: calc(100% - 40px);
+  position: sticky; bottom: 4px; margin: auto 20px 0; align-self: center; z-index: 15;
   padding: 12px 12px 10px; border-radius: 14px;
   background: var(--tip-bg);
   border: 1px solid var(--tip-border);
@@ -753,7 +753,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   animation: tip-in 0.35s ease-out both;
 }
 .tip-card.float {
-  position: fixed; left: 8px; right: 8px; width: auto; max-width: 544px; margin: 0 auto;
+  position: fixed; left: 20px; right: 20px; width: auto; max-width: 504px; margin: 0 auto;
   bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 40;
 }
 .tip-icon {
@@ -773,7 +773,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 }
 /* A modal card dims and blocks the screen behind it, which holds still until the card is dismissed. */
 .tip-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(6, 4, 18, 0.78); }
-.tip-card.modal { text-align: left; position: relative; bottom: auto; margin: 0; max-width: 440px; }
+.tip-card.modal { text-align: left; position: relative; bottom: auto; margin: 0; width: 100%; max-width: 440px; }
 @keyframes tip-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 [data-motion='reduced'] .tip-card { animation: none; }
 @media (prefers-reduced-motion: reduce) { .tip-card { animation: none; } }
