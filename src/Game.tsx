@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { autoDuel } from './ai/autoDuel'
+import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, updateSettings } from './settings'
@@ -243,9 +244,17 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   // Each court's bell rings as its turn begins.
   useEffect(() => {
     if (winner) {
-      if (hotSeat ? winner !== 'draw' : winner === human) sfx.win()
-      else sfx.lose()
-    } else if (state.eclipse && !wasEclipse.current) sfx.eclipse()
+      if (hotSeat ? winner !== 'draw' : winner === human) {
+        sfx.win()
+        haptic('reward')
+      } else {
+        sfx.lose()
+        haptic('danger')
+      }
+    } else if (state.eclipse && !wasEclipse.current) {
+      sfx.eclipse()
+      haptic('danger')
+    }
     else if (state.turn !== lastTurn.current) turnBell(state.turn)
     lastTurn.current = state.turn
     wasEclipse.current = state.eclipse
@@ -303,9 +312,16 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     }
     const s = reduce(state, action)
     if (s === state) return
-    if (action.type === 'cast') sfx.cast()
-    else if (s.lastDuel) sfx.hit(2)
-    else sfx.move()
+    if (action.type === 'cast') {
+      sfx.cast()
+      haptic('confirm')
+    } else if (s.lastDuel) {
+      sfx.hit(2)
+      haptic('capture')
+    } else {
+      sfx.move()
+      haptic('move')
+    }
     turnClock.spend()
     const steps = [...history, { state: s, action }]
     setHistory(steps)
@@ -394,6 +410,13 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     }
     clearHint()
     const occ = pieceAt(state, p)
+    if (occ && occ.court === human) {
+      sfx.select()
+      haptic('select')
+    } else if (selected) {
+      sfx.deny()
+      haptic('deny')
+    }
     setSelectedId(occ && occ.court === human ? occ.id : null)
     setInspectId(occ ? occ.id : null)
     setInspectSq(occ ? null : p)

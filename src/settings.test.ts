@@ -5,13 +5,19 @@ describe('settings', () => {
   it('falls back to the defaults for damaged data', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings({ theme: 'nope', reduceMotion: 'yes', marks: 1 })).toEqual(DEFAULT_SETTINGS)
-    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal' })
+    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal', haptics: true })
   })
 
   it('keeps a known duel speed and ignores an unknown one', () => {
     expect(parseSettings({ duelSpeed: 'fast' }).duelSpeed).toBe('fast')
     expect(parseSettings({ duelSpeed: 'instant' }).duelSpeed).toBe('instant')
     expect(parseSettings({ duelSpeed: 'warp' }).duelSpeed).toBe('normal')
+  })
+
+  it('keeps haptics on unless they are switched off', () => {
+    expect(parseSettings({}).haptics).toBe(true)
+    expect(parseSettings({ haptics: false }).haptics).toBe(false)
+    expect(parseSettings({ haptics: 'no' }).haptics).toBe(true)
   })
 
   it('opens themes with stars, the first always', () => {

@@ -19,6 +19,25 @@ function readMuted(): boolean {
 
 export const isMuted = () => muted
 
+const ASKED_KEY = 'eclipse-court:sound-asked'
+
+/** Whether the first-launch "Sound on?" question has been answered. */
+export function soundAsked(): boolean {
+  try {
+    return localStorage.getItem(ASKED_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function markSoundAsked() {
+  try {
+    localStorage.setItem(ASKED_KEY, '1')
+  } catch {
+    // Without storage the question simply comes back next visit.
+  }
+}
+
 const VOLUME_KEY = 'eclipse-court:volume'
 const level = (v: unknown) => (typeof v === 'number' && v >= 0 && v <= 1 ? v : 1)
 const volumes = readVolumes()
@@ -174,6 +193,14 @@ export const sfx = {
     tone(110, 1.8, { type: 'triangle', gain: 0.12, to: 73 })
     noise(1.2, { gain: 0.08, freq: 300 })
   },
+  /** The shared effect vocabulary: confirm, deny, reward and danger. */
+  confirm: () => [0, 1].forEach((i) => tone(587.33 * Math.pow(1.5, i), 0.12, { type: 'triangle', gain: 0.1, delay: i * 0.07 })),
+  deny: () => {
+    tone(220, 0.1, { type: 'square', gain: 0.07, to: 160 })
+    tone(165, 0.14, { type: 'square', gain: 0.07, to: 110, delay: 0.09 })
+  },
+  reward: () => [0, 1, 2].forEach((i) => tone(784 * Math.pow(1.25, i), 0.25, { gain: 0.1, delay: i * 0.08 })),
+  danger: () => [0, 1].forEach((i) => tone(130.81, 0.22, { type: 'sawtooth', gain: 0.1, to: 110, delay: i * 0.2 })),
   win: () => [523.25, 659.25, 783.99, 1046.5].forEach((n, i) => tone(n, 0.8, { gain: 0.14, delay: i * 0.12 })),
   lose: () => [329.63, 261.63, 196, 130.81].forEach((n, i) => tone(n, 1, { type: 'triangle', gain: 0.16, delay: i * 0.18 })),
 }

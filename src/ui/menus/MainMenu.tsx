@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
+import { SoundPrompt } from './SoundPrompt'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
 import type { Progress } from '../../progress'
@@ -202,6 +203,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
         </button>
       </nav>
       </div>
+      <SoundPrompt onAnswer={setSound} />
       <TipCard page="menu" />
     </main>
   )

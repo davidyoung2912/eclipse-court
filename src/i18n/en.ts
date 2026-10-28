@@ -17,6 +17,7 @@ export const en = {
   'settings.effectsVolume': 'Effects volume',
   'settings.music': 'Music',
   'settings.musicVolume': 'Music volume',
+  'settings.haptics': 'Haptics: short vibrations when you select, move and capture',
   'settings.accessibility': 'Accessibility',
   'settings.largeUi': 'Larger text and buttons',
   'settings.marks': 'Mark the light on every square with + and − (colour is never the only clue)',
@@ -39,6 +40,11 @@ export const en = {
   'settings.noFiles': 'This browser cannot save files.',
   'settings.badFile': 'That file is not an Eclipse Court save.',
   'settings.restored': 'Restored {count} records. Reloading…',
+
+  'soundPrompt.title': 'Sound on?',
+  'soundPrompt.body': 'Eclipse Court has music that builds toward the Eclipse, and bells for each court. You can change this any time in Settings.',
+  'soundPrompt.yes': 'Sound On',
+  'soundPrompt.no': 'Keep It Quiet',
 
   'daily.title': 'Daily Match',
   'daily.tagline': '{date}. The same game for everyone today; your first finished attempt is the one that counts.',

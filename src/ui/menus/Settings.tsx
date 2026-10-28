@@ -12,6 +12,7 @@ import { BackButton } from './BackButton'
 import { getVolumes, setVolumes, isMuted, setMuted, sfx, unlockAudio } from '../../audio/synth'
 import { downloadSave, importSave } from '../../backup'
 import { t } from '../../i18n'
+import { haptic } from '../../haptics'
 
 interface Props {
   progress: Progress
@@ -69,6 +70,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <h3>{t('settings.sound')}</h3>
       <label className="recharge">{t('settings.effects')} <input type="range" min={0} max={1} step={0.05} value={vol.sfx} aria-label={t('settings.effectsVolume')} onChange={(e) => volume({ sfx: Number(e.target.value) })} /></label>
       <label className="recharge">{t('settings.music')} <input type="range" min={0} max={1} step={0.05} value={vol.music} aria-label={t('settings.musicVolume')} onChange={(e) => volume({ music: Number(e.target.value) })} /></label>
+      <label className="recharge"><input type="checkbox" checked={settings.haptics} onChange={() => { change({ haptics: !settings.haptics }); if (!settings.haptics) haptic('confirm') }} /> {t('settings.haptics')}</label>
       <h3>{t('settings.accessibility')}</h3>
       <label className="recharge"><input type="checkbox" checked={settings.largeUi} onChange={() => change({ largeUi: !settings.largeUi })} /> {t('settings.largeUi')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.marks} onChange={() => change({ marks: !settings.marks })} /> {t('settings.marks')}</label>
