@@ -392,8 +392,9 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .corona, .rays { transform-box: fill-box; transform-origin: center; }
 .corona { animation: breathe 4.35s ease-in-out infinite; }
 .rays { animation: spin 78.3s linear infinite; }
-.ray { fill: #ffd77a; opacity: 0.55; }
-.ray.short { opacity: 0.3; }
+.ray { fill: #ffd77a; }
+.hero-halo, .hero-link { animation: breathe 5.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.hero-halo-late { animation-delay: -2.6s; }
 .moon { animation: drift 7.83s ease-in-out infinite alternate; }
 .main-menu h1 {
   font-family: var(--display); font-weight: 700; font-size: 2.1rem; letter-spacing: 0.2em;
@@ -487,7 +488,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 @keyframes drift { from { transform: translate(-16px, 4px); } to { transform: translate(15px, -3px); } }
 @keyframes glow { 50% { box-shadow: 0 0 22px rgba(232, 182, 74, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); } }
 @media (prefers-reduced-motion: reduce) {
-  .star, .corona, .rays, .moon, .main-menu .menu-buttons button.primary { animation: none; }
+  .star, .corona, .rays, .moon, .hero-halo, .hero-link, .main-menu .menu-buttons button.primary { animation: none; }
 }
 
 .menu h2, .menu h3 { margin: 0; }
@@ -652,12 +653,17 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu-art .art-spin { animation-duration: 18s; }
 .menu-art .art-star { animation-duration: 1.9s; }
 @keyframes art-mote { 0%, 100% { transform: translate(0, 0); opacity: 0; } 20%, 80% { opacity: 0.85; } 50% { transform: translate(10px, -22px); } }
+/* The joke satellite: a slow crossing near the top, with a blinking light */
+.menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20s linear both; }
+.menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
+@keyframes art-sat { from { transform: translateX(0); opacity: 0; } 5%, 95% { opacity: 0.9; } to { transform: translateX(var(--len)); opacity: 0; } }
+@keyframes art-sat-blink { 50% { opacity: 0; } }
 @keyframes art-shoot { from { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot { animation: none; }
-@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot { animation: none; } }
+[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-sat, .hero .art-sat-blink { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;

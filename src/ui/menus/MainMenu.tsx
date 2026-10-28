@@ -3,7 +3,7 @@ import { isMuted, setMuted } from '../../audio/synth'
 import { SoundPrompt } from './SoundPrompt'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
-import { Shooter } from './MenuArt'
+import { Satellite, Shooter } from './MenuArt'
 import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
@@ -52,7 +52,19 @@ type Intro = 'centred' | 'rise' | 'done'
 const INTRO_STEPS: [Intro, number][] = [['rise', 1200], ['done', 1700]]
 let introPlayed = false
 
-const RAYS = Array.from({ length: 24 }, (_, i) => i * 15)
+/** Corona rays: every other one long, each with its own reach and brightness so the corona looks uneven rather than stamped. */
+const RAYS = Array.from({ length: 24 }, (_, i) => {
+  const long = i % 2 === 0
+  return { a: i * 15, tip: (long ? 98 : 78) + ((i * 7) % 5) * (long ? 4 : 3), o: (long ? 0.62 : 0.32) + (((i * 5) % 4) - 1.5) * 0.08 }
+})
+
+/** A second, finer layer of faint stars behind the twinkling ones, for depth. */
+const DUST = Array.from({ length: 60 }, (_, i) => ({
+  x: (i * 29.3 + (i % 3) * 17) % 320,
+  y: (i * 41.7 + (i % 7) * 13) % 250,
+  r: 0.3 + (i % 3) * 0.12,
+  o: 0.18 + (i % 5) * 0.05,
+}))
 
 /** An eclipse over the two courts' Leaders: the sun with a moon sliding across it. */
 function Hero() {
@@ -72,30 +84,73 @@ function Hero() {
           <stop offset="0" stopColor="#2b2468" />
           <stop offset="1" stopColor="#0d0a22" />
         </radialGradient>
+        <radialGradient id="hero-earthshine" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0.8" stopColor="#9a7cf0" stopOpacity="0" />
+          <stop offset="1" stopColor="#9a7cf0" stopOpacity="0.3" />
+        </radialGradient>
+        <radialGradient id="hero-neb">
+          <stop offset="0" stopColor="#7a5cc8" stopOpacity="0.32" />
+          <stop offset="1" stopColor="#7a5cc8" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-halo-solari">
+          <stop offset="0" stopColor="#ffd77a" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#e8943a" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-halo-umbral">
+          <stop offset="0" stopColor="#9a7cf0" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#4a3a96" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-floor">
+          <stop offset="0" stopColor="#ffd77a" stopOpacity="0.2" />
+          <stop offset="0.6" stopColor="#7a5cc8" stopOpacity="0.12" />
+          <stop offset="1" stopColor="#7a5cc8" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="hero-link-solari" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#ffd77a" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#ffd77a" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="hero-link-umbral" x1="1" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#b9a2ff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#b9a2ff" stopOpacity="0" />
+        </linearGradient>
       </defs>
       <g className="hero-late">
+        <ellipse cx="160" cy="105" rx="190" ry="120" fill="url(#hero-neb)" />
+        <ellipse cx="160" cy="262" rx="190" ry="46" fill="url(#hero-floor)" />
+        {DUST.map((d, i) => <circle key={`d${i}`} cx={d.x} cy={d.y} r={d.r} fill="#fbf1d4" opacity={d.o} />)}
         {STARS.map((s, i) => (
           <circle key={i} className="star" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${s.delay}s` }} />
         ))}
         <Shooter first={2} />
         <Shooter first={7} />
+        <Satellite />
       </g>
       <g transform="translate(160 110) scale(0.9)" className="hero-core">
         <circle r="112" fill="url(#hero-corona)" className="corona" />
         <g className="rays">
-          {RAYS.map((a) => (
-            <path key={a} d="M-3,-62L0,-104L3,-62Z" transform={`rotate(${a})`} className={a % 30 ? 'ray short' : 'ray'} />
+          {RAYS.map((r) => (
+            <path key={r.a} d={`M-3,-62L0,-${r.tip}L3,-62Z`} transform={`rotate(${r.a})`} className="ray" style={{ opacity: r.o }} />
           ))}
         </g>
         <circle r="56" fill="url(#hero-sun)" />
         <g className="moon">
           <circle r="54" fill="url(#hero-moon)" />
-          <circle r="54" fill="none" stroke="#9a7cf0" strokeWidth="1.2" opacity="0.7" />
+          <circle r="54" fill="url(#hero-earthshine)" />
+          <circle cx="-18" cy="-14" r="7" fill="#000" opacity="0.18" />
+          <circle cx="14" cy="-24" r="4.5" fill="#000" opacity="0.16" />
+          <circle cx="20" cy="12" r="9" fill="#000" opacity="0.14" />
+          <circle cx="-8" cy="24" r="5" fill="#000" opacity="0.16" />
+          <circle cx="-28" cy="12" r="3.5" fill="#000" opacity="0.14" />
+          <circle r="54" fill="none" stroke="#9a7cf0" strokeWidth="1" opacity="0.35" />
         </g>
       </g>
       <g className="hero-late">
-        <g transform="translate(52 196) scale(92)"><PieceArt role="leader" court="solari" /></g>
-        <g transform="translate(268 196) scale(92)"><PieceArt role="leader" court="umbral" /></g>
+        <circle cx="56" cy="200" r="84" fill="url(#hero-halo-solari)" className="hero-halo" />
+        <circle cx="264" cy="200" r="84" fill="url(#hero-halo-umbral)" className="hero-halo hero-halo-late" />
+        <path d="M82,166Q96,120 116,92" fill="none" stroke="url(#hero-link-solari)" strokeWidth="1.4" strokeLinecap="round" className="hero-link" />
+        <path d="M238,166Q224,120 204,92" fill="none" stroke="url(#hero-link-umbral)" strokeWidth="1.4" strokeLinecap="round" className="hero-link hero-halo-late" />
+        <g transform="translate(56 200) scale(104)"><PieceArt role="leader" court="solari" /></g>
+        <g transform="translate(264 200) scale(104)"><PieceArt role="leader" court="umbral" /></g>
       </g>
     </svg>
   )

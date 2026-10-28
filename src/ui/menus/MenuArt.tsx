@@ -49,6 +49,29 @@ export function Shooter({ first }: { first: number }) {
   )
 }
 
+/** A tiny satellite, just for fun: now and then it crawls across the top of the sky, left to right or right to left at random, blinking. */
+export function Satellite() {
+  const [pass, setPass] = useState({ run: 0, dir: 1, y: 14 })
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 8 + Math.random() * 18 }))
+    }, (pass.run === 0 ? 4000 : 14000) + Math.random() * 16000)
+    return () => clearTimeout(t)
+  }, [pass.run])
+  if (pass.run === 0) return null
+  return (
+    <g key={pass.run} transform={`translate(${pass.dir > 0 ? -20 : 340} ${pass.y})`}>
+      <g className="art-sat" style={{ ['--len' as string]: `${pass.dir * 360}px` }}>
+        <path d="M0,-1.5V-4.5" stroke="#cfd6e8" strokeWidth="0.5" />
+        <rect x="-8.5" y="-1.3" width="5.5" height="2.6" rx="0.3" fill="#5b7bd0" stroke="#cfd6e8" strokeWidth="0.35" />
+        <rect x="3" y="-1.3" width="5.5" height="2.6" rx="0.3" fill="#5b7bd0" stroke="#cfd6e8" strokeWidth="0.35" />
+        <rect x="-2.6" y="-1.8" width="5.2" height="3.6" rx="0.6" fill="#cfd6e8" />
+        <circle cx="0" cy="-4.9" r="0.7" fill="#ff6a6a" className="art-sat-blink" />
+      </g>
+    </g>
+  )
+}
+
 function Sky({ id }: { id: string }) {
   return (
     <>
@@ -71,6 +94,7 @@ function Sky({ id }: { id: string }) {
       {MOTES.map((m, i) => <circle key={`m${i}`} cx={m.x} cy={m.y} r={m.r} fill={i % 2 ? '#c9b6ff' : '#ffd77a'} className="art-mote" style={{ animationDuration: `${m.d}s`, animationDelay: `${m.o}s` }} />)}
       <Shooter first={0} />
       <Shooter first={5} />
+      <Satellite />
     </>
   )
 }
