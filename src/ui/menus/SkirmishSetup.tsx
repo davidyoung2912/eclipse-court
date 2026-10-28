@@ -235,6 +235,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     <main className="app menu setup battle-menu">
       <SkirmishArt />
       <h2>Skirmish</h2>
+      <TipCard page="skirmish" />
       {!hotSeat && (
         <details className="tier-fold">
           <summary><h3>Today’s bounties ({claimedOn().length}/{bountiesFor(dailySeed()).length})</h3></summary>
@@ -327,7 +328,6 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
           <button className="primary" disabled={!ready} onClick={() => { remember(); if (online) onHost?.(court, choice()); else onStart(court, difficulty, choice(), hotSeat) }}><Icon name="play" />{online && !byLink ? 'Host' : 'Start'}</button>
         </div>
       </div>
-      <TipCard page="skirmish" />
     </main>
   )
 }
