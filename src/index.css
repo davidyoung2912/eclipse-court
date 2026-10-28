@@ -22,12 +22,6 @@
   --edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-3: 0 12px 40px rgba(0, 0, 0, 0.6);
-  --surface-1: rgba(29, 23, 69, 0.84);
-  --surface-2: linear-gradient(180deg, rgba(74, 58, 150, 0.88), rgba(43, 36, 104, 0.88));
-  --line: rgba(154, 124, 240, 0.4);
-  --radius-sm: 8px;
-  --radius-md: 10px;
   --radius-lg: 14px;
   /* Motion language: one curve and three durations; ambient loops keep their own tempo. */
   --ease: cubic-bezier(0.3, 0, 0.2, 1);
@@ -99,8 +93,7 @@ body {
 .acting { fill: rgba(60, 130, 255, 0.55); pointer-events: none; }
 .sq.fixed { opacity: 0.85; }
 .beacon { fill: none; stroke: var(--solari-gold); pointer-events: none; transform-box: fill-box; transform-origin: center;
-  animation: beacon-spin 24s linear infinite, beacon-fade 4s ease-in-out infinite; stroke-width: 0.06; stroke-dasharray: 0.12 0.08; }
-@keyframes beacon-spin { to { transform: rotate(360deg); } }
+  animation: spin 24s linear infinite, beacon-fade 4s ease-in-out infinite; stroke-width: 0.06; stroke-dasharray: 0.12 0.08; }
 @keyframes beacon-fade { 0%, 100% { stroke: #ffd45a; } 50% { stroke: #1a2a8a; } }
 @media (prefers-reduced-motion: reduce) { .beacon { animation: none; } }
 .cell { pointer-events: none; }
@@ -392,8 +385,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .main-menu[data-intro]:not([data-intro='done']) > :not(.brand, .menu-side, .menu-main), .main-menu[data-intro]:not([data-intro='done']) .menu-main > *, .main-menu[data-intro]:not([data-intro='done']) .menu-side > :not(.brand) { opacity: 0; pointer-events: none; }
 .main-menu[data-intro='centred'] .brand { transform: translateY(var(--intro-all, 0)); }
 .main-menu[data-intro='rise'] .brand { transition: transform 0.5s ease-in-out; }
-.main-menu[data-intro='done'] > :not(.brand, .menu-side, .menu-main), .main-menu[data-intro='done'] .menu-main > *, .main-menu[data-intro='done'] .menu-side > :not(.brand) { animation: intro-fade 0.8s ease-out backwards; }
-@keyframes intro-fade { from { opacity: 0; } }
+.main-menu[data-intro='done'] > :not(.brand, .menu-side, .menu-main), .main-menu[data-intro='done'] .menu-main > *, .main-menu[data-intro='done'] .menu-side > :not(.brand) { animation: fade-in 0.8s ease-out backwards; }
 .star { fill: #fbf1d4; opacity: 0.2; animation: twinkle 3.6s ease-in-out infinite; }
 .corona, .rays { transform-box: fill-box; transform-origin: center; }
 .corona { animation: breathe 4.35s ease-in-out infinite; }
@@ -629,7 +621,7 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu-art .art-bob { animation: art-bob 4.5s ease-in-out infinite; }
 .menu-art .art-late { animation-delay: -2.2s; }
 .menu-art .art-burst { animation: art-pulse 2.4s ease-in-out infinite; }
-.menu-art .art-spin { animation: art-turn 40s linear infinite; }
+.menu-art .art-spin { animation: spin 40s linear infinite; }
 .menu-art .art-road { animation: art-march 3s linear infinite; }
 .menu-art .art-flag { transform-origin: left center; animation: art-wave 2.4s ease-in-out infinite; }
 .menu-art .art-window { animation: art-twinkle 2.8s ease-in-out infinite; }
@@ -637,7 +629,6 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-breathe { 50% { opacity: 0.7; transform: scale(1.06); } }
 @keyframes art-bob { 50% { transform: translateY(var(--bob, -2px)); } }
 @keyframes art-pulse { 50% { transform: scale(1.08) rotate(4deg); } }
-@keyframes art-turn { to { transform: rotate(360deg); } }
 @keyframes art-march { to { stroke-dashoffset: -20; } }
 @keyframes art-wave { 50% { transform: scaleX(0.8) skewY(8deg); } }
 /* Livelier header art: rising motes, shooting stars, swaying pieces, a flickering clash and a fast sun */
@@ -675,7 +666,6 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink, [data-motion='reduced'] .hero .art-sat-ping, [data-motion='reduced'] .hero .art-ufo, [data-motion='reduced'] .hero .art-ufo-bob, [data-motion='reduced'] .hero .art-ufo-sway, [data-motion='reduced'] .hero .art-ufo-light, [data-motion='reduced'] .hero .art-ufo-beam, [data-motion='reduced'] .hero .art-ufo-bit { animation: none; }
 @media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink, .hero .art-sat-ping, .hero .art-ufo, .hero .art-ufo-bob, .hero .art-ufo-sway, .hero .art-ufo-light, .hero .art-ufo-beam, .hero .art-ufo-bit { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
@@ -741,10 +731,9 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .result-timer i { display: block; height: 100%; background: var(--solari-gold); transform-origin: left; animation: drain linear forwards; }
 @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 /* Screens cross-fade in with a small rise; a match opens with an iris instead (no transform, so fixed overlays keep their place). */
-@keyframes screen-in { from { opacity: 0; transform: translateY(10px); } }
 @keyframes iris-in { from { opacity: 0; clip-path: circle(0% at 50% 45%); } to { opacity: 1; clip-path: circle(150% at 50% 45%); } }
 @keyframes iris-result { from { opacity: 0; clip-path: circle(0% at 50% 50%); } to { opacity: 1; clip-path: circle(150% at 50% 50%); } }
-main.app:not(.main-menu) { animation: screen-in var(--t-mid) var(--ease) backwards; }
+main.app:not(.main-menu) { animation: rise-in var(--t-mid) var(--ease) backwards; }
 main.app.timed { animation: iris-in var(--t-slow) var(--ease) backwards; }
 .modal-backdrop:has(.duel-result) { animation: iris-result var(--t-slow) var(--ease) backwards; }
 @media (prefers-reduced-motion: reduce) { main.app, .modal-backdrop:has(.duel-result) { animation: none !important; } }
@@ -914,7 +903,6 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .tip-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(6, 4, 18, 0.78); }
 .tip-card.modal { text-align: left; position: relative; bottom: auto; margin: 0; width: 100%; max-width: 440px; }
 @keyframes tip-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-[data-motion='reduced'] .tip-card { animation: none; }
 @media (prefers-reduced-motion: reduce) { .tip-card { animation: none; } }
 
 .story-reader { gap: 10px; }
@@ -1335,7 +1323,7 @@ svg.board:focus { outline: none; }
   .main-menu .menu-buttons button.primary { width: 100%; padding-block: 14px; font-size: var(--fs-md); }
   .main-menu > .tip-card { grid-column: 1 / -1; }
   .main-menu[data-intro]:not([data-intro='done']) .menu-side > :not(.brand), .main-menu[data-intro]:not([data-intro='done']) .menu-main { opacity: 0; pointer-events: none; }
-  .main-menu[data-intro='done'] .menu-side > :not(.brand), .main-menu[data-intro='done'] .menu-main { animation: intro-fade 0.8s ease-out backwards; }
+  .main-menu[data-intro='done'] .menu-side > :not(.brand), .main-menu[data-intro='done'] .menu-main { animation: fade-in 0.8s ease-out backwards; }
 }
 
 /* Two-pane pages: on phones the panes are transparent wrappers; on desktop the list sits left and the detail right, split by a gilded rule over a dim emblem. */
@@ -1388,7 +1376,7 @@ svg.board:focus { outline: none; }
   background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%); animation: banner-sheen 1.6s var(--ease) 500ms both;
 }
 .result-stats { display: flex; justify-content: center; gap: 22px; margin-top: 8px; }
-.result-stat { display: flex; flex-direction: column; align-items: center; animation: stat-in var(--t-mid) var(--ease) backwards; }
+.result-stat { display: flex; flex-direction: column; align-items: center; animation: story-in var(--t-mid) var(--ease) backwards; }
 .result-stat:nth-child(2) { animation-delay: 160ms; }
 .result-stat:nth-child(3) { animation-delay: 320ms; }
 .result-stat b { font-family: var(--display); font-size: var(--fs-lg); color: var(--res-b); font-variant-numeric: tabular-nums; }
@@ -1396,8 +1384,6 @@ svg.board:focus { outline: none; }
 @keyframes banner-unroll { from { clip-path: inset(0 50% 0 50%); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
 @keyframes banner-sink { 0% { filter: brightness(1.4); } 100% { filter: brightness(0.85); } }
 @keyframes banner-sheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-@keyframes stat-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-:root[data-motion='reduced'] .result-scroll, :root[data-motion='reduced'] .result-scroll::after, :root[data-motion='reduced'] .result-stat { animation: none; }
 @media (prefers-reduced-motion: reduce) { .result-scroll, .result-scroll::after, .result-stat { animation: none; } }
 
 /* The Eclipse as an event: --dusk (0 to 1, the same value that drives the music) tints the HUD as the Eclipse round nears; once it falls the board and HUD desaturate, the edges vignette and the backdrop goes near black. */
@@ -1496,7 +1482,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .choice-row.unlocked::after { content: ''; position: absolute; inset: -2px; border-radius: 14px; border: 2px solid var(--rarity); pointer-events: none; animation: unlock var(--t-slow) var(--ease) both; }
 @keyframes reveal-flip { 0% { transform: perspective(600px) rotateX(90deg); opacity: 0; } 70% { transform: perspective(600px) rotateX(-8deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
 @keyframes unlock { 0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 var(--rarity); } 100% { opacity: 0; transform: scale(1.04); box-shadow: 0 0 28px 8px var(--rarity); } }
-:root[data-motion='reduced'] .cstage-view, :root[data-motion='reduced'] .choice-row.unlocked, :root[data-motion='reduced'] .choice-row.unlocked::after, :root[data-motion='reduced'] .reveal-spark { animation: none; }
 .reveal-spark { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--rarity); box-shadow: 0 0 8px var(--rarity); pointer-events: none; animation: reveal-spark calc(var(--flip, 600ms) + 300ms) ease-out both; }
 @keyframes reveal-spark { 0% { opacity: 1; transform: rotate(var(--angle)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(90px); } }
 @media (prefers-reduced-motion: reduce) {
@@ -1519,7 +1504,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .coach-bubble p { margin: 0; font-size: var(--fs-sm); line-height: 1.42; }
 .coach-bubble .tip-foot button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: var(--fs-sm); font-weight: 700; background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6; }
 .coach-bubble .tip-foot .coach-skip { background: transparent; color: var(--tip-accent); border-color: transparent; margin-right: auto; }
-[data-motion='reduced'] .coach-ring, [data-motion='reduced'] .coach-bubble { transition: none; animation: none; }
 @media (prefers-reduced-motion: reduce) { .coach-ring, .coach-bubble { transition: none; animation: none; } }
 .duel-brief {
   position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
@@ -1563,7 +1547,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .persona-bubble-text b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
 @keyframes bubble-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .persona-bubble { animation: none; } }
-:root[data-motion="reduced"] .persona-bubble { animation: none; }
 
 .persona-greet, .persona-farewell { font-size: var(--fs-sm); line-height: 1.3; color: #e9e3ff; }
 .persona-greet { display: flex; align-items: center; gap: 10px; max-width: 420px; padding: 6px 12px 6px 6px; background: rgba(30, 22, 64, 0.6); border: 1px solid rgba(205, 191, 255, 0.35); border-radius: 14px; }
@@ -1594,7 +1577,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 @keyframes brief-from-left { from { transform: translateX(-60%); opacity: 0; } }
 @keyframes brief-from-right { from { transform: translateX(60%); opacity: 0; } }
 @keyframes brief-vs { from { transform: scale(2.2); opacity: 0; } }
-:root[data-motion='reduced'] .duel-brief-card, :root[data-motion='reduced'] .duel-brief-cards::after { animation: none; }
 @media (prefers-reduced-motion: reduce) { .duel-brief-card, .duel-brief-cards::after { animation: none; } }
 
 /* Eclipse and spell spectacle: the cinematic, each spell's charge, bolt or beam and bloom (the beacon pickup flight is drawn in script) */
@@ -1623,8 +1605,7 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 @media (prefers-reduced-motion: reduce) { .eclipse-cinema { display: none; } }
 
 /* Kill-cam: the final capture again in slow motion, with a push-in and a closing vignette */
-.kill-cam { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(3, 2, 8, 0.92); cursor: pointer; animation: kill-in 300ms ease-out both; --t-slow: 1100ms; --t-mid: 700ms; }
-@keyframes kill-in { from { opacity: 0; } to { opacity: 1; } }
+.kill-cam { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(3, 2, 8, 0.92); cursor: pointer; animation: count-fade-in 300ms ease-out both; --t-slow: 1100ms; --t-mid: 700ms; }
 .kill-stage { width: min(92vw, 80vh); animation: kill-push var(--kill-push) ease-in-out both; }
 .kill-stage .board { width: 100%; height: auto; }
 @keyframes kill-push { from { transform: scale(1); } to { transform: scale(var(--kill-zoom)); } }
@@ -1707,7 +1688,6 @@ body:has(.main-menu)::before {
   70% { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1.6)) rotate(var(--spin)); }
 }
-:root[data-motion='reduced'] .confetti, :root[data-motion='reduced'] .shard-toast { animation: none; }
 :root[data-motion='reduced'] .confetti { display: none; }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
 
@@ -1746,7 +1726,7 @@ body:has(.main-menu)::before {
 }
 
 /* The named opponent's face in the HUD: it reacts to captures, losses, danger and the Eclipse, then settles back to calm. */
-.persona-corner { width: 26px; height: 31px; flex: none; transition: filter var(--t-med, 0.25s) ease, box-shadow var(--t-med, 0.25s) ease; }
+.persona-corner { width: 26px; height: 31px; flex: none; transition: filter 0.25s ease, box-shadow 0.25s ease; }
 .persona-corner.mood-pleased { animation: face-nod 0.5s ease-out; box-shadow: 0 0 0 1px rgba(232, 182, 74, 0.9), 0 0 10px rgba(232, 182, 74, 0.7); filter: brightness(1.12); }
 .persona-corner.mood-stung { animation: face-flinch 0.4s ease-out; box-shadow: 0 0 0 1px rgba(214, 90, 90, 0.9), 0 0 10px rgba(214, 90, 90, 0.6); filter: saturate(0.5) brightness(0.85); }
 .persona-corner.mood-alarmed { animation: face-flinch 0.4s ease-out; box-shadow: 0 0 0 1px rgba(240, 150, 70, 0.9), 0 0 10px rgba(240, 150, 70, 0.6); filter: brightness(1.05) contrast(1.1); }
@@ -1754,7 +1734,6 @@ body:has(.main-menu)::before {
 @keyframes face-nod { 0% { transform: translateY(0); } 40% { transform: translateY(3px); } 100% { transform: translateY(0); } }
 @keyframes face-flinch { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 60% { transform: translateX(2px); } }
 @media (prefers-reduced-motion: reduce) { .persona-corner { animation: none !important; transition: none; } }
-:root[data-motion="reduced"] .persona-corner { animation: none !important; transition: none; }
 
 /* Visible progression: rank crest, cosmetic glint, daily stamps */
 .rank-crest { --crest: #8d93aa; --crest-rim: #5d627a; display: grid; justify-items: center; gap: 2px; margin: 0 auto 12px; text-align: center; }
@@ -1804,5 +1783,4 @@ body:has(.main-menu)::before {
 @keyframes hero-moon-poke { 0% { transform: translateX(0); } 30% { transform: translateX(-9px); } 65% { transform: translateX(5px); } 100% { transform: translateX(0); } }
 @keyframes hero-moon-poke-big { 0% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-16px, -6px) rotate(-14deg); } 55% { transform: translate(10px, 3px) rotate(8deg); } 100% { transform: translate(0, 0) rotate(0); } }
 @keyframes hero-hop { 0% { transform: translateY(0) scale(1, 1); } 25% { transform: translateY(0) scale(1.06, 0.92); } 55% { transform: translateY(-12px) scale(0.97, 1.05); } 100% { transform: translateY(0) scale(1, 1); } }
-[data-motion='reduced'] .hero .poke, [data-motion='reduced'] .hero .answer { animation: none; }
 @media (prefers-reduced-motion: reduce) { .hero .poke, .hero .answer { animation: none; } }
