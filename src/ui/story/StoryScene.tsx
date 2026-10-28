@@ -33,7 +33,7 @@ export function StoryScene({ court, act }: Props) {
           <stop offset="1" stopColor={tint} stopOpacity="0" />
         </radialGradient>
         <linearGradient id="story-ray" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor={glow} stopOpacity="0.28" />
+          <stop offset="0" stopColor={glow} stopOpacity="0.5" />
           <stop offset="1" stopColor={glow} stopOpacity="0" />
         </linearGradient>
       </defs>
