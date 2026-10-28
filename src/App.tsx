@@ -80,6 +80,9 @@ import { mailGame, putMail, recordOfGame } from './mail'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
 // The board, duel and tutorial code load when first needed, so the menus open sooner.
+/** A fresh board seed; read from an event handler, never while rendering. */
+const seedNow = () => Date.now()
+
 const Game = lazy(() => import('./Game').then((m) => ({ default: m.Game })))
 const Practice = lazy(() => import('./ui/menus/Practice').then((m) => ({ default: m.Practice })))
 const Replay = lazy(() => import('./ui/menus/Replay').then((m) => ({ default: m.Replay })))
@@ -250,7 +253,7 @@ export default function App() {
     return out.lines
   }
   const progressRef = useRef(progress)
-  progressRef.current = progress
+  useEffect(() => { progressRef.current = progress }, [progress])
   /** Adds time played to the lifetime total, whichever play screen reports it. */
   const addTime = (seconds: number) => {
     const next = addPlaytime(progressRef.current, seconds)
@@ -707,7 +710,7 @@ export default function App() {
       if (over || !done.summary) return setScreen({ name: 'campaign' })
       setScreen({
         name: 'game', human, difficulty, campaignIndex, series: { wins, losses },
-        record: { initial: campaignGame(opponent, Date.now()), actions: [] },
+        record: { initial: campaignGame(opponent, seedNow()), actions: [] },
       })
     }
 

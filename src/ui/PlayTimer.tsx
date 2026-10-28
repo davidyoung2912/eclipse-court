@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './menus/icons'
-
-/** Minutes and seconds, with hours once there are any. */
-export function formatTime(total: number): string {
-  const s = Math.floor(total) % 60
-  const m = Math.floor(total / 60) % 60
-  const h = Math.floor(total / 3600)
-  const two = (n: number) => String(n).padStart(2, '0')
-  return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`
-}
+import { formatTime } from './formatTime'
 
 interface Props {
   /** Receives whole seconds played since the last call: every half minute and when the screen closes. */
@@ -19,7 +11,7 @@ interface Props {
 export function PlayTimer({ onFlush }: Props) {
   const [shown, setShown] = useState(0)
   const flush = useRef(onFlush)
-  flush.current = onFlush
+  useEffect(() => { flush.current = onFlush }, [onFlush])
 
   useEffect(() => {
     let last = Date.now()

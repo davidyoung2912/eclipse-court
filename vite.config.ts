@@ -55,5 +55,7 @@ export default defineConfig({
       },
     }),
   ],
+  // The whole game is precached for offline play, so one larger entry chunk costs nothing extra.
+  build: { chunkSizeWarningLimit: 800 },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 })

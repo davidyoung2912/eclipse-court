@@ -21,7 +21,7 @@ export function CoachMarks({ hidden = false, onActive }: Props) {
 
   // Measures the target, and follows it as the window changes; a missing target is skipped for this visit.
   useLayoutEffect(() => {
-    if (!step) { setSpot(null); return }
+    if (!step) return
     const measure = () => {
       const el = document.querySelector(step.target)
       if (!el) { setSkipped((s) => new Set(s).add(step.id)); return }

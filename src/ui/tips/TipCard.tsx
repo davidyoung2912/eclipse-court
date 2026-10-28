@@ -1,9 +1,6 @@
-import { useSyncExternalStore } from 'react'
-import { markTipSeen, subscribeTips, tipsSnapshot } from '../../tips'
+import { markTipSeen } from '../../tips'
 import { Icon } from '../menus/icons'
-import { TIPS, type Tip, type TipPage } from './tipData'
-
-type Pages = TipPage | readonly (TipPage | false | null | undefined)[]
+import { useQueue, type Pages } from './useTipQueue'
 
 interface Props {
   /** The page or pages whose cards may show; the first unread card of the first page with one is shown. */
@@ -15,17 +12,6 @@ interface Props {
   /** Show the card as a dialog over a dimmed screen. The screen behind should be paused while `useTipsPending` is true. */
   modal?: boolean
 }
-
-/** The cards of `page` in order, and the ones among them not yet dismissed. */
-function useQueue(page: Pages): { tips: Tip[]; left: Tip[] } {
-  const seen = useSyncExternalStore(subscribeTips, tipsSnapshot)
-  const pages = (Array.isArray(page) ? page : [page]).filter((p): p is TipPage => !!p)
-  const tips = pages.flatMap((p) => TIPS[p])
-  return { tips, left: tips.filter((t) => !seen.has(t.id)) }
-}
-
-/** True while any card of `page` is waiting, so a screen showing them modally can hold still until they are read. */
-export const useTipsPending = (page: Pages) => useQueue(page).left.length > 0
 
 /** A one-time guidance card for the page it sits on, dismissed with Got It! and remembered on this device. */
 export function TipCard({ page, float = false, hidden = false, modal = false }: Props) {

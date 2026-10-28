@@ -71,7 +71,7 @@ export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDon
         <button onClick={onDone}><Icon name="skip" />Skip</button>
         <button className="back" onClick={onBack}><Icon name="exit" />Back</button>
       </div>
-      <TipCard page="story-reader" />
+      <TipCard page="story-reader" float />
     </main>
   )
 }

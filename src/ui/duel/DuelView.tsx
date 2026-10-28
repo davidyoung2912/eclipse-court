@@ -15,7 +15,8 @@ import { hitStopFor, KO_END_DELAY, KO_SLOW, KO_SLOW_SECONDS } from '../../duelIm
 import { comboHit, comboPitch, comboTick, NO_COMBO } from '../../duelPresentation'
 import { createFx, drawDuel, updateFx } from './duelFx'
 import { DuelBriefing } from './DuelBriefing'
-import { TipCard, useTipsPending } from '../tips/TipCard'
+import { TipCard } from '../tips/TipCard'
+import { useTipsPending } from '../tips/useTipQueue'
 
 export interface DuelOptions {
   /** Swap the attack button to the left side of the screen. */

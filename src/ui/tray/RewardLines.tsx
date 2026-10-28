@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { burstCount, shardsIn } from '../../rewardFx'
 import { sfx } from '../../audio/synth'
 import { getSettings } from '../../settings'
-import { flyCoins } from '../ShardToast'
+import { flyCoins } from '../flyCoins'
 
 /** How long the shard chip takes to settle in before the coins aim at it. */
 const CHIP_WAIT_MS = 380

@@ -11,8 +11,8 @@ export function useCountUp(value: number): number {
     if (from === value) return
     if (getSettings().reduceMotion) {
       shownRef.current = value
-      setShown(value)
-      return
+      const sync = requestAnimationFrame(() => setShown(value))
+      return () => cancelAnimationFrame(sync)
     }
     const start = performance.now()
     let frame = 0
@@ -24,5 +24,5 @@ export function useCountUp(value: number): number {
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
   }, [value])
-  return shown
+  return getSettings().reduceMotion ? value : shown
 }
