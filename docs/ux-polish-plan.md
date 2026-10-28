@@ -38,3 +38,5 @@ Phase 1 done: glow is kept for the primary action and switched-on states (second
 Phase 2 done: Cinzel (600/700 via `@fontsource/cinzel`) is the display face behind `--display` (title, H1/H2s, banners, result headings, modals); Nunito is now the body face via `--body`, and `main.tsx` waits for both before first render.
 
 Phase 3 done: motion tokens `--ease` and `--t-fast/mid/slow` (140/240/420 ms) are in `:root` and the button, piece, pane, modal, tip and story transitions use them; every screen (`main.app`, except the main menu's own intro) fades in with a small rise, a match opens with an iris, and the combat result opens with an iris from the centre. Both the Settings toggle and the OS reduced-motion query switch these off.
+
+Phase 4 done: board squares get a soft bevel (`.sq-bevel`), a fine stone grain sits over the grid, a gilded frame (`.board-frame`) surrounds it, and an `.hour-wash` light layer tints the board warm as the day rises, violet as it wanes and dark in the Eclipse. Board effect cosmetics still run on the squares and glows underneath.

@@ -106,6 +106,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
     <p className="sr-only" role="status" aria-live="polite">{cursor ? describeSquare(state, cursor) : ''}</p>
     <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
       <BoardDefs />
+      <rect x={-0.06} y={-0.06} width={size + 0.12} height={size + 0.12} rx={0.06} className="board-frame" />
       {allSquares(size).map((p) => {
         const { cx, cy } = toScreen(p, flip, size)
         const lum = squareLuminance(state, p)
@@ -121,6 +122,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
               <circle cx={cx} cy={cy} r={0.5} fill={`url(#glow-${lum > 0 ? 'solari' : 'umbral'})`}
                 opacity={Math.abs(lum) / 2} className="glow" />
             )}
+            <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="sq-bevel" />
             <use href="#lead" x={cx} y={cy} />
             {marks && lum !== 0 && (
               <text x={cx - 0.32} y={cy - 0.3} className={`lum-mark ${lum > 0 ? 'lit' : 'dim'}`}>{(lum > 0 ? '+' : '−').repeat(Math.abs(lum))}</text>
@@ -146,6 +148,8 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
           </g>
         )
       })}
+      <rect width={size} height={size} filter="url(#stone-grain)" className="board-grain" />
+      <rect width={size} height={size} fill="url(#hour-wash)" className={`hour-wash ${state.eclipse ? 'eclipse' : state.dir > 0 ? 'rising' : 'waning'}`} />
       {state.pieces.filter((pc) => !fogFor || visibleTo(state, fogFor, pc)).map((pc) => {
         const { cx, cy } = toScreen(pc.pos, flip, size)
         const attack = isMove(pc.pos) || targetIds.includes(pc.id) || isThreat(pc.pos)

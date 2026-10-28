@@ -80,6 +80,15 @@ body {
 
 .board { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; width: 100%; max-height: 100%; aspect-ratio: 1; flex: 0 1 auto; touch-action: manipulation; }
 .sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; }
+/* Board materials: bevelled stone squares, fine grain over the grid, a gilded frame and a wash that follows the Hour. */
+.sq-bevel { fill: url(#bevel-lit); pointer-events: none; }
+.board-grain { pointer-events: none; mix-blend-mode: multiply; opacity: 0.35; }
+.board-frame { fill: none; stroke: url(#frame-gild); stroke-width: 0.12; pointer-events: none; filter: drop-shadow(0 0 0.06px rgba(0, 0, 0, 0.6)); }
+.board { overflow: visible; }
+.hour-wash { pointer-events: none; mix-blend-mode: soft-light; transition: color var(--t-slow) var(--ease); }
+.hour-wash.rising { color: #ffe9a8; }
+.hour-wash.waning { color: #6a4fd0; }
+.hour-wash.eclipse { color: #000; }
 .acting { fill: rgba(60, 130, 255, 0.55); pointer-events: none; }
 .sq.fixed { opacity: 0.85; }
 .beacon { fill: none; stroke: var(--solari-gold); pointer-events: none; transform-box: fill-box; transform-origin: center;

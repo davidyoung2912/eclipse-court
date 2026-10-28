@@ -1,7 +1,26 @@
-/** Shared SVG defs for the board: lead-line pattern and the warm glow on lit squares. */
+/** Shared SVG defs for the board: lead-line pattern, stone grain, bevel, gilded frame and the warm glow on lit squares. */
 export function BoardDefs() {
   return (
     <defs>
+      <filter id="stone-grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="38" numOctaves="2" seed="7" result="n" />
+        <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.32" />
+      </filter>
+      <linearGradient id="bevel-lit" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
+        <stop offset="0.18" stopColor="#fff" stopOpacity="0" />
+        <stop offset="0.82" stopColor="#000" stopOpacity="0" />
+        <stop offset="1" stopColor="#000" stopOpacity="0.3" />
+      </linearGradient>
+      <linearGradient id="frame-gild" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#f6dc8e" />
+        <stop offset="0.5" stopColor="#b98a2c" />
+        <stop offset="1" stopColor="#e8c466" />
+      </linearGradient>
+      <radialGradient id="hour-wash" cx="0.5" cy="0.5" r="0.75">
+        <stop offset="0" stopColor="currentColor" stopOpacity="0.28" />
+        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+      </radialGradient>
       <path id="lead" className="lead" d="M-0.5,-0.5L0.5,0.5M0.5,-0.5L-0.5,0.5M0,-0.5V0.5M-0.5,0H0.5" />
       <radialGradient id="glow-solari">
         <stop offset="0" stopColor="#fff6cf" stopOpacity="0.85" />
