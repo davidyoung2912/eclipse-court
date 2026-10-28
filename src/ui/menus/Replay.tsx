@@ -146,17 +146,17 @@ export function Replay({ record, autoplay, onBack, onReviewed }: Props) {
       )}
       <div className="buttons">
         <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt(0) }}><Icon name="replay" />Start</button>
-        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i - 1) }}><Icon name="back" />Prev</button>
+        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i - 1) }}><Icon name="stepBack" />Prev</button>
         <button className={running ? 'on' : ''} disabled={at >= last} onClick={() => setPlaying((p) => !p)}><Icon name="play" />{running ? 'Pause' : 'Play'}</button>
-        <button disabled={at >= last} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i + 1) }}><Icon name="next" />Next</button>
+        <button disabled={at >= last} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i + 1) }}><Icon name="stepNext" />Next</button>
         <button onClick={onBack}><Icon name="exit" />Close</button>
       </div>
       {last > 0 && (
         <div className="buttons">
           {phase === 'idle' && <button className="primary" onClick={review}><Icon name="flame" />Review Game</button>}
           {phase === 'running' && <button onClick={cancel}><Icon name="exit" />Stop Review</button>}
-          {phase !== 'idle' && <button disabled={prevMoment === undefined} onClick={() => jump(prevMoment!)}><Icon name="back" />Prev Key Move</button>}
-          {phase !== 'idle' && <button disabled={nextMoment === undefined} onClick={() => jump(nextMoment!)}><Icon name="next" />Next Key Move</button>}
+          {phase !== 'idle' && <button disabled={prevMoment === undefined} onClick={() => jump(prevMoment!)}><Icon name="keyBack" />Prev Key Move</button>}
+          {phase !== 'idle' && <button disabled={nextMoment === undefined} onClick={() => jump(nextMoment!)}><Icon name="keyNext" />Next Key Move</button>}
         </div>
       )}
       <div className="buttons">

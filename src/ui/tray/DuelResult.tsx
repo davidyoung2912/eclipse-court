@@ -65,7 +65,7 @@ export function DuelResult({ attacker, defender, outcome, onContinue }: Props) {
           })}
         </div>
         <div className="buttons">
-          <button className="primary" autoFocus onClick={onContinue}><Icon name="next" />Continue</button>
+          <button className="primary" autoFocus onClick={onContinue}><Icon name="onward" />Continue</button>
         </div>
         <div className="result-timer" aria-hidden="true"><i style={{ animationDuration: `${SHOWN_MS}ms` }} /></div>
       </div>

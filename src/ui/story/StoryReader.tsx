@@ -58,8 +58,8 @@ export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDon
         <i style={{ width: `${((index + 1) / beats.length) * 100}%` }} />
       </div>
       <div className="menu-buttons">
-        <button onClick={backward} disabled={index === 0}><Icon name="back" />Previous</button>
-        <button className="primary" onClick={forward}>{last ? <><Icon name="check" />{finishLabel ?? 'Finish'}</> : <><Icon name="next" />Next</>}</button>
+        <button onClick={backward} disabled={index === 0}><Icon name="pageBack" />Previous</button>
+        <button className="primary" onClick={forward}>{last ? <><Icon name="check" />{finishLabel ?? 'Finish'}</> : <><Icon name="pageNext" />Next</>}</button>
       </div>
       <div className="menu-buttons">
         <button onClick={onDone}><Icon name="skip" />Skip</button>

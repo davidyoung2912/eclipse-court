@@ -519,7 +519,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
                 <Icon name="undo" />{net.rematch === 'sent' ? 'Waiting for them' : net.rematch === 'asked' ? 'Accept Rematch' : 'Rematch'}
               </button>
             )}
-            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="next" />Continue</button>
+            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />Continue</button>
           </div>
         </div>
       )}
