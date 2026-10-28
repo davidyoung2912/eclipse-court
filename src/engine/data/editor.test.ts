@@ -73,6 +73,15 @@ describe('editor', () => {
     expect(d.solari.every((p) => p.x < 7 && p.y < 7)).toBe(true)
   })
 
+  it('moves a 7x7 layout to the middle of the 9x9 board when it grows', () => {
+    const d = resize(blankDesign(7), 9)
+    expect(d.size).toBe(9)
+    expect(d.beacons).toEqual(expect.arrayContaining([at(0, 4), at(8, 4), at(4, 4), at(4, 1), at(4, 7)]))
+    expect(d.solari.find((p) => p.role === 'leader')).toMatchObject({ x: 0, y: 4 })
+    expect(umbralPieces(d).find((p) => p.role === 'leader')).toMatchObject({ x: 8, y: 4 })
+    expect(problems(d)).toEqual([])
+  })
+
   it('builds a match that plays, with the walls, cells and armies as drawn', () => {
     let d = setMirror(blankDesign(), false)
     d = applyTool(d, { kind: 'wall' }, at(3, 2))

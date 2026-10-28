@@ -132,6 +132,16 @@ export function setMirror(d: Design, mirror: boolean): Design {
 /** The same design on a board of another size; anything that would fall off the board is dropped. */
 export function resize(d: Design, size: BoardSize): Design {
   if (d.size === size) return d
+  if (size === 9) {
+    // The 7x7 layout is moved to the middle of the wider board: a column in from the side, and everything past the middle
+    // line (the far army, the far beacon) out to the new far edge.
+    const grow = ({ x, y }: Pos): Pos => ({ x: x < 3 ? x : x === 3 ? 4 : x + 2, y: y + 1 })
+    return {
+      ...d, size,
+      beacons: d.beacons.map(grow), blocked: d.blocked.map(grow), cells: d.cells.map((c) => ({ ...c, pos: grow(c.pos) })),
+      solari: d.solari.map((p) => ({ ...p, ...grow(p) })), umbral: d.umbral.map((p) => ({ ...p, ...grow(p) })), target: d.target && grow(d.target),
+    }
+  }
   const fits = (p: Pos) => inBounds(p, size)
   return {
     ...d, size,
