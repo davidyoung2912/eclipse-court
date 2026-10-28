@@ -3,6 +3,7 @@ import { autoDuel } from './ai/autoDuel'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, updateSettings } from './settings'
+import { explainMove } from './ai/why'
 import { attackOdds, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
@@ -129,6 +130,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     const last = history[history.length - 1].state
     return last.winner ? null : { court: last.turn }
   })
+  /** The AI's reason for its latest move, shown while it is the player's turn (hidden once undone past it). */
+  const [aiWhy, setAiWhy] = useState<{ at: number; text: string } | null>(null)
   /** The puzzle briefing waits for Got It! before play can begin; a resumed puzzle has been briefed already. */
   const [briefing, setBriefing] = useState(!!puzzle && record.actions.length === 0)
   const state = history[history.length - 1].state
@@ -334,6 +337,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const aiFocus = useAiTurn({
     state, active: !online && !mail && !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
     onAct: (action) => {
+      if (getSettings().aiWhy) setAiWhy({ at: history.length, text: explainMove(state, action, personality) })
       if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
       else play(action)
     },
@@ -458,6 +462,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const retry = () => {
     turnClock.reset()
     setHistory((h) => h.slice(0, 1))
+    setAiWhy(null)
     setBanner({ court: history[0].state.turn })
     setSelectedId(null)
     setCasting(null)
@@ -470,6 +475,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     <main className={`app timed game-${human}`} style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
+      {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />

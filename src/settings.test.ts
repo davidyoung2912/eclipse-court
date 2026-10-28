@@ -5,7 +5,7 @@ describe('settings', () => {
   it('falls back to the defaults for damaged data', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings({ theme: 'nope', reduceMotion: 'yes', marks: 1 })).toEqual(DEFAULT_SETTINGS)
-    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, duelSpeed: 'normal' })
+    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, marks: true, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal' })
   })
 
   it('keeps a known duel speed and ignores an unknown one', () => {
