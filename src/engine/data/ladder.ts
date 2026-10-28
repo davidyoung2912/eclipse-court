@@ -7,7 +7,7 @@ import { skirmishConfig } from './setups'
 /** Ladder games are always played from the Solari court. */
 export const LADDER_COURT = 'solari'
 
-export const START_RATING = 1000
+export const START_RATING = 800
 export const MIN_RATING = 400
 
 /** A rated opponent: one persona at one difficulty. */

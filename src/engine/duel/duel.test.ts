@@ -3,7 +3,7 @@ import { createDuelAi } from '../../ai/duelAi'
 import { profileForSkill } from '../../ai/profile'
 import { startingPieces } from '../data/roster'
 import { createDuel, duelOutcome, runDuel, stepDuel } from './duel'
-import { ARENA_H, ARENA_W, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT } from './types'
+import { ARENA_H, ARENA_W, BUFF_SECONDS, DT, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT, PICKUP_LIFE } from './types'
 import type { Role } from '../rules/types'
 
 const piece = (court: 'solari' | 'umbral', role: Role) => {
@@ -93,5 +93,78 @@ describe('duel sim', () => {
     const out = duelOutcome(s)
     expect(out.defenderHp).toBe(0)
     expect(out.attackerHp).toBe(4)
+  })
+
+  describe('pickups', () => {
+    const live = (seed = 5) => createDuel(piece('solari', 'footsoldier'), piece('umbral', 'footsoldier'), 0, { aimCone: 0, pickups: { seed } })
+    const idle = [NO_INPUT, NO_INPUT] as [typeof NO_INPUT, typeof NO_INPUT]
+
+    it('never appear unless the config turns them on', () => {
+      const s = createDuel(piece('solari', 'footsoldier'), piece('umbral', 'footsoldier'), 0)
+      for (let i = 0; i < 600; i++) stepDuel(s, idle)
+      expect(s.pickups).toEqual([])
+    })
+
+    it('appear, stay within the arena and expire after their life', () => {
+      const s = live()
+      let seen = 0
+      while (!s.done && s.pickups.length === 0) stepDuel(s, idle)
+      const orb = s.pickups[0]
+      expect(orb).toBeDefined()
+      expect(orb.pos.x).toBeGreaterThan(0)
+      expect(orb.pos.x).toBeLessThan(ARENA_W)
+      expect(orb.pos.y).toBeGreaterThan(0)
+      expect(orb.pos.y).toBeLessThan(ARENA_H)
+      while (s.t - orb.born < PICKUP_LIFE + 2 * DT) { stepDuel(s, idle); seen++ }
+      expect(s.pickups.find((o) => o.id === orb.id)).toBeUndefined()
+      expect(seen).toBeGreaterThan(0)
+    })
+
+    it('are the same for the same seed', () => {
+      const run = () => { const s = live(9); for (let i = 0; i < 480; i++) stepDuel(s, idle); return s.pickups }
+      expect(run()).toEqual(run())
+    })
+
+    const take = (kind: 'heal' | 'attack' | 'defense') => {
+      const s = live()
+      s.pickups.push({ id: 99, kind, pos: { ...s.fighters[0].pos }, born: 0 })
+      const events = stepDuel(s, idle)
+      return { s, events }
+    }
+
+    it('give a fighter that touches one a timed benefit', () => {
+      const { s, events } = take('attack')
+      expect(events.some((e) => e.type === 'pickup' && e.by === 0 && e.kind === 'attack')).toBe(true)
+      expect(s.pickups.find((o) => o.id === 99)).toBeUndefined()
+      expect(s.fighters[0].buffs.attack).toBeGreaterThan(BUFF_SECONDS - 0.1)
+      for (let i = 0; i < Math.ceil((BUFF_SECONDS + 0.2) / DT); i++) stepDuel(s, idle)
+      expect(s.fighters[0].buffs.attack).toBe(0)
+    })
+
+    it('attack makes hits land harder and defence makes them softer', () => {
+      const hitFor = (attackBuff: boolean, defenseBuff: boolean) => {
+        const s = createDuel(piece('solari', 'bruiser'), piece('umbral', 'footsoldier'), 0)
+        s.fighters[0].pos = { x: 4, y: 6 }
+        s.fighters[1].pos = { x: 4, y: 5.2 }
+        s.fighters[0].facing = -Math.PI / 2
+        if (attackBuff) s.fighters[0].buffs.attack = 3
+        if (defenseBuff) s.fighters[1].buffs.defense = 3
+        for (let i = 0; i < 90; i++) stepDuel(s, [{ mx: 0, my: 0, attack: true }, NO_INPUT])
+        stepDuel(s, idle)
+        return s.fighters[1].hp
+      }
+      expect(hitFor(true, false)).toBeLessThan(hitFor(false, false))
+      expect(hitFor(false, true)).toBeGreaterThan(hitFor(false, false))
+    })
+
+    it('heal restores HP over time without passing the maximum', () => {
+      const { s } = take('heal')
+      s.fighters[0].hp = 1
+      for (let i = 0; i < Math.ceil(1 / DT); i++) stepDuel(s, idle)
+      expect(s.fighters[0].hp).toBeGreaterThan(1.3)
+      s.fighters[0].hp = s.fighters[0].maxHp
+      stepDuel(s, idle)
+      expect(s.fighters[0].hp).toBeLessThanOrEqual(s.fighters[0].maxHp)
+    })
   })
 })

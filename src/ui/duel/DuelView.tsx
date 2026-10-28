@@ -113,7 +113,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
 
   useEffect(() => {
     const foeSide = (1 - playerSide) as 0 | 1
-    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP } }
+    const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP }, pickups: { seed: seed ^ 0x9e3779b9 } }
     const state = createDuel(attacker, defender, luminance, cfg, cells)
     const ai = createDuelAi(profileForSkill(opponentSkill, opponentAggression), seed)
     // The defender is drawn upside down so the player's fighter is always at the bottom of the screen.
@@ -169,6 +169,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           if (e.type === 'swing') sfx.swing()
           else if (e.type === 'shoot') sfx.shoot()
           else if (e.type === 'slam') sfx.slam()
+          else if (e.type === 'pickup') sfx.pickup()
           else if (e.type === 'hit') {
             sfx.hit(e.damage)
             freeze = HIT_STOP

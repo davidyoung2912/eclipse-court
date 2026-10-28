@@ -114,6 +114,8 @@ export const sfx = {
     tone(98, 0.6, { type: 'sawtooth', gain: 0.12, to: 55 })
     noise(0.3, { gain: 0.1, freq: 400 })
   },
+  /** A quick two-note chime when a duel orb is collected. */
+  pickup: () => [0, 1].forEach((i) => tone(880 * Math.pow(1.5, i), 0.14, { type: 'triangle', gain: 0.12, delay: i * 0.06 })),
   tick: () => tone(1320, 0.05, { type: 'triangle', gain: 0.1 }),
   swing: () => noise(0.12, { gain: 0.12, freq: 2200 }),
   shoot: () => tone(900, 0.12, { type: 'square', gain: 0.07, to: 300 }),

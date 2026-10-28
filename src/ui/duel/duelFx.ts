@@ -1,11 +1,18 @@
 import { lostPanes, PALETTE, pieceArtSvg } from '../../art/pieceGeometry'
-import { ARENA_H, ARENA_W, type DuelEvent, type DuelState, type Vec } from '../../engine/duel/types'
+import { ARENA_H, ARENA_W, BUFF_SECONDS, PICKUP_KINDS, PICKUP_LIFE, PICKUP_RADIUS, type DuelEvent, type DuelState, type PickupKind, type Vec } from '../../engine/duel/types'
 import type { CellEffect, Court, Piece } from '../../engine/rules/types'
 
 export const COLORS: Record<Court, string> = { solari: '#e8b64a', umbral: '#7a5cc8' }
 
 const CELL_COLORS: Record<CellEffect, string> = {
   might: '#ff9a3c', ward: '#4fb3ff', recovery: '#5fdc7a', hazard: '#ff4d5e', silence: '#9aa0b5', invincible: '#ffe27a',
+}
+
+/** Orb colour schemes: heal is green, attack red and defence purple. */
+const PICKUP_LOOK: Record<PickupKind, { main: string; dark: string; label: string }> = {
+  heal: { main: '#5fdc7a', dark: '#0f3d1f', label: 'Heal' },
+  attack: { main: '#ff5a5a', dark: '#4a0e14', label: 'Attack' },
+  defense: { main: '#a98cff', dark: '#271650', label: 'Defence' },
 }
 
 const icons = new Map<string, HTMLImageElement>()
@@ -122,6 +129,15 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
         const dy = victim.pos.y - hitter.pos.y
         const len = Math.hypot(dx, dy) || 1
         fx.recoil[e.target] = { x: (dx / len) * 0.28, y: (dy / len) * 0.28 }
+      }
+    } else if (e.type === 'pickup') {
+      const look = PICKUP_LOOK[e.kind]
+      push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.5, max: 0.5, r: 1.6, color: look.main })
+      push(fx, { kind: 'text', x: e.at.x, y: e.at.y - 0.5, vx: 0, vy: -1.2, life: 1, max: 1, r: 0, color: look.main, text: `${look.label}+` })
+      const n = calm ? 5 : 10
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2
+        push(fx, { kind: 'spark', x: e.at.x, y: e.at.y, vx: Math.cos(a) * 2.2, vy: Math.sin(a) * 2.2, life: 0.4, max: 0.4, r: 0.06, color: look.main })
       }
     } else if (e.type === 'slam') {
       push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.35, max: 0.35, r: 2, color: COLORS[s.fighters[e.by].court] })
@@ -383,6 +399,86 @@ function hatchPattern(ctx: Ctx): CanvasPattern | null {
 }
 
 /** Draws one frame of the arena: floor, hazards, projectiles, effects and fighters. */
+/** The icon inside an orb, drawn in a box of half-size `r` around the origin. */
+function pickupIcon(ctx: Ctx, kind: PickupKind, r: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = Math.max(2, r * 0.22)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  if (kind === 'heal') {
+    ctx.moveTo(0, -r * 0.62); ctx.lineTo(0, r * 0.62)
+    ctx.moveTo(-r * 0.62, 0); ctx.lineTo(r * 0.62, 0)
+    ctx.stroke()
+  } else if (kind === 'attack') {
+    // A sword pointing up-right: blade, cross guard and grip.
+    ctx.save()
+    ctx.rotate(Math.PI / 4)
+    ctx.moveTo(0, -r * 0.72); ctx.lineTo(0, r * 0.3)
+    ctx.moveTo(-r * 0.34, r * 0.3); ctx.lineTo(r * 0.34, r * 0.3)
+    ctx.moveTo(0, r * 0.3); ctx.lineTo(0, r * 0.7)
+    ctx.stroke()
+    ctx.restore()
+  } else {
+    ctx.moveTo(0, -r * 0.7)
+    ctx.lineTo(r * 0.6, -r * 0.42)
+    ctx.quadraticCurveTo(r * 0.6, r * 0.38, 0, r * 0.72)
+    ctx.quadraticCurveTo(-r * 0.6, r * 0.38, -r * 0.6, -r * 0.42)
+    ctx.closePath()
+    ctx.stroke()
+  }
+}
+
+/** A bonus orb: a small disc with a coloured ring pattern per kind and its icon in the middle. */
+function drawOrb(ctx: Ctx, kind: PickupKind, cx: number, cy: number, r: number, t: number, alpha: number, calm: boolean, unflip: (x: number, y: number, draw: () => void) => void) {
+  const look = PICKUP_LOOK[kind]
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.shadowColor = look.main
+  ctx.shadowBlur = 14
+  const fill = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+  fill.addColorStop(0, look.dark)
+  fill.addColorStop(1, '#0c0920')
+  ctx.fillStyle = fill
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+  ctx.shadowBlur = 0
+  ctx.strokeStyle = look.main
+  const spin = calm ? 0 : t * (kind === 'defense' ? -1.2 : 1.2)
+  if (kind === 'heal') {
+    // A ring of dashes.
+    ctx.lineWidth = r * 0.16
+    ctx.setLineDash([r * 0.5, r * 0.3])
+    ctx.lineDashOffset = -spin * r
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke()
+    ctx.setLineDash([])
+  } else if (kind === 'attack') {
+    // A plain ring with spikes.
+    ctx.lineWidth = r * 0.14
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke()
+    ctx.fillStyle = look.main
+    for (let i = 0; i < 8; i++) {
+      const a = spin + (i / 8) * Math.PI * 2
+      ctx.beginPath()
+      ctx.moveTo(cx + Math.cos(a - 0.17) * r, cy + Math.sin(a - 0.17) * r)
+      ctx.lineTo(cx + Math.cos(a) * r * 1.3, cy + Math.sin(a) * r * 1.3)
+      ctx.lineTo(cx + Math.cos(a + 0.17) * r, cy + Math.sin(a + 0.17) * r)
+      ctx.fill()
+    }
+  } else {
+    // Two rings, the outer one broken into arcs.
+    ctx.lineWidth = r * 0.13
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2); ctx.stroke()
+    ctx.lineWidth = r * 0.17
+    for (let i = 0; i < 4; i++) {
+      const a = spin + (i / 4) * Math.PI * 2
+      ctx.beginPath(); ctx.arc(cx, cy, r * 1.08, a, a + Math.PI / 3); ctx.stroke()
+    }
+  }
+  unflip(cx, cy, () => pickupIcon(ctx, kind, r * 0.7, '#fff'))
+  ctx.restore()
+}
+
 export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, dpr: number, shake: number, flip: boolean) {
   // Leave room on both sides for the coloured strips outside the arena.
   const scale = Math.min(w / (ARENA_W + 2 * SIDE), h / ARENA_H)
@@ -530,6 +626,15 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     }
   }
 
+  // Bonus orbs fade in, wait, then fade out before they vanish.
+  for (const o of s.pickups) {
+    const age = s.t - o.born
+    const alpha = Math.min(1, age / 0.4, (PICKUP_LIFE - age) / 0.6)
+    const pop = calm ? 1 : 0.6 + 0.4 * Math.min(1, age / 0.4)
+    const bob = calm ? 0 : Math.sin(t * 4 + o.id) * 0.05
+    drawOrb(ctx, o.kind, X(o.pos.x), Y(o.pos.y + bob), PICKUP_RADIUS * 0.9 * pop * scale, t, Math.max(0, alpha), calm, unflip)
+  }
+
   const intro = Math.min(1, t / INTRO)
   const slide = 1 - (1 - intro) ** 3
   s.fighters.forEach((f, i) => {
@@ -602,6 +707,23 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
       ctx.beginPath()
       ctx.arc(cx, cy, r + 0.2 * scale, -Math.PI / 2, -Math.PI / 2 + Math.min(1, f.charge) * Math.PI * 2)
       ctx.stroke()
+    }
+    // Each active benefit rings the fighter, shrinking away as its time runs out.
+    let ringIdx = 0
+    for (const kind of PICKUP_KINDS) {
+      const left = f.buffs[kind]
+      if (left <= 0) continue
+      ctx.save()
+      ctx.strokeStyle = PICKUP_LOOK[kind].main
+      ctx.shadowColor = PICKUP_LOOK[kind].main
+      ctx.shadowBlur = 8
+      ctx.lineWidth = 3
+      ctx.globalAlpha = left < 0.7 && !calm ? 0.4 + 0.4 * Math.sin(t * 24) : 0.95
+      ctx.beginPath()
+      ctx.arc(cx, cy, r + 0.07 * scale + ringIdx * 5, -Math.PI / 2, -Math.PI / 2 + Math.min(1, left / BUFF_SECONDS) * Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+      ringIdx++
     }
     // The HP bar curves around the fighter, on a larger circle behind it (opposite the way it faces).
     const span = Math.PI * 0.62

@@ -8,6 +8,14 @@ export const MIN_ARENA_SCALE = 0.4
 export const ARENA_W = 8
 export const ARENA_H = 12
 
+/** Bonus orbs that pop up in a live fight: heal over time, hit harder, or take less damage. */
+export type PickupKind = 'heal' | 'attack' | 'defense'
+export const PICKUP_KINDS: readonly PickupKind[] = ['heal', 'attack', 'defense']
+/** Seconds an orb stays in the arena, and seconds its benefit lasts once collected. */
+export const PICKUP_LIFE = 4
+export const BUFF_SECONDS = 3
+export const PICKUP_RADIUS = 0.35
+
 export interface Vec {
   x: number
   y: number
@@ -29,6 +37,8 @@ export interface DuelConfig {
   aimCone: number
   /** Live fights only: the AI's walking speed grows by `perSecond` of its base for every second of the duel. */
   foeSpeedRamp?: { side: 0 | 1; perSecond: number }
+  /** Live fights only: bonus orbs appear at random, from a stream seeded with `seed`. */
+  pickups?: { seed: number }
 }
 
 export interface Fighter {
@@ -53,6 +63,16 @@ export interface Fighter {
   dealt: number
   taken: number
   wasHeld: boolean
+  /** Seconds left of each collected benefit. */
+  buffs: Record<PickupKind, number>
+}
+
+export interface Pickup {
+  id: number
+  kind: PickupKind
+  pos: Vec
+  /** Duel time it appeared at. */
+  born: number
 }
 
 export interface Projectile {
@@ -71,6 +91,7 @@ export type DuelEvent =
   | { type: 'shoot'; by: 0 | 1 }
   | { type: 'slam'; by: 0 | 1; at: Vec }
   | { type: 'hit'; target: 0 | 1; damage: number; at: Vec }
+  | { type: 'pickup'; by: 0 | 1; kind: PickupKind; at: Vec }
   | { type: 'suddenDeath' }
   | { type: 'end' }
 
@@ -78,6 +99,12 @@ export interface DuelState {
   /** Index 0 is the attacker, 1 the defender. */
   fighters: [Fighter, Fighter]
   projectiles: Projectile[]
+  /** Orbs waiting to be collected; always empty unless the config turns pickups on. */
+  pickups: Pickup[]
+  /** Random stream, next spawn time and next orb id for the pickups. */
+  pickupRng: number
+  nextPickup: number
+  pickupId: number
   /** Elapsed seconds. */
   t: number
   /** Current arena scale in (MIN_ARENA_SCALE..1]. */

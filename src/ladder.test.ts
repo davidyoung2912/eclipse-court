@@ -33,7 +33,8 @@ describe('ladder maths', () => {
 
   it('names ranks in rating order', () => {
     expect(RANKS.map((r) => r.from)).toEqual([...RANKS.map((r) => r.from)].sort((a, b) => a - b))
-    expect(rankOf(START_RATING)).toBe('Knight')
+    expect(rankOf(START_RATING)).toBe('Squire')
+    expect(rankOf(900)).toBe('Knight')
     expect(rankOf(100)).toBe('Squire')
     expect(rankOf(9999)).toBe('Eclipse Champion')
   })

@@ -157,7 +157,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       )}
       {showChecklist(steps, onboarding) && (
         <section className="first-steps" aria-label="First steps">
-          <h3>First steps<span>{steps.filter((s) => s.done).length} of {steps.length}</span></h3>
+          <h3><em><Icon name="checklist" />First steps</em><span>{steps.filter((s) => s.done).length} of {steps.length}</span></h3>
           <ul>
             {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
           </ul>

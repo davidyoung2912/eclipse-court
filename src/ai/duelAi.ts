@@ -3,7 +3,7 @@ import {
   LOB_MAX, LOB_MIN, LOB_SPEED, PULSE_BASE, PULSE_CHARGE, RUSH_BASE_TIME, RUSH_CHARGE_TIME, RUSH_SPEED,
   SHOT_SPEED, SLAM_REACH, styleOf,
 } from '../engine/duel/duel'
-import { ARENA_H, ARENA_W, NO_INPUT, type DuelInput, type DuelState, type Projectile, type Vec } from '../engine/duel/types'
+import { ARENA_H, ARENA_W, NO_INPUT, PICKUP_LIFE, type DuelInput, type DuelState, type Projectile, type Vec } from '../engine/duel/types'
 import type { AiProfile } from './profile'
 
 export type DuelController = (state: DuelState, i: 0 | 1) => DuelInput
@@ -21,6 +21,8 @@ const DODGE_TIME = 0.35
 const THREAT_MARGIN = 0.5
 /** Speed ratio needed before running from a melee attack beats trading blows. */
 const OUTPACE = 1.15
+/** How far away an orb can be and still tempt it. */
+const PICKUP_RANGE = 4.5
 
 const dist = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y)
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
@@ -42,6 +44,8 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
 
   let look: Look | null = null
   let nextLook = 0
+  /** The orb it has decided to go for, if any. */
+  let goalId = -1
   let dodgeDir: Vec | null = null
   let dodgeUntil = 0
   let strafe = 1
@@ -61,6 +65,16 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
       shots: state.projectiles
         .filter((p) => p.owner !== i)
         .map((p) => ({ kind: p.kind, pos: { ...p.pos }, vel: { ...p.vel }, target: { ...p.target }, ttl: p.ttl })),
+    }
+    // Sometimes spot a nearby orb it can reach before it fades, and head for it; sharper fighters do so more often.
+    if (goalId < 0 || !state.pickups.some((o) => o.id === goalId)) {
+      goalId = -1
+      let best = PICKUP_RANGE
+      for (const o of state.pickups) {
+        const gap = dist(o.pos, me.pos)
+        const left = PICKUP_LIFE - (state.t - o.born)
+        if (gap < best && gap / (styleOf(me.role).speed || 1) < left && rand() < 0.35 + 0.5 * profile.lead) { best = gap; goalId = o.id }
+      }
     }
     const threat = findThreat(state, i, look, me.pos)
     if (threat && rand() < profile.dodge) {
@@ -150,6 +164,14 @@ export function createDuelAi(profile: AiProfile, seed: number): DuelController {
     power *= 0.6 + 0.4 * profile.aggression
     mx += toMidX * lean
     my += toMidY * lean
+    const goal = goalId < 0 ? undefined : state.pickups.find((o) => o.id === goalId)
+    if (goal) {
+      const gx = goal.pos.x - me.pos.x
+      const gy = goal.pos.y - me.pos.y
+      const gd = Math.hypot(gx, gy) || 1
+      mx = (gx / gd) * 0.85 + mx * 0.15
+      my = (gy / gd) * 0.85 + my * 0.15
+    }
     aimAt += noise() * profile.aimError
 
     let attack = false

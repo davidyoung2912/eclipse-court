@@ -1,9 +1,10 @@
+import { rngNext } from '../rng'
 import type { CellMods, DuelCells } from '../rules/cells'
 import { perkMods } from '../rules/growth'
 import { duelMods } from '../rules/luminance'
 import type { DuelOutcome, Piece, Role } from '../rules/types'
 import {
-  ARENA_H, ARENA_W, DT, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT, SUDDEN_DEATH_AT,
+  ARENA_H, ARENA_W, BUFF_SECONDS, DT, DUEL_SECONDS, MIN_ARENA_SCALE, NO_INPUT, PICKUP_KINDS, PICKUP_LIFE, PICKUP_RADIUS, SUDDEN_DEATH_AT,
   type DuelConfig, type DuelEvent, type DuelInput, type DuelState, type Fighter, type Vec,
 } from './types'
 
@@ -47,6 +48,13 @@ export const LOB_MAX = 7
 const UMBRAL_REGEN = 0.1
 const DASH_TIME = 0.15
 const DASH_SPEED = 6
+/** Pickup benefits: damage dealt multiplier, damage taken multiplier and HP healed per second. */
+export const ATTACK_BUFF = 1.5
+export const DEFENSE_BUFF = 0.6
+export const HEAL_BUFF = 0.5
+const MAX_PICKUPS = 2
+const PICKUP_MARGIN = 1
+const PICKUP_GAP = 1.6
 export const RUSH_SPEED = 11
 export const RUSH_BASE_TIME = 0.15
 export const RUSH_CHARGE_TIME = 0.35
@@ -62,6 +70,7 @@ export function createFighter(piece: Piece, pos: Vec, facing: number, lum: numbe
     court: piece.court, role: piece.role, pos, vel: { x: 0, y: 0 }, facing,
     hp: piece.hp, maxHp: piece.maxHp, radius: styleOf(piece.role).radius,
     charge: 0, cooldown: 0, dash: 0, rushDamage: 0, dealt: mods.dealt * perk.dealt * cell.dealt, taken: mods.taken * perk.taken * cell.taken, wasHeld: false,
+    buffs: { heal: 0, attack: 0, defense: 0 },
   }
 }
 
@@ -75,7 +84,18 @@ export function createDuel(
 ): DuelState {
   const a = createFighter(attacker, { x: ARENA_W / 2, y: ARENA_H * 0.8 }, -Math.PI / 2, lum, cells?.attacker)
   const d = createFighter(defender, { x: ARENA_W / 2, y: ARENA_H * 0.2 }, Math.PI / 2, lum, cells?.defender)
-  return { fighters: [a, d], projectiles: [], t: 0, arena: 1, done: false, config }
+  const state: DuelState = { fighters: [a, d], projectiles: [], pickups: [], pickupRng: 0, nextPickup: Infinity, pickupId: 0, t: 0, arena: 1, done: false, config }
+  if (config.pickups) {
+    state.pickupRng = config.pickups.seed >>> 0
+    state.nextPickup = 1.5 + pickupRand(state) * 1.5
+  }
+  return state
+}
+
+function pickupRand(state: DuelState) {
+  const [v, next] = rngNext(state.pickupRng)
+  state.pickupRng = next
+  return v
 }
 
 const dist = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y)
@@ -96,6 +116,7 @@ function clampToArena(f: Fighter, arena: number) {
 
 function damage(state: DuelState, from: 0 | 1, to: 0 | 1, base: number, at: Vec, events: DuelEvent[]) {
   const dmg = base * state.fighters[from].dealt * state.fighters[to].taken
+    * (state.fighters[from].buffs.attack > 0 ? ATTACK_BUFF : 1) * (state.fighters[to].buffs.defense > 0 ? DEFENSE_BUFF : 1)
   state.fighters[to].hp -= dmg
   events.push({ type: 'hit', target: to, damage: dmg, at })
 }
@@ -205,6 +226,36 @@ function stepFighter(state: DuelState, i: 0 | 1, input: DuelInput, events: DuelE
   me.wasHeld = input.attack
 
   if (me.court === 'umbral') me.hp = Math.min(me.maxHp, me.hp + UMBRAL_REGEN * DT)
+  if (me.buffs.heal > 0) me.hp = Math.min(me.maxHp, me.hp + HEAL_BUFF * DT)
+  for (const kind of PICKUP_KINDS) me.buffs[kind] = Math.max(0, me.buffs[kind] - DT)
+}
+
+/** Orbs expire or fall outside the shrinking arena, new ones appear now and then, and a fighter touching one takes its benefit. */
+function stepPickups(state: DuelState, events: DuelEvent[]) {
+  if (!state.config.pickups) return
+  const b = bounds(state.arena)
+  state.pickups = state.pickups.filter((o) =>
+    state.t - o.born < PICKUP_LIFE && o.pos.x >= b.minX && o.pos.x <= b.maxX && o.pos.y >= b.minY && o.pos.y <= b.maxY)
+  if (state.t >= state.nextPickup) {
+    state.nextPickup = state.t + 2.5 + pickupRand(state) * 2
+    if (state.pickups.length < MAX_PICKUPS) {
+      const kind = PICKUP_KINDS[Math.min(PICKUP_KINDS.length - 1, Math.floor(pickupRand(state) * PICKUP_KINDS.length))]
+      const pos = {
+        x: b.minX + PICKUP_MARGIN + pickupRand(state) * (b.maxX - b.minX - 2 * PICKUP_MARGIN),
+        y: b.minY + PICKUP_MARGIN + pickupRand(state) * (b.maxY - b.minY - 2 * PICKUP_MARGIN),
+      }
+      // Never appear on top of a fighter.
+      if (state.fighters.every((f) => dist(f.pos, pos) > PICKUP_GAP)) state.pickups.push({ id: state.pickupId++, kind, pos, born: state.t })
+    }
+  }
+  state.fighters.forEach((f, i) => {
+    state.pickups = state.pickups.filter((o) => {
+      if (dist(f.pos, o.pos) > f.radius + PICKUP_RADIUS) return true
+      f.buffs[o.kind] = BUFF_SECONDS
+      events.push({ type: 'pickup', by: i as 0 | 1, kind: o.kind, at: { ...o.pos } })
+      return false
+    })
+  })
 }
 
 function stepProjectiles(state: DuelState, events: DuelEvent[]) {
@@ -246,6 +297,7 @@ export function stepDuel(state: DuelState, inputs: [DuelInput, DuelInput]): Duel
   stepFighter(state, 0, inputs[0], events)
   stepFighter(state, 1, inputs[1], events)
   stepProjectiles(state, events)
+  stepPickups(state, events)
 
   // Soft body collision so fighters cannot overlap.
   const [a, d] = state.fighters
