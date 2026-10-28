@@ -1,4 +1,4 @@
-import { estimateOdds } from '../../engine/reducer'
+import { estimateOdds, type Odds } from '../../engine/reducer'
 import { duelCells } from '../../engine/rules/cells'
 import { squareLuminance } from '../../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../../engine/rules/moves'
@@ -60,6 +60,13 @@ export function nextLightState(state: GameState): GameState {
 /** For each attackable enemy, the attacker's win chance (0 to 100) once the light has turned. */
 export function nextAttackOdds(state: GameState, attacker: Piece, moves: readonly Pos[]): Record<string, number> {
   return attackOdds(nextLightState(state), attacker, moves)
+}
+
+/** The duel odds and square light for `attacker` against `defender` on `to` once the light has turned. */
+export function nextDetail(state: GameState, attacker: Piece, defender: Piece, to: Pos): { next: Odds; nextLuminance: number } {
+  const later = nextLightState(state)
+  const nextLuminance = squareLuminance(later, to)
+  return { next: estimateOdds(attacker, defender, nextLuminance, undefined, duelCells(later, attacker, defender)), nextLuminance }
 }
 
 /** The foe's win chance (0 to 100) from which a square counts as a bad place to stand. */

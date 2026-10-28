@@ -312,6 +312,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .odds-a.umbral, .odds-d.umbral { background: var(--umbral-violet); }
 .odds-o { background: #6b6b7e; }
 .odds-text { margin: 5px 0 8px; text-align: center; font-size: 0.8rem; line-height: 1.3; }
+.odds-detail { margin: 0 0 8px; padding: 0; list-style: none; text-align: center; font-size: 0.75rem; line-height: 1.3; opacity: 0.85; }
 .buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 
 .menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-inline: 24px; padding-top: max(env(safe-area-inset-top), 12px); }

@@ -1,6 +1,6 @@
 # Play aids: phased plan
 
-Status: **phases 1-4 done.** Written 2026-10-28. Nine ideas from the play-aids discussion, one phase each.
+Status: **phases 1-5 done.** Written 2026-10-28. Nine ideas from the play-aids discussion, one phase each.
 
 ## Ground rules
 

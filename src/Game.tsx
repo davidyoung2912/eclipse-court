@@ -6,7 +6,7 @@ import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './ju
 import { getSettings, updateSettings } from './settings'
 import { t } from './i18n'
 import { explainMove } from './ai/why'
-import { attackOdds, blunderOf, lastMoveOf, nextAttackOdds, nextLightState, threatenedIds } from './ui/board/aids'
+import { attackOdds, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { coopPlayer } from './engine/data/coop'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
@@ -225,7 +225,9 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   const trail = useMemo(() => (getSettings().lastMove && !state.config.fog && !ended ? lastMoveOf(history) ?? undefined : undefined), [history, state.config.fog, ended])
   const chipOn = getSettings().eclipseChip && !ended
   /** The blunder check gives advice, so it is off under fog and in scored, daily and puzzle games. */
-  const blunderOn = getSettings().blunderCheck && !state.config.fog && !online && !puzzleHelp && puzzleLimit === undefined && context?.kind !== 'daily' && !context?.scored
+  const adviceOk = !state.config.fog && !online && !puzzleHelp && puzzleLimit === undefined && context?.kind !== 'daily' && !context?.scored
+  const blunderOn = getSettings().blunderCheck && adviceOk
+  const detailOn = getSettings().oddsDetail && adviceOk
   const [blunder, setBlunder] = useState<{ action: Extract<Action, { type: 'move' }>; text: string } | null>(null)
   const [blunderSkip, setBlunderSkip] = useState(false)
   const forecastOn = getSettings().forecast && !state.config.fog && !ended
@@ -749,6 +751,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
         {confirming && attacker && defender && (
           <AttackConfirm attacker={attacker} defender={defender} live={!settleAuto}
             cells={{ attacker: cellAt(state.config, attacker.pos), defender: cellAt(state.config, defender.pos) }}
+            detail={detailOn ? nextDetail(state, attacker, defender, pending.to) : undefined}
             luminance={squareLuminance(state, pending.to)}
             odds={estimateOdds(attacker, defender, squareLuminance(state, pending.to), undefined, fightCells(attacker, defender, !!pending.byAi))}
             onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />

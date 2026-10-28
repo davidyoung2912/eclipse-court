@@ -12,6 +12,8 @@ interface Props {
   odds: Odds
   /** The cell effects under each fighter, already counted in the odds. */
   cells?: { attacker: CellEffect | null; defender: CellEffect | null }
+  /** Extra breakdown shown when the Odds detail setting is on. */
+  detail?: { next: Odds; nextLuminance: number }
   live: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -19,7 +21,7 @@ interface Props {
 
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
-export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, onConfirm, onCancel }: Props) {
+export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, detail, onConfirm, onCancel }: Props) {
   const advice = adviceFor(odds, defender)
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
@@ -37,6 +39,14 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, cells
         {cells?.attacker && <><br />Attacker on {CELL_INFO[cells.attacker].name}</>}
         {cells?.defender && <><br />Defender on {CELL_INFO[cells.defender].name}</>}
       </p>
+      {detail && (
+        <ul className="odds-detail" aria-label="Odds detail">
+          {[attacker, defender].map((p, i) => (
+            <li key={p.id}>{i === 0 ? 'Attacker' : 'Defender'}: {p.hp}/{p.maxHp} HP{p.perk ? `, ${p.perk}` : ''}{p.wins ? `, ${p.wins} win${p.wins === 1 ? '' : 's'}` : ''}{p.bound ? ', bound' : ''}{p.shrouded ? ', shrouded' : ''}</li>
+          ))}
+          <li>Next round: square light {detail.nextLuminance > 0 ? `+${detail.nextLuminance}` : detail.nextLuminance}, attacker {pct(detail.next.attacker)} · draw {pct(detail.next.other)} · defender {pct(detail.next.defender)}</li>
+        </ul>
+      )}
       <p className={`confirm-advice ${advice.tone}`}>{advice.text}</p>
       <div className="buttons">
         <button onClick={onCancel}><Icon name="close" />Withdraw</button>

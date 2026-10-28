@@ -31,6 +31,7 @@ export const en = {
   'eclipse.chip_other': 'Eclipse in {count} rounds',
   'eclipse.chipNext': 'Eclipse falls this round',
   'settings.blunderCheck': 'Blunder check: ask before a move into an enemy\'s reach on bad odds, or one that leaves your Leader exposed (not in scored games or under fog)',
+  'settings.oddsDetail': 'Odds detail: show wounds, perks, status, cell effects and the odds once the light turns when you confirm an attack (not in scored games or under fog)',
   'blunder.piece': 'An enemy could attack that square with {odds}% to win.',
   'blunder.leader': 'That move leaves your Leader open to attack.',
   'blunder.skip': 'Don\'t ask again this match',
