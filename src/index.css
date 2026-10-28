@@ -1215,3 +1215,13 @@ svg.board:focus { outline: none; }
 @keyframes stat-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 :root[data-motion='reduced'] .result-scroll, :root[data-motion='reduced'] .result-scroll::after, :root[data-motion='reduced'] .result-stat { animation: none; }
 @media (prefers-reduced-motion: reduce) { .result-scroll, .result-scroll::after, .result-stat { animation: none; } }
+
+/* The Eclipse as an event: --dusk (0 to 1, the same value that drives the music) tints the HUD as the Eclipse round nears; once it falls the board and HUD desaturate, the edges vignette and the backdrop goes near black. */
+.game-solari, .game-umbral { --dusk: 0; }
+.game-solari .hud, .game-umbral .hud { transition: filter var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease); box-shadow: inset 0 -2px 14px -8px rgba(106, 79, 208, calc(var(--dusk) * 0.9)); background: linear-gradient(to bottom, rgba(106, 79, 208, calc(var(--dusk) * 0.22)), transparent); }
+.game-solari .board, .game-umbral .board { transition: filter var(--t-slow) var(--ease); }
+.game-solari::after, .game-umbral::after { content: ''; position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity var(--t-slow) var(--ease); background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%); }
+.eclipsed::after { opacity: 1 !important; }
+.eclipsed .hud, .eclipsed .board { filter: saturate(0.45) brightness(0.85); }
+body:has(.eclipsed) { --tone-a: #14101f !important; --tone-b: #030208 !important; }
+@media (prefers-reduced-motion: reduce) { .game-solari .hud, .game-umbral .hud, .game-solari .board, .game-umbral .board, .game-solari::after, .game-umbral::after { transition: none; } }

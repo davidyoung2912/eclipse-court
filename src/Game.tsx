@@ -496,8 +496,10 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     clearHint()
   }
 
+  const dusk = musicLevel(state)
+  const eclipseFallen = state.eclipse && !state.winner
   return (
-    <main className={`app timed game-${human}`} style={{ '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
+    <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} />
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
