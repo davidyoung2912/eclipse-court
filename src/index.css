@@ -1063,3 +1063,8 @@ svg.board:focus { outline: none; }
   animation: chat-fade 3.2s ease-out forwards; pointer-events: none;
 }
 @keyframes chat-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Locked or disabled options dim their contents, not the whole panel, so the checkerboard behind does not show through. */
+.menu .choice:disabled { opacity: 1; background: rgba(26, 20, 62, 0.94); border-color: rgba(154, 124, 240, 0.2); }
+.menu .choice:disabled > * { opacity: 0.4; }
+.row-pick button:disabled, .setup-seg button:disabled { opacity: 0.55; }
