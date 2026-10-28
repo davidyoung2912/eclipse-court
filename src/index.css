@@ -1488,7 +1488,18 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
   animation: bubble-in 0.25s ease-out;
 }
 .persona-bubble-face { flex: none; width: 36px; height: 43px; }
-.persona-photo { display: block; object-fit: cover; object-position: top; border-radius: 8px 8px 18px 18px; border: 1px solid rgba(205, 191, 255, 0.5); }
+/* Leaded-glass frame: an arched pane, a house tint, lead lines and a corner highlight over the picture. */
+.persona-frame { --tint: 154, 124, 240; position: relative; display: block; width: 36px; height: 43px; overflow: hidden; border-radius: 50% 50% 14% 14% / 38% 38% 10% 10%; border: 1.5px solid #3a2f5a; box-shadow: 0 0 0 1px rgba(205, 191, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.5); background: #120d2a; }
+.persona-frame[data-house="solari"] { --tint: 232, 182, 74; }
+.persona-frame[data-house="umbral"] { --tint: 106, 76, 192; }
+.persona-frame[data-house="marches"] { --tint: 138, 150, 160; }
+.persona-frame[data-house="hour"] { --tint: 74, 166, 184; }
+.persona-frame .persona-photo { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; border: 0; border-radius: 0; }
+.persona-frame::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(var(--tint), 0.22); mix-blend-mode: soft-light; }
+.persona-frame::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.45), transparent 22%),
+    linear-gradient(90deg, transparent calc(50% - 0.75px), rgba(20, 14, 40, 0.75) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(0deg, transparent calc(38% - 0.75px), rgba(20, 14, 40, 0.75) calc(38% - 0.75px) calc(38% + 0.75px), transparent calc(38% + 0.75px)); }
 .persona-bubble-text b { display: block; font-size: var(--fs-xs); color: #cdbfff; }
 @keyframes bubble-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .persona-bubble { animation: none; } }
@@ -1618,7 +1629,7 @@ body:has(.main-menu)::before {
 .main-menu .hero { translate: calc(var(--px, 0px) * -0.4) calc(var(--py, 0px) * -0.4); transition: translate 0.4s ease-out; }
 
 /* Medallion images shimmer until they load. */
-.persona-photo[data-loading] {
+.persona-frame .persona-photo[data-loading] {
   background: linear-gradient(100deg, rgba(60, 44, 120, 0.6) 30%, rgba(205, 191, 255, 0.35) 50%, rgba(60, 44, 120, 0.6) 70%) 0 0 / 220% 100%;
   animation: skeleton 1.4s linear infinite;
 }

@@ -81,3 +81,5 @@ Phase 1 done: the type scale tokens are in `:root` and `index.css` uses them; ta
 Phase 2 done: `index.html` draws the eclipse loader (inline CSS, so it shows before React and the fonts load); `main.tsx` fades it out and removes it after the first render. Reduce motion (setting or OS) shows the still, closed eclipse.
 
 Phase 3 done: the main menu's greeting, coach card, first-steps list and suggestions are one "Next up" card with the persona face as avatar. `nextUpSlot` in `menuModel.ts` (tested) picks advice, then first steps, then suggestions, then the greeting; dismiss buttons are unchanged.
+
+Phase 4 done: `PersonaFace` wraps the WebP portrait in an arched `.persona-frame` with a house tint overlay (solari, umbral, marches, hour), lead lines and a corner highlight; the size class now sits on the frame. The SVG bust fallback is unchanged.
