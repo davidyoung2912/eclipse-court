@@ -40,7 +40,7 @@ export function StoryScene({ court, act }: Props) {
       <rect width="320" height="480" fill="url(#story-mist)" />
       {STARS.map(([x, y, r]) => <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#fbf1d4" opacity={0.35 + r * 0.3} />)}
       <g className="story-rays" transform="translate(160 500)">
-        {[-62, -38, -14, 14, 38, 62].map((a) => <path key={a} d="M-9 0L-34 -560L34 -560L9 0z" fill="url(#story-ray)" transform={`rotate(${a})`} />)}
+        {[-62, -38, -14, 14, 38, 62].map((a, i) => <path key={a} className={i % 2 ? 'story-ray dim' : 'story-ray lit'} d="M-9 0L-34 -560L34 -560L9 0z" fill="url(#story-ray)" transform={`rotate(${a})`} />)}
       </g>
       <circle cx="160" cy="500" r="190" fill="url(#story-halo)" />
       <circle cx="160" cy="500" r="92" fill="#ffe08a" opacity="0.85" />
