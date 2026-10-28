@@ -1,6 +1,6 @@
 # AI personas: phased plan
 
-Status: **phase 1 done.** Written 2026-10-28. Character sheet: `docs/personas.md`. Lore: `docs/lore.md`.
+Status: **phases 1-2 done.** Written 2026-10-28. Character sheet: `docs/personas.md`. Lore: `docs/lore.md`.
 
 ## Goal
 
