@@ -140,6 +140,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   }, [])
   return (
     <main ref={menuRef} className="app menu main-menu" data-intro={intro}>
+      <div className="menu-side">
       <div ref={brandRef} className="brand">
         <Hero />
         <h1><span>{t('menu.titleLead')}</span> {t('menu.titleTail')}</h1>
@@ -148,6 +149,8 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       <div className="menu-buttons">
         <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
       </div>
+      </div>
+      <div className="menu-main">
       {advice && (
         <aside className="coach-card" role="note" aria-label={t('menu.suggestion')}>
           <Icon name="bulb" />
@@ -198,6 +201,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
           <Icon name={sound ? 'speakerOn' : 'speakerOff'} /><span>{t(sound ? 'menu.soundOn' : 'menu.soundOff')}</span>
         </button>
       </nav>
+      </div>
       <TipCard page="menu" />
     </main>
   )
