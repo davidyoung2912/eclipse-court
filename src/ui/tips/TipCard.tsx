@@ -27,6 +27,8 @@ export function TipCard({ page, float = false, hidden = false, modal = false }: 
         <p>{tip.text}</p>
         <div className="tip-foot">
           {tips.length > 1 && <small>Tip {number} of {tips.length}</small>}
+          {/* A modal tip takes focus; a shared dialog hook replaces this in accessibility phase 2. */}
+          {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
           <button className="primary" autoFocus={modal} onClick={() => markTipSeen(tip.id)}><Icon name="check" />Got It!</button>
         </div>
       </div>

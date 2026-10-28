@@ -42,6 +42,8 @@ export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDon
   return (
     <main className={`app menu story-menu story-reader${speaker?.portrait ? ` court-${speaker.portrait.court}` : ''}`}>
       <p className="story-act">{actLabel(chapter.act)} · {chapter.title}</p>
+      {/* Keys and the Next button below advance the story; the click is a pointer shortcut. */}
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events */}
       <div className="story-stage" onClick={forward} role="button" tabIndex={-1} aria-label="Next">
         <StoryScene court={speaker?.portrait?.court ?? null} act={chapter.act} />
         {speaker ? (

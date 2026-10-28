@@ -52,7 +52,7 @@ export function ToggleRow({ label, text, checked, onChange }: ToggleRowProps) {
   return (
     <label className="setup-toggle">
       <span><strong>{label}</strong><small>{text}</small></span>
-      <input type="checkbox" role="switch" checked={checked} onChange={onChange} />
+      <input type="checkbox" role="switch" aria-checked={checked} checked={checked} onChange={onChange} />
     </label>
   )
 }

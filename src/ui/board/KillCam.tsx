@@ -21,6 +21,8 @@ export function KillCam({ shot, flip, onDone }: { shot: KillShot; flip: boolean;
   }, [onDone])
   const origin = killOrigin(shot.at, sizeOf(shot.after.config), flip)
   return (
+    // Escape (a window handler) and the Skip button are the keyboard routes; the click is for pointers.
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div className="kill-cam" role="dialog" aria-label="Final capture replay" onClick={onDone}
       style={{ ['--kill-zoom' as string]: KILL_ZOOM, ['--kill-push' as string]: `${KILL_PUSH_MS}ms`, ['--kill-play' as string]: `${KILL_PLAY_MS}ms`, ['--kill-hold' as string]: `${KILL_HOLD_MS}ms` }}>
       <div className="kill-stage" style={{ transformOrigin: `${origin.x}% ${origin.y}%` }}>

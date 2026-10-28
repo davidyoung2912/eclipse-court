@@ -53,6 +53,8 @@ export function CoachMarks({ hidden = false, onActive }: Props) {
         <p>{step.text}</p>
         <div className="tip-foot">
           {left > 1 && <button className="coach-skip" onClick={done}>Skip all</button>}
+          {/* The coach card takes focus; a shared dialog hook replaces this in accessibility phase 2. */}
+          {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
           <button className="primary" autoFocus onClick={() => markTipSeen(step.id)}><Icon name="check" />{left > 1 ? 'Next' : 'Got It!'}</button>
         </div>
       </aside>

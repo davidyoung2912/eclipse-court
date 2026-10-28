@@ -34,7 +34,9 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
   const n = Math.max(values.length - 1, 1)
   const y = (v: number) => 20 - ((v + EVAL_CAP) / (2 * EVAL_CAP)) * 20
   const line = values.map((v, i) => `${i},${y(v).toFixed(2)}`).join(' ')
+  // The Start, Prev, Play and Next buttons are the keyboard way through the game; the bar is a pointer scrub.
   return (
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <svg className="eval-bar" viewBox={`0 0 ${n} 20`} preserveAspectRatio="none" role="img"
       aria-label="Evaluation over the game; higher favours Solari"
       onClick={(e) => {

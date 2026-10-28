@@ -242,7 +242,12 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
       })}
       {cursor && (() => {
         const { cx, cy } = toScreen(cursor, flip, size)
-        return <rect x={cx - 0.46} y={cy - 0.46} width={0.92} height={0.92} className="kb-cursor" />
+        return (
+          <>
+            <rect x={cx - 0.46} y={cy - 0.46} width={0.92} height={0.92} className="kb-cursor-halo" />
+            <rect x={cx - 0.46} y={cy - 0.46} width={0.92} height={0.92} className="kb-cursor" />
+          </>
+        )
       })()}
       {falls.map(({ key, pos, court }) => {
         const { cx, cy } = toScreen(pos, flip, size)

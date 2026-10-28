@@ -756,7 +756,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
       )}
       {combo && !ended && <div key={combo.key} className={`combo ${hotSeat ? combo.court : combo.court === human ? 'mine' : 'theirs'}`} role="status">{combo.label}</div>}
       {moment && !ended && (
-        <button key={moment.key} className={`moment ${moment.court ?? 'both'}`} role="status" onClick={() => setMoment(null)}>{t(`moment.${moment.id}`)}</button>
+        <button key={moment.key} className={`moment ${moment.court ?? 'both'}`} aria-live="polite" onClick={() => setMoment(null)}>{t(`moment.${moment.id}`)}</button>
       )}
       {lost && (
         <div className="confirm result" role="dialog" aria-label="Connection lost">

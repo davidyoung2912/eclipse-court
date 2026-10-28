@@ -187,7 +187,11 @@
 
 /* Keyboard play on the board */
 .kb-cursor { fill: none; stroke: #fff6c0; stroke-width: 0.07; pointer-events: none; }
+/* A dark underlay keeps the cursor readable on pale squares in every theme. */
+.kb-cursor-halo { fill: none; stroke: #14102b; stroke-width: 0.16; stroke-opacity: 0.85; pointer-events: none; }
+/* The board's own ring is dropped only because the cursor is drawn; before the first arrow key, the frame shows focus. */
 svg.board:focus { outline: none; }
+svg.board:focus-visible .board-frame { stroke: #fff6c0; stroke-width: 0.2; filter: drop-shadow(0 0 0.1px #14102b); }
 
 /* Online quick chat */
 .chat-bubble {
