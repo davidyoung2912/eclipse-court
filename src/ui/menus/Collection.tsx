@@ -1,11 +1,12 @@
 import { useState, useSyncExternalStore } from 'react'
 import { buy, equip, equippedId, owns, shopSnapshot, subscribeShop } from '../../shop'
-import { cosmeticsOf, KIND_TITLES, KINDS, type Cosmetic } from '../../engine/data/cosmetics'
+import { cosmeticKey, cosmeticsOf, KIND_TITLES, KINDS, rarityOf, type Cosmetic } from '../../engine/data/cosmetics'
 import { getSettings, themeById, updateSettings } from '../../settings'
 import { sfx, unlockAudio } from '../../audio/synth'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { Showcase } from './Showcase'
 import { TipCard } from '../tips/TipCard'
 import { t } from '../../i18n'
 
@@ -16,10 +17,13 @@ interface Props {
 export function Collection({ onBack }: Props) {
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const [theme, setTheme] = useState(() => getSettings().theme)
+  const [preview, setPreview] = useState<Cosmetic | null>(null)
+  const [fresh, setFresh] = useState('')
   const isOn = (c: Cosmetic) => (c.kind === 'theme' ? theme === c.id : equippedId(c.kind, shop) === c.id)
   const use = (c: Cosmetic) => {
     if (c.kind === 'theme') setTheme(updateSettings({ theme: c.id }).theme)
     else equip(c)
+    setPreview(c)
     if (c.kind === 'sound') {
       unlockAudio()
       setTimeout(() => sfx.hit(2), 50)
@@ -31,6 +35,7 @@ export function Collection({ onBack }: Props) {
       <h2>{t('collection.title')}</h2>
       <p className="tagline">{t('collection.tagline')}</p>
       <p className="shard-wallet" role="status"><Icon name="star" /><strong>{shop.shards}</strong> {t('collection.shards')}<small>{t('collection.earned', { count: shop.earned })}</small></p>
+      {preview && <Showcase cosmetic={preview} />}
       {KINDS.map((kind) => (
         <section key={kind} className="collection-kind">
           <h3>{KIND_TITLES[kind]}</h3>
@@ -39,17 +44,26 @@ export function Collection({ onBack }: Props) {
               const have = owns(c, shop)
               const on = have && isOn(c)
               return (
-                <button key={c.id} className={`choice${on ? ' on' : ''}`} aria-pressed={have ? on : undefined}
-                  disabled={!have && shop.shards < c.cost}
-                  onClick={() => (have ? use(c) : buy(c) && use(c))}>
-                  <strong>
-                    {!have && <Icon name="lock" />}
-                    {kind === 'theme' && <><i className="swatch" style={{ background: themeById(c.id).vars['--solari-gold'] }} /><i className="swatch" style={{ background: themeById(c.id).vars['--umbral-violet'] }} /></>}
-                    {c.name}
-                  </strong>
-                  <span>{c.text}</span>
-                  <span className="cost">{on ? t('collection.equipped') : have ? t(kind === 'theme' || kind === 'sound' ? 'collection.ownedUse' : 'collection.ownedEquip') : t('collection.cost', { cost: c.cost }) + (shop.shards < c.cost ? t('collection.short', { count: c.cost - shop.shards }) : '')}</span>
-                </button>
+                <div key={c.id} className={`choice-row rarity-${rarityOf(c)}${fresh === cosmeticKey(c) ? ' unlocked' : ''}`}>
+                  <button className={`choice${on ? ' on' : ''}`} aria-pressed={have ? on : undefined}
+                    disabled={!have && shop.shards < c.cost}
+                    onClick={() => {
+                      if (have) return use(c)
+                      if (buy(c)) { setFresh(cosmeticKey(c)); use(c) }
+                    }}>
+                    <strong>
+                      {!have && <Icon name="lock" />}
+                      {kind === 'theme' && <><i className="swatch" style={{ background: themeById(c.id).vars['--solari-gold'] }} /><i className="swatch" style={{ background: themeById(c.id).vars['--umbral-violet'] }} /></>}
+                      {c.name}
+                    </strong>
+                    <span>{c.text}</span>
+                    <span className="cost">{on ? t('collection.equipped') : have ? t(kind === 'theme' || kind === 'sound' ? 'collection.ownedUse' : 'collection.ownedEquip') : t('collection.cost', { cost: c.cost }) + (shop.shards < c.cost ? t('collection.short', { count: c.cost - shop.shards }) : '')}</span>
+                  </button>
+                  <button className="preview-btn" aria-pressed={preview?.kind === c.kind && preview.id === c.id}
+                    aria-label={t('collection.previewOf', { name: c.name })} onClick={() => setPreview(c)}>
+                    {t('collection.preview')}
+                  </button>
+                </div>
               )
             })}
           </div>

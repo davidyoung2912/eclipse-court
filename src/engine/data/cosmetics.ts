@@ -95,3 +95,16 @@ export const CAPTURE_FX: Record<string, CaptureFx> = {
   comet: { parts: 7, colour: '#d6ecff', reach: 1.1 },
   supernova: { parts: 16, colour: '#ffd36b', reach: 1.2 },
 }
+
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legend'
+
+export const RARITY_LABELS: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legend: 'Legend' }
+
+/** How rare a cosmetic is: earned ones are Legend, sold ones rank by price. */
+export function rarityOf(c: Pick<Cosmetic, 'cost' | 'goals'>): Rarity {
+  if (c.goals) return 'legend'
+  if (c.cost >= 280) return 'epic'
+  if (c.cost >= 110) return 'rare'
+  if (c.cost > 0) return 'uncommon'
+  return 'common'
+}
