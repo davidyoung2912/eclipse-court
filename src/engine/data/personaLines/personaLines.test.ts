@@ -5,9 +5,10 @@ import { LINES_PER_CATEGORY_MIN, LINES_TOTAL_MIN, LINE_BANKS, LINE_CATEGORIES, L
 const written = Object.entries(LINE_BANKS)
 
 describe('persona line banks', () => {
-  it('has a bank for each persona with a bank, and only for real personas', () => {
+  it('has a bank for every persona, and only for real personas', () => {
     for (const [id] of written) expect(PERSONAS.some((p) => p.id === id)).toBe(true)
-    expect(written.length).toBeGreaterThanOrEqual(4)
+    for (const p of PERSONAS) expect(LINE_BANKS[p.id]).toBeDefined()
+    expect(written).toHaveLength(8)
   })
 
   it.each(written)('%s covers every category with enough lines', (_id, bank) => {
@@ -26,8 +27,7 @@ describe('persona line banks', () => {
     expect(new Set(all).size).toBe(all.length)
   })
 
-  it('reads a category, and is empty for a persona with no bank yet', () => {
-    expect(personaLines('cassia', 'win').length).toBeGreaterThan(0)
-    expect(personaLines('regent', 'win')).toEqual([])
+  it('reads a category for any persona', () => {
+    for (const p of PERSONAS) expect(personaLines(p.id, 'win').length).toBeGreaterThan(0)
   })
 })
