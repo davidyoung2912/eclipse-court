@@ -1408,3 +1408,7 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .forecast.lit { fill: #fff6cf; stroke: #3a2410; }
 .forecast.dim { fill: #3b2d86; stroke: #e4d8ff; }
 .odds-tag.next { fill: #d7ccff; }
+
+/* Eclipse chip: rounds left before the Eclipse falls; violet on the last round. */
+.eclipse-chip { align-self: flex-start; margin-top: 2px; padding: 1px 8px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; font-size: 0.75rem; font-weight: 500; }
+.eclipse-chip.soon { background: #3b2d86; border-color: #cdbfff; color: #fff; }

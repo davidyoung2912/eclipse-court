@@ -3,17 +3,21 @@ import { eventAt, EVENT_INFO, HILL_TURNS, modeOf, nextEvent, objectiveGoal, obje
 import { centerOf, sizeOf } from '../../engine/rules/board'
 import { forecast, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState } from '../../engine/rules/types'
+import { t } from '../../i18n'
+import { eclipseIn } from '../board/aids'
 import { lumColor } from '../board/lumColor'
 
-export const Dial = memo(function Dial({ state }: { state: GameState }) {
+export const Dial = memo(function Dial({ state, chip }: { state: GameState; chip?: boolean }) {
   const now = squareLuminance(state, centerOf(sizeOf(state.config)))
   const next = forecast(state, 3)
   const notes = hudNotes(state)
+  const left = chip ? eclipseIn(state) : null
   return (
     <header className="hud">
       <div className="hud-round">
         {state.eclipse ? 'Eclipse' : `Round ${Math.min(state.round, state.config.eclipseRound)} / ${state.config.eclipseRound}`}
         <span className={`turn turn-${state.turn}`}>{state.turn === 'solari' ? 'Solari' : 'Umbral'} to move</span>
+        {left !== null && <span className={`eclipse-chip${left === 1 ? ' soon' : ''}`} role="status" aria-live="polite">{left === 1 ? t('eclipse.chipNext') : t('eclipse.chip', { count: left })}</span>}
         {notes.length > 0 && <span className="hud-note">{notes.join(' · ')}</span>}
       </div>
       <div className="dial" aria-label="Luminance dial">

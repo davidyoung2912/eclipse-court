@@ -222,6 +222,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   }, [history, state.config.fog, hotSeat, online, human])
 
   const trail = useMemo(() => (getSettings().lastMove && !state.config.fog && !ended ? lastMoveOf(history) ?? undefined : undefined), [history, state.config.fog, ended])
+  const chipOn = getSettings().eclipseChip && !ended
   const forecastOn = getSettings().forecast && !state.config.fog && !ended
   const nextLight = useMemo(() => (forecastOn ? nextLightState(state) : undefined), [forecastOn, state])
   const [aids, setAids] = useState(() => getSettings().aids)
@@ -582,7 +583,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   const eclipseFallen = state.eclipse && !state.winner
   return (
     <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
-      <Dial state={state} />
+      <Dial state={state} chip={chipOn} />
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}

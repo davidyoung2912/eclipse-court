@@ -3,7 +3,7 @@ import { newGame } from '../../engine/reducer'
 import { legalMoves } from '../../engine/rules/moves'
 import type { GameState, Piece } from '../../engine/rules/types'
 import { squareLuminance } from '../../engine/rules/luminance'
-import { attackOdds, lastMoveOf, nextLightState, threatenedIds } from './aids'
+import { attackOdds, eclipseIn, lastMoveOf, nextLightState, threatenedIds } from './aids'
 
 const piece = (id: string, court: Piece['court'], role: Piece['role'], x: number, y: number): Piece => ({
   id, court, role, hp: 4, maxHp: 4, pos: { x, y }, rest: 0, moved: false, bound: false,
@@ -55,5 +55,20 @@ describe('nextLightState', () => {
   })
   it('holds the phase during an Eclipse', () => {
     expect(nextLightState({ ...state, eclipse: true }).phase).toBe(state.phase)
+  })
+})
+
+describe('eclipseIn', () => {
+  const at = (round: number, eclipse = false): GameState => {
+    const s = newGame()
+    return { ...s, round, eclipse }
+  }
+  it('counts the rounds left, ending at 1 on the last round before the Eclipse', () => {
+    const last = newGame().config.eclipseRound
+    expect(eclipseIn(at(last))).toBe(1)
+    expect(eclipseIn(at(last - 2))).toBe(3)
+  })
+  it('is null once the Eclipse has fallen', () => {
+    expect(eclipseIn(at(5, true))).toBeNull()
   })
 })

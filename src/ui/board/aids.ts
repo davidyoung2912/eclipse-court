@@ -30,6 +30,11 @@ export function attackOdds(state: GameState, attacker: Piece, moves: readonly Po
   return out
 }
 
+/** Rounds until the Eclipse falls (1 means it falls as this round ends), or null once it has fallen. */
+export function eclipseIn(state: GameState): number | null {
+  return state.eclipse ? null : Math.max(1, state.config.eclipseRound + 1 - state.round)
+}
+
 /** The squares the latest move left and reached, or null when the last thing played was not a move. */
 export function lastMoveOf(history: readonly Step[]): { from: Pos; to: Pos } | null {
   const step = history[history.length - 1]
