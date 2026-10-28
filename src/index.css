@@ -1162,6 +1162,11 @@ body:has(.duel) .play-timer { display: none; }
 .first-steps li { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
 .first-steps li.done { opacity: 0.55; text-decoration: line-through; }
 
+/* Last move trail: a soft outline on the square just left, a stronger one on the square reached. */
+.trail { fill: none; pointer-events: none; stroke: #fff6c0; stroke-width: 0.06; }
+.trail-from { stroke-opacity: 0.35; stroke-dasharray: 0.12 0.1; }
+.trail-to { stroke-opacity: 0.85; fill: rgba(255, 246, 192, 0.12); }
+
 /* Keyboard play on the board */
 .kb-cursor { fill: none; stroke: #fff6c0; stroke-width: 0.07; pointer-events: none; }
 svg.board:focus { outline: none; }

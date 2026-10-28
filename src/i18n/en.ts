@@ -25,6 +25,7 @@ export const en = {
   'settings.playAids': 'Play aids',
   'settings.aids': 'Danger view: ring your pieces an enemy could attack next turn, and show the odds of each attack you could make',
   'settings.aiWhy': 'AI reasons: show one line on why the AI played each move',
+  'settings.lastMove': 'Last move trail: mark the squares the latest move left and reached',
   'settings.duels': 'Duels',
   'settings.duelHint': 'Normal is the slowed pace, Fast is full speed, and Instant settles every duel for you at the auto-duel skill. You can also tap Skip during any duel.',
   'settings.banter': 'Banter',

@@ -39,6 +39,8 @@ interface Props {
   focus?: { mover?: string; target?: string }
   /** A recommended move to loop: the piece glows, a ghost of it travels from `from` to `to`, and `square` is marked. */
   hint?: { from?: Pos; to?: Pos; square?: Pos; pieceId?: string }
+  /** The squares the latest move left and reached, marked when the Last move trail setting is on. */
+  trail?: { from: Pos; to: Pos }
   /** Turn the board half a turn so the Umbral edge is at the bottom. */
   flip?: boolean
   /** Hide the enemy pieces this court cannot see under fog of war. */
@@ -70,7 +72,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, targetIds = [], onSquare, focus, hint, trail, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -122,6 +124,8 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
           <g key={`${p.x}-${p.y}`} onClick={() => onSquare(p)}>
             <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} style={{ fill: lumColor(lum) }}
               className={cycling ? 'sq cycling' : 'sq fixed'} />
+            {trail && samePos(trail.from, p) && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="trail trail-from" />}
+            {trail && samePos(trail.to, p) && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="trail trail-to" />}
             {acting && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="acting" />}
             {lum !== 0 && (
               <circle cx={cx} cy={cy} r={0.5} fill={`url(#glow-${lum > 0 ? 'solari' : 'umbral'})`}

@@ -5,7 +5,7 @@ import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } f
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { getSettings, updateSettings } from './settings'
 import { explainMove } from './ai/why'
-import { attackOdds, threatenedIds } from './ui/board/aids'
+import { attackOdds, lastMoveOf, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { coopPlayer } from './engine/data/coop'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
@@ -221,6 +221,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     })
   }, [history, state.config.fog, hotSeat, online, human])
 
+  const trail = useMemo(() => (getSettings().lastMove && !state.config.fog && !ended ? lastMoveOf(history) ?? undefined : undefined), [history, state.config.fog, ended])
   const [aids, setAids] = useState(() => getSettings().aids)
   /** The aids are off under fog, where they would give away unseen pieces. */
   const aidsOn = aids && !state.config.fog && !ended
@@ -584,7 +585,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
-        focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+        focus={boardFocus} hint={boardHint} trail={trail} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={fightCells(attacker, defender, !!pending.byAi)}
