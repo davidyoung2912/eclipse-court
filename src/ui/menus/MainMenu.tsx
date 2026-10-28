@@ -3,7 +3,7 @@ import { isMuted, setMuted } from '../../audio/synth'
 import { SoundPrompt } from './SoundPrompt'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
-import { Satellite, Shooter } from './MenuArt'
+import { Satellite, Shooter, Ufo } from './MenuArt'
 import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
@@ -116,6 +116,7 @@ function Hero() {
         <Shooter first={2} />
         <Shooter first={7} />
         <Satellite />
+        <Ufo />
       </g>
       <g transform="translate(160 110) scale(0.9)" className="hero-core">
         <g className="art-dim hero-dim">

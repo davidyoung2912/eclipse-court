@@ -72,6 +72,31 @@ export function Satellite() {
   )
 }
 
+/** A little green UFO, just for fun: now and then it drifts across the sky, left to right or right to left at random, bobbing and swaying like a bumblebee and blinking red lights underneath. */
+export function Ufo() {
+  const [pass, setPass] = useState({ run: 0, dir: 1, y: 22, bob: 6, sway: 9 })
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 16 + Math.random() * 26, bob: 4 + Math.random() * 6, sway: 6 + Math.random() * 8 }))
+    }, (pass.run === 0 ? 7000 : 18000) + Math.random() * 22000)
+    return () => clearTimeout(t)
+  }, [pass.run])
+  if (pass.run === 0) return null
+  return (
+    <g key={pass.run} transform={`translate(${pass.dir > 0 ? -20 : 340} ${pass.y})`}>
+      <g className="art-ufo" style={{ ['--len' as string]: `${pass.dir * 360}px` }}>
+        <g className="art-ufo-bob" style={{ ['--bob' as string]: `${pass.bob}px`, animationDuration: `${2 + Math.random() * 1.4}s` }}>
+          <g className="art-ufo-sway" style={{ ['--sway' as string]: `${pass.sway}px`, animationDuration: `${3.2 + Math.random() * 2}s` }}>
+            <path d="M-3.4,-1.6A3.4,3.4 0 0 1 3.4,-1.6Z" fill="#a8f0b0" stroke="#d6ffd9" strokeWidth="0.3" />
+            <ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#3fbf5a" stroke="#d6ffd9" strokeWidth="0.35" />
+            {[-5, 0, 5].map((x, i) => <circle key={x} cx={x} cy="1.6" r="0.8" fill="#ff3b3b" className="art-ufo-light" style={{ animationDelay: `${-i * 0.4}s` }} />)}
+          </g>
+        </g>
+      </g>
+    </g>
+  )
+}
+
 /** Every header scene shares one eclipse: the moon is 92% of the sun's size, slides until its edge overlaps the sun by 15% of its width, and the glow dims as it covers the sun. */
 const MOON_RATIO = 0.92
 
@@ -110,6 +135,7 @@ function Sky({ id }: { id: string }) {
       <Shooter first={0} />
       <Shooter first={5} />
       <Satellite />
+      <Ufo />
     </>
   )
 }

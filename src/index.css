@@ -663,12 +663,21 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
 @keyframes art-sat { from { transform: translateX(0); opacity: 0; } 5%, 95% { opacity: 0.9; } to { transform: translateX(var(--len)); opacity: 0; } }
 @keyframes art-sat-blink { 50% { opacity: 0; } }
+/* The UFO: a slow steady crossing, with a bob and a sway layered on top at different speeds so the path wanders; its lights flash in turn. */
+.menu-art .art-ufo, .hero .art-ufo { opacity: 0; animation: art-ufo 24s linear both; }
+.menu-art .art-ufo-bob, .hero .art-ufo-bob { animation: art-ufo-bob 2.6s ease-in-out infinite alternate; }
+.menu-art .art-ufo-sway, .hero .art-ufo-sway { transform-box: fill-box; transform-origin: center; animation: art-ufo-sway 4s ease-in-out infinite alternate; }
+.menu-art .art-ufo-light, .hero .art-ufo-light { animation: art-ufo-light 1.2s steps(1) infinite; }
+@keyframes art-ufo { from { transform: translateX(0); opacity: 0; } 4%, 96% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
+@keyframes art-ufo-bob { from { transform: translateY(calc(var(--bob) * -1)); } to { transform: translateY(var(--bob)); } }
+@keyframes art-ufo-sway { from { transform: translateX(calc(var(--sway) * -1)) rotate(-7deg); } to { transform: translateX(var(--sway)) rotate(7deg); } }
+@keyframes art-ufo-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
 @keyframes art-shoot { from { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink { animation: none; }
-@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink { animation: none; } }
+[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink, [data-motion='reduced'] .hero .art-ufo, [data-motion='reduced'] .hero .art-ufo-bob, [data-motion='reduced'] .hero .art-ufo-sway, [data-motion='reduced'] .hero .art-ufo-light { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink, .hero .art-ufo, .hero .art-ufo-bob, .hero .art-ufo-sway, .hero .art-ufo-light { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;
