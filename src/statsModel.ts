@@ -122,7 +122,7 @@ export function sections(p: Progress, story: StoryState, today: number): StatSec
   }
 
   const skirmish: StatSection = {
-    id: 'skirmish', title: 'Skirmish', icon: 'swords', fraction: null,
+    id: 'skirmish', title: 'Skirmish', icon: 'clash', fraction: null,
     rows: [
       { label: 'Games played', value: String(p.areas.skirmish.games) },
       { label: 'Win rate', value: rate(p.areas.skirmish) },
