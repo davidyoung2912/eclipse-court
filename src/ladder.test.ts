@@ -5,9 +5,10 @@ import {
 import { parseLadder, recordLadder, ladderSnapshot, SHARDS_LADDER_RANK, SHARDS_LADDER_WIN } from './ladder'
 
 describe('ladder maths', () => {
-  it('has fifteen distinct foes, weakest first', () => {
-    expect(LADDER_FOES).toHaveLength(15)
-    expect(new Set(LADDER_FOES.map((f) => f.id)).size).toBe(15)
+  it('has five distinct foes in every rank, weakest first', () => {
+    expect(LADDER_FOES).toHaveLength(RANKS.length * 5)
+    expect(new Set(LADDER_FOES.map((f) => f.id)).size).toBe(LADDER_FOES.length)
+    for (const r of RANKS) expect(LADDER_FOES.filter((f) => rankOf(f.rating) === r.title)).toHaveLength(5)
     const ratings = LADDER_FOES.map((f) => f.rating)
     expect(ratings).toEqual([...ratings].sort((a, b) => a - b))
   })

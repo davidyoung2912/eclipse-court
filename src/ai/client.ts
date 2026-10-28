@@ -1,6 +1,6 @@
 import type { Action, GameState } from '../engine/rules/types'
 import type { PersonalityId } from '../engine/data/personality'
-import type { Difficulty } from './profile'
+import type { AiLevel } from './profile'
 import { chooseAction, judgeMove, type Judgement } from './strategy'
 import type { JudgeRequest, JudgeResponse, SearchRequest, SearchResponse } from './worker'
 
@@ -34,7 +34,7 @@ function getWorker(): Worker | null {
 }
 
 /** Searches in a Web Worker so the board stays responsive; falls back to the main thread without one. */
-export function requestAction(state: GameState, difficulty: Difficulty, seed: number, personality?: PersonalityId): Promise<Action> {
+export function requestAction(state: GameState, difficulty: AiLevel, seed: number, personality?: PersonalityId): Promise<Action> {
   const fallback = () => chooseAction(state, difficulty, seed, personality)
   const w = getWorker()
   if (!w) return Promise.resolve(fallback())
@@ -47,7 +47,7 @@ export function requestAction(state: GameState, difficulty: Difficulty, seed: nu
 }
 
 /** Judges a move that was played (for the game review) in the worker, or on this thread without one. */
-export function requestJudgement(state: GameState, played: Action, difficulty: Difficulty): Promise<Judgement> {
+export function requestJudgement(state: GameState, played: Action, difficulty: AiLevel): Promise<Judgement> {
   const fallback = () => judgeMove(state, played, difficulty)
   const w = getWorker()
   if (!w) return Promise.resolve(fallback())

@@ -1,5 +1,5 @@
 import { PERSONALITIES, type PersonalityId } from './personality'
-import { DIFFICULTY_LIST, type Difficulty } from './difficulty'
+import type { AiLevel, Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import type { GameState, MatchConfig } from '../rules/types'
 import { skirmishConfig } from './setups'
@@ -10,30 +10,41 @@ export const LADDER_COURT = 'solari'
 export const START_RATING = 800
 export const MIN_RATING = 400
 
-/** A rated opponent: one persona at one difficulty. */
+/** A rated opponent: one persona at one rung of strength. */
 export interface LadderFoe {
   id: string
   personality: PersonalityId
+  /** How well the AI plays. */
+  level: AiLevel
+  /** The difficulty this counts as for records and rewards. */
   difficulty: Difficulty
   name: string
   rating: number
 }
 
-const BASE: Record<Difficulty, number> = { easy: 800, normal: 1100, hard: 1400 }
+/** The six rungs, one per rank: its id prefix, title, the AI strength it plays at and the middle of its rank's rating band. */
+const RUNGS: readonly { id: string; title: string; level: AiLevel; difficulty: Difficulty; base: number }[] = [
+  { id: 'easy', title: 'Apprentice', level: 'easy', difficulty: 'easy', base: 800 },
+  { id: 'journeyman', title: 'Journeyman', level: 'journeyman', difficulty: 'normal', base: 975 },
+  { id: 'normal', title: 'Veteran', level: 'normal', difficulty: 'normal', base: 1125 },
+  { id: 'expert', title: 'Expert', level: 'expert', difficulty: 'hard', base: 1275 },
+  { id: 'hard', title: 'Master', level: 'hard', difficulty: 'hard', base: 1425 },
+  { id: 'grandmaster', title: 'Grandmaster', level: 'grandmaster', difficulty: 'hard', base: 1575 },
+]
 /** Taste shifts the rating a little: the aggressive and guarded styles are harder to play against than the greedy ones. */
 const STYLE: Record<PersonalityId, number> = { balanced: 0, rusher: 30, turtle: 20, grabber: -30, caster: -10 }
 
 const PERSONALITY_IDS = Object.keys(PERSONALITIES) as PersonalityId[]
-const TITLE: Record<Difficulty, string> = { easy: 'Apprentice', normal: 'Veteran', hard: 'Master' }
 
-/** Every opponent, weakest first. */
-export const LADDER_FOES: readonly LadderFoe[] = DIFFICULTY_LIST
-  .flatMap((difficulty) => PERSONALITY_IDS.map((personality) => ({
-    id: `${difficulty}-${personality}`,
+/** Every opponent, weakest first: five in each rank. */
+export const LADDER_FOES: readonly LadderFoe[] = RUNGS
+  .flatMap((rung) => PERSONALITY_IDS.map((personality) => ({
+    id: `${rung.id}-${personality}`,
     personality,
-    difficulty,
-    name: `${TITLE[difficulty]} ${PERSONALITIES[personality].name}`,
-    rating: BASE[difficulty] + STYLE[personality],
+    level: rung.level,
+    difficulty: rung.difficulty,
+    name: `${rung.title} ${PERSONALITIES[personality].name}`,
+    rating: rung.base + STYLE[personality],
   })))
   .sort((a, b) => a.rating - b.rating)
 

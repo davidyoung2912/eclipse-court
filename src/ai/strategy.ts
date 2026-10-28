@@ -9,7 +9,7 @@ import { ALL_SPELLS, canCast, leaderOf, spellTargets } from '../engine/rules/spe
 import type { Action, CellEffect, Court, DuelOutcome, GameState, Piece, Pos } from '../engine/rules/types'
 import { matchup } from '../engine/data/matchups'
 import { PERSONALITIES, type Personality, type PersonalityId } from '../engine/data/personality'
-import { DIFFICULTY, type Difficulty } from './profile'
+import { DIFFICULTY, type AiLevel } from './profile'
 
 const NEUTRAL = PERSONALITIES.balanced
 
@@ -247,7 +247,7 @@ function search(state: GameState, court: Court, depth: number, beam: number, w: 
  * control and light (weighted by the personality), treating each attack as a chance node over duel outcomes. Weaker difficulties
  * search less deeply and blur their scores with seeded noise.
  */
-export function chooseAction(state: GameState, difficulty: Difficulty, seed: number, personality: PersonalityId = 'balanced'): Action {
+export function chooseAction(state: GameState, difficulty: AiLevel, seed: number, personality: PersonalityId = 'balanced'): Action {
   const { depth, beam, noise } = DIFFICULTY[difficulty]
   const w = PERSONALITIES[personality]
   const court = state.turn
@@ -295,7 +295,7 @@ const sameChoice = (a: Action, b: Action) =>
  * Judges a move that was played: searches the position with no noise, then values the played
  * action the same way. Duel luck is averaged over, so only the decision is judged, not the dice.
  */
-export function judgeMove(state: GameState, played: Action, difficulty: Difficulty = 'normal'): Judgement {
+export function judgeMove(state: GameState, played: Action, difficulty: AiLevel = 'normal'): Judgement {
   const { depth, beam } = DIFFICULTY[difficulty]
   const w = NEUTRAL
   const court = state.turn

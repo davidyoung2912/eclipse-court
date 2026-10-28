@@ -653,7 +653,7 @@ export default function App() {
         controllers={hotSeat ? HOT_SEAT
           : online || mail ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
-          : versusAi(human, difficulty, ladder ? foeById(ladder)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
+          : versusAi(human, ladder ? foeById(ladder)?.level ?? difficulty : difficulty, ladder ? foeById(ladder)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
         mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}

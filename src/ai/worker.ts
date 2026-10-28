@@ -1,12 +1,12 @@
 import type { Action, GameState } from '../engine/rules/types'
 import type { PersonalityId } from '../engine/data/personality'
-import type { Difficulty } from './profile'
+import type { AiLevel } from './profile'
 import { chooseAction, judgeMove, type Judgement } from './strategy'
 
 export interface SearchRequest {
   id: number
   state: GameState
-  difficulty: Difficulty
+  difficulty: AiLevel
   seed: number
   personality?: PersonalityId
 }
@@ -22,7 +22,7 @@ export interface JudgeRequest {
   id: number
   state: GameState
   played: Action
-  difficulty: Difficulty
+  difficulty: AiLevel
 }
 
 export interface JudgeResponse {

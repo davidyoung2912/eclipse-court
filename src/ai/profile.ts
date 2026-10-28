@@ -1,6 +1,6 @@
-import type { Difficulty } from '../engine/data/difficulty'
+import type { AiLevel } from '../engine/data/difficulty'
 
-export { DIFFICULTY_LIST, type Difficulty } from '../engine/data/difficulty'
+export { DIFFICULTY_LIST, type AiLevel, type Difficulty } from '../engine/data/difficulty'
 
 /** Human-like limits on a duel AI. No stat cheating: skill only changes how well it plays. */
 export interface AiProfile {
@@ -30,11 +30,14 @@ export function profileForSkill(skill: number, aggression = 1): AiProfile {
   }
 }
 
-/** Duel skill and strategy search settings for each difficulty. */
-export const DIFFICULTY: Record<Difficulty, { skill: number; aggression: number; depth: number; beam: number; noise: number }> = {
+/** Duel skill and strategy search settings for each AI level. */
+export const DIFFICULTY: Record<AiLevel, { skill: number; aggression: number; depth: number; beam: number; noise: number }> = {
   easy: { skill: 0.25, aggression: 0.3, depth: 1, beam: 12, noise: 2.5 },
   normal: { skill: 0.55, aggression: 0.5, depth: 2, beam: 10, noise: 0.6 },
   hard: { skill: 0.85, aggression: 0.7, depth: 3, beam: 12, noise: 0 },
+  journeyman: { skill: 0.4, aggression: 0.4, depth: 2, beam: 8, noise: 1.5 },
+  expert: { skill: 0.7, aggression: 0.6, depth: 3, beam: 8, noise: 0.3 },
+  grandmaster: { skill: 0.95, aggression: 0.8, depth: 3, beam: 12, noise: 0 },
 }
 
 /** The skill the auto-duel plays the player's side at. */

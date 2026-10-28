@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { requestAction } from '../ai/client'
 import type { PersonalityId } from '../engine/data/personality'
-import type { Difficulty } from '../engine/data/difficulty'
+import type { AiLevel } from '../engine/data/difficulty'
 import { pieceAt } from '../engine/rules/moves'
 import type { Action, GameState } from '../engine/rules/types'
 import { useLatest } from './useLatest'
@@ -14,7 +14,7 @@ interface Options {
   state: GameState
   /** The AI may act: it is its court's turn and nothing else is in the way. */
   active: boolean
-  difficulty: Difficulty
+  difficulty: AiLevel
   personality: PersonalityId | undefined
   /** Plays the chosen action. */
   onAct: (action: Action) => void
