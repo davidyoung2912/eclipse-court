@@ -5,6 +5,7 @@ import { canStartSeason, ladderSnapshot, startSeason, subscribeLadder } from '..
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   /** Lines about the game just played. */
@@ -71,6 +72,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
         {canStartSeason(store) && <button onClick={() => { if (window.confirm('Start a new season? Your rating moves halfway back toward the start and your season peak is kept.')) startSeason() }}><Icon name="cycle" />Start Season {store.season + 1}</button>}
         <BackButton onClick={onBack} />
       </div>
+      <TipCard page="ladder" />
     </main>
   )
 }

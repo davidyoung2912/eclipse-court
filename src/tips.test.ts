@@ -21,4 +21,10 @@ describe('tips', () => {
       expect(t.text.split(/[.!?] /).length).toBeGreaterThanOrEqual(2)
     }
   })
+
+  it('has guidance for the fight screen and every page added with the newer modes', () => {
+    for (const page of ['duel', 'duel-touch', 'duel-mouse', 'duel-defend', 'duel-cells', 'ladder', 'weekly', 'collection', 'mail', 'mail-send', 'story-reader', 'story-ending'] as const) {
+      expect(TIPS[page].length).toBeGreaterThan(0)
+    }
+  })
 })

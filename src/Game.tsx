@@ -53,7 +53,7 @@ interface Props {
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
   /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
-  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean }
+  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean; /** Which scored mode this is, for its guidance card. */ flavour?: 'weekly' | 'ladder' }
   /** The player's first campaign battle: a line of coaching sits above the board's cards. */
   coach?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
@@ -623,6 +623,10 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           context?.kind === 'story' && 'game-story', context?.kind === 'gauntlet' && 'game-gauntlet', context?.kind === 'series' && 'game-series',
           sizeOf(state.config) === 9 && 'game-grand', modeOf(state.config) !== 'beacons' && !state.config.objective && 'game-modes',
           !!state.config.events && 'game-events', (!!state.config.growth || !!state.config.promotion) && 'game-growth', !!clock && 'game-clock',
+          !!state.config.passives && 'game-passives', !!state.config.loadouts && 'game-loadout', !!state.config.recharge && 'game-recharge',
+          !!state.config.fog && 'game-fog', !!state.config.suddenDeath && 'game-sudden', !!state.config.edge && 'game-edge',
+          context?.kind === 'daily' && 'game-daily', context?.flavour === 'weekly' && 'game-weekly', context?.flavour === 'ladder' && 'game-ladder',
+          !!mail && 'game-mail', !!puzzle?.rush && 'game-rush',
         ]} />
     </main>
   )

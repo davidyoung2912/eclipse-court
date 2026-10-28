@@ -3,6 +3,7 @@ import { PieceArt } from '../../art/PieceArt'
 import { CHARACTERS, actLabel, type Beat, type Chapter } from '../../engine/data/story'
 import { Icon } from '../menus/icons'
 import { StoryScene } from './StoryScene'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   chapter: Chapter
@@ -71,6 +72,7 @@ export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDon
         <button onClick={onDone}><Icon name="skip" />Skip</button>
         <button className="back" onClick={onBack}><Icon name="exit" />Back</button>
       </div>
+      <TipCard page="story-reader" />
     </main>
   )
 }

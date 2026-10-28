@@ -7,6 +7,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   match: WeeklyMatch
@@ -56,6 +57,7 @@ export function Weekly({ match, report, onPlay, onBack }: Props) {
         )}
         <BackButton onClick={onBack} />
       </div>
+      <TipCard page="weekly" />
     </main>
   )
 }

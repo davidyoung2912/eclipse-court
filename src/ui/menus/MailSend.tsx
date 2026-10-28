@@ -6,6 +6,7 @@ import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   game: MailGame
@@ -45,6 +46,7 @@ export function MailSend({ game, record, onReplay, onBack }: Props) {
         {status === 'yours' && <button className="primary" onClick={onBack}>Back to Games</button>}
         {status !== 'yours' && <BackButton onClick={onBack} label="Back to Games" />}
       </div>
+      <TipCard page="mail-send" />
     </main>
   )
 }

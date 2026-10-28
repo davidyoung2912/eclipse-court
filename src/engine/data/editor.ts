@@ -1,6 +1,7 @@
 import type { Challenge } from '../challenge'
 import { defaultBeacons, inBounds, isBlocked, samePos } from '../rules/board'
 import { CELL_EFFECTS } from '../rules/cells'
+import { HILL_TURNS } from '../rules/events'
 import type { BoardSize, CellEffect, CellSquare, Court, MatchConfig, MatchMode, Objective, Placement, Pos, Role } from '../rules/types'
 import { matchConfig } from './matchConfig'
 import { DEFAULT_LAYOUT, GRAND_LAYOUT } from './roster'
@@ -13,7 +14,7 @@ export const EDITOR_GOALS: readonly EditorGoal[] = ['beacons', 'leader', 'hill',
 export const GOAL_INFO: Record<EditorGoal, { name: string; text: string }> = {
   beacons: { name: 'Hold the beacons', text: 'Hold every beacon at the end of a round, or take every enemy piece.' },
   leader: { name: 'Slay the Leader', text: 'Defeat the enemy Leader.' },
-  hill: { name: 'Hold the centre', text: 'King of the Hill: keep the middle square for three turns in a row.' },
+  hill: { name: 'Hold the centre', text: `King of the Hill: keep the middle square for ${HILL_TURNS} turns in a row.` },
   survive: { name: 'Survive', text: 'Puzzle: keep the Solarch alive for a number of rounds.' },
   escort: { name: 'Escort', text: 'Puzzle: carry the Solarch to the goal square within a number of rounds.' },
   hold: { name: 'Hold a square', text: 'Puzzle: stand on the goal square for a number of turns in a row, within a round limit.' },

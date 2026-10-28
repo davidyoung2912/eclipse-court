@@ -5,6 +5,7 @@ import { parseShared } from '../../share'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   /** A move that arrived by link, waiting to be accepted. */
@@ -110,6 +111,7 @@ export function Mail({ incoming: arrived, onNew, onPlay, onSend, onReplay, onBac
         }}><Icon name="chain" />Open Move</button>
         <BackButton onClick={onBack} />
       </div>
+      <TipCard page="mail" />
     </main>
   )
 }

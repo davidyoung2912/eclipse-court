@@ -6,6 +6,7 @@ import { sfx, unlockAudio } from '../../audio/synth'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   onBack: () => void
@@ -57,6 +58,7 @@ export function Collection({ onBack }: Props) {
       <div className="menu-buttons">
         <BackButton onClick={onBack} />
       </div>
+      <TipCard page="collection" />
     </main>
   )
 }

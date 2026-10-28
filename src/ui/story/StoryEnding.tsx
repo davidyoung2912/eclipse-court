@@ -2,6 +2,7 @@ import type { EndingChoice, EndingId } from '../../engine/data/story'
 import { cleanVictory, type StoryState } from '../../story'
 import { Icon } from '../menus/icons'
 import { BackButton } from '../menus/BackButton'
+import { TipCard } from '../tips/TipCard'
 
 interface Props {
   choice: EndingChoice
@@ -33,6 +34,7 @@ export function StoryEnding({ choice, story, chapterId, onChoose, onBack }: Prop
       <div className="menu-buttons stacked">
         <BackButton onClick={onBack} label="Decide later" />
       </div>
+      <TipCard page="story-ending" />
     </main>
   )
 }

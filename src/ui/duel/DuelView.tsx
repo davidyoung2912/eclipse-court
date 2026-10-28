@@ -11,6 +11,7 @@ import { DT, DUEL_SECONDS, NO_INPUT, type DuelEvent, type DuelInput } from '../.
 import type { DuelCells } from '../../engine/rules/cells'
 import type { CellEffect, DuelOutcome, Piece } from '../../engine/rules/types'
 import { createFx, drawDuel, updateFx } from './duelFx'
+import { TipCard, useTipsPending } from '../tips/TipCard'
 
 export interface DuelOptions {
   /** Swap the attack button to the left side of the screen. */
@@ -70,17 +71,21 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const [desktop] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches)
   const [locked, setLocked] = useState(false)
   const [count, setCount] = useState(0)
+  /** The guidance cards show over the arena before the fight; nothing starts (countdown, clock, music, mouse capture) until they are read. */
+  const tipPages = ['duel', desktop ? 'duel-mouse' : 'duel-touch', playerSide === 1 && 'duel-defend', (!!cells || !!cellEffects?.some(Boolean)) && 'duel-cells'] as const
+  const waiting = useTipsPending(tipPages)
   /** The simulation holds still until the countdown has run out. */
   const started = useRef(false)
 
   useEffect(() => {
+    if (waiting) return
     started.current = false
     const timers = COUNTDOWN.map((_, i) => setTimeout(() => {
       if (i + 1 < COUNTDOWN.length) setCount(i + 1)
       else { started.current = true; setCount(COUNTDOWN.length) }
     }, (i + 1) * COUNT_STEP_MS))
     return () => timers.forEach(clearTimeout)
-  }, [attacker, defender, seed])
+  }, [attacker, defender, seed, waiting])
 
   useEffect(() => {
     optionsRef.current = options
@@ -90,7 +95,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
 
   useEffect(() => {
     const el = stage.current
-    if (!desktop || !el) return
+    if (!desktop || !el || waiting) return
     const lockChange = () => {
       const on = document.pointerLockElement === el
       mouse.current = { x: 0, y: 0, locked: on }
@@ -124,9 +129,10 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       if (document.pointerLockElement === el) document.exitPointerLock()
       input.current = { ...NO_INPUT }
     }
-  }, [desktop])
+  }, [desktop, waiting])
 
   useEffect(() => {
+    if (waiting) return
     const foeSide = (1 - playerSide) as 0 | 1
     const cfg = { aimCone: optionsRef.current.aimAssist ? DEFAULT_CONFIG.aimCone : 0, foeSpeedRamp: { side: foeSide, perSecond: FOE_SPEED_RAMP }, pickups: { seed: seed ^ 0x9e3779b9 } }
     const state = createDuel(attacker, defender, luminance, cfg, cells)
@@ -226,7 +232,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       cancelAnimationFrame(raf)
       drums.stop()
     }
-  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, seed])
+  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, seed, waiting])
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return
@@ -291,10 +297,10 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
           <canvas ref={canvas} className="duel-canvas" />
           {banner && <div className="duel-banner">{banner}</div>}
-          {count < COUNTDOWN.length && (
+          {!waiting && count < COUNTDOWN.length && (
             <div key={count} className={`duel-countdown ${attacker.court}`} role="status" aria-label={COUNTDOWN[count]}>{COUNTDOWN[count]}</div>
           )}
-          {desktop && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">Click the arena to take control with the mouse</p>}
+          {desktop && !waiting && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">Click the arena to take control with the mouse</p>}
         </div>
         {desktop ? (
           <aside className="duel-info" aria-label="Mouse controls">
@@ -331,6 +337,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         </div>
         )}
       </div>
+      <TipCard modal page={tipPages} />
     </div>
   )
 }
