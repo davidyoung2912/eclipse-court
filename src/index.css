@@ -659,16 +659,24 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-moon-slide { 0% { transform: translateX(calc(var(--reach) * -1)); } 100% { transform: translateX(var(--reach)); } }
 @keyframes art-eclipse-dim { 0%, 100% { opacity: 1; } 50% { opacity: var(--dim, 0.1); } }
 /* The joke satellite: a slow crossing near the top, with a blinking light */
-.menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20s linear both; }
+.menu-art .art-sat, .hero .art-sat { opacity: 0; animation: art-sat 20.75s linear both; }
 .menu-art .art-sat-blink, .hero .art-sat-blink { animation: art-sat-blink 1.2s steps(1) infinite; }
-@keyframes art-sat { from { transform: translateX(0); opacity: 0; } 5%, 95% { opacity: 0.9; } to { transform: translateX(var(--len)); opacity: 0; } }
+/* The crossing holds still at a random point (--stop) for 0.75s while three ripples of signal spread downward, each 0.4s and started 0.17s after the last. */
+@keyframes art-sat { 0% { transform: translateX(0); opacity: 0; } 5%, 95% { opacity: 0.9; } 45%, 48.6% { transform: translateX(calc(var(--len) * var(--stop))); } 100% { transform: translateX(var(--len)); opacity: 0; } }
+.menu-art .art-sat-ping, .hero .art-sat-ping { transform-box: fill-box; transform-origin: 50% 0; opacity: 0; animation: art-sat-ping 20.75s linear both; }
+@keyframes art-sat-ping { 0%, 45% { opacity: 0; transform: scale(0.3); } 45.2% { opacity: 0.9; } 46.9%, 100% { opacity: 0; transform: scale(4); } }
 @keyframes art-sat-blink { 50% { opacity: 0; } }
 /* The UFO: a slow steady crossing, with a bob and a sway layered on top at different speeds so the path wanders; its lights flash in turn. */
-.menu-art .art-ufo, .hero .art-ufo { opacity: 0; animation: art-ufo 24s linear both; }
-.menu-art .art-ufo-bob, .hero .art-ufo-bob { animation: art-ufo-bob 2.6s ease-in-out infinite alternate; }
-.menu-art .art-ufo-sway, .hero .art-ufo-sway { transform-box: fill-box; transform-origin: center; animation: art-ufo-sway 4s ease-in-out infinite alternate; }
+.menu-art .art-ufo, .hero .art-ufo { opacity: 0; animation: art-ufo 21.5s linear both; }
+.menu-art .art-ufo-bob, .hero .art-ufo-bob { animation: art-ufo-bob 2.17s ease-in-out infinite alternate; }
+.menu-art .art-ufo-sway, .hero .art-ufo-sway { transform-box: fill-box; transform-origin: center; animation: art-ufo-sway 3.33s ease-in-out infinite alternate; }
 .menu-art .art-ufo-light, .hero .art-ufo-light { animation: art-ufo-light 1.2s steps(1) infinite; }
-@keyframes art-ufo { from { transform: translateX(0); opacity: 0; } 4%, 96% { opacity: 1; } to { transform: translateX(var(--len)); opacity: 0; } }
+/* The crossing holds still at a random point (--stop, the share of the way across) for 1.5s: the beam grows (0.5s), holds fully out while things are lifted into the saucer (0.5s), then withdraws (0.5s). */
+@keyframes art-ufo { 0% { transform: translateX(0); opacity: 0; } 4%, 96% { opacity: 1; } 45%, 52% { transform: translateX(calc(var(--len) * var(--stop))); } 100% { transform: translateX(var(--len)); opacity: 0; } }
+.menu-art .art-ufo-beam, .hero .art-ufo-beam { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); animation: art-ufo-beam 21.5s linear both; }
+@keyframes art-ufo-beam { 0%, 45% { transform: scaleY(0); } 47.3%, 49.65% { transform: scaleY(1); } 52%, 100% { transform: scaleY(0); } }
+.menu-art .art-ufo-bit, .hero .art-ufo-bit { transform-box: fill-box; transform-origin: center; opacity: 0; animation: art-ufo-lift 21.5s linear both; }
+@keyframes art-ufo-lift { 0%, 47.3% { opacity: 0; transform: translate(var(--x), 36px) rotate(0deg) scale(1); } 47.5% { opacity: 1; } 49.2% { opacity: 1; transform: translate(calc(var(--x) * 0.2), 2px) rotate(var(--rot)) scale(0.6); } 49.3%, 100% { opacity: 0; transform: translate(calc(var(--x) * 0.2), 2px) rotate(var(--rot)) scale(0.6); } }
 @keyframes art-ufo-bob { from { transform: translateY(calc(var(--bob) * -1)); } to { transform: translateY(var(--bob)); } }
 @keyframes art-ufo-sway { from { transform: translateX(calc(var(--sway) * -1)) rotate(-7deg); } to { transform: translateX(var(--sway)) rotate(7deg); } }
 @keyframes art-ufo-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
@@ -676,8 +684,8 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 @keyframes art-sway { 50% { rotate: 2.5deg; } }
 @keyframes art-flicker { 50% { opacity: 0.7; } }
 .menu-art .art-shoot, .hero .art-shoot, .menu-art .art-mote { transform-box: view-box; }
-[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink, [data-motion='reduced'] .hero .art-ufo, [data-motion='reduced'] .hero .art-ufo-bob, [data-motion='reduced'] .hero .art-ufo-sway, [data-motion='reduced'] .hero .art-ufo-light { animation: none; }
-@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink, .hero .art-ufo, .hero .art-ufo-bob, .hero .art-ufo-sway, .hero .art-ufo-light { animation: none; } }
+[data-motion='reduced'] .menu-art *, [data-motion='reduced'] .hero .art-shoot, [data-motion='reduced'] .hero .art-moon-slide, [data-motion='reduced'] .hero .art-dim, [data-motion='reduced'] .hero .art-sat, [data-motion='reduced'] .hero .art-sat-blink, [data-motion='reduced'] .hero .art-sat-ping, [data-motion='reduced'] .hero .art-ufo, [data-motion='reduced'] .hero .art-ufo-bob, [data-motion='reduced'] .hero .art-ufo-sway, [data-motion='reduced'] .hero .art-ufo-light, [data-motion='reduced'] .hero .art-ufo-beam, [data-motion='reduced'] .hero .art-ufo-bit { animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu-art *, .hero .art-shoot, .hero .art-moon-slide, .hero .art-dim, .hero .art-sat, .hero .art-sat-blink, .hero .art-sat-ping, .hero .art-ufo, .hero .art-ufo-bob, .hero .art-ufo-sway, .hero .art-ufo-light, .hero .art-ufo-beam, .hero .art-ufo-bit { animation: none; } }
 .menu h2 {
   text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; padding-left: 0.22em;

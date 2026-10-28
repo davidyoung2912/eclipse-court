@@ -49,19 +49,20 @@ export function Shooter({ first }: { first: number }) {
   )
 }
 
-/** A tiny satellite, just for fun: now and then it crawls across the top of the sky, left to right or right to left at random, blinking. */
+/** A tiny satellite, just for fun: now and then it crawls across the top of the sky, left to right or right to left at random, blinking, and stops part way to send three ripples of signal down before moving on. */
 export function Satellite() {
-  const [pass, setPass] = useState({ run: 0, dir: 1, y: 14 })
+  const [pass, setPass] = useState({ run: 0, dir: 1, y: 14, stop: 0.5 })
   useEffect(() => {
     const t = setTimeout(() => {
-      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 8 + Math.random() * 18 }))
+      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 8 + Math.random() * 18, stop: 0.3 + Math.random() * 0.4 }))
     }, (pass.run === 0 ? 4000 : 14000) + Math.random() * 16000)
     return () => clearTimeout(t)
   }, [pass.run])
   if (pass.run === 0) return null
   return (
     <g key={pass.run} transform={`translate(${pass.dir > 0 ? -20 : 340} ${pass.y})`}>
-      <g className="art-sat" style={{ ['--len' as string]: `${pass.dir * 360}px` }}>
+      <g className="art-sat" style={{ ['--len' as string]: `${pass.dir * 360}px`, ['--stop' as string]: pass.stop }}>
+        {[0, 0.17, 0.34].map((d) => <path key={d} d="M-6,2.4A6,6 0 0 0 6,2.4" fill="none" stroke="#9ed8ff" strokeWidth="0.8" strokeLinecap="round" vectorEffect="non-scaling-stroke" className="art-sat-ping" style={{ animationDelay: `${d}s` }} />)}
         <path d="M0,-1.5V-4.5" stroke="#cfd6e8" strokeWidth="0.5" />
         <rect x="-8.5" y="-1.3" width="5.5" height="2.6" rx="0.3" fill="#5b7bd0" stroke="#cfd6e8" strokeWidth="0.35" />
         <rect x="3" y="-1.3" width="5.5" height="2.6" rx="0.3" fill="#5b7bd0" stroke="#cfd6e8" strokeWidth="0.35" />
@@ -72,21 +73,41 @@ export function Satellite() {
   )
 }
 
-/** A little green UFO, just for fun: now and then it drifts across the sky, left to right or right to left at random, bobbing and swaying like a bumblebee and blinking red lights underneath. */
+interface Bit { x: number; rot: number; kind: number; delay: number; fill: string }
+const BIT_COLOURS = ['#fbf1d4', '#c9b6ff', '#ffd77a', '#9ef0b0']
+const BIT_SHAPES = ['M-1.2,0a1.2,1.2 0 1 0 2.4,0a1.2,1.2 0 1 0 -2.4,0Z', 'M-1.1,-1.1H1.1V1.1H-1.1Z', 'M0,-1.5L1.4,1.1H-1.4Z']
+/** The little things the beam seems to pick up: where they start under the saucer, how far they spin, and a small stagger so they do not rise in lockstep. */
+const makeBits = (): Bit[] => Array.from({ length: 9 }, () => ({
+  x: -7 + Math.random() * 14,
+  rot: (Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 360),
+  kind: Math.floor(Math.random() * BIT_SHAPES.length),
+  delay: Math.random() * 0.1,
+  fill: BIT_COLOURS[Math.floor(Math.random() * BIT_COLOURS.length)],
+}))
+
+/** A little green UFO, just for fun: now and then it drifts across the sky, left to right or right to left at random, pausing part way to shine a white beam down that lifts a few small things into the saucer, bobbing and swaying like a bumblebee and blinking red lights underneath. */
 export function Ufo() {
-  const [pass, setPass] = useState({ run: 0, dir: 1, y: 22, bob: 6, sway: 9 })
+  const [pass, setPass] = useState({ run: 0, dir: 1, y: 22, bob: 6, sway: 9, stop: 0.5, bits: [] as Bit[] })
   useEffect(() => {
     const t = setTimeout(() => {
-      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 16 + Math.random() * 26, bob: 4 + Math.random() * 6, sway: 6 + Math.random() * 8 }))
+      setPass((p) => ({ run: p.run + 1, dir: Math.random() < 0.5 ? 1 : -1, y: 12 + Math.random() * 50, bob: 6 + Math.random() * 9, sway: 6 + Math.random() * 8, stop: 0.35 + Math.random() * 0.3, bits: makeBits() }))
     }, (pass.run === 0 ? 7000 : 18000) + Math.random() * 22000)
     return () => clearTimeout(t)
   }, [pass.run])
   if (pass.run === 0) return null
   return (
     <g key={pass.run} transform={`translate(${pass.dir > 0 ? -20 : 340} ${pass.y})`}>
-      <g className="art-ufo" style={{ ['--len' as string]: `${pass.dir * 360}px` }}>
-        <g className="art-ufo-bob" style={{ ['--bob' as string]: `${pass.bob}px`, animationDuration: `${2 + Math.random() * 1.4}s` }}>
-          <g className="art-ufo-sway" style={{ ['--sway' as string]: `${pass.sway}px`, animationDuration: `${3.2 + Math.random() * 2}s` }}>
+      <defs>
+        <linearGradient id="ufo-beam" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.9" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <g className="art-ufo" style={{ ['--len' as string]: `${pass.dir * 360}px`, ['--stop' as string]: pass.stop }}>
+        <g className="art-ufo-bob" style={{ ['--bob' as string]: `${pass.bob}px`, animationDuration: `${1.67 + Math.random() * 1.17}s` }}>
+          <g className="art-ufo-sway" style={{ ['--sway' as string]: `${pass.sway}px`, animationDuration: `${2.67 + Math.random() * 1.67}s` }}>
+            <path d="M-2,2.2L2,2.2L9,40L-9,40Z" fill="url(#ufo-beam)" className="art-ufo-beam" />
+            {pass.bits.map((b, i) => <path key={i} d={BIT_SHAPES[b.kind]} fill={b.fill} className="art-ufo-bit" style={{ ['--x' as string]: `${b.x.toFixed(1)}px`, ['--rot' as string]: `${b.rot.toFixed(0)}deg`, animationDelay: `${b.delay.toFixed(2)}s` }} />)}
             <path d="M-3.4,-1.6A3.4,3.4 0 0 1 3.4,-1.6Z" fill="#a8f0b0" stroke="#d6ffd9" strokeWidth="0.3" />
             <ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#3fbf5a" stroke="#d6ffd9" strokeWidth="0.35" />
             {[-5, 0, 5].map((x, i) => <circle key={x} cx={x} cy="1.6" r="0.8" fill="#ff3b3b" className="art-ufo-light" style={{ animationDelay: `${-i * 0.4}s` }} />)}
