@@ -21,6 +21,7 @@ import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
 import { PieceCard } from './ui/tray/PieceCard'
 import { TipCard } from './ui/tips/TipCard'
+import { CHAT_IDS, CHAT_LINES } from './net/protocol'
 import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
@@ -147,7 +148,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
   const failed = puzzleLimit !== undefined && !state.winner && turnsTaken >= puzzleLimit
   /** Online, a resignation ends the game without the board showing a winner. */
-  const resigned = net?.reason === 'resigned' || net?.reason === 'opponent-resigned'
+  const resigned = net?.reason === 'resigned' || net?.reason === 'opponent-resigned' || net?.reason === 'drawn'
   const winner = state.winner ?? (resigned ? net?.winner ?? null : null)
   /** The connection broke, or the other build disagreed, before the game was decided. */
   const dropped = !!net && net.status === 'over' && net.reason !== 'finished' && !winner
@@ -506,6 +507,17 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
           </div>
         </div>
       )}
+      {online && !ended && net?.draw === 'asked' && (
+        <div className="confirm result" role="dialog" aria-label="Draw offered">
+          <p className="confirm-title">Draw offered</p>
+          <p>Your opponent proposes a draw. Moving instead declines it.</p>
+          <div className="buttons">
+            <button className="primary" onClick={() => session!.answerDraw(true)}><Icon name="check" />Accept</button>
+            <button onClick={() => session!.answerDraw(false)}><Icon name="close" />Decline</button>
+          </div>
+        </div>
+      )}
+      {online && net?.chat && net.chat.from === 'them' && <div key={net.chat.n} className="chat-bubble" role="status">{CHAT_LINES[net.chat.id]}</div>}
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
@@ -572,6 +584,15 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
         </p>
         <div className="buttons">
           {!online && !mail && context?.kind !== 'daily' && !context?.scored && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {online && !ended && net?.status === 'playing' && (
+            <>
+              <button disabled={net.draw !== 'none'} onClick={() => session!.offerDraw()}><Icon name="swap" />{net.draw === 'offered' ? 'Draw Offered' : 'Offer Draw'}</button>
+              <select aria-label="Say something" value="" onChange={(e) => { if (e.target.value) session!.say(e.target.value as (typeof CHAT_IDS)[number]) }}>
+                <option value="">Say…</option>
+                {CHAT_IDS.map((id) => <option key={id} value={id}>{CHAT_LINES[id]}</option>)}
+              </select>
+            </>
+          )}
           {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>

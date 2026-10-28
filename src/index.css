@@ -960,3 +960,11 @@ body:has(.duel) .play-timer { display: none; }
 /* Keyboard play on the board */
 .kb-cursor { fill: none; stroke: #fff6c0; stroke-width: 0.07; pointer-events: none; }
 svg.board:focus { outline: none; }
+
+/* Online quick chat */
+.chat-bubble {
+  position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%); z-index: 40; padding: 0.4rem 0.9rem;
+  border-radius: 1rem; background: var(--umbral-indigo); color: var(--solari-cream); border: 1px solid var(--solari-gold);
+  animation: chat-fade 3.2s ease-out forwards; pointer-events: none;
+}
+@keyframes chat-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }

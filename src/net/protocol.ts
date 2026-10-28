@@ -2,10 +2,22 @@ import { FORMAT_VERSION, pack, unpack, type Packed } from '../engine/serialize'
 import type { Action, GameState } from '../engine/rules/types'
 
 /** Bumped whenever the messages change, so two different builds refuse to play each other. */
-export const PROTOCOL_VERSION = 1
+export const PROTOCOL_VERSION = 2
 
 /** Longest message accepted; a whole challenge code is a few hundred characters. */
 const MAX_MESSAGE = 20_000
+
+/** The things a player can say mid-game; fixed phrases only, so there is nothing to moderate. */
+export const CHAT_LINES = {
+  luck: 'Good luck!',
+  nice: 'Nice move!',
+  oops: 'Oops…',
+  think: 'Thinking…',
+  close: 'Close one!',
+  gg: 'Good game!',
+} as const
+export type ChatId = keyof typeof CHAT_LINES
+export const CHAT_IDS = Object.keys(CHAT_LINES) as ChatId[]
 
 export type Message =
   /** First message each way: both sides check they speak the same protocol and code format. */
@@ -25,6 +37,12 @@ export type Message =
   | { t: 'sync'; n: number; sum: string }
   /** After a finished game: the sender would like to play again. The host starts the next match once both sides have asked. */
   | { t: 'rematch' }
+  /** A quick phrase for the other player. */
+  | { t: 'chat'; id: ChatId }
+  /** The sender offers a draw; the other side answers with `draw-yes` or `draw-no`, or lets it lapse by moving. */
+  | { t: 'draw' }
+  | { t: 'draw-yes' }
+  | { t: 'draw-no' }
 
 export const hello = (): Message => ({ t: 'hello', v: PROTOCOL_VERSION, fmt: FORMAT_VERSION })
 
@@ -45,6 +63,10 @@ export function decodeMessage(text: string): Message | null {
     if (m.t === 'beat') return { t: 'beat' }
     if (m.t === 'bye') return { t: 'bye' }
     if (m.t === 'rematch') return { t: 'rematch' }
+    if (m.t === 'draw') return { t: 'draw' }
+    if (m.t === 'draw-yes') return { t: 'draw-yes' }
+    if (m.t === 'draw-no') return { t: 'draw-no' }
+    if (m.t === 'chat' && typeof m.id === 'string' && (CHAT_IDS as string[]).includes(m.id)) return { t: 'chat', id: m.id as ChatId }
     if (m.t === 'sync' && Number.isInteger(m.n) && (m.n as number) >= 0 && typeof m.sum === 'string') return { t: 'sync', n: m.n as number, sum: m.sum }
     if (m.t === 'act' && Number.isInteger(m.n) && (m.n as number) >= 0 && Array.isArray(m.a) && typeof m.sum === 'string')
       return { t: 'act', n: m.n as number, a: m.a as Packed, sum: m.sum }

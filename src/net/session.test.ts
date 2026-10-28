@@ -462,3 +462,57 @@ describe('rematch', () => {
     expect(host.rematch()).toBe(false)
   })
 })
+
+describe('quick chat and draw offers', () => {
+  it('delivers a phrase to the other side', async () => {
+    const { host, guest } = await connected()
+    host.say('luck')
+    await settle()
+    expect(guest.view().chat).toMatchObject({ from: 'them', id: 'luck' })
+    expect(host.view().chat).toMatchObject({ from: 'me', id: 'luck' })
+  })
+
+  it('refuses a phrase that is not on the list', () => {
+    expect(decodeMessage(encodeMessage({ t: 'chat', id: 'luck' }))).toEqual({ t: 'chat', id: 'luck' })
+    expect(decodeMessage('{"t":"chat","id":"<script>"}')).toBeNull()
+  })
+
+  it('ends the game as a draw when an offer is accepted', async () => {
+    const { host, guest } = await connected()
+    host.offerDraw()
+    await settle()
+    expect(guest.view().draw).toBe('asked')
+    guest.answerDraw(true)
+    await settle()
+    for (const s of [host, guest]) {
+      expect(s.view().reason).toBe('drawn')
+      expect(s.view().winner).toBe('draw')
+    }
+  })
+
+  it('carries on after a declined offer, and a move lapses an offer', async () => {
+    const { host, guest } = await connected()
+    host.offerDraw()
+    await settle()
+    guest.answerDraw(false)
+    await settle()
+    expect(host.view().draw).toBe('none')
+    expect(host.view().status).toBe('playing')
+    host.offerDraw()
+    await settle()
+    const mover = host.view().state!.turn === host.view().me ? host : guest
+    expect(mover.play(firstMove(mover.view().state!))).toBe(true)
+    await settle()
+    expect(host.view().draw).toBe('none')
+    expect(guest.view().draw).toBe('none')
+  })
+
+  it('treats offers that cross as an agreement', async () => {
+    const { host, guest } = await connected()
+    host.offerDraw()
+    guest.offerDraw()
+    await settle()
+    expect(host.view().reason).toBe('drawn')
+    expect(guest.view().reason).toBe('drawn')
+  })
+})

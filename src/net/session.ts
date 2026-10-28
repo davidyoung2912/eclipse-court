@@ -7,7 +7,7 @@ import { otherCourt } from '../engine/rules/board'
 import { squareLuminance } from '../engine/rules/luminance'
 import { pieceAt } from '../engine/rules/moves'
 import type { Action, Court, DuelOutcome, GameState } from '../engine/rules/types'
-import { actionOf, actMessage, decodeMessage, encodeMessage, hello, PROTOCOL_VERSION, stateSum, type Message } from './protocol'
+import { actionOf, actMessage, type ChatId, decodeMessage, encodeMessage, hello, PROTOCOL_VERSION, stateSum, type Message } from './protocol'
 import { pack } from '../engine/serialize'
 import type { Transport } from './transport'
 import { FORMAT_VERSION } from '../engine/serialize'
@@ -19,6 +19,8 @@ export type EndReason =
   | 'finished'
   | 'resigned'
   | 'opponent-resigned'
+  /** Both players agreed to a draw. */
+  | 'drawn'
   /** The connection dropped. */
   | 'closed'
   /** The other player chose to leave. */
@@ -45,6 +47,10 @@ export interface SessionView {
   link: 'up' | 'down'
   /** Playing again after the game: `ask` once it ended and the other side is still there, `sent` once asked, `asked` if only they have. */
   rematch: 'none' | 'ask' | 'sent' | 'asked'
+  /** A draw offer: `offered` by this player, `asked` by the other, or `none`. */
+  draw: 'none' | 'offered' | 'asked'
+  /** The latest quick phrase said by either player; `n` counts them so an equal phrase still shows again. */
+  chat: { n: number; from: 'me' | 'them'; id: ChatId } | null
   /** The winner, counting a resignation; null while undecided or if the session failed. */
   winner: GameState['winner']
 }
@@ -55,6 +61,12 @@ export interface Session {
   /** Plays the local court's action, settling any capture, and sends it. False if the rules refuse it or it is not this player's turn. */
   play: (action: Action) => boolean
   resign: () => void
+  /** Offers a draw to the other player. */
+  offerDraw: () => void
+  /** Answers the other player's draw offer. */
+  answerDraw: (accept: boolean) => void
+  /** Says a quick phrase to the other player. */
+  say: (id: ChatId) => void
   /** Asks for another match with the courts swapped; it starts once both players have asked. False if the game is not over or the other side has gone. */
   rematch: () => boolean
   /** Takes a fresh transport after the link dropped, swaps game positions with the other side and resends whatever either missed. */
@@ -115,6 +127,8 @@ export function createSession({ transport: first, role, challenge: offered, onCh
   let me: Court | null = offered ? otherCourt(offered.side) : null
   let state: GameState | null = offered ? newGame(offered.config) : null
   let resignedBy: Court | null = null
+  let draw: SessionView['draw'] = 'none'
+  let chat: SessionView['chat'] = null
   let greeted = false
   let link: 'up' | 'down' = 'up'
   const actions: Action[] = []
@@ -130,12 +144,13 @@ export function createSession({ transport: first, role, challenge: offered, onCh
   let askedByThem = false
 
   const rematchState = (): SessionView['rematch'] => {
-    if (status !== 'over' || !open || (reason !== 'finished' && reason !== 'resigned' && reason !== 'opponent-resigned')) return 'none'
+    if (status !== 'over' || !open || (reason !== 'finished' && reason !== 'resigned' && reason !== 'opponent-resigned' && reason !== 'drawn')) return 'none'
     return asked ? 'sent' : askedByThem ? 'asked' : 'ask'
   }
   const view = (): SessionView => ({
     status, reason, me, challenge, state, actions: [...actions], link, rematch: rematchState(),
-    winner: resignedBy ? otherCourt(resignedBy) : state?.winner ?? null,
+    draw, chat,
+    winner: resignedBy ? otherCourt(resignedBy) : reason === 'drawn' ? 'draw' : state?.winner ?? null,
   })
   const listeners = new Set<(view: SessionView) => void>()
   const changed = () => {
@@ -157,6 +172,7 @@ export function createSession({ transport: first, role, challenge: offered, onCh
 
   /** Records an action already checked and applied, ending the session if it decided the game. */
   const apply = (action: Action, next: GameState) => {
+    draw = 'none'
     actions.push(action)
     sums.push(stateSum(next))
     state = next
@@ -224,6 +240,8 @@ export function createSession({ transport: first, role, challenge: offered, onCh
     sums.push(stateSum(fresh))
     state = fresh
     resignedBy = null
+    draw = 'none'
+    chat = null
     asked = false
     askedByThem = false
     catchUp = null
@@ -268,6 +286,19 @@ export function createSession({ transport: first, role, challenge: offered, onCh
       if (role !== 'host' || status !== 'connecting') return end('protocol')
       status = 'playing'
       startBeat()
+      return changed()
+    }
+    if (m.t === 'chat' || m.t === 'draw' || m.t === 'draw-yes' || m.t === 'draw-no') {
+      if (status !== 'playing') return
+      if (m.t === 'chat') chat = { n: (chat?.n ?? 0) + 1, from: 'them', id: m.id }
+      // Offers that cross each other are an agreement.
+      else if (m.t === 'draw') {
+        if (draw === 'offered') return end('drawn')
+        draw = 'asked'
+      } else if (draw === 'offered') {
+        draw = 'none'
+        if (m.t === 'draw-yes') return end('drawn')
+      }
       return changed()
     }
     if (status !== 'playing' || !state || !me) return end('protocol')
@@ -355,6 +386,25 @@ export function createSession({ transport: first, role, challenge: offered, onCh
       resignedBy = me
       send({ t: 'resign' })
       end('resigned')
+    },
+    offerDraw: () => {
+      if (status !== 'playing' || draw !== 'none') return
+      draw = 'offered'
+      send({ t: 'draw' })
+      changed()
+    },
+    answerDraw: (accept) => {
+      if (status !== 'playing' || draw !== 'asked') return
+      draw = 'none'
+      send({ t: accept ? 'draw-yes' : 'draw-no' })
+      if (accept) return end('drawn')
+      changed()
+    },
+    say: (id) => {
+      if (status !== 'playing') return
+      chat = { n: (chat?.n ?? 0) + 1, from: 'me', id }
+      send({ t: 'chat', id })
+      changed()
     },
     listen: (fn) => {
       listeners.add(fn)
