@@ -34,6 +34,7 @@ import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
+import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
 import { settleGame } from './settleGame'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
 import { rememberCourt, masterySnapshot } from './mastery'
@@ -337,9 +338,14 @@ export default function App() {
     )
   }
 
-  if (screen.name === 'puzzles')
+  if (screen.name === 'puzzles') {
+    const left = loadPuzzle(PUZZLES.length)
     return (
       <Puzzles progress={progress} report={report}
+        resume={left ? { name: PUZZLES[left.index].name, rush: !!left.rush, onResume: () => {
+          setReport([])
+          setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[left.index].difficulty, record: left.record, campaignIndex: null, puzzle: { index: left.index, daily: left.daily, rush: left.rush } })
+        } } : undefined}
         onReset={() => { const next = resetPuzzles(progress); setProgress(next); saveProgress(next) }}
         onBack={() => setScreen({ name: 'menu' })}
         onRush={() => {
@@ -356,6 +362,7 @@ export default function App() {
           })
         }} />
     )
+  }
 
   if (screen.name === 'daily') {
     const match = dailyMatch()
@@ -487,8 +494,11 @@ export default function App() {
     )
 
   if (screen.name === 'gauntlet') {
+    const left = loadFight(run)
     const update = (next: Run | null) => {
       setRun(next)
+      // Every change to the run (a new one, a reward, the end) comes between fights, so none left over still applies.
+      clearFight()
       if (next) saveRun(next)
       else clearRun()
     }
@@ -501,7 +511,7 @@ export default function App() {
     }
     return (
       <Gauntlet
-        progress={progress} run={run} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
+        progress={progress} run={run} resuming={!!left} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
         summary={runText}
         onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
@@ -511,7 +521,7 @@ export default function App() {
           if (!run) return
           const foe = stageFoe(run.seed, run.stage, run.ascension)
           setReport([])
-          setScreen({ name: 'game', human: run.court, difficulty: foe.difficulty, record: { initial: stageGame(run), actions: [] }, campaignIndex: null, gauntlet: true })
+          setScreen({ name: 'game', human: run.court, difficulty: foe.difficulty, record: left?.record ?? { initial: stageGame(run), actions: [] }, campaignIndex: null, gauntlet: true })
         }}
       />
     )
@@ -705,6 +715,8 @@ export default function App() {
         puzzleLimit={puzzle && PUZZLES[puzzle.index].limit}
         puzzleHelp={puzzle && { hints: PUZZLES[puzzle.index].hints, solution: PUZZLES[puzzle.index].solution }}
         onSave={(progress) => {
+          if (gauntlet && run) return progress ? saveFight({ seed: run.seed, stage: run.stage, record: progress }) : clearFight()
+          if (puzzle) return progress ? savePuzzle({ index: puzzle.index, daily: puzzle.daily, rush: puzzle.rush, record: progress }) : clearPuzzle()
           if (transient) return
           if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })
           else clearSaved()

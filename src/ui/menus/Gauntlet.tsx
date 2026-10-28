@@ -28,6 +28,8 @@ interface Props {
   onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number }) => void
   onDaily: () => void
   onFight: () => void
+  /** A fight of this stage was left unfinished; Fight picks it up where it stopped. */
+  resuming?: boolean
   onReward: (reward: Reward) => void
   onAbandon: () => void
   onBack: () => void
@@ -74,7 +76,7 @@ function Army({ run }: { run: Run }) {
 }
 
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onFight, onReward, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onAbandon, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
   const [ascension, setAscension] = useState(0)
@@ -183,7 +185,7 @@ export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onF
       <Army run={run} />
       {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.ascension).find((s) => s >= run.stage) ? `a camp after stage ${restStages(run.ascension).find((s) => s >= run.stage)} may restore one.` : 'there is no camp left to restore them.'}</p>}
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={onFight}><Icon name="swords" />Fight</button>
+        <button className="primary" onClick={onFight}><Icon name="swords" />{resuming ? 'Resume Fight' : 'Fight'}</button>
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
         {back}
       </div>

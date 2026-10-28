@@ -4,7 +4,7 @@ const PREFIX = 'eclipse-court:'
 const FORMAT = 'eclipse-court-save'
 
 /** Keys that describe a game in flight or a transient link, not progress; left out of a backup. */
-const SKIP = new Set(['eclipse-court:saved', 'eclipse-court:run'])
+const SKIP = new Set(['eclipse-court:saved', 'eclipse-court:run', 'eclipse-court:saved-fight', 'eclipse-court:saved-puzzle'])
 
 /** Every progress key in `storage` as one JSON text. */
 export function exportSave(storage: Pick<Storage, 'length' | 'key' | 'getItem'> = localStorage): string {

@@ -11,13 +11,15 @@ interface Props {
   progress: Progress
   /** Lines about the puzzle just played, such as an achievement. */
   report?: string[]
+  /** A puzzle (or Rush) left unfinished. */
+  resume?: { name: string; rush: boolean; onResume: () => void }
   onPlay: (index: number, daily: boolean) => void
   onRush: () => void
   onReset: () => void
   onBack: () => void
 }
 
-export function Puzzles({ progress, report, onPlay, onRush, onReset, onBack }: Props) {
+export function Puzzles({ progress, report, resume, onPlay, onRush, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const isSolved = (id: string) => progress.puzzles.includes(id)
   const solved = PUZZLES.filter((p) => isSolved(p.id)).length
@@ -30,6 +32,14 @@ export function Puzzles({ progress, report, onPlay, onRush, onReset, onBack }: P
       <p className="tagline">{solved} of {PUZZLES.length} solved. Win within the turns given; the board is set, the rest is up to you. Stuck? The Hint button helps, at no cost.</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
+      )}
+      {resume && (
+        <div className="choices">
+          <button className="choice" onClick={resume.onResume}>
+            <strong><Icon name="onward" />Resume {resume.rush ? 'Puzzle Rush' : 'Puzzle'}</strong>
+            <span>Pick up {resume.name} where you left it.</span>
+          </button>
+        </div>
       )}
       <h3>Puzzle Rush</h3>
       <div className="choices">

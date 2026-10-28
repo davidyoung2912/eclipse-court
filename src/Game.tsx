@@ -129,8 +129,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     const last = history[history.length - 1].state
     return last.winner ? null : { court: last.turn }
   })
-  /** The puzzle briefing waits for Got It! before play can begin; resumed games are never puzzles, so it only shows at the start. */
-  const [briefing, setBriefing] = useState(!!puzzle)
+  /** The puzzle briefing waits for Got It! before play can begin; a resumed puzzle has been briefed already. */
+  const [briefing, setBriefing] = useState(!!puzzle && record.actions.length === 0)
   const state = history[history.length - 1].state
   const myTurn = isHuman(controllers, state.turn)
   /** The court the person at the screen acts for: the one human court, or whoever's turn it is in hot-seat. */
