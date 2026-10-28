@@ -119,6 +119,13 @@ body {
 .piece { cursor: pointer; transition: transform var(--t-slow) var(--ease); }
 .piece .ring { fill: none; stroke: transparent; stroke-width: 0.06; }
 .piece .halo { fill: none; stroke: transparent; stroke-width: 0.1; pointer-events: none; }
+.ground-shadow { fill: #05030f; opacity: 0.38; pointer-events: none; transition: transform var(--t-mid) var(--ease), opacity var(--t-mid) var(--ease); transform-origin: 0.03px 0.3px; }
+.piece-lift { transition: transform var(--t-mid) var(--ease); }
+.piece.selected .piece-lift { transform: translateY(-0.07px) scale(1.07); }
+.piece.selected .ground-shadow { transform: translate(0.03px, 0.04px) scale(0.85); opacity: 0.25; }
+.piece-settle { animation: settle var(--t-mid) var(--ease) var(--t-slow) both; }
+@keyframes settle { 0% { transform: translateY(-0.05px) scale(0.97, 1.04); } 55% { transform: translateY(0.012px) scale(1.07, 0.93); } 100% { transform: none; } }
+.piece.hint-ghost .ground-shadow, .piece.hint-ghost .piece-lift { display: none; }
 .piece.selected .ring { stroke: #fff; stroke-width: 0.1; }
 .piece.attackable .ring { stroke: #ff5a5a; stroke-width: 0.1; }
 .piece.selected .halo, .piece.attackable .halo, .piece.mover .halo, .piece.target .halo {
@@ -166,7 +173,7 @@ body {
 .ripple.lit { fill: #fff3b8; }
 .ripple.dim { fill: #5a3fb0; }
 @keyframes ripple { 0% { opacity: 0; } 30% { opacity: 0.5; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ripple, .move-glow, .piece .halo { animation: none !important; } .piece { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ripple, .move-glow, .piece .halo { animation: none !important; } .piece, .piece-lift, .ground-shadow { transition: none; } .piece-settle { animation: none; } }
 .pip { fill: #fff; stroke: #000; stroke-width: 0.01; pointer-events: none; }
 
 .tray { margin-top: auto; }
@@ -993,9 +1000,9 @@ body:has(.duel) .play-timer { display: none; }
 
 /* Capture effect where a piece fell */
 .fall { pointer-events: none; }
-.fall-ring { fill: none; stroke: currentColor; stroke-width: 0.06; transform-origin: center; animation: fall-ring 0.7s ease-out both; }
+.shard { stroke: currentColor; stroke-width: 0.025; transform-box: fill-box; transform-origin: center; animation: shard var(--t-slow) var(--ease) both; }
+@keyframes shard { 0% { opacity: 1; translate: 0 0; rotate: 0deg; } 100% { opacity: 0; translate: var(--dx) var(--dy); rotate: var(--spin); } }
 .fall-part { stroke: currentColor; stroke-width: 0.05; stroke-linecap: round; animation: fall-part 0.8s ease-out both; }
-@keyframes fall-ring { 0% { opacity: 0.9; transform: scale(0.4); } 100% { opacity: 0; transform: scale(1.5); } }
 @keyframes fall-part { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: calc(var(--reach, 0.5) * 0.9px) 0; } }
 :root[data-motion='reduced'] .fall { display: none; }
 

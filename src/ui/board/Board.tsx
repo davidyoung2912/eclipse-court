@@ -6,6 +6,7 @@ import { squareLuminance } from '../../engine/rules/luminance'
 import type { Court, GameState, Piece, Pos } from '../../engine/rules/types'
 import { visibleTo } from '../../engine/data/modifiers'
 import { PieceArt } from '../../art/PieceArt'
+import { PALETTE, WEDGES } from '../../art/pieceGeometry'
 import { BoardDefs } from '../../art/Tile'
 import { getSettings } from '../../settings'
 import { cellAt } from '../../engine/rules/cells'
@@ -81,11 +82,15 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   const active = activeId ? state.pieces.find((pc) => pc.id === activeId)?.pos : undefined
   // A piece that vanishes between two states leaves the equipped capture effect on its square.
   const [seen, setSeen] = useState(state.pieces)
-  const [falls, setFalls] = useState<{ key: string; pos: Pos }[]>([])
+  const [falls, setFalls] = useState<{ key: string; pos: Pos; role: Piece['role']; court: Court }[]>([])
+  // A piece that changed square settles on arrival; the counter restarts the animation on each landing.
+  const [landings, setLandings] = useState<Record<string, number>>({})
   if (seen !== state.pieces) {
     setSeen(state.pieces)
+    const moved = state.pieces.filter((q) => { const old = seen.find((p) => p.id === q.id); return old && !samePos(old.pos, q.pos) })
+    if (moved.length > 0) setLandings((l) => Object.fromEntries([...Object.entries(l), ...moved.map((q) => [q.id, (l[q.id] ?? 0) + 1] as const)]))
     const gone = seen.filter((p) => !state.pieces.some((q) => q.id === p.id))
-    if (gone.length > 0 && gone.length <= 2) setFalls(gone.map((p) => ({ key: `${p.id}-${seen.length}`, pos: p.pos })))
+    if (gone.length > 0 && gone.length <= 2) setFalls(gone.map((p) => ({ key: `${p.id}-${seen.length}`, pos: p.pos, role: p.role, court: p.court })))
     else if (falls.length > 0) setFalls([])
   }
   const fxId = equippedId('capture')
@@ -157,9 +162,14 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
           <g key={pc.id} aria-label={`${ROLE_NAMES[pc.court][pc.role]} ${pc.hp}/${pc.maxHp}`} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
             className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${endangered.includes(pc.id) ? ' endangered' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
             
-            <circle className="halo" r={0.4} />
-            <circle className="ring" r={0.4} />
-            <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
+            <ellipse className="ground-shadow" cx={0.03} cy={0.3} rx={0.3} ry={0.1} />
+            <g className="piece-lift">
+              <g key={landings[pc.id] ?? 0} className={landings[pc.id] ? 'piece-settle' : undefined}>
+                <circle className="halo" r={0.4} />
+                <circle className="ring" r={0.4} />
+                <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
+              </g>
+            </g>
             {odds?.[pc.id] !== undefined && (
               <text className={`odds-tag ${odds[pc.id] >= 60 ? 'good' : odds[pc.id] >= 35 ? 'even' : 'bad'}`} x={0} y={-0.38}>{odds[pc.id]}%</text>
             )}
@@ -179,11 +189,20 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
         const { cx, cy } = toScreen(cursor, flip, size)
         return <rect x={cx - 0.46} y={cy - 0.46} width={0.92} height={0.92} className="kb-cursor" />
       })()}
-      {falls.map(({ key, pos }) => {
+      {falls.map(({ key, pos, court }) => {
         const { cx, cy } = toScreen(pos, flip, size)
         return (
           <g key={key} className="fall" style={{ transform: `translate(${cx}px, ${cy}px)`, color: fx.colour }}>
-            <circle className="fall-ring" r={fx.reach * 0.6} />
+            <g className={`art art-${court}`}>
+              {WEDGES.map((d, i) => {
+                const a = ((i + 0.5) / WEDGES.length) * Math.PI * 2
+                const dist = 0.25 + fx.reach * 0.35
+                return (
+                  <path key={i} d={d} className={`pane pane-${i % 3} shard`}
+                    style={{ ['--dx' as string]: `${(Math.cos(a) * dist).toFixed(3)}px`, ['--dy' as string]: `${(Math.sin(a) * dist).toFixed(3)}px`, ['--spin' as string]: `${(i % 2 ? 1 : -1) * (30 + i * 9)}deg`, fill: PALETTE[court].panes[i % 3] }} />
+                )
+              })}
+            </g>
             {Array.from({ length: fx.parts }, (_, i) => (
               <line key={i} className="fall-part" x1={0.1} x2={0.26} style={{ transform: `rotate(${(360 / fx.parts) * i}deg)`, ['--reach' as string]: `${fx.reach}` }} />
             ))}
