@@ -93,7 +93,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                   <li key={x.id}>
                     <button className={`choice${bits & STAR_WIN ? ' won' : ''}`} onClick={() => onPlayScenario(SCENARIOS.indexOf(x))}>
                       <strong>
-                        <Icon name={bits & STAR_WIN ? 'check' : 'swords'} />{n + 1}. {x.name}
+                        {n + 1}. {x.name}
                       </strong>
                       <Kind icon="target" text={`Scenario: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
                       <span>{x.blurb}</span>
@@ -129,7 +129,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
                     <button className={`choice${bits & STAR_WIN ? ' won' : ''}`} disabled={locked} onClick={() => onPlay(i, series)}>
                       <OpponentAvatar index={i} locked={locked} />
                       <strong>
-                        <Icon name={locked ? 'lock' : bits & STAR_WIN ? 'check' : 'swords'} />{n + 1}. {o.name}
+                        {n + 1}. {o.name}
                       </strong>
                       <Kind icon="swords" text={o.size === 9 ? 'Battle · 9x9' : 'Battle'} difficulty={o.difficulty} />
                       <span>{o.blurb}</span>
