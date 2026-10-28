@@ -29,6 +29,11 @@
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  /* Motion language: one curve and three durations; ambient loops keep their own tempo. */
+  --ease: cubic-bezier(0.3, 0, 0.2, 1);
+  --t-fast: 140ms;
+  --t-mid: 240ms;
+  --t-slow: 420ms;
 }
 
 * { box-sizing: border-box; }
@@ -102,7 +107,7 @@ body {
 .move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
 @keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
 
-.piece { cursor: pointer; transition: transform 0.4s cubic-bezier(0.45, 0, 0.25, 1); }
+.piece { cursor: pointer; transition: transform var(--t-slow) var(--ease); }
 .piece .ring { fill: none; stroke: transparent; stroke-width: 0.06; }
 .piece .halo { fill: none; stroke: transparent; stroke-width: 0.1; pointer-events: none; }
 .piece.selected .ring { stroke: #fff; stroke-width: 0.1; }
@@ -130,7 +135,7 @@ body {
 .piece.bound .art { opacity: 0.55; }
 .art-rim { fill: #120d2a; }
 .art-lead { fill: none; stroke: #120d2a; stroke-width: 0.025; }
-.pane { stroke: #120d2a; stroke-width: 0.018; transition: fill 0.4s; }
+.pane { stroke: #120d2a; stroke-width: 0.018; transition: fill var(--t-slow) var(--ease); }
 .art .pane.lost { fill: #5d5d72; }
 .art-solari .pane-0 { fill: var(--pane-s0, #f2c55c); }
 .art-solari .pane-1 { fill: var(--pane-s1, #e8943a); }
@@ -168,7 +173,7 @@ body {
 .buttons button, .menu-buttons button, .spell, .choice {
   --glow: 154, 124, 240;
   box-shadow: var(--shadow-1), var(--edge);
-  transition: box-shadow 0.15s, border-color 0.15s, transform 0.12s;
+  transition: box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
 .buttons button.primary, .menu-buttons button.primary, .choice.on, .buttons button.on { --glow: 255, 205, 90; }
 .buttons button.primary, .menu-buttons button.primary, .choice.on, .buttons button.on {
@@ -362,7 +367,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
   border-radius: 14px; border: 1px solid var(--solari-cream); letter-spacing: 0.06em;
   background: linear-gradient(180deg, #ffe08a, #e8a63a);
   box-shadow: 0 0 18px rgba(232, 182, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  animation: glow 3s ease-in-out infinite; transition: transform 0.12s;
+  animation: glow 3s ease-in-out infinite; transition: transform var(--t-fast) var(--ease);
 }
 .main-menu .menu-buttons button.primary:active { transform: scale(0.97); }
 
@@ -383,7 +388,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg);
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.88), rgba(43, 36, 104, 0.88));
   box-shadow: var(--edge), var(--shadow-2);
-  transition: transform 0.12s;
+  transition: transform var(--t-fast) var(--ease);
 }
 .today-row button:active, .mode-card:active, .utility button:active { transform: scale(0.97); }
 .today-row button {
@@ -599,12 +604,12 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 /* Dialogs over the board: turn announcements and combat results */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px;
-  background: rgba(8, 6, 22, 0.72); animation: fade-in 0.2s ease-out;
+  background: rgba(8, 6, 22, 0.72); animation: fade-in var(--t-mid) var(--ease);
 }
 .modal {
   width: 100%; max-width: 380px; padding: 18px 16px 12px; text-align: center; border-radius: 16px;
   background: linear-gradient(180deg, #2b2468, #1d1745); border: 2px solid var(--solari-gold);
-  box-shadow: 0 0 30px rgba(232, 182, 74, 0.45), 0 12px 40px rgba(0, 0, 0, 0.6); animation: pop-in 0.25s ease-out;
+  box-shadow: 0 0 30px rgba(232, 182, 74, 0.45), 0 12px 40px rgba(0, 0, 0, 0.6); animation: pop-in var(--t-mid) var(--ease);
 }
 .modal-kicker { margin: 0; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.7; }
 .modal h2 { margin: 4px 0 6px; font-family: var(--display); font-weight: 700; font-size: 1.5rem; color: var(--solari-cream); }
@@ -624,6 +629,14 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .result-timer { height: 3px; margin-top: 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .result-timer i { display: block; height: 100%; background: var(--solari-gold); transform-origin: left; animation: drain linear forwards; }
 @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* Screens cross-fade in with a small rise; a match opens with an iris instead (no transform, so fixed overlays keep their place). */
+@keyframes screen-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes iris-in { from { opacity: 0; clip-path: circle(0% at 50% 45%); } to { opacity: 1; clip-path: circle(150% at 50% 45%); } }
+@keyframes iris-result { from { opacity: 0; clip-path: circle(0% at 50% 50%); } to { opacity: 1; clip-path: circle(150% at 50% 50%); } }
+main.app:not(.main-menu) { animation: screen-in var(--t-mid) var(--ease) backwards; }
+main.app.timed { animation: iris-in var(--t-slow) var(--ease) backwards; }
+.modal-backdrop:has(.duel-result) { animation: iris-result var(--t-slow) var(--ease) backwards; }
+@media (prefers-reduced-motion: reduce) { main.app, .modal-backdrop:has(.duel-result) { animation: none !important; } }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.9); } }
 
@@ -726,7 +739,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   border: 1px solid rgba(154, 124, 240, 0.5); background: rgba(13, 10, 34, 0.68); cursor: pointer;
 }
 .setup-toggle input[type='checkbox']::after {
-  content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); transition: transform 0.15s;
+  content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); transition: transform var(--t-fast) var(--ease);
 }
 .setup-toggle input[type='checkbox']:checked { background: var(--solari-gold); border-color: var(--solari-cream); }
 .setup-toggle input[type='checkbox']:checked::after { transform: translateX(18px); background: #1b1740; }
@@ -762,7 +775,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   background: var(--tip-bg);
   border: 1px solid var(--tip-border);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(79, 217, 200, 0.25);
-  animation: tip-in 0.35s ease-out both;
+  animation: tip-in var(--t-mid) var(--ease) both;
 }
 .tip-card.float {
   position: fixed; left: 20px; right: 20px; width: auto; max-width: 504px; margin: 0 auto;
@@ -812,7 +825,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
   display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 360px;
   padding: 18px 16px; border-radius: 12px; border: 1px solid rgba(251, 241, 212, 0.14);
   background: rgba(13, 10, 34, 0.64); backdrop-filter: blur(3px);
-  animation: story-in 0.35s ease-out;
+  animation: story-in var(--t-mid) var(--ease);
 }
 @keyframes story-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .story-rule { width: 56%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 215, 122, 0.7), transparent); position: relative; }
@@ -844,7 +857,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .story-member.fallen > * { opacity: 0.55; }
 .story-member.fallen em { color: #d36a6a; }
 .story-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
-.story-progress i { display: block; height: 100%; background: var(--solari-gold); transition: width 0.2s; }
+.story-progress i { display: block; height: 100%; background: var(--solari-gold); transition: width var(--t-mid) var(--ease); }
 
 .campaign .completed { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); font-size: 0.8rem; }
 .campaign .completed .stars { margin: 0; }

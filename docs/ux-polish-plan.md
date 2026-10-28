@@ -36,3 +36,5 @@ Verification per phase: `npm run test`, `npm run lint`, `npx tsc -b`, `npm run b
 Phase 1 done: glow is kept for the primary action and switched-on states (secondary buttons, cards and choices sit on shared soft shadows), design tokens (`--shadow-*`, `--surface-*`, `--radius-*`, `--edge`) are in `:root`, the per-section checkerboard backdrops are one rule toned by `--tone-a`/`--tone-b`, the smallest text is raised to 0.75–0.8rem (the piece card strip is resized to match), and `:focus-visible` shows a cream ring.
 
 Phase 2 done: Cinzel (600/700 via `@fontsource/cinzel`) is the display face behind `--display` (title, H1/H2s, banners, result headings, modals); Nunito is now the body face via `--body`, and `main.tsx` waits for both before first render.
+
+Phase 3 done: motion tokens `--ease` and `--t-fast/mid/slow` (140/240/420 ms) are in `:root` and the button, piece, pane, modal, tip and story transitions use them; every screen (`main.app`, except the main menu's own intro) fades in with a small rise, a match opens with an iris, and the combat result opens with an iris from the centre. Both the Settings toggle and the OS reduced-motion query switch these off.
