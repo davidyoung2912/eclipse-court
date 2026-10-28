@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
-import { DUEL_SPEEDS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
+import { BANTER_LEVELS, DUEL_SPEEDS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -83,6 +83,13 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <div className="choices">
         {DUEL_SPEEDS.map((s) => (
           <button key={s} className={`choice${settings.duelSpeed === s ? ' on' : ''}`} aria-pressed={settings.duelSpeed === s} onClick={() => change({ duelSpeed: s })}>{t(`settings.speed.${s}`)}</button>
+        ))}
+      </div>
+      <h3>{t('settings.banter')}</h3>
+      <p className="setup-hint">{t('settings.banterHint')}</p>
+      <div className="choices">
+        {BANTER_LEVELS.map((l) => (
+          <button key={l} className={`choice${settings.banter === l ? ' on' : ''}`} aria-pressed={settings.banter === l} onClick={() => change({ banter: l })}>{t(`settings.banter.${l}`)}</button>
         ))}
       </div>
       <h3>{t('settings.fightDifficulty')}</h3>

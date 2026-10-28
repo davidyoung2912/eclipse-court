@@ -9,7 +9,9 @@ import { earnShards } from '../../shop'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { Portrait } from '../../art/Portrait'
-import { bossPortrait, personaPortrait } from '../../art/portraits'
+import { getSettings } from '../../settings'
+import { PersonaFace } from '../../art/PersonaFace'
+import { bossPortrait } from '../../art/portraits'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
 
@@ -64,9 +66,9 @@ export function Ladder({ report, onPlay, onBack }: Props) {
       {paid && <div className="setup-card" role="status">Season {paid.season} ended at {paid.peak} ({paid.rank}): +{paid.shards} Shards and the {paid.rank} banner.</div>}
       {lastSeason && <p className="season-banner" data-rank={rankOf(lastSeason.peak)}><Icon name={RANK_ICONS[lastSeason.rank] ?? 'swords'} />Season {lastSeason.season} banner · {lastSeason.rank}</p>}
       {next && <p className="tagline">{next.from - store.rating} points to {next.title}.</p>}
-      {voiced && (
+      {voiced && getSettings().banter !== 'off' && (
         <aside className="persona-greet" aria-label={`${voiced.name} on ${foe.name}`}>
-          <Portrait id={personaPortrait(voiced.id)} className="persona-bubble-face" />
+          <PersonaFace id={voiced.id} className="persona-bubble-face" />
           <p><b>{voiced.name}</b>{rivalLine(voiced.id, foe.id, store.rivals[foe.id])}</p>
         </aside>
       )}

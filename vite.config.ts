@@ -37,7 +37,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'], navigateFallback: 'index.html' },
+      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,webmanifest}'], navigateFallback: 'index.html' },
       manifest: {
         name: 'Eclipse Court',
         short_name: 'Eclipse Court',

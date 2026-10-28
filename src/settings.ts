@@ -90,7 +90,12 @@ export interface Settings {
   haptics: boolean
   /** How hard fights against the AI are: Easy helps newer players, Hard asks more of experienced ones. */
   fightDifficulty: FightLevel
+  /** How much named opponents talk: Full, Quiet (results and the Eclipse only) or Off. */
+  banter: BanterLevel
 }
+
+export type BanterLevel = 'full' | 'quiet' | 'off'
+export const BANTER_LEVELS: readonly BanterLevel[] = ['full', 'quiet', 'off']
 
 export type FightLevel = 'easy' | 'normal' | 'hard'
 export const FIGHT_LEVELS: readonly FightLevel[] = ['easy', 'normal', 'hard']
@@ -100,7 +105,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -118,6 +123,7 @@ export function parseSettings(raw: unknown): Settings {
     duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,
     haptics: o.haptics !== false,
     fightDifficulty: FIGHT_LEVELS.includes(o.fightDifficulty as FightLevel) ? (o.fightDifficulty as FightLevel) : DEFAULT_SETTINGS.fightDifficulty,
+    banter: BANTER_LEVELS.includes(o.banter as BanterLevel) ? (o.banter as BanterLevel) : DEFAULT_SETTINGS.banter,
   }
 }
 

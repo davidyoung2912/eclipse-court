@@ -1358,6 +1358,7 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
   animation: bubble-in 0.25s ease-out;
 }
 .persona-bubble-face { flex: none; width: 36px; height: 43px; }
+.persona-photo { display: block; object-fit: cover; object-position: top; border-radius: 8px 8px 18px 18px; border: 1px solid rgba(205, 191, 255, 0.5); }
 .persona-bubble-text b { display: block; font-size: 0.75rem; color: #cdbfff; }
 @keyframes bubble-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .persona-bubble { animation: none; } }

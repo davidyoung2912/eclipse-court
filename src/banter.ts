@@ -4,12 +4,16 @@ import { otherCourt } from './engine/rules/board'
 import { legalMoves, pieceAt } from './engine/rules/moves'
 import { rngNext } from './engine/rng'
 import type { Action, Court, GameState } from './engine/rules/types'
+import type { BanterLevel } from './settings'
 
 /** The fewest plies (single actions) between two lines, so a persona does not chatter on every move. */
 export const COOLDOWN_PLIES = 3
 
 /** Moments that always get a line, whatever the cooldown. */
 const URGENT: readonly LineCategory[] = ['win', 'lose', 'draw', 'eclipse']
+
+/** Whether the Banter setting lets a line of this category be shown: Quiet keeps only the urgent moments. */
+export const lineAllowed = (level: BanterLevel, category: LineCategory): boolean => level === 'full' || (level === 'quiet' && URGENT.includes(category))
 
 const isLeaderThreatened = (state: GameState, court: Court): boolean => {
   const leader = state.pieces.find((p) => p.court === court && p.role === 'leader')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COOLDOWN_PLIES, newBanter, speak, triggerFor } from './banter'
+import { COOLDOWN_PLIES, lineAllowed, newBanter, speak, triggerFor } from './banter'
 import { LINE_BANKS } from './engine/data/personaLines'
 import { newGame } from './engine/reducer'
 import type { Action, GameState, Piece, Pos, Role } from './engine/rules/types'
@@ -80,5 +80,14 @@ describe('speak', () => {
   })
   it('is the same for the same seed', () => {
     expect(speak(newBanter(5), 'bea', 'danger', 4)!.line).toBe(speak(newBanter(5), 'bea', 'danger', 4)!.line)
+  })
+})
+
+describe('lineAllowed', () => {
+  it('shows everything on Full, only results and the Eclipse on Quiet, and nothing on Off', () => {
+    expect(lineAllowed('full', 'capture')).toBe(true)
+    expect(lineAllowed('quiet', 'capture')).toBe(false)
+    for (const c of ['win', 'lose', 'draw', 'eclipse'] as const) expect(lineAllowed('quiet', c)).toBe(true)
+    expect(lineAllowed('off', 'win')).toBe(false)
   })
 })

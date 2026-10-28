@@ -32,7 +32,7 @@ import { coachLine } from './onboarding'
 import { CellCard } from './ui/tray/CellCard'
 import { Dial } from './ui/dial/Dial'
 import { narrate } from './narrate'
-import { newBanter, speak, triggerFor, type BanterState } from './banter'
+import { lineAllowed, newBanter, speak, triggerFor, type BanterState } from './banter'
 import { personaById } from './engine/data/personas'
 import type { LineCategory } from './engine/data/personaLines'
 import { PersonaBubble } from './ui/tray/PersonaBubble'
@@ -151,7 +151,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   const [bubble, setBubble] = useState<string | null>(() => {
     const named = [controllers.solari, controllers.umbral].find((c) => typeof c === 'object' && c.persona)
     const id = typeof named === 'object' ? named.persona : undefined
-    if (!id || !personaById(id) || record.actions.length > 0) return null
+    if (!id || !personaById(id) || record.actions.length > 0 || !lineAllowed(getSettings().banter, 'briefing')) return null
     return opening ?? menuLine(id, 'briefing', String(record.initial.config.seed))
   })
   const banter = useRef<BanterState>(newBanter(record.initial.config.seed))
@@ -555,7 +555,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     if (category) talk(category, steps.length - 1)
   }
   function talk(category: LineCategory, ply: number) {
-    if (!persona) return
+    if (!persona || !lineAllowed(getSettings().banter, category)) return
     const said = speak(banter.current, persona.id, category, ply)
     if (!said) return
     banter.current = said.banter
@@ -571,7 +571,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
     // oxlint-disable-next-line react/exhaustive-deps
   }, [persona, even, myTurn, ended, banner, history.length])
 
-  const farewell = persona && ended ? farewellLine(persona.id, state.winner, human, String(record.initial.config.seed)) : null
+  const farewell = persona && ended && getSettings().banter !== 'off' ? farewellLine(persona.id, state.winner, human, String(record.initial.config.seed)) : null
   const [coaching, setCoaching] = useState(false)
   const dusk = musicLevel(state)
   const eclipseFallen = state.eclipse && !state.winner
@@ -581,6 +581,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
       <p className="objective" aria-label="Objective">{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
+      <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />

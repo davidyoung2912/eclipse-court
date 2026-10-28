@@ -11,8 +11,8 @@ import { cardSummaries, primaryAction, suggestions, type CardInfo, type Suggesti
 import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
 import { t } from '../../i18n'
-import { Portrait } from '../../art/Portrait'
-import { personaPortrait } from '../../art/portraits'
+import { getSettings } from '../../settings'
+import { PersonaFace } from '../../art/PersonaFace'
 import { menuLine, personaOfTheDay } from '../../personaMenu'
 
 interface Props {
@@ -157,9 +157,9 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       </div>
       <div className="menu-main">
-      {!firstRun && (
+      {!firstRun && getSettings().banter !== 'off' && (
         <aside className="persona-greet" aria-label={`${greeter.name} says hello`}>
-          <Portrait id={personaPortrait(greeter.id)} className="persona-bubble-face" />
+          <PersonaFace id={greeter.id} className="persona-bubble-face" />
           <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>
         </aside>
       )}
