@@ -289,6 +289,14 @@ body:has(.main-menu) {
   background-attachment: fixed;
 }
 
+/* The Battle page: the same checkerboard in a matching deep red. */
+body:has(.battle-menu) {
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #4a1a2a, #1f0a12 75%);
+  background-attachment: fixed;
+}
+
 /* Opening sequence: the title shows at once, centred; after a pause everything rises into place. */
 .main-menu[data-intro]:not([data-intro='done']) { overflow: hidden; }
 .main-menu[data-intro]:not([data-intro='done']) > :not(.brand) { opacity: 0; pointer-events: none; }

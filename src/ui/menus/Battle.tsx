@@ -17,7 +17,7 @@ interface Props {
 /** The ways to fight a one-off match: against the AI or a friend, in a sandbox, or from a shared code. */
 export function Battle({ onSkirmish, onPractice, onPaste, onEditor, onOnline, onMail, onLadder, onBack }: Props) {
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="swords" />
       <h2>Battle</h2>
       <p className="tagline">One-off matches, no campaign attached.</p>
