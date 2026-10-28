@@ -124,6 +124,8 @@ type Screen =
     ladder?: string
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
+    /** A try-out from a position in a reviewed game: nothing is recorded and Back returns to the menu. */
+    tryout?: boolean
     /** A game played by link: its id in the saved list. The other court is not here, and each move ends the visit. */
     mail?: string
   }
@@ -404,7 +406,7 @@ export default function App() {
       saveProgress(result.progress)
       return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
     }
-    return <Replay record={screen.record} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
+    return <Replay record={screen.record} onPlayOn={(state, court) => setScreen({ name: 'game', human: court, difficulty: 'normal', record: { initial: state, actions: [] }, campaignIndex: null, tryout: true })} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
   }
 
   if (screen.name === 'paste')
@@ -525,7 +527,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor, mail } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor, tryout, mail } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -535,7 +537,7 @@ export default function App() {
     const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === WEEKLY_COURT
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
-    const custom = !!editor || isCustom(record.initial.config)
+    const custom = !!editor || !!tryout || isCustom(record.initial.config)
     const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
@@ -642,7 +644,7 @@ export default function App() {
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
       : daily ? { label: 'Daily match', kind: 'daily' }
       : weekly ? { label: 'Weekly challenge', kind: 'daily' }
-      : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish' }
+      : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish', scored: true }
       : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? stageFoe(run.seed, run.stage, run.ascension) : null
     return (
@@ -669,7 +671,7 @@ export default function App() {
           if (progress) saveGame({ human, difficulty, campaignIndex, hotSeat, record: progress })
           else clearSaved()
         }}
-        onExit={(winner, finished) => {
+        onExit={(winner, finished, review) => {
           if (mail) {
             // Quitting before a move changes nothing; a game decided by the last move is kept and its link shown.
             const game = mailGame(mail)
@@ -709,6 +711,7 @@ export default function App() {
           }
           setReport(lines)
           if (scenario !== undefined) setCampaignTab('scenarios')
+          if (review) return setScreen({ name: 'replay', record: finished, own: true })
           setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />

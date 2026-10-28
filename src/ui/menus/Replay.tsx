@@ -4,7 +4,7 @@ import { describeHint } from '../../ai/hint'
 import { EVAL_CAP, finalEval, GRADE_TEXT, keyMoments, reviewGame, summarise, type MoveReview, type SideSummary } from '../../ai/review'
 import type { GameRecord } from '../../engine/log'
 import { replaySteps } from '../../engine/log'
-import type { Court } from '../../engine/rules/types'
+import type { Court, GameState } from '../../engine/rules/types'
 import { Board } from '../board/Board'
 import { Dial } from '../dial/Dial'
 import { canRecordClip, cardClip, cardImage } from '../../shareCard'
@@ -17,6 +17,8 @@ interface Props {
   /** Start playing at once, as a replay opened from a link does. */
   autoplay?: boolean
   onBack: () => void
+  /** Take over the game from the position on show, as `court`; the replay offers it for a position still in play. */
+  onPlayOn?: (state: GameState, court: Court) => void
   /** Called once when a review finishes, with each side's summary and the winner, if there was one. */
   onReviewed?: (sides: Record<Court, SideSummary>, winner: Court | 'draw' | null) => string[]
 }
@@ -46,7 +48,7 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
 }
 
 /** A finished game played back from its action log, one position at a time. */
-export function Replay({ record, autoplay, onBack, onReviewed }: Props) {
+export function Replay({ record, autoplay, onBack, onPlayOn, onReviewed }: Props) {
   const steps = useMemo(() => replaySteps(record.initial, record.actions) ?? [{ state: record.initial, action: null }], [record])
   const last = steps.length - 1
   const [at, setAt] = useState(0)
@@ -163,6 +165,11 @@ export function Replay({ record, autoplay, onBack, onReviewed }: Props) {
         <button disabled={saving !== null} onClick={() => void save('card')}><Icon name="chain" />{saving === 'card' ? 'Drawing…' : 'Save Card'}</button>
         {canRecordClip() && <button disabled={saving !== null} onClick={() => void save('clip')}><Icon name="play" />{saving === 'clip' ? 'Recording…' : 'Save Clip'}</button>}
       </div>
+      {onPlayOn && !steps[at].state.winner && (
+        <div className="buttons">
+          <button onClick={() => onPlayOn(steps[at].state, steps[at].state.turn)}><Icon name="swords" />Play On From Here</button>
+        </div>
+      )}
       {saveNote && <p className="status" role="status">{saveNote}</p>}
       <TipCard page="replay" float />
     </main>

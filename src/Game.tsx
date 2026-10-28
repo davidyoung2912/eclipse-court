@@ -52,7 +52,7 @@ interface Props {
   /** A puzzle: you win by winning within this many of your own turns. */
   puzzleLimit?: number
   /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
-  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series' }
+  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean }
   /** The player's first campaign battle: a line of coaching sits above the board's cards. */
   coach?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
@@ -63,7 +63,7 @@ interface Props {
   /** Play by link: the other court is not here, so no AI answers; called with the game once the person has moved and the turn has passed on. */
   mail?: (record: GameRecord) => void
   onSave: (record: GameRecord | null) => void
-  onExit: (winner: GameState['winner'], record: GameRecord) => void
+  onExit: (winner: GameState['winner'], record: GameRecord, review?: boolean) => void
   /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
   onReconnect?: (record: GameRecord) => void
   /** Online, once both players asked for a rematch and the next match has begun: swap to it. */
@@ -519,6 +519,9 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
                 <Icon name="undo" />{net.rematch === 'sent' ? 'Waiting for them' : net.rematch === 'asked' ? 'Accept Rematch' : 'Rematch'}
               </button>
             )}
+            {!hotSeat && !online && !mail && puzzleLimit === undefined && !dropped && history.length > 1 && (context?.kind === 'skirmish' || context?.kind === 'campaign' || context?.kind === 'daily') && (
+              <button onClick={() => onExit(winner ?? foe, recordOf(history), true)}><Icon name="flame" />Review Game</button>
+            )}
             <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />Continue</button>
           </div>
         </div>
@@ -568,7 +571,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">
-          {!online && !mail && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {!online && !mail && context?.kind !== 'daily' && !context?.scored && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
           {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
