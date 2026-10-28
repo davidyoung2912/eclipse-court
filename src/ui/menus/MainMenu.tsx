@@ -127,7 +127,7 @@ function Hero() {
           </g>
         </g>
         <circle r="56" fill="url(#hero-sun)" />
-        <g className="moon art-moon-slide hero-moon" style={{ ['--reach' as string]: '112px' }}>
+        <g className="moon art-moon-slide hero-moon" style={{ ['--reach' as string]: '94px' }}>
           <circle r="54" fill="url(#hero-moon)" />
           <circle r="54" fill="url(#hero-earthshine)" />
           <circle cx="-18" cy="-14" r="7" fill="#000" opacity="0.18" />
