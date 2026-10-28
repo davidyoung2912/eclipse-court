@@ -529,7 +529,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   transform: translate(-50%, -50%); font-family: var(--display); font-size: 1.3rem; letter-spacing: 0.08em;
   text-transform: uppercase; white-space: nowrap; animation: banner 1s ease-in-out forwards;
 }
-/* Coloured for the side the player is on: light for Solari, dark for Umbral */
+/* Coloured for the side whose turn it is: light for Solari, dark for Umbral */
 .turn-banner.solari {
   background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; border: 2px solid var(--solari-cream);
   box-shadow: 0 0 28px rgba(232, 182, 74, 0.6);

@@ -486,7 +486,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
         </button>
       )}
       {banner && !ended && !(hotSeat && passScreen) && (
-        <div key={banner.court + history.length} className={`turn-banner ${hotSeat ? banner.court : human}`} role="status"
+        <div key={banner.court + history.length} className={`turn-banner ${banner.court}`} role="status"
           ref={(el) => {
             // Centre on the board, not the screen.
             const board = el?.parentElement?.querySelector('.board')?.getBoundingClientRect()
