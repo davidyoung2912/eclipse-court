@@ -6,6 +6,8 @@ import { canStartSeason, ladderSnapshot, seasonHistory, seasonReward, startSeaso
 import { earnShards } from '../../shop'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
+import { Portrait } from '../../art/Portrait'
+import { bossPortrait } from '../../art/portraits'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
 
@@ -81,6 +83,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
               <button key={f.id} className={`choice${f.id === foe.id ? ' on' : ''}`} aria-pressed={f.id === foe.id} onClick={() => setChosen(f.id)}>
                 <strong><Icon name="champion" />{f.name} · {f.rating}{store.rivals[f.id] ? ` · ${store.rivals[f.id].w}–${store.rivals[f.id].l}${store.rivals[f.id].d ? `–${store.rivals[f.id].d}` : ''}` : ''}</strong>
                 <span>Boss rule: {f.boss?.rule}</span>
+                {bossPortrait(f.id) && <Portrait id={bossPortrait(f.id)!} className="avatar" />}
               </button>
             ))}
           </div>

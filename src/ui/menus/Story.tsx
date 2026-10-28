@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
 import { ACHIEVEMENT_GROUPS, achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
-import { PieceArt } from '../../art/PieceArt'
+import { Portrait } from '../../art/Portrait'
+import { characterPortrait } from '../../art/portraits'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
@@ -74,7 +75,7 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
             const state = characterState(story, id)
             return (
               <div key={id} className={`story-member ${state}`}>
-                <svg viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 50) scale(92)"><PieceArt role={c.portrait!.role} court={c.portrait!.court} /></g></svg>
+                <Portrait id={characterPortrait(id)} />
                 <span><strong>{c.name}</strong> · {c.title}<small>{c.trait}</small></span>
                 <em>{state}</em>
               </div>

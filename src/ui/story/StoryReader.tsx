@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { PieceArt } from '../../art/PieceArt'
+import { Portrait } from '../../art/Portrait'
+import { characterPortrait } from '../../art/portraits'
 import { CHARACTERS, actLabel, type Beat, type Chapter } from '../../engine/data/story'
 import { Icon } from '../menus/icons'
 import { StoryScene } from './StoryScene'
@@ -46,9 +47,7 @@ export function StoryReader({ chapter, beats = chapter.beats, finishLabel, onDon
         {speaker ? (
           <div className="story-beat" key={index}>
             <div className="story-portrait" aria-hidden="true">
-              {speaker.portrait ? (
-                <svg viewBox="0 0 100 100"><g transform="translate(50 50) scale(92)"><PieceArt role={speaker.portrait.role} court={speaker.portrait.court} /></g></svg>
-              ) : <span className="story-eclipse" />}
+              <Portrait id={characterPortrait(speaker.id)} />
             </div>
             <h3 className="story-name">{speaker.name}<small>{speaker.title}</small></h3>
             <p className="story-line story-say">&ldquo;{beat.text}&rdquo;</p>
