@@ -43,7 +43,7 @@ const STARS = Array.from({ length: 36 }, (_, i) => ({
 
 /** Opening sequence stages: sun and moon alone, a pause, the whole title centred, then it rises into place. */
 type Intro = 'sun' | 'pause' | 'centred' | 'rise' | 'done'
-const INTRO_STEPS: [Intro, number][] = [['pause', 500], ['centred', 750], ['rise', 1600], ['done', 2100]]
+const INTRO_STEPS: [Intro, number][] = [['pause', 1000], ['centred', 1500], ['rise', 3200], ['done', 4200]]
 let introPlayed = false
 
 const RAYS = Array.from({ length: 24 }, (_, i) => i * 15)
