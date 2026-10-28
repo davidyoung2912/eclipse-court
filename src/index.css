@@ -769,3 +769,7 @@ body:has(.duel) .play-timer { display: none; }
 .tray { position: relative; }
 .tray.confirming > :not(.confirm) { visibility: hidden; }
 .tray > .confirm { position: absolute; top: calc(50% + var(--bottom-gap) / 2); bottom: auto; transform: translateY(-50%); }
+
+/* A bound piece keeps a crisp chain badge even though its art is dimmed */
+.bound-badge circle { fill: #120d2a; stroke: #fff; stroke-width: 0.025; }
+.bound-badge path { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }

@@ -10,6 +10,7 @@ import { getSettings } from '../../settings'
 import { cellAt } from '../../engine/rules/cells'
 import { CellMark } from './CellMark'
 import { lumColor } from './lumColor'
+import { IconShape } from '../menus/icons'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
 const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
@@ -116,6 +117,12 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
             <circle className="halo" r={0.4} />
             <circle className="ring" r={0.4} />
             <PieceArt role={pc.role} court={pc.court} hp={pc.hp} maxHp={pc.maxHp} />
+            {pc.bound && (
+              <g className="bound-badge" aria-label="Bound">
+                <circle cx={0.28} cy={-0.28} r={0.15} />
+                <g transform="translate(0.28 -0.28) scale(0.0125) translate(-12 -12)"><IconShape name="chain" /></g>
+              </g>
+            )}
             {Array.from({ length: pc.hp }, (_, i) => (
               <circle key={i} className="pip" r={0.035} cx={-((pc.hp - 1) * 0.09) / 2 + i * 0.09} cy={0.32} />
             ))}

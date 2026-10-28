@@ -378,6 +378,8 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
   const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
     : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label].filter(Boolean).join(' · ')
   /** The attack summary is up: it takes over the tray, and the tray's own controls step aside. */
+  /** Pieces of the side to move that an enemy Bind has frozen for this turn. */
+  const bound = state.pieces.filter((p) => p.court === state.turn && p.bound)
   const confirming = !!pending && !pending.confirmed
 
   const retry = () => {
@@ -487,6 +489,8 @@ export function Game({ controllers, record, session, context, puzzle, puzzleLimi
               ? `Turn ${turnsTaken + 1} of ${puzzleLimit}`
               : !myTurn
               ? online ? 'Waiting for your opponent…' : 'Opponent is thinking…'
+              : bound.length
+                ? `${hotSeat ? COURT_NAME[state.turn] : 'Your'} ${ROLE_NAMES[state.turn][bound[0].role]}${bound.length > 1 ? ` and ${bound.length - 1} more are` : ' is'} bound and cannot move`
               : duel
                 ? `Last duel: ${describeDuel(duel)}`
                 : 'Tap a piece, then a glowing square'}
