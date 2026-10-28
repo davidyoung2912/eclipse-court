@@ -20,7 +20,7 @@ export function Battle({ onSkirmish, onPractice, onPaste, onOnline, onBack }: Pr
       <p className="tagline">One-off matches, no campaign attached.</p>
       <div className="choices">
         <button className="choice" onClick={onSkirmish}>
-          <strong><Icon name="swords" />Skirmish</strong>
+          <strong><Icon name="clash" />Skirmish</strong>
           <span>Set up a match against the AI or a friend: board, rules, presets and Blitz.</span>
         </button>
         <button className="choice" onClick={onOnline}>
