@@ -14,6 +14,15 @@ export interface Theme {
 export const THEMES: readonly Theme[] = [
   { id: 'twilight', name: 'Twilight', stars: 0, vars: {} },
   {
+    // Blue against orange stays apart for the common kinds of colour blindness.
+    id: 'clearsight', name: 'Clear Sight', stars: 0,
+    vars: {
+      '--solari-gold': '#ffb000', '--solari-cream': '#fff1cc', '--umbral-indigo': '#0b1f3f', '--umbral-violet': '#3b8bff',
+      '--bg': '#08101c', '--pane-s0': '#ffc233', '--pane-s1': '#e69100', '--pane-s2': '#fff0b8',
+      '--pane-u0': '#2a74e0', '--pane-u1': '#0d2f66', '--pane-u2': '#8fc0ff',
+    },
+  },
+  {
     id: 'ember', name: 'Ember', stars: 2,
     vars: {
       '--solari-gold': '#f08a3c', '--solari-cream': '#ffe6d0', '--umbral-indigo': '#3a1420', '--umbral-violet': '#c0505a',
@@ -69,9 +78,11 @@ export interface Settings {
   reduceMotion: boolean
   /** Write the light level (+ or −) on every square, so colour is never the only clue. */
   marks: boolean
+  /** Larger text and bigger buttons. */
+  largeUi: boolean
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -83,6 +94,7 @@ export function parseSettings(raw: unknown): Settings {
     theme: typeof o.theme === 'string' && THEMES.some((t) => t.id === o.theme) ? o.theme : DEFAULT_SETTINGS.theme,
     reduceMotion: o.reduceMotion === true,
     marks: o.marks === true,
+    largeUi: o.largeUi === true,
   }
 }
 
@@ -106,6 +118,7 @@ export function applySettings(s: Settings = getSettings()) {
   for (const t of THEMES) for (const k of Object.keys(t.vars)) root.style.removeProperty(k)
   for (const [k, v] of Object.entries(themeById(s.theme).vars)) root.style.setProperty(k, v)
   root.dataset.motion = s.reduceMotion ? 'reduced' : 'full'
+  root.dataset.size = s.largeUi ? 'large' : 'normal'
 }
 
 export function updateSettings(patch: Partial<Settings>): Settings {

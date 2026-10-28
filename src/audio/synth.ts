@@ -4,6 +4,8 @@ const MUTE_KEY = 'eclipse-court:muted'
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
+let sfxOut: GainNode | null = null
+let musicOut: GainNode | null = null
 let muted = readMuted()
 
 /** Sound is off until the player turns it on. */
@@ -16,6 +18,36 @@ function readMuted(): boolean {
 }
 
 export const isMuted = () => muted
+
+const VOLUME_KEY = 'eclipse-court:volume'
+const level = (v: unknown) => (typeof v === 'number' && v >= 0 && v <= 1 ? v : 1)
+const volumes = readVolumes()
+
+function readVolumes(): { sfx: number; music: number } {
+  try {
+    const o = JSON.parse(localStorage.getItem(VOLUME_KEY) ?? 'null') as { sfx?: unknown; music?: unknown } | null
+    return { sfx: level(o?.sfx), music: level(o?.music) }
+  } catch {
+    return { sfx: 1, music: 1 }
+  }
+}
+
+export const getVolumes = () => ({ ...volumes })
+
+/** Sets the effects and/or music loudness, each from 0 to 1. */
+export function setVolumes(patch: Partial<typeof volumes>) {
+  if (patch.sfx !== undefined) volumes.sfx = level(patch.sfx)
+  if (patch.music !== undefined) volumes.music = level(patch.music)
+  try {
+    localStorage.setItem(VOLUME_KEY, JSON.stringify(volumes))
+  } catch {
+    // The levels only last for this session if storage is unavailable.
+  }
+  if (ctx && sfxOut && musicOut) {
+    sfxOut.gain.setTargetAtTime(volumes.sfx, ctx.currentTime, 0.03)
+    musicOut.gain.setTargetAtTime(volumes.music, ctx.currentTime, 0.03)
+  }
+}
 
 export function setMuted(value: boolean) {
   muted = value
@@ -35,6 +67,12 @@ function audio(): AudioContext | null {
   master = ctx.createGain()
   master.gain.value = muted ? 0 : 0.8
   master.connect(ctx.destination)
+  sfxOut = ctx.createGain()
+  sfxOut.gain.value = volumes.sfx
+  sfxOut.connect(master)
+  musicOut = ctx.createGain()
+  musicOut.gain.value = volumes.music
+  musicOut.connect(master)
   return ctx
 }
 
@@ -53,7 +91,7 @@ export function setVoice(v: { pitch: number; wave?: OscillatorType }) {
 
 function tone(freq: number, dur: number, opts: { type?: OscillatorType; gain?: number; delay?: number; to?: number } = {}) {
   const c = audio()
-  if (!c || !master || muted) return
+  if (!c || !sfxOut || muted) return
   freq *= voice.pitch
   if (opts.to) opts = { ...opts, to: opts.to * voice.pitch }
   if (voice.wave && opts.type !== 'sawtooth') opts = { ...opts, type: voice.wave }
@@ -66,14 +104,14 @@ function tone(freq: number, dur: number, opts: { type?: OscillatorType; gain?: n
   g.gain.setValueAtTime(0, t)
   g.gain.linearRampToValueAtTime(opts.gain ?? 0.2, t + 0.005)
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-  o.connect(g).connect(master)
+  o.connect(g).connect(sfxOut)
   o.start(t)
   o.stop(t + dur + 0.05)
 }
 
 function noise(dur: number, opts: { gain?: number; freq?: number; delay?: number } = {}) {
   const c = audio()
-  if (!c || !master || muted) return
+  if (!c || !sfxOut || muted) return
   const t = c.currentTime + (opts.delay ?? 0)
   const buf = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * dur)), c.sampleRate)
   const data = buf.getChannelData(0)
@@ -86,7 +124,7 @@ function noise(dur: number, opts: { gain?: number; freq?: number; delay?: number
   const g = c.createGain()
   g.gain.setValueAtTime(opts.gain ?? 0.2, t)
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-  src.connect(f).connect(g).connect(master)
+  src.connect(f).connect(g).connect(sfxOut)
   src.start(t)
 }
 
@@ -186,11 +224,11 @@ export function setMusicOn(value: boolean) {
  */
 export function startMusic(): { setLevel: (n: number) => void; stop: () => void } {
   const c = audio()
-  if (!c || !master || !music) return { setLevel: () => {}, stop: () => {} }
+  if (!c || !musicOut || !music) return { setLevel: () => {}, stop: () => {} }
   const bus = c.createGain()
   bus.gain.value = 0
   bus.gain.setTargetAtTime(1, c.currentTime, 1.5)
-  bus.connect(master)
+  bus.connect(musicOut)
   const layer = (freq: number, type: OscillatorType, base: number) => {
     const o = c.createOscillator()
     const g = c.createGain()

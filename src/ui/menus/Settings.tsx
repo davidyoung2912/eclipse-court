@@ -9,6 +9,7 @@ import { TipCard } from '../tips/TipCard'
 import { resetTips } from '../../tips'
 import { resetOnboarding } from '../../onboarding'
 import { BackButton } from './BackButton'
+import { getVolumes, setVolumes, isMuted, setMuted, sfx, unlockAudio } from '../../audio/synth'
 import { downloadSave, importSave } from '../../backup'
 
 interface Props {
@@ -32,6 +33,14 @@ export function Settings({ progress, onBack }: Props) {
       setTimeout(() => location.reload(), 600)
     }
   }
+  const [vol, setVol] = useState(getVolumes)
+  const volume = (patch: Partial<typeof vol>) => {
+    unlockAudio()
+    if (isMuted()) setMuted(false)
+    setVolumes(patch)
+    setVol(getVolumes())
+    if (patch.sfx !== undefined) sfx.select()
+  }
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
     <main className="app menu">
@@ -54,7 +63,11 @@ export function Settings({ progress, onBack }: Props) {
           )
         })}
       </div>
+      <h3>Sound</h3>
+      <label className="recharge">Effects <input type="range" min={0} max={1} step={0.05} value={vol.sfx} aria-label="Effects volume" onChange={(e) => volume({ sfx: Number(e.target.value) })} /></label>
+      <label className="recharge">Music <input type="range" min={0} max={1} step={0.05} value={vol.music} aria-label="Music volume" onChange={(e) => volume({ music: Number(e.target.value) })} /></label>
       <h3>Accessibility</h3>
+      <label className="recharge"><input type="checkbox" checked={settings.largeUi} onChange={() => change({ largeUi: !settings.largeUi })} /> Larger text and buttons</label>
       <label className="recharge"><input type="checkbox" checked={settings.marks} onChange={() => change({ marks: !settings.marks })} /> Mark the light on every square with + and − (colour is never the only clue)</label>
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
       <h3>Guidance</h3>

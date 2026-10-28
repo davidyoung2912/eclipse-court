@@ -14,6 +14,7 @@ import { lumColor } from './lumColor'
 import { IconShape } from '../menus/icons'
 import { CAPTURE_FX } from '../../engine/data/cosmetics'
 import { equippedId } from '../../shop'
+import { stepCursor } from './cursor'
 
 /** Rotate so the Solari edge (x = 0) is at the bottom of the portrait screen. */
 const toScreen = ({ x, y }: Pos, flip: boolean, size: number) =>
@@ -84,9 +85,19 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   }
   const fxId = equippedId('capture')
   const fx = CAPTURE_FX[fxId] ?? CAPTURE_FX.fade
+  // Keyboard play: arrows move a cursor once the board has focus, Enter or Space acts on its square.
+  const [cursor, setCursor] = useState<Pos | null>(null)
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (cursor) { e.preventDefault(); onSquare(cursor) }
+      return
+    }
+    const next = stepCursor(cursor ?? selected?.pos ?? { x: Math.floor(size / 2), y: Math.floor(size / 2) }, e.key, flip, size)
+    if (next) { e.preventDefault(); setCursor(next) }
+  }
   const rippleKey = `${state.phase}-${state.dir}-${state.eclipse}`
   return (
-    <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid">
+    <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
       <BoardDefs />
       {allSquares(size).map((p) => {
         const { cx, cy } = toScreen(p, flip, size)
@@ -150,6 +161,10 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
           </g>
         )
       })}
+      {cursor && (() => {
+        const { cx, cy } = toScreen(cursor, flip, size)
+        return <rect x={cx - 0.46} y={cy - 0.46} width={0.92} height={0.92} className="kb-cursor" />
+      })()}
       {falls.map(({ key, pos }) => {
         const { cx, cy } = toScreen(pos, flip, size)
         return (
