@@ -1241,6 +1241,9 @@ svg.board:focus { outline: none; }
 .menu .choice:disabled { opacity: 1; background: rgba(26, 20, 62, 0.94); border-color: rgba(154, 124, 240, 0.2); }
 .menu .choice:disabled > * { opacity: 0.4; }
 .row-pick button:disabled, .setup-seg button:disabled { opacity: 0.55; }
+/* Unavailable spells stay opaque too: a solid dim fill with muted text and icon, so the board behind does not show through. */
+.spell:disabled, .buttons .spell:disabled { opacity: 1; background: rgb(30, 24, 70); border-color: rgba(232, 182, 74, 0.3); color: rgba(244, 238, 252, 0.45); }
+.spell:disabled .btn-icon { opacity: 0.5; }
 
 /* The Gauntlet's army picker sits on a solid indigo panel, so it does not turn muddy over the green floor. */
 .gauntlet-menu .draft { background: rgba(32, 26, 78, 0.94); border: 1px solid rgba(154, 124, 240, 0.4); }
@@ -1257,7 +1260,7 @@ svg.board:focus { outline: none; }
     column-gap: 20px;
     max-width: 1180px;
     overflow-y: auto;
-    padding-top: calc(env(safe-area-inset-top) + 16px);
+    padding-top: calc(env(safe-area-inset-top) + 26px);
     /* Room for the board's gilded frame, which sits outside the board box; the scrolling container would otherwise shave its left edge. */
     padding-inline: 20px;
   }
@@ -1268,13 +1271,15 @@ svg.board:focus { outline: none; }
     align-self: start;
     justify-self: center;
     margin-top: 0;
-    width: min(100%, calc(100vh - 28px - var(--bottom-gap)));
+    width: min(100%, calc(100vh - 38px - var(--bottom-gap)));
     max-height: none;
   }
   .app.timed > .tray { margin-top: 0; }
   .app.timed > .tray .buttons { flex-wrap: wrap; }
   .app.timed > .tray .buttons button { flex: 1 1 auto; min-width: 0; }
   .duel-frame { padding-top: calc(env(safe-area-inset-top) + 24px); }
+  /* The play timer centres over the right-hand panel (the container's right edge, less its 20px padding and half the 420px panel) instead of the screen, so it clears the board. */
+  body:has(.app.timed) .play-timer { left: calc(50% + min(50%, 590px) - 20px - 210px); top: calc(env(safe-area-inset-top) + 6px); }
 }
 
 /* Desktop menu: the hero and title stand on the left, the cards and shortcuts fill the right, on the board's wide breakpoint. */

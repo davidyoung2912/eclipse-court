@@ -335,7 +335,9 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   }
 
   const onStagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (briefing || !desktop || e.pointerType !== 'mouse' || e.button !== 0) return
+    // The pointer is already locked to the stage when the briefing shows, and a locked pointer sends its clicks to the stage rather than the briefing button, so the stage dismisses it.
+    if (briefing) { if (e.pointerType === 'mouse' && e.button === 0) setBriefing(false); return }
+    if (!desktop || e.pointerType !== 'mouse' || e.button !== 0) return
     if (!mouse.current.locked) {
       try { void Promise.resolve(e.currentTarget.requestPointerLock()).catch(() => {}) } catch { /* ignored */ }
       return
