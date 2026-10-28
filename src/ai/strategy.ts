@@ -15,7 +15,7 @@ const NEUTRAL = PERSONALITIES.balanced
 
 const WIN = 1e5
 
-const VALUE: Record<Piece['role'], number> = {
+export const VALUE: Record<Piece['role'], number> = {
   footsoldier: 3, flier: 5, marksman: 5, bruiser: 8, charger: 6, aura: 5, leader: 12,
 }
 

@@ -37,6 +37,8 @@ export const en = {
   'settings.duelAssist': 'Duel assist: a longer aim line, bigger hit markers and a slower last five seconds (not in scored games)',
   'settings.reminders': 'Reminders: ring Beacons you could take this turn and list the spells you could cast (not in scored games or under fog)',
   'reminder.spells': 'You could cast: {list}',
+  'fallen.label': 'Fallen pieces',
+  'fallen.lead': 'Material lead',
   'reminder.idle': 'Your spells are all unused.',
   'blunder.piece': 'An enemy could attack that square with {odds}% to win.',
   'blunder.leader': 'That move leaves your Leader open to attack.',

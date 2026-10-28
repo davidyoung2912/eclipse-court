@@ -1699,3 +1699,19 @@ body:has(.main-menu)::before {
 .reward-lines { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); text-align: center; }
 .reward-lines li { opacity: 0.85; }
 .reward-lines li.pays { color: var(--solari-gold); opacity: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Fallen pieces: a row per court under the board, with the material lead beside the court that is ahead. */
+.fallen { display: grid; gap: 4px; margin: 6px auto 0; width: 100%; max-width: 420px; font-size: var(--fs-xs); }
+.fallen-row { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 2px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.fallen-name { flex: none; width: 4.2rem; opacity: 0.7; font-weight: 700; }
+.fallen-row.solari .fallen-name { color: var(--solari-gold); }
+.fallen-row.umbral .fallen-name { color: var(--umbral-violet); }
+.fallen-pieces { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; }
+.fallen-pieces svg { width: 22px; height: 22px; opacity: 0.75; filter: grayscale(0.4); }
+.fallen-pieces svg.drop { animation: fallen-drop 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.fallen-lead { flex: none; font-variant-numeric: tabular-nums; color: var(--solari-gold); }
+@keyframes fallen-drop {
+  0% { transform: translateY(-26px) scale(1.5); opacity: 0; }
+  60% { transform: translateY(2px) scale(0.9); opacity: 1; }
+  100% { transform: none; opacity: 0.75; }
+}

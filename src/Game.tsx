@@ -4,6 +4,7 @@ import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { HEARTBEAT_S, leaderInDanger, leaderStopMs, streaksOf, winningSquares } from './boardDrama'
 import { StreakMeter } from './ui/board/StreakMeter'
+import { FallenTrays } from './ui/board/FallenTrays'
 import { EclipseCinematic } from './ui/board/EclipseCinematic'
 import { KillCam } from './ui/board/KillCam'
 import { killShotOf, type KillShot } from './killCam'
@@ -690,6 +691,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
         focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} cast={castFx} />
       {cinema && <EclipseCinematic onDone={() => setCinema(false)} />}
       {kill && <KillCam shot={kill} flip={human === 'umbral' && (!hotSeat || flipBoard)} onDone={() => setKill(null)} />}
+      <FallenTrays captured={state.captured} />
       {!ended && <StreakMeter court={meterCourt} count={streaks[meterCourt]} />}
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
