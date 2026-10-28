@@ -14,10 +14,12 @@ import { downloadSave, importSave } from '../../backup'
 
 interface Props {
   progress: Progress
+  /** Called when the guidance is brought back, so the guided lesson is offered again too. */
+  onShowGuidance: () => void
   onBack: () => void
 }
 
-export function Settings({ progress, onBack }: Props) {
+export function Settings({ progress, onShowGuidance, onBack }: Props) {
   const [settings, setSettings] = useState(getSettings)
   const stars = totalStars(progress)
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
@@ -72,7 +74,7 @@ export function Settings({ progress, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.reduceMotion} onChange={() => change({ reduceMotion: !settings.reduceMotion })} /> Reduce motion: no animation or screen shake</label>
       <h3>Guidance</h3>
       <div className="menu-buttons">
-        <button onClick={() => { resetTips(); resetOnboarding() }}><Icon name="bulb" />Show Tips Again</button>
+        <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote('Tips, the checklist and the guided lesson are back.') }}><Icon name="bulb" />Show Tips Again</button>
       </div>
       <h3>Your save</h3>
       <p className="setup-hint">Progress lives in this browser only. Keep a backup file in case it is cleared.</p>

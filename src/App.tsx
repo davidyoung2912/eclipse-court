@@ -144,6 +144,15 @@ function tutorialSeen(): boolean {
   }
 }
 
+/** Forgets that the lesson was done, so the menu offers it again and the checklist's first step is open. */
+function clearTutorialSeen() {
+  try {
+    localStorage.removeItem(TUTORIAL_KEY)
+  } catch {
+    // Nothing was stored.
+  }
+}
+
 function markTutorialSeen() {
   try {
     localStorage.setItem(TUTORIAL_KEY, '1')
@@ -400,7 +409,7 @@ export default function App() {
 
   if (screen.name === 'collection') return <Collection onBack={() => setScreen({ name: 'menu' })} />
 
-  if (screen.name === 'settings') return <Settings progress={progress} onBack={() => setScreen({ name: 'menu' })} />
+  if (screen.name === 'settings') return <Settings progress={progress} onShowGuidance={() => { clearTutorialSeen(); setSeen(false) }} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'replay') {
     /** A review of the player's own last game can earn achievements. */
