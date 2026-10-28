@@ -30,8 +30,6 @@ export interface DuelLook {
   reduceMotion: boolean
   /** The courts of the attacker and the defender. */
   courts: [Court, Court]
-  /** The canvas is turned upside down for the defender; the light imagery stays at the bottom of the screen either way. */
-  flip: boolean
 }
 
 interface Theme {
@@ -220,8 +218,8 @@ function crest(c: Ctx, court: Court, cx: number, cy: number, r: number) {
 function motif(c: Ctx, id: string, P: Proj, scale: number) {
   const rand = seeded(id.length * 7919 + id.charCodeAt(0))
   const line = (x1: number, y1: number, x2: number, y2: number) => { const [a, b] = P(x1, y1); const [d, e] = P(x2, y2); c.moveTo(a, b); c.lineTo(d, e) }
-  c.strokeStyle = 'rgba(255, 255, 255, 0.08)'
-  c.fillStyle = 'rgba(255, 255, 255, 0.04)'
+  c.strokeStyle = 'rgba(255, 255, 255, 0.05)'
+  c.fillStyle = 'rgba(255, 255, 255, 0.025)'
   c.lineWidth = Math.max(1, scale * 0.03)
   const base = id.replace('grand-', '')
   if (base === 'pillars') {
@@ -289,10 +287,12 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
   c.clip()
   const rand = seeded(look.luminance * 31 + 11)
   if (theme.kind === 'bright') {
-    const [ox, oy] = P(ARENA_W / 2, look.flip ? -1 : ARENA_H + 1)
+    // The sun shines from the Solari end of the arena: the attacker's (bottom) or the defender's (top).
+    const sunTop = look.courts[0] !== 'solari'
+    const [ox, oy] = P(ARENA_W / 2, sunTop ? -1 : ARENA_H + 1)
     for (let i = 0; i < 9; i++) {
-      const a = (look.flip ? Math.PI / 2 : -Math.PI / 2) + (i - 4) * 0.2
-      c.fillStyle = `rgba(255, 214, 120, ${look.luminance > 1 ? 0.1 : 0.07})`
+      const a = (sunTop ? Math.PI / 2 : -Math.PI / 2) + (i - 4) * 0.2
+      c.fillStyle = `rgba(255, 214, 120, ${look.luminance > 1 ? 0.065 : 0.045})`
       c.beginPath()
       c.moveTo(ox, oy)
       c.lineTo(ox + Math.cos(a - 0.04) * ah * 1.6, oy + Math.sin(a - 0.04) * ah * 1.6)
@@ -300,13 +300,13 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
       c.fill()
     }
   } else if (theme.kind === 'dark') {
-    const [mx, my] = P(ARENA_W * 0.78, look.flip ? 1.4 : ARENA_H - 1.4)
+    const [mx, my] = P(ARENA_W * 0.78, look.courts[0] === 'solari' ? 1.4 : ARENA_H - 1.4)
     const halo = c.createRadialGradient(mx, my, 0, mx, my, 3.2 * scale)
-    halo.addColorStop(0, 'rgba(190, 200, 255, 0.2)')
+    halo.addColorStop(0, 'rgba(190, 200, 255, 0.12)')
     halo.addColorStop(1, 'rgba(190, 200, 255, 0)')
     c.fillStyle = halo
     c.fillRect(ax, ay, aw, ah)
-    c.fillStyle = 'rgba(220, 226, 255, 0.5)'
+    c.fillStyle = 'rgba(220, 226, 255, 0.3)'
     for (let i = 0; i < 40 * (look.luminance < -1 ? 1.5 : 1); i++) {
       const [sx, sy] = P(rand() * ARENA_W, rand() * ARENA_H)
       c.fillRect(sx, sy, 1.2, 1.2)
@@ -320,11 +320,11 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
     const color = CELL_COLORS[effect]
     const [hx, hy] = P(0, i === 0 ? ARENA_H / 2 : 0)
     const grad = c.createLinearGradient(0, hy + (i === 0 ? ah / 2 : 0), 0, hy + (i === 0 ? 0 : ah / 2))
-    grad.addColorStop(0, color + '55')
+    grad.addColorStop(0, color + '38')
     grad.addColorStop(1, color + '00')
     c.fillStyle = grad
     c.fillRect(hx, hy, aw, ah / 2)
-    c.strokeStyle = color + 'aa'
+    c.strokeStyle = color + '80'
     c.lineWidth = Math.max(1.5, scale * 0.05)
     c.lineJoin = 'round'
     c.lineCap = 'round'
@@ -345,21 +345,21 @@ function paintFloor(c: Ctx, fx: Fx, w: number, h: number, scale: number, bx: num
   ;([0, 1] as const).forEach((i) => {
     const court = look.courts[i]
     const [cx, cy] = P(ARENA_W / 2, i === 0 ? ARENA_H - 0.9 : 0.9)
-    c.fillStyle = court === 'solari' ? 'rgba(232, 182, 74, 0.2)' : 'rgba(150, 120, 230, 0.22)'
+    c.fillStyle = court === 'solari' ? 'rgba(255, 246, 220, 0.6)' : 'rgba(238, 242, 255, 0.6)'
     c.strokeStyle = c.fillStyle
     c.lineWidth = Math.max(1.5, scale * 0.05)
     crest(c, court, cx, cy, scale * 0.8)
   })
   c.restore()
 
-  // Along each half's sides, boxes in the colours of that court's medallion panes, one per pane.
+  // Outside the movement boundary, down each half's sides: boxes in the colours of that court's medallion panes, one per pane.
   ;([0, 1] as const).forEach((i) => {
     const panes = PALETTE[look.courts[i]].panes
     const half = ARENA_H / 2
     const size = half / 8
     for (let k = 0; k < 8; k++) {
       const y = (i === 0 ? half : 0) + k * size
-      for (const x of [0, ARENA_W - SIDE]) {
+      for (const x of [-SIDE, ARENA_W]) {
         const [bx0, by0] = P(x, y)
         c.fillStyle = panes[k % 3]
         c.fillRect(bx0, by0, SIDE * scale, size * scale)
@@ -384,7 +384,8 @@ function hatchPattern(ctx: Ctx): CanvasPattern | null {
 
 /** Draws one frame of the arena: floor, hazards, projectiles, effects and fighters. */
 export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, dpr: number, shake: number, flip: boolean) {
-  const scale = Math.min(w / ARENA_W, h / ARENA_H)
+  // Leave room on both sides for the coloured strips outside the arena.
+  const scale = Math.min(w / (ARENA_W + 2 * SIDE), h / ARENA_H)
   const bx = (w - ARENA_W * scale) / 2
   const by = (h - ARENA_H * scale) / 2
   const sx = (Math.random() - 0.5) * shake
@@ -423,7 +424,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     ctx.beginPath(); ctx.rect(ix, iy, aw * scale, ah * scale); ctx.clip()
     const p = (t * 0.15) % 1.6 - 0.3
     const band = ctx.createLinearGradient(X(0), Y(0), X(ARENA_W), Y(ARENA_H))
-    for (const [o, a] of [[-0.1, 0], [0, 0.07], [0.1, 0]] as const) band.addColorStop(Math.min(1, Math.max(0, p + o)), `rgba(255, 255, 255, ${a})`)
+    for (const [o, a] of [[-0.1, 0], [0, 0.04], [0.1, 0]] as const) band.addColorStop(Math.min(1, Math.max(0, p + o)), `rgba(255, 255, 255, ${a})`)
     ctx.fillStyle = band
     ctx.fillRect(ix, iy, aw * scale, ah * scale)
     ctx.restore()
@@ -439,7 +440,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
     ctx.fillStyle = 'rgba(10, 4, 20, 0.55)'
     ctx.fillRect(X(0), Y(0), ARENA_W * scale, ARENA_H * scale)
     if (fx.hatch) {
-      ctx.globalAlpha = calm ? 0.6 : 0.45 + 0.25 * Math.sin(t * 5)
+      ctx.globalAlpha = calm ? 0.45 : 0.35 + 0.18 * Math.sin(t * 5)
       ctx.fillStyle = fx.hatch
       ctx.fillRect(X(0), Y(0), ARENA_W * scale, ARENA_H * scale)
     }
@@ -447,7 +448,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   }
 
   // Centre line and circle, breathing gently.
-  ctx.strokeStyle = `rgba(255, 255, 255, ${calm ? 0.12 : 0.1 + 0.06 * Math.sin(t * 2)})`
+  ctx.strokeStyle = `rgba(255, 255, 255, ${calm ? 0.08 : 0.07 + 0.04 * Math.sin(t * 2)})`
   ctx.lineWidth = 1.5
   ctx.beginPath()
   ctx.moveTo(ix, Y(ARENA_H / 2))
@@ -465,7 +466,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
 
   // Drifting embers, dust or stars.
   for (const m of fx.motes) {
-    const a = theme.kind === 'dark' ? 0.25 + 0.6 * Math.abs(Math.sin(t * 1.5 + m.ph)) : 0.25 + 0.35 * Math.sin(t * 2 + m.ph)
+    const a = theme.kind === 'dark' ? 0.15 + 0.4 * Math.abs(Math.sin(t * 1.5 + m.ph)) : 0.15 + 0.22 * Math.sin(t * 2 + m.ph)
     ctx.fillStyle = `rgba(${theme.mote}, ${Math.max(0.05, a)})`
     ctx.beginPath()
     ctx.arc(X(m.x), Y(m.y), m.r * scale, 0, Math.PI * 2)
@@ -567,22 +568,56 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
       ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, Math.PI * 2); ctx.stroke()
     }
     ctx.globalAlpha = 1
+    // The aim pointer: an arrowhead with pulsing chevrons running out to it. It dims while the attack recharges
+    // and stretches and glows as a charge builds.
+    const power = Math.min(1, f.charge)
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.rotate(f.facing)
+    ctx.globalAlpha = f.cooldown > 0 ? 0.4 : 1
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.shadowColor = COLORS[f.court]
+    ctx.shadowBlur = 6 + 12 * power
+    ctx.strokeStyle = '#fff'
+    ctx.lineWidth = 2.5
+    for (let j = 0; j < 2; j++) {
+      const x = r * (1.1 + j * 0.22)
+      ctx.globalAlpha = (f.cooldown > 0 ? 0.4 : 1) * (calm ? 0.6 : 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 7 - j * 1.6)))
+      ctx.beginPath(); ctx.moveTo(x - r * 0.1, -r * 0.24); ctx.lineTo(x + r * 0.08, 0); ctx.lineTo(x - r * 0.1, r * 0.24); ctx.stroke()
+    }
+    ctx.globalAlpha = f.cooldown > 0 ? 0.4 : 1
+    const base = r * 1.5
+    const tip = base + r * (0.55 + 0.5 * power)
+    ctx.fillStyle = power > 0.95 ? COLORS[f.court] : '#fff'
+    ctx.strokeStyle = '#120d2a'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(tip, 0); ctx.lineTo(base, -r * 0.4); ctx.lineTo(base + (tip - base) * 0.3, 0); ctx.lineTo(base, r * 0.4); ctx.closePath()
+    ctx.fill(); ctx.stroke()
+    ctx.restore()
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(cx + Math.cos(f.facing) * r, cy + Math.sin(f.facing) * r)
-    ctx.lineTo(cx + Math.cos(f.facing) * r * 1.5, cy + Math.sin(f.facing) * r * 1.5)
-    ctx.stroke()
     if (f.charge > 0) {
       ctx.beginPath()
       ctx.arc(cx, cy, r + 0.2 * scale, -Math.PI / 2, -Math.PI / 2 + Math.min(1, f.charge) * Math.PI * 2)
       ctx.stroke()
     }
-    const bw = 1.4 * scale
-    ctx.fillStyle = '#000'
-    ctx.fillRect(X(f.pos.x) - bw / 2, Y(f.pos.y - f.radius - 0.35), bw, 5)
-    ctx.fillStyle = '#6fe08a'
-    ctx.fillRect(X(f.pos.x) - bw / 2, Y(f.pos.y - f.radius - 0.35), bw * Math.max(0, f.hp / f.maxHp), 5)
+    // The HP bar curves around the fighter, on a larger circle behind it (opposite the way it faces).
+    const span = Math.PI * 0.62
+    const from = f.facing + Math.PI - span / 2
+    const barR = r + 0.42 * scale
+    ctx.lineWidth = 6
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'
+    ctx.beginPath(); ctx.arc(cx, cy, barR, from, from + span); ctx.stroke()
+    const left = Math.max(0, f.hp / f.maxHp)
+    if (left > 0) {
+      ctx.lineWidth = 3.5
+      ctx.strokeStyle = '#6fe08a'
+      ctx.beginPath(); ctx.arc(cx, cy, barR, from, from + span * left); ctx.stroke()
+    }
+    ctx.lineCap = 'butt'
   })
 
   // Sparks and damage numbers land on top.
@@ -610,7 +645,7 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   // Vignette, then the opening call.
   const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) * 0.55)
   vg.addColorStop(0, 'rgba(0, 0, 0, 0)')
-  vg.addColorStop(1, 'rgba(0, 0, 0, 0.45)')
+  vg.addColorStop(1, 'rgba(0, 0, 0, 0.6)')
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
   if (t > 0.1 && t < 1) {

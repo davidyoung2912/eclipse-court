@@ -127,7 +127,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     let hudTick = 0
     const fx = createFx({
       luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
-      courts: [attacker.court, defender.court], flip,
+      courts: [attacker.court, defender.court],
     })
     const drums = startDuelDrums()
     sfx.duelStart()
