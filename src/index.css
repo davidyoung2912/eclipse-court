@@ -157,12 +157,12 @@ body {
 .buttons button.primary, .menu-buttons button.primary { animation: btn-pulse 2.2s ease-in-out infinite; }
 .choice.won { --glow: 111, 224, 138; }
 .buttons button:not(:disabled):hover, .menu-buttons button:hover, .spell:not(:disabled):hover, .choice:not(:disabled):hover {
-  box-shadow: 0 0 20px rgba(var(--glow), 0.85), inset 0 0 10px rgba(var(--glow), 0.35);
+  box-shadow: 0 0 16px rgba(var(--glow), 0.85), inset 0 0 10px rgba(var(--glow), 0.35);
 }
 .buttons button:not(:disabled):active, .menu-buttons button:active, .spell:not(:disabled):active { transform: scale(0.97); }
 button:disabled { box-shadow: none !important; animation: none !important; }
 @keyframes btn-pulse {
-  50% { box-shadow: 0 0 26px rgba(var(--glow), 0.95), inset 0 0 12px rgba(var(--glow), 0.45); }
+  50% { box-shadow: 0 0 20px rgba(var(--glow), 0.95), inset 0 0 12px rgba(var(--glow), 0.45); }
 }
 @media (prefers-reduced-motion: reduce) { .buttons button.primary, .menu-buttons button.primary { animation: none; } }
 
@@ -244,7 +244,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .odds-text { margin: 5px 0 8px; text-align: center; font-size: 0.75rem; line-height: 1.3; }
 .buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 
-.menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-top: max(env(safe-area-inset-top), 12px); }
+.menu { justify-content: safe center; gap: 12px; overflow-y: auto; padding-inline: 24px; padding-top: max(env(safe-area-inset-top), 12px); }
 /* Pages opening with an art box all start at the same height as the long Story page. */
 .menu:has(> .menu-art:first-child) { justify-content: flex-start; }
 .menu h1 { margin: 0; text-align: center; font-size: 2.2rem; color: var(--solari-gold); }
@@ -301,7 +301,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .main-menu .menu-buttons button.primary {
   border-radius: 14px; border: 1px solid var(--solari-cream); letter-spacing: 0.06em;
   background: linear-gradient(180deg, #ffe08a, #e8a63a);
-  box-shadow: 0 0 22px rgba(232, 182, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 18px rgba(232, 182, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   animation: glow 3s ease-in-out infinite; transition: transform 0.12s;
 }
 .main-menu .menu-buttons button.primary:active { transform: scale(0.97); }
@@ -339,7 +339,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 @keyframes breathe { 50% { opacity: 0.7; transform: scale(1.04); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes drift { from { transform: translate(-16px, 4px); } to { transform: translate(15px, -3px); } }
-@keyframes glow { 50% { box-shadow: 0 0 34px rgba(232, 182, 74, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); } }
+@keyframes glow { 50% { box-shadow: 0 0 22px rgba(232, 182, 74, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); } }
 @media (prefers-reduced-motion: reduce) {
   .star, .corona, .rays, .moon, .main-menu .menu-buttons button.primary { animation: none; }
 }
@@ -347,7 +347,7 @@ button:disabled { box-shadow: none !important; animation: none !important; }
 .menu h2, .menu h3 { margin: 0; }
 .menu h3 { margin-top: 8px; font-size: 0.9rem; opacity: 0.8; }
 .tagline { margin: 0 0 16px; text-align: center; opacity: 0.8; }
-.menu-buttons { display: flex; gap: 8px; margin-top: 12px; }
+.menu-buttons { position: relative; z-index: 1; display: flex; gap: 8px; margin-top: 12px; }
 .menu-buttons button {
   flex: 1; padding: 16px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
   background: var(--umbral-indigo); color: var(--fg); font-size: 1.05rem;
