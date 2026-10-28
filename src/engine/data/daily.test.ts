@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decodeRecord, encodeRecord } from '../serialize'
 import { replay } from '../log'
-import { dailyGame, dailyMatch, isDailyMatch } from './daily'
+import { dailyGame, dailyMatch, dailyShareText, isDailyMatch } from './daily'
 import { dailySeed, dayIndex } from './setups'
 
 const day = (y: number, m: number, d: number) => new Date(y, m - 1, d)
@@ -42,5 +42,18 @@ describe('daily match', () => {
     expect(dayIndex(20270101) - dayIndex(20261231)).toBe(1)
     expect(dayIndex(20240301) - dayIndex(20240228)).toBe(2)
     expect(dayIndex(20261026) - dayIndex(20261024)).toBe(2)
+  })
+})
+
+describe('daily court and share text', () => {
+  it('alternates courts over a month and is stable for a day', () => {
+    const courts = new Set(Array.from({ length: 30 }, (_, i) => dailyMatch(day(2026, 11, 1 + i)).court))
+    expect(courts.size).toBe(2)
+    expect(dailyMatch(day(2026, 11, 3)).court).toBe(dailyMatch(day(2026, 11, 3)).court)
+  })
+  it('writes a short share grid', () => {
+    const m = dailyMatch(day(2026, 11, 3))
+    expect(dailyShareText(m, '2026-11-03', true, 9, 0)).toContain('✨ flawless')
+    expect(dailyShareText(m, '2026-11-03', false, 9, 2)).toContain('🌑🌑')
   })
 })

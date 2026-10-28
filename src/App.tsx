@@ -344,7 +344,7 @@ export default function App() {
       <Daily match={match} progress={progress} report={report} onBack={() => setScreen({ name: 'menu' })}
         onPlay={() => {
           setReport([])
-          setScreen({ name: 'game', human: DAILY_COURT, difficulty: match.difficulty, record: { initial: dailyGame(match), actions: [] }, campaignIndex: null })
+          setScreen({ name: 'game', human: match.court, difficulty: match.difficulty, record: { initial: dailyGame(match), actions: [] }, campaignIndex: null })
         }} />
     )
   }
@@ -531,7 +531,7 @@ export default function App() {
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === DAILY_COURT
+    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === today.court
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
     const weeklyToday = weeklyMatch()
     const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === WEEKLY_COURT

@@ -1,5 +1,5 @@
 import { PERSONALITIES } from '../../engine/data/personality'
-import { DAILY_COURT, type DailyMatch } from '../../engine/data/daily'
+import { dailyShareText, type DailyMatch } from '../../engine/data/daily'
 import { dailyResult, liveStreak, type Progress } from '../../progress'
 import { challengeLink } from '../../share'
 import { ShareButton } from '../ShareButton'
@@ -20,11 +20,6 @@ interface Props {
 /** `20261026` as `2026-10-26`. */
 const dateLabel = (date: number) => `${Math.floor(date / 10000)}-${String(Math.floor(date / 100) % 100).padStart(2, '0')}-${String(date % 100).padStart(2, '0')}`
 
-/** The line a player pastes to a friend: the day, the result and the rules. */
-function resultText(match: DailyMatch, won: boolean, turns: number, lost: number): string {
-  return `Eclipse Court daily ${dateLabel(match.date)}: ${won ? 'won' : 'lost'} in ${turns} rounds, ${lost} ${lost === 1 ? 'piece' : 'pieces'} lost. ${match.blurb}.`
-}
-
 /** Today's match: the same board, army, rules and opponent for everyone, with one scored attempt. */
 export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   const result = dailyResult(progress, match.date)
@@ -40,7 +35,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
       <ul className="setup-card">
         <li>{match.blurb}</li>
         <li>Opponent: {PERSONALITIES[match.personality].name}, {match.difficulty}</li>
-        <li>You play the Solari court.</li>
+        <li>You play the {match.court === 'solari' ? 'Solari' : 'Umbral'} court today.</li>
       </ul>
       <dl className="stats">
         <div><dt>Today</dt><dd>{result ? `${result.won ? 'Won' : 'Lost'}, ${result.turns} rounds, ${result.lost} lost` : 'Not played'}</dd></div>
@@ -51,8 +46,8 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
           <Icon name="play" />{result ? 'Play Again (Not Scored)' : 'Play Today’s Match'}
         </button>
         {result && (
-          <ShareButton title="Eclipse Court daily" label="Share Result" text={resultText(match, result.won, result.turns, result.lost)}
-            link={() => challengeLink({ config: match.config, side: DAILY_COURT })} />
+          <ShareButton title="Eclipse Court daily" label="Share Result" text={dailyShareText(match, dateLabel(match.date), result.won, result.turns, result.lost)}
+            link={() => challengeLink({ config: match.config, side: match.court })} />
         )}
         <BackButton onClick={onBack} />
       </div>

@@ -4,16 +4,18 @@ import { DIFFICULTY_LIST, type Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import { rngNext } from '../rng'
 import type { CycleId } from '../rules/luminance'
-import type { GameState, MatchConfig, MatchMode } from '../rules/types'
+import type { Court, GameState, MatchConfig, MatchMode } from '../rules/types'
 import { boardById } from './boards'
 import { dailySeed, skirmishConfig, type SetupChoice } from './setups'
 
-/** Today's match is always played from the Solari court, so everyone starts from the same side. */
+/** The court of the daily run (the gauntlet); the daily match alternates by day, but everyone plays the same side that day. */
 export const DAILY_COURT = 'solari'
 
 export interface DailyMatch {
   /** The day as a `dailySeed`. */
   date: number
+  /** The court everyone plays today. */
+  court: Court
   config: MatchConfig
   difficulty: Difficulty
   personality: PersonalityId
@@ -60,8 +62,9 @@ export function dailyMatch(date = new Date()): DailyMatch {
   const reverse = roll() < 0.4
   const difficulty = pick(roll, DIFFICULTY_LIST.filter((d) => d !== 'easy'))
   const personality = pick(roll, PERSONALITY_IDS)
+  const court: Court = roll() < 0.5 ? 'solari' : 'umbral'
   const choice: SetupChoice = { mode: 'daily', board: 'classic', winMode: win.mode, events, showdown, cycle: cycle.cycle, reverse }
-  const config = skirmishConfig(choice, DAILY_COURT, seed, {}, date)
+  const config = skirmishConfig(choice, court, seed, {}, date)
   const tags = [
     win.label,
     boardById(config.board).name,
@@ -70,10 +73,16 @@ export function dailyMatch(date = new Date()): DailyMatch {
     ...(showdown ? ['Showdown'] : []),
     ...(reverse ? ['Reverse light'] : []),
   ]
-  return { date: seed, config, difficulty, personality, tags, blurb: tags.join(' · ') }
+  return { date: seed, court, config, difficulty, personality, tags, blurb: tags.join(' · ') }
 }
 
 export const dailyGame = (match: DailyMatch): GameState => newGame(match.config)
 
 /** True if `config` is the daily match of `date`, such as a saved game that was left half played. */
 export const isDailyMatch = (config: MatchConfig, date = new Date()) => JSON.stringify(config) === JSON.stringify(dailyMatch(date).config)
+
+/** The line a player pastes to friends: the day, the result as a short grid of symbols, and the rules. */
+export function dailyShareText(match: DailyMatch, dateText: string, won: boolean, turns: number, lost: number): string {
+  const pieces = lost === 0 ? '✨ flawless' : '🌑'.repeat(Math.min(lost, 8)) + (lost > 8 ? `+${lost - 8}` : '')
+  return `Eclipse Court daily ${dateText}\n${won ? '☀️ Won' : '🌒 Lost'} in ${turns} rounds · ${pieces}\n${match.blurb} · ${match.court === 'solari' ? 'Solari' : 'Umbral'}`
+}
