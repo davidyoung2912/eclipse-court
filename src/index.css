@@ -773,3 +773,6 @@ body:has(.duel) .play-timer { display: none; }
 /* A bound piece keeps a crisp chain badge even though its art is dimmed */
 .bound-badge circle { fill: #120d2a; stroke: #fff; stroke-width: 0.025; }
 .bound-badge path { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.row-pick button { display: inline-flex; align-items: center; gap: 6px; }
+.row-pick .role-icon { width: 1.7em; height: 1.7em; flex: none; }
+.odds-note { margin: 0 0 6px; text-align: center; font-size: 0.7rem; opacity: 0.65; }

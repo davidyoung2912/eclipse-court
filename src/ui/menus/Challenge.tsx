@@ -6,6 +6,7 @@ import { rulesetById, tierOfConfig } from '../../engine/data/setups'
 import type { Court } from '../../engine/rules/types'
 import { CourtPicker } from './CourtPicker'
 import { Icon } from './icons'
+import { LEVEL_ICON } from './levels'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
@@ -34,7 +35,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
       <div className="menu-buttons stacked">
         {DIFFICULTY_LIST.map((d) => (
           <button key={d} className={d === 'normal' ? 'primary' : undefined} onClick={() => onPlay(court, d, false)}>
-            <Icon name="swords" />Against the AI: {d[0].toUpperCase() + d.slice(1)}
+            <Icon name={LEVEL_ICON[d]} />Against the AI: {d[0].toUpperCase() + d.slice(1)}
           </button>
         ))}
         <button onClick={() => onPlay(court, 'normal', true)}><Icon name="banner" />With a Friend on This Device</button>

@@ -7,7 +7,9 @@ import type { Court, DuelOutcome, Piece, Role } from '../../engine/rules/types'
 import { PlayTimer } from '../PlayTimer'
 import { DuelView } from '../duel/DuelView'
 import { CourtPicker } from './CourtPicker'
+import { PieceArt } from '../../art/PieceArt'
 import { Icon } from './icons'
+import { LEVEL_ICON } from './levels'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
@@ -61,6 +63,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
     <div className="row-pick" role="group" aria-label={label}>
       {ROLES.map((r) => (
         <button key={r} className={value === r ? 'on' : undefined} aria-pressed={value === r} onClick={() => { set(r); setOutcome(null) }}>
+          <svg className="role-icon" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role={r} court={owner} /></svg>
           {ROLE_NAMES[owner][r]}
         </button>
       ))}
@@ -86,7 +89,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
       <h3>Opponent skill</h3>
       <div className="row-pick">
         {DIFFICULTY_LIST.map((d) => (
-          <button key={d} className={difficulty === d ? 'on' : undefined} onClick={() => setDifficulty(d)}>{d[0].toUpperCase() + d.slice(1)}</button>
+          <button key={d} className={difficulty === d ? 'on' : undefined} onClick={() => setDifficulty(d)}><Icon name={LEVEL_ICON[d]} />{d[0].toUpperCase() + d.slice(1)}</button>
         ))}
       </div>
       <div className="setup-card">
@@ -96,6 +99,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
           <span className={`odds-d ${foe}`} style={{ flexGrow: odds.defender }} />
         </div>
         <p className="odds-text">You {pct(odds.attacker)} · Draw {pct(odds.other)} · Opponent {pct(odds.defender)}</p>
+        <p className="odds-note">Typical odds for these pieces and this light. They do not change with the opponent's skill.</p>
         {result && <p className="practice-out" role="status">{result}</p>}
       </div>
       <div className="menu-buttons stacked">

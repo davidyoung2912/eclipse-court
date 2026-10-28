@@ -11,7 +11,8 @@ import { DraftPicker } from './DraftPicker'
 import { LoadoutPicker } from './LoadoutPicker'
 import { ShareButton } from '../ShareButton'
 import { CourtPicker } from './CourtPicker'
-import { Icon, type IconName } from './icons'
+import { Icon } from './icons'
+import { LEVEL_ICON } from './levels'
 import { changedSections, type SectionId } from './menuModel'
 import { Section, Segmented, ToggleRow, type SegOption } from './SetupControls'
 import { TipCard } from '../tips/TipCard'
@@ -49,7 +50,6 @@ const CLOCKS: { seconds: number; name: string; text: string }[] = [
   { seconds: 15, name: 'Blitz', text: '15 seconds a turn.' },
 ]
 
-const LEVEL_ICON: Record<Difficulty, IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 const LEVEL_TEXT: Record<Difficulty, string> = {
   easy: 'Slow to react, poor aim, rarely dodges.',
