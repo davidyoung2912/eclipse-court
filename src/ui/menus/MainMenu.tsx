@@ -22,9 +22,10 @@ interface Props {
   onSettings: () => void
   onCollection: () => void
   onDaily: () => void
+  onWeekly: () => void
   onDailyPuzzle: () => void
   /** Whether today's match and puzzle have been played and solved. */
-  dailyDone: { match: boolean; puzzle: boolean }
+  dailyDone: { match: boolean; puzzle: boolean; weekly: boolean }
   /** Present when an unfinished game was left behind. */
   onResume?: () => void
   /** True until the player has finished or skipped the tutorial once. */
@@ -90,7 +91,7 @@ interface Card {
   wide?: boolean
 }
 
-export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
@@ -116,6 +117,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
         <div className="today-row">
           <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />Daily Match</button>
           <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />Daily Puzzle</button>
+          <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />Weekly</button>
         </div>
       </section>
       <div className="mode-cards">

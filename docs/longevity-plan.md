@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L3 done; L4 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L4 done; L5 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -38,7 +38,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L1 (done): post-game review.** Analyse a finished game move by move with the strategy search: for each move, the value of the move played against the best move, classified as best, inaccuracy, mistake or blunder (luck in duels is ignored; only the decision is judged). The Replay viewer gets a Review button: an evaluation bar over the game (click to jump), the flagged move with the better one described and shown on the board, previous/next key moment buttons, and a per-side summary with an accuracy figure. Analysis runs in the AI worker with progress and can be cancelled. Open from Stats ("Replay Last Game") and from shared replay links. No new saved state. Done when the review is correct on known positions (tests) and the build is clean.
 - **L2 (done): shards and cosmetics shop.** A wallet (`eclipse-court:shop`) of Shards, earned from finished games (more for harder opponents and first clears), achievements and daily/weekly play. A Collection page spends them on cosmetics: board themes (the four star-locked themes stay free unlocks), piece sets, capture effects, sound packs and Story codex art. Equip state is saved. Cosmetics are CSS variables, art variants and synth settings only.
 - **L3 (done): mastery and achievements.** Per-area mastery tracks (Campaign, Scenarios, Puzzles, Gauntlet, Grand board, Online) with levels that pay Shards. About 25 new achievements, including review-based ones ("a game with no mistakes"), a no-loss tier clear, and speed goals. Three pinnable showcase badges on the Stats page. Needs L1 and L2.
-- **L4: weekly challenge.** A seeded modifier-of-the-week match (for example "every square is a Hazard") reusing the daily plumbing, with a best-score board on the device and a shard reward. Needs L2.
+- **L4 (done): weekly challenge.** A seeded modifier-of-the-week match (for example "every square is a Hazard") reusing the daily plumbing, with a best-score board on the device and a shard reward. Needs L2.
 - **L5: modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
 - **L6: ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
 - **L7: Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
@@ -67,3 +67,8 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/progress.ts`: 25 new achievements (100 to 125), including the new `Insight` category fed by `recordReview`; `Summary.review` carries the result of a review.
 - `src/ui/menus/Replay.tsx`: `onReviewed` fires when a review of the player's own last game finishes (App passes it only for "Replay Last Game") and the earned lines show under the summary.
 - `src/ui/menus/Stats.tsx`: Showcase, Mastery section with Claim button, Pin buttons on earned achievements.
+
+## L4 file map
+- `src/engine/data/weekly.ts`: `WEEKLY_MODIFIERS` (eight twists, five of them a cell effect over the middle band), `weeklyMatch(date)` (week = Monday's `dailySeed`; seeded random army, persona and difficulty), `isWeeklyMatch`, `weeklyScore` (win 500 plus speed and pieces kept).
+- `src/weekly.ts` (+ test in `weekly.test.ts`): store `eclipse-court:weekly` with the week's best, attempts, weeks won and recent history; `recordWeekly` pays 40 Shards for a week's first win and 10 for each better winning score.
+- `src/ui/menus/Weekly.tsx`, a "Weekly" button in the main menu's Today row, wiring in `App.tsx` (`finishGame` records the score; weekly games are not counted as daily).
