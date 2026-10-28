@@ -12,6 +12,11 @@ export function BoardDefs() {
         <stop offset="0.55" stopColor="#ffd45a" stopOpacity="0.55" />
         <stop offset="1" stopColor="#ffd45a" stopOpacity="0" />
       </radialGradient>
+      <radialGradient id="threat-glow">
+        <stop offset="0" stopColor="#ffb0a0" stopOpacity="0.95" />
+        <stop offset="0.55" stopColor="#ff4a4a" stopOpacity="0.55" />
+        <stop offset="1" stopColor="#ff4a4a" stopOpacity="0" />
+      </radialGradient>
       <filter id="halo-blur" x="-60%" y="-60%" width="220%" height="220%">
         <feGaussianBlur stdDeviation="0.07" />
       </filter>

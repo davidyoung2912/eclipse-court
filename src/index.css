@@ -82,6 +82,7 @@ body {
 .cell-legend li { display: flex; align-items: center; gap: 4px; }
 .cell-legend i { width: 9px; height: 9px; border-radius: 2px; background: var(--cell); }
 .move-dot { fill: #fffbe0; stroke: #e8b64a; stroke-width: 0.03; pointer-events: none; }
+.move-dot.threat-dot { fill: #ffe0dc; stroke: #d83a3a; }
 .move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
 @keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
 

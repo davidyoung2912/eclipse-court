@@ -166,6 +166,11 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     () => (targets ? targets.squares : selected && myTurn ? legalMoves(state, selected) : NO_SQUARES),
     [state, targets, selected, myTurn],
   )
+  /** Tapping an enemy piece shows where it could strike next. */
+  const threats = useMemo(
+    () => (!selected && !targets && shown && shown.court !== human ? legalMoves(state, shown) : NO_SQUARES),
+    [state, selected, targets, shown, human],
+  )
 
   const { hint, level: hintLevel, ask: askHint, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
 
@@ -457,7 +462,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
     <main className="app timed">
       <Dial state={state} />
       <p className="objective" aria-label="Objective">{objective}</p>
-      <Board state={state} selected={selected} moves={moves} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
+      <Board state={state} selected={selected} moves={moves} threats={threats} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (

@@ -23,6 +23,8 @@ interface Props {
   state: GameState
   selected: Piece | null
   moves: Pos[]
+  /** Squares an inspected enemy piece could reach: shown in red, with any of the player's pieces there ringed. */
+  threats?: Pos[]
   /** Pieces a chosen spell may target. */
   targetIds?: string[]
   onSquare: (p: Pos) => void
@@ -61,8 +63,9 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], targetIds = [], onSquare, focus, hint, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
+  const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
   const radius = safeRadius(state)
   const size = sizeOf(state.config)
@@ -119,13 +122,15 @@ export const Board = memo(function Board({ state, selected, moves, targetIds = [
             {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
             {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
+            {isThreat(p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#threat-glow)" className="move-glow" />}
+            {isThreat(p) && <circle cx={cx} cy={cy} r={0.16} className="move-dot threat-dot" />}
             {hint?.square && samePos(hint.square, p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow hint-square" />}
           </g>
         )
       })}
       {state.pieces.filter((pc) => !fogFor || visibleTo(state, fogFor, pc)).map((pc) => {
         const { cx, cy } = toScreen(pc.pos, flip, size)
-        const attack = isMove(pc.pos) || targetIds.includes(pc.id)
+        const attack = isMove(pc.pos) || targetIds.includes(pc.id) || isThreat(pc.pos)
         return (
           <g key={pc.id} aria-label={`${ROLE_NAMES[pc.court][pc.role]} ${pc.hp}/${pc.maxHp}`} onClick={() => onSquare(pc.pos)} style={{ transform: `translate(${cx}px, ${cy}px)` }}
             className={`piece ${pc.court}${selected?.id === pc.id ? ' selected' : ''}${attack ? ' attackable' : ''}${pc.bound ? ' bound' : ''}${focus?.mover === pc.id ? ' mover' : ''}${focus?.target === pc.id ? ' target' : ''}`}>
