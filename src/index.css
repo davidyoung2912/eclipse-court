@@ -510,10 +510,10 @@ body:has(.puzzles-menu) {
 .draft-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
 .draft-row .name { flex: 1; }
 .draft-row .cost { opacity: 0.7; font-size: 0.8rem; }
-.draft-row button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: var(--fg); font-size: 1.1rem; }
+.draft-row button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(26, 20, 62, 0.92); color: var(--fg); font-size: 1.1rem; }
 .draft-row button:disabled { opacity: 0.3; }
 .draft-row .count { width: 1.4em; text-align: center; font-weight: 700; }
-.setup-card { padding: 10px 12px; border-radius: 10px; background: rgba(232, 182, 74, 0.12); font-size: 0.85rem; line-height: 1.4; }
+.setup-card { padding: 10px 12px; border-radius: 10px; background: linear-gradient(rgba(232, 182, 74, 0.14), rgba(232, 182, 74, 0.14)), rgb(26, 20, 62); font-size: 0.85rem; line-height: 1.4; }
 .setup-card strong { color: var(--solari-gold); }
 .choices.row { flex-direction: row; flex-wrap: wrap; }
 .choices.row .choice { flex: 1 1 40%; }
@@ -553,9 +553,9 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; background: rgba(111, 224, 138, 0.2); border: 1px solid #6fe08a; }
 .row-pick { display: flex; flex-wrap: wrap; gap: 6px; }
 .row-pick button {
-  padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: var(--fg); font-size: 0.85rem;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(26, 20, 62, 0.92); color: var(--fg); font-size: 0.85rem;
 }
-.row-pick button.on { border-color: var(--solari-gold); background: rgba(232, 182, 74, 0.24); }
+.row-pick button.on { border-color: var(--solari-gold); background: linear-gradient(rgba(232, 182, 74, 0.3), rgba(232, 182, 74, 0.3)), rgb(26, 20, 62); }
 .row-pick button:disabled { opacity: 0.35; }
 .practice-out { text-align: center; font-weight: 600; }
 .swatch { display: inline-block; width: 14px; height: 14px; margin-right: 6px; border-radius: 50%; vertical-align: -2px; border: 1px solid rgba(255, 255, 255, 0.4); }
@@ -576,12 +576,12 @@ input[type='range'] { width: min(16rem, 60vw); accent-color: var(--solari-gold);
 .tier-fold summary h3::before { content: '\25B8'; }
 .tier-fold[open] summary h3::before { content: '\25BE'; }
 .menu .choice {
-  position: relative; background: linear-gradient(180deg, rgba(74, 58, 150, 0.48), rgba(43, 36, 104, 0.48));
+  position: relative; background: linear-gradient(180deg, rgba(74, 58, 150, 0.9), rgba(43, 36, 104, 0.9));
   border-color: rgba(154, 124, 240, 0.35);
 }
-.menu .choice.solari { background: linear-gradient(100deg, rgba(232, 182, 74, 0.34), rgba(43, 36, 104, 0.44) 70%); }
-.menu .choice.umbral { background: linear-gradient(100deg, rgba(122, 92, 200, 0.48), rgba(13, 10, 34, 0.6) 70%); }
-.menu .choice.on { background: linear-gradient(180deg, rgba(232, 182, 74, 0.34), rgba(232, 182, 74, 0.12)); }
+.menu .choice.solari { background: linear-gradient(100deg, rgba(232, 182, 74, 0.34), rgba(43, 36, 104, 0.44) 70%), rgb(26, 20, 62); }
+.menu .choice.umbral { background: linear-gradient(100deg, rgba(122, 92, 200, 0.48), rgba(13, 10, 34, 0.6) 70%), rgb(26, 20, 62); }
+.menu .choice.on { background: linear-gradient(180deg, rgba(232, 182, 74, 0.34), rgba(232, 182, 74, 0.12)), rgb(26, 20, 62); }
 .menu .choice.solari.on, .menu .choice.umbral.on { box-shadow: 0 0 14px rgba(232, 182, 74, 0.5); }
 .choice .avatar { position: absolute; right: 10px; top: 50%; width: 52px; height: 52px; transform: translateY(-50%); filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6)); }
 .choice:has(.avatar) { padding-right: 72px; }
@@ -689,7 +689,7 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 .setup-seg button {
   flex: 1 1 0; min-width: 5.5em; min-height: 44px; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: 10px; border: 1px solid rgba(154, 124, 240, 0.35); color: var(--fg); font-size: 0.95rem;
-  background: linear-gradient(180deg, rgba(74, 58, 150, 0.48), rgba(43, 36, 104, 0.48));
+  background: linear-gradient(180deg, rgba(74, 58, 150, 0.9), rgba(43, 36, 104, 0.9));
 }
 .setup-seg button.on { border-color: var(--solari-gold); background: linear-gradient(180deg, rgba(232, 182, 74, 0.34), rgba(232, 182, 74, 0.12)); font-weight: 700; }
 .setup-seg button:disabled { opacity: 0.35; }
