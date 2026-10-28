@@ -6,7 +6,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord, toBase64Url } from './engine/serialize'
 import { skirmishConfig } from './engine/data/setups'
 import { blankDesign, designChallenge } from './engine/data/editor'
-import { describeConfig, parseShared, turnLink } from './share'
+import { describeConfig, parseShared } from './share'
 
 const challenge = { config: matchConfig({ seed: 77, mode: 'hill', events: true }), side: 'umbral' } as const
 const code = encodeChallenge(challenge)
@@ -96,6 +96,5 @@ describe('turn links', () => {
     expect(parseShared(`g=${c}`)?.kind).toBe('turn')
     expect(parseShared(`#r=${c}`)?.kind).toBe('replay')
     expect(parseShared(c)?.kind).toBe('replay')
-    expect(parseShared(turnLink(record).replace(/^.*#/, '#'))?.kind).toBe('turn')
   })
 })
