@@ -1014,6 +1014,7 @@ body:has(.duel) .play-timer { display: none; }
 /* Codex frames on the story scenes */
 :root[data-codex='gilt'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 0 0 18px rgba(232, 182, 74, 0.3); }
 :root[data-codex='moon'] .story-stage { border-color: #9ec8f0; box-shadow: 0 0 0 2px rgba(158, 200, 240, 0.5), 0 0 18px rgba(158, 200, 240, 0.35); }
+:root[data-codex='laurel'] .story-stage { border-color: #b8c85a; box-shadow: 0 0 0 2px rgba(184, 200, 90, 0.5), 0 0 18px rgba(214, 190, 80, 0.35); }
 :root[data-codex='ember'] .story-stage { border-color: #f07a4a; box-shadow: 0 0 0 2px rgba(240, 122, 74, 0.5), 0 0 18px rgba(240, 122, 74, 0.35); }
 
 .showcase { width: 100%; }
@@ -1115,3 +1116,5 @@ svg.board:focus { outline: none; }
 
 /* The Gauntlet's army picker sits on a solid indigo panel, so it does not turn muddy over the green floor. */
 .gauntlet-menu .draft { background: rgba(32, 26, 78, 0.94); border: 1px solid rgba(154, 124, 240, 0.4); }
+
+.role-goals { margin-bottom: 10px; }

@@ -39,6 +39,7 @@ import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
 import { settleGame } from './settleGame'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
+import { recordRoleDuels } from './roleGoals'
 import { rememberCourt, masterySnapshot } from './mastery'
 import { Collection } from './ui/menus/Collection'
 import type { Court, GameState } from './engine/rules/types'
@@ -647,7 +648,10 @@ export default function App() {
     const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
       const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, coop, daily, today, stats })
       if (settled.summary) rememberCourt(human)
-      if (settled.summary && stats) recordGameResult(settled.summary)
+      if (settled.summary && stats) {
+        recordGameResult(settled.summary)
+        recordRoleDuels(finished, human)
+      }
       let extra: ReturnType<typeof recordWeekly> | null = null
       if (weekly && stats && settled.summary) extra = recordWeekly(weeklyToday.week, weeklyScore(settled.summary), settled.summary.won)
       const foe = ladder ? foeById(ladder) : undefined

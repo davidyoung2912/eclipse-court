@@ -4,6 +4,8 @@ import { dailySeed } from '../../engine/data/setups'
 import { overall, percent, sections, totals } from '../../statsModel'
 import { storySnapshot, subscribeStory } from '../../story'
 import { claimMastery, levelReward, masterySnapshot, SHOWCASE_SLOTS, standings, subscribeMastery, togglePin } from '../../mastery'
+import { claimRoleGoals, rewardsFor, roleGoalsSnapshot, subscribeRoleGoals, unclaimedGoals, type GoalClaim } from '../../roleGoals'
+import { goalDone, GOAL_ROLES, GOAL_ROLE_NAMES, progressOf, ROLE_GOALS } from '../../engine/data/roleGoals'
 import { ladderSnapshot, subscribeLadder } from '../../ladder'
 import { recordsSnapshot, subscribeRecords } from '../../records'
 import { rushBest } from '../../rush'
@@ -30,7 +32,11 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
   const ladder = useSyncExternalStore(subscribeLadder, ladderSnapshot)
   const records = useSyncExternalStore(subscribeRecords, recordsSnapshot)
+  const goals = useSyncExternalStore(subscribeRoleGoals, roleGoalsSnapshot)
   const [claimed, setClaimed] = useState<number | null>(null)
+  const [goalClaim, setGoalClaim] = useState<GoalClaim | null>(null)
+  const goalsDone = ROLE_GOALS.filter((g) => goalDone(g, goals.tally)).length
+  const goalsOwed = unclaimedGoals(goals).reduce((n, g) => n + g.shards, 0)
   const tracks = standings(progress, mastery)
   const owed = tracks.reduce((n, t) => n + t.owed, 0)
   const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
@@ -105,6 +111,33 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
           <Icon name="star" />{owed > 0 ? `Claim ${owed} Shards` : 'No Shards to claim'}
         </button>
         {claimed !== null && claimed > 0 && <p className="status" role="status">Shards: +{claimed}.</p>}
+      </details>
+      <details className="stat-section">
+        <summary><h3><Icon name="trophy" />Piece goals ({goalsDone}/{ROLE_GOALS.length})</h3></summary>
+        <p className="tagline">Duels your pieces win, counted by role and by the light on the square. Completed goals pay Shards; finishing enough of them earns cosmetics.</p>
+        {GOAL_ROLES.map((role) => (
+          <div key={role} className="role-goals">
+            <strong>{GOAL_ROLE_NAMES[role]}</strong> <small>{goals.tally[role].wins} duels won</small>
+            <ul className="mastery-tracks">
+              {ROLE_GOALS.filter((g) => g.role === role).map((g) => (
+                <li key={g.id}>
+                  {g.text}
+                  <Bar fraction={progressOf(g, goals.tally) / g.target} thin />
+                  <small>{progressOf(g, goals.tally)} of {g.target} · {goals.claimed.includes(g.id) ? 'claimed' : `${g.shards} Shards`}</small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <ul className="mastery-tracks">
+          {rewardsFor(ROLE_GOALS.length).map((c) => (
+            <li key={`${c.kind}:${c.id}`}><strong>{c.name}</strong> <small>{c.goals} goals · {goalsDone >= (c.goals ?? 0) ? 'earned' : `${(c.goals ?? 0) - goalsDone} to go`}</small></li>
+          ))}
+        </ul>
+        <button className="primary" disabled={goalsOwed === 0 && rewardsFor(goalsDone).length === 0} onClick={() => setGoalClaim(claimRoleGoals())}>
+          <Icon name="star" />{goalsOwed > 0 ? `Claim ${goalsOwed} Shards` : 'Nothing to claim'}
+        </button>
+        {goalClaim && <p className="status" role="status">{goalClaim.shards > 0 ? `Shards: +${goalClaim.shards}. ` : ''}{goalClaim.cosmetics.map((n) => `Earned ${n}.`).join(' ')}</p>}
       </details>
       <h3>Achievements ({progress.achievements.length} of {ACHIEVEMENTS.length})</h3>
       {ACHIEVEMENT_CATEGORIES.map((category) => {

@@ -6,8 +6,10 @@ export interface Cosmetic {
   id: string
   name: string
   text: string
-  /** Shards to buy it; 0 is owned from the start. */
+  /** Shards to buy it; 0 is owned from the start unless `goals` is set. */
   cost: number
+  /** Piece mastery goals to complete to earn it; it is never sold. */
+  goals?: number
 }
 
 export const KIND_TITLES: Record<CosmeticKind, string> = {
@@ -35,6 +37,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'capture', id: 'embers', name: 'Embers', text: 'Sparks rise from the square.', cost: 100 },
   { kind: 'capture', id: 'stardust', name: 'Stardust', text: 'A wide, slow burst of light.', cost: 120 },
 
+  { kind: 'capture', id: 'comet', name: 'Comet', text: 'A long trail of pale fire.', cost: 0, goals: 6 },
+  { kind: 'capture', id: 'supernova', name: 'Supernova', text: 'A wide golden bloom. Earned by mastering every piece.', cost: 0, goals: 28 },
+
   { kind: 'sound', id: 'classic', name: 'Classic', text: 'The original synth voices.', cost: 0 },
   { kind: 'sound', id: 'crystal', name: 'Crystal', text: 'Bright, high and glassy.', cost: 90 },
   { kind: 'sound', id: 'deep', name: 'Deep Hall', text: 'Lower and rounder, like a stone hall.', cost: 90 },
@@ -44,13 +49,14 @@ export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'codex', id: 'gilt', name: 'Gilt Frame', text: 'A gold border around every scene.', cost: 70 },
   { kind: 'codex', id: 'moon', name: 'Moonlit Frame', text: 'A pale blue border and glow.', cost: 70 },
   { kind: 'codex', id: 'ember', name: 'Emberlit Frame', text: 'A red-orange border and glow.', cost: 90 },
+  { kind: 'codex', id: 'laurel', name: 'Laurel Frame', text: 'A green-gold border, for those who have mastered the pieces.', cost: 0, goals: 14 },
 ]
 
 export const cosmeticsOf = (kind: CosmeticKind) => COSMETICS.filter((c) => c.kind === kind)
 export const cosmeticKey = (c: Pick<Cosmetic, 'kind' | 'id'>) => `${c.kind}:${c.id}`
 export const findCosmetic = (kind: CosmeticKind, id: string) => COSMETICS.find((c) => c.kind === kind && c.id === id)
 /** What each kind starts equipped with: its free first entry. */
-export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0)?.id ?? ''
+export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0 && !c.goals)?.id ?? ''
 
 /** A sound pack: a pitch ratio and, optionally, a wave that replaces the plain tones'. */
 export interface Voice {
@@ -77,4 +83,6 @@ export const CAPTURE_FX: Record<string, CaptureFx> = {
   shatter: { parts: 8, colour: '#bfe6ff', reach: 0.6 },
   embers: { parts: 6, colour: '#ff9a3c', reach: 0.7 },
   stardust: { parts: 12, colour: '#fff3b8', reach: 0.9 },
+  comet: { parts: 7, colour: '#d6ecff', reach: 1.1 },
+  supernova: { parts: 16, colour: '#ffd36b', reach: 1.2 },
 }

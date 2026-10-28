@@ -24,14 +24,14 @@ const count = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x
 export function parseShop(raw: unknown): ShopState {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof ShopState, unknown>>
   const owned = Array.isArray(o.owned)
-    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => c.cost > 0 && cosmeticKey(c) === k)))]
+    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => (c.cost > 0 || c.goals) && cosmeticKey(c) === k)))]
     : []
   const equipped: Partial<Record<CosmeticKind, string>> = {}
   if (o.equipped && typeof o.equipped === 'object')
     for (const kind of KINDS) {
       const id = (o.equipped as Record<string, unknown>)[kind]
       const item = typeof id === 'string' ? findCosmetic(kind, id) : undefined
-      if (item && kind !== 'theme' && (item.cost === 0 || owned.includes(cosmeticKey(item)))) equipped[kind] = item.id
+      if (item && kind !== 'theme' && owns(item, { owned })) equipped[kind] = item.id
     }
   const shards = count(o.shards)
   return { shards, earned: Math.max(count(o.earned), shards), owned, equipped }
@@ -64,7 +64,7 @@ export function subscribeShop(l: Listener) {
   return () => { listeners.delete(l) }
 }
 
-export const owns = (c: Cosmetic, s: ShopState = state) => c.cost === 0 || s.owned.includes(cosmeticKey(c))
+export const owns = (c: Cosmetic, s: Pick<ShopState, 'owned'> = state) => (c.cost === 0 && !c.goals) || s.owned.includes(cosmeticKey(c))
 export const equippedId = (kind: CosmeticKind, s: ShopState = state) => s.equipped[kind] ?? defaultOf(kind)
 
 export function earnShards(n: number) {
@@ -74,7 +74,7 @@ export function earnShards(n: number) {
 
 /** Spends Shards on a cosmetic; false if it is already owned or too dear. */
 export function buy(c: Cosmetic): boolean {
-  if (owns(c) || state.shards < c.cost) return false
+  if (c.goals || owns(c) || state.shards < c.cost) return false
   commit({ ...state, shards: state.shards - c.cost, owned: [...state.owned, cosmeticKey(c)] })
   return true
 }
@@ -118,3 +118,10 @@ export const SHARDS_PUZZLE = 5
 export const SHARDS_DAILY_PUZZLE = 10
 export const SHARDS_GAUNTLET_STAGE = 10
 export const SHARDS_GAUNTLET_WIN = 60
+
+/** Gives an earned cosmetic (one set by `goals`); false if it is not one or already owned. */
+export function grant(c: Cosmetic): boolean {
+  if (!c.goals || owns(c)) return false
+  commit({ ...state, owned: [...state.owned, cosmeticKey(c)] })
+  return true
+}
