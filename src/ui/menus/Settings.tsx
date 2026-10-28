@@ -53,9 +53,10 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
   }
   const change = (patch: Partial<typeof settings>) => setSettings(updateSettings(patch))
   return (
-    <main className="app menu blue-menu">
+    <main className="app menu blue-menu two-pane">
       <PageArt icon="gear" />
       <h2>{t('settings.title')}</h2>
+      <div className="pane-main">
       <h3>{t('settings.look')}</h3>
       <div className="choices">
         {themes.map((th) => {
@@ -93,6 +94,8 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.oddsDetail} onChange={() => change({ oddsDetail: !settings.oddsDetail })} /> {t('settings.oddsDetail')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.reminders} onChange={() => change({ reminders: !settings.reminders })} /> {t('settings.reminders')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.duelAssist} onChange={() => change({ duelAssist: !settings.duelAssist })} /> {t('settings.duelAssist')}</label>
+      </div>
+      <div className="pane-side">
       <h3>{t('settings.hints')}</h3>
       <p className="setup-hint">{t('settings.hintsHint')}</p>
       <div className="choices row">
@@ -141,6 +144,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void restore(e.target.files?.[0])} />
       </div>
       {note && <p role="status">{note}</p>}
+      </div>
       <div className="menu-buttons">
         <BackButton onClick={onBack} />
       </div>

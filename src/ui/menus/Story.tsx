@@ -43,10 +43,11 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
   const untouched = read.size === 0 && Object.keys(story.characters).length === 0 && Object.keys(story.losses).length === 0 && !story.ending
   const prologue = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === 'prologue')
   return (
-    <main className="app menu story-menu">
+    <main className="app menu story-menu two-pane">
       <PageArt icon="book" />
       <h2>Story</h2>
       <p className="tagline">How the Hour stopped, and the courts that came of it.</p>
+      <div className="pane-main">
       {prologue.length > 0 && <div className="choices">{prologue.map(chapterButton)}</div>}
       {([1, 2, 3] as const).map((act) => {
         const list = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === act)
@@ -67,6 +68,8 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
         </div>
       )}
       {!ending && <p className="tagline">More chapters are still to be told.</p>}
+      </div>
+      <div className="pane-side">
       {company.length > 0 && (
         <section className="story-cast" aria-label="Company">
           <h3>Company</h3>
@@ -111,6 +114,7 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
           )
         })}
       </section>
+      </div>
       <div className="menu-buttons stacked">
         <ResetButton label="Reset Story" disabled={untouched} warning="Forget every chapter read, bond scene, ending and story achievement, and bring every character back? Campaign, puzzle and scenario progress is kept." onReset={resetStory} />
         <BackButton onClick={onBack} />

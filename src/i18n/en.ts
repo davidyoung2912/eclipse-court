@@ -156,6 +156,7 @@ export const en = {
   'collection.title': 'Collection',
   'collection.tagline': 'Spend Shards, earned from games, puzzles and achievements. Cosmetics change how the game looks and sounds, never how it plays.',
   'collection.preview': 'Preview',
+  'collection.pickPreview': 'Pick Preview on any item to see it here.',
   'collection.previewOf': 'Preview {name}',
   'collection.shards': 'Shards',
   'collection.earned': '{count} earned in all',

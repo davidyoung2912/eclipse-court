@@ -33,12 +33,15 @@ export function Collection({ onBack }: Props) {
     }
   }
   return (
-    <main className="app menu blue-menu">
+    <main className="app menu blue-menu two-pane">
       <PageArt icon="star" />
       <h2>{t('collection.title')}</h2>
       <p className="tagline">{t('collection.tagline')}</p>
       <p className="shard-wallet" role="status"><Icon name="star" /><strong><CountUp value={shop.shards} /></strong> {t('collection.shards')}<small>{t('collection.earned', { count: shop.earned })}</small></p>
-      {preview && <Showcase cosmetic={preview} />}
+      <aside className="pane-side">
+        {preview ? <Showcase cosmetic={preview} /> : <p className="tagline pane-hint">{t('collection.pickPreview')}</p>}
+      </aside>
+      <div className="pane-main">
       {KINDS.map((kind) => (
         <section key={kind} className="collection-kind">
           <h3>{KIND_TITLES[kind]}</h3>
@@ -77,6 +80,7 @@ export function Collection({ onBack }: Props) {
         </section>
       ))}
       <p className="tagline">{t('collection.freeThemes')}</p>
+      </div>
       <div className="menu-buttons">
         <BackButton onClick={onBack} />
       </div>
