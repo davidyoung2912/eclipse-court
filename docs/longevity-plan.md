@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L11 done; L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L12 done; the plan is complete.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -46,7 +46,13 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L9 (done): juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
 - **L10 (done): onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
 - **L11 (done): shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
-- **L12: async play-by-link.** Play a game by passing a link back and forth, one move at a time, using the existing action-log encoding. Each link carries the whole record, so no server is needed; the app checks that the pasted record extends the one it holds.
+- **L12 (done): async play-by-link.** Play a game by passing a link back and forth, one move at a time, using the existing action-log encoding. Each link carries the whole record, so no server is needed; the app checks that the pasted record extends the one it holds.
+
+## L12 file map
+- `src/mail.ts` (+ test): store `eclipse-court:mail` (up to 20 games: id from the opening position, the court this device plays, the record code). `receive(held, incoming)` says whether a pasted record is new, an update (extends the held moves), known (same or shorter) or a clash (another game, or the moves diverge); `statusOf`, `toMove`.
+- `share.ts`: `#g=` links (`turnLink`) carry the whole record and parse as `kind: 'turn'`; a bare code still opens as a replay.
+- `ui/menus/Mail.tsx` (list, New Game, paste box, accept card), `MailSend.tsx` (the link to send). Battle menu has Play by Link; Skirmish setup takes `byLink`.
+- `Game.tsx` `mail` prop: no AI answers, duels are settled automatically, no undo, and the move ends the visit. A new game opens as the creator's court; the court to move when a new link arrives is the receiver's. No server, no other saved state.
 
 ## L11 file map
 - `src/shareCard.ts` (+ test): `cardModel` (headline, detail, rule tags; pure), `drawCard` (canvas drawing of the final position with light shading, beacons, cells and piece letters), `cardImage` (PNG blob), `cardClip` (WebM recorded from a canvas with `MediaRecorder`, positions from `clipFrames`, only where `canRecordClip()`). `src/saveFile.ts` downloads a blob.

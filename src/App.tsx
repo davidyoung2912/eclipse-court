@@ -58,6 +58,9 @@ import { Stats } from './ui/menus/Stats'
 import { PlayTimer } from './ui/PlayTimer'
 import { Online } from './ui/menus/Online'
 import { Lobby } from './ui/menus/Lobby'
+import { Mail } from './ui/menus/Mail'
+import { MailSend } from './ui/menus/MailSend'
+import { mailGame, putMail, recordOfGame } from './mail'
 import { SkirmishSetup } from './ui/menus/SkirmishSetup'
 
 // The board, duel and tutorial code load when first needed, so the menus open sooner.
@@ -69,7 +72,7 @@ const Tutorial = lazy(() => import('./ui/tutorial/Tutorial').then((m) => ({ defa
 type Screen =
   | { name: 'menu' }
   | { name: 'battle' }
-  | { name: 'skirmish'; /** Opened to host an online game. */ online?: boolean }
+  | { name: 'skirmish'; /** Opened to host an online game. */ online?: boolean; /** Opened to start a game played by link. */ mail?: boolean }
   | { name: 'campaign' }
   | { name: 'story' }
   | { name: 'chapter'; id: string }
@@ -90,9 +93,13 @@ type Screen =
   | { name: 'practice' }
   | { name: 'settings' }
   | { name: 'collection' }
-  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu'; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
+  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' | 'mail'; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
+  /** Games played by link: the list, with a move that arrived by link waiting to be accepted. */
+  | { name: 'mail'; incoming?: GameRecord }
+  /** The link to send for a game played by link. */
+  | { name: 'mailsend'; id: string }
   | { name: 'editor' }
   /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
   | { name: 'online' }
@@ -117,6 +124,8 @@ type Screen =
     ladder?: string
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
+    /** A game played by link: its id in the saved list. The other court is not here, and each move ends the visit. */
+    mail?: string
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -159,12 +168,14 @@ function setClassicNext(on: boolean) {
 
 /** The screen a shared link or code opens. */
 const sharedScreen = (shared: Shared): Screen =>
-  shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge } : { name: 'replay', record: shared.record, from: 'menu' }
+  shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge }
+    : shared.kind === 'turn' ? { name: 'mail', incoming: shared.record }
+    : { name: 'replay', record: shared.record, from: 'menu' }
 
-/** Reads a `#c=` or `#r=` link out of the address, then removes it so a reload does not reopen it. */
+/** Reads a `#c=`, `#r=` or `#g=` link out of the address, then removes it so a reload does not reopen it. */
 function takeLinkScreen(): Screen | null {
   const { hash, pathname, search } = window.location
-  if (!/^#[crj]=/.test(hash)) return null
+  if (!/^#[crgj]=/.test(hash)) return null
   history.replaceState(null, '', pathname + search)
   if (hash.startsWith('#j=')) return { name: 'lobby', offer: hash.slice(3) }
   const shared = parseShared(hash)
@@ -359,7 +370,7 @@ export default function App() {
     )
 
   if (screen.name === 'battle')
-    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} />
+    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} onMail={() => setScreen({ name: 'mail' })} />
 
   if (screen.name === 'online')
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
@@ -393,7 +404,7 @@ export default function App() {
       saveProgress(result.progress)
       return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
     }
-    return <Replay record={screen.record} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from ? { name: screen.from } : { name: 'stats' })} />
+    return <Replay record={screen.record} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
   }
 
   if (screen.name === 'paste')
@@ -413,13 +424,36 @@ export default function App() {
           setScreen({ name: 'game', human, difficulty, hotSeat, record: { initial: newGame(screen.challenge.config), actions: [] }, campaignIndex: null })} />
     )
 
+  if (screen.name === 'mail')
+    return (
+      <Mail incoming={screen.incoming} onBack={() => setScreen({ name: 'battle' })} onNew={() => setScreen({ name: 'skirmish', mail: true })}
+        onPlay={(game) => { const record = recordOfGame(game); if (record) setScreen({ name: 'game', human: game.me, difficulty: 'normal', record, campaignIndex: null, mail: game.id }) }}
+        onSend={(game) => setScreen({ name: 'mailsend', id: game.id })}
+        onReplay={(record) => setScreen({ name: 'replay', record, from: 'mail' })} />
+    )
+
+  if (screen.name === 'mailsend') {
+    const game = mailGame(screen.id)
+    const record = game && recordOfGame(game)
+    if (!game || !record) return <Mail onBack={() => setScreen({ name: 'battle' })} onNew={() => setScreen({ name: 'skirmish', mail: true })} onPlay={() => {}} onSend={() => {}} onReplay={() => {}} />
+    return <MailSend game={game} record={record} onReplay={(r) => setScreen({ name: 'replay', record: r, from: 'mail' })} onBack={() => setScreen({ name: 'mail' })} />
+  }
+
   if (screen.name === 'skirmish')
     return (
       <SkirmishSetup
         progress={progress}
         initialTier={classicNext() ? 'classic' : 'standard'}
-        onBack={() => setScreen(screen.online ? { name: 'online' } : { name: 'battle' })}
-        onHost={screen.online ? (human, setup) => setScreen({
+        onBack={() => setScreen(screen.online ? { name: 'online' } : screen.mail ? { name: 'mail' } : { name: 'battle' })}
+        byLink={screen.mail}
+        onHost={screen.mail ? (human, setup) => {
+          setClassicNext(false)
+          const record = skirmishRecord(setup, human, 'normal', true, Date.now())
+          const game = putMail(record, human)
+          setScreen(record.initial.turn === human
+            ? { name: 'game', human, difficulty: 'normal', record, campaignIndex: null, mail: game.id }
+            : { name: 'mailsend', id: game.id })
+        } : screen.online ? (human, setup) => setScreen({
           name: 'lobby', challenge: { config: skirmishRecord(setup, human, 'normal', true, Date.now()).initial.config, side: otherCourt(human) },
         }) : undefined}
         challengeLink={(human, difficulty, setup, hotSeat) =>
@@ -491,7 +525,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor, mail } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -502,7 +536,7 @@ export default function App() {
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
     const custom = !!editor || isCustom(record.initial.config)
-    const transient = custom || !!ladder || !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
+    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -601,7 +635,8 @@ export default function App() {
     }
 
     const context: ComponentProps<typeof Game>['context'] =
-      story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
+      mail ? { label: 'By link', kind: 'skirmish' }
+      : story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
       : gauntlet ? { label: `Gauntlet stage ${run?.stage ?? ''}`.trim(), kind: 'gauntlet' }
       : scenario !== undefined ? { label: `Scenario: ${SCENARIOS[scenario].name}`, kind: 'scenario' }
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
@@ -616,11 +651,12 @@ export default function App() {
       <Game
         key={`${record.initial.rng}${human}`}
         controllers={hotSeat ? HOT_SEAT
-          : online ? versusOnline(human)
+          : online || mail ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
           : versusAi(human, difficulty, ladder ? foeById(ladder)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId))}
         record={record}
         session={online}
+        mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}
         context={context}
         coach={!series && isFirstBattle(progress, campaignIndex)}
         puzzle={puzzle && { name: PUZZLES[puzzle.index].name, text: PUZZLES[puzzle.index].text }}
@@ -634,6 +670,15 @@ export default function App() {
           else clearSaved()
         }}
         onExit={(winner, finished) => {
+          if (mail) {
+            // Quitting before a move changes nothing; a game decided by the last move is kept and its link shown.
+            const game = mailGame(mail)
+            if (game && finished.actions.length > (recordOfGame(game)?.actions.length ?? 0)) {
+              putMail(finished, game.me)
+              return setScreen({ name: 'mailsend', id: mail })
+            }
+            return setScreen({ name: 'mail' })
+          }
           if (online) {
             // Games between people touch neither the record nor the saved game; they are only counted as played.
             if (winner) { const next = recordVersus(progress, 'online', winner === 'draw' ? null : winner === human); setProgress(next); saveProgress(next) }

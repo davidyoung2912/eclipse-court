@@ -60,6 +60,8 @@ interface Props {
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
   puzzleHelp?: PuzzleHelp
   /** Called after every action with the game so far, or null once it has ended. */
+  /** Play by link: the other court is not here, so no AI answers; called with the game once the person has moved and the turn has passed on. */
+  mail?: (record: GameRecord) => void
   onSave: (record: GameRecord | null) => void
   onExit: (winner: GameState['winner'], record: GameRecord) => void
   /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
@@ -98,7 +100,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const [net, setNet] = useState(() => session?.view() ?? null)
@@ -139,7 +141,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   const foeSkill = DIFFICULTY[difficulty].skill
   const foeAggression = DIFFICULTY[difficulty].aggression
   /** Hot-seat and online duels are settled by the duel AI on both sides, as the live duel steers only one fighter. */
-  const even = hotSeat || online
+  const even = hotSeat || online || !!mail
   const settleAuto = even || duelMode === 'auto'
   /** Turns the human has taken; a puzzle is lost once its limit is used up without a win. */
   const turnsTaken = history.filter((_, i) => i > 0 && history[i - 1].state.turn === human).length
@@ -229,6 +231,8 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
   useEffect(() => {
     const last = history[history.length - 1].state
     onSave(last.winner || history.length < 2 ? null : recordOf(history))
+    // A move by link ends the visit: the link to send is on the next screen. A decided game waits for Continue.
+    if (mail && !last.winner && history.length > record.actions.length + 1 && last.turn !== human) mail(recordOf(history))
     // onSave is read fresh; only a change to the game itself should save.
     // oxlint-disable-next-line react/exhaustive-deps
   }, [history])
@@ -315,7 +319,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
 
   // The AI court takes its turn after a short pause, searching off the main thread.
   const aiFocus = useAiTurn({
-    state, active: !online && !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
+    state, active: !online && !mail && !myTurn && !state.winner && !pending && !failed && !banner, difficulty, personality,
     onAct: (action) => {
       if (action.type === 'move' && pieceAt(state, action.to)) beginDuel({ pieceId: action.pieceId, to: action.to, confirmed: true, byAi: true })
       else play(action)
@@ -559,7 +563,7 @@ export function Game({ controllers, record, session, context, coach, puzzle, puz
                 : 'Tap a piece, then a glowing square'}
         </p>
         <div className="buttons">
-          {!online && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {!online && !mail && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
           {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>

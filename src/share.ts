@@ -10,11 +10,13 @@ import { decodeRecord, encodeRecord } from './engine/serialize'
 export type Shared =
   | { kind: 'challenge'; challenge: Challenge }
   | { kind: 'replay'; record: GameRecord }
+  /** A game played by link: the same record as a replay, but meant to be continued. */
+  | { kind: 'turn'; record: GameRecord }
 
 const CODE = /^[A-Za-z0-9_-]+$/
 
-/** A link to this page that opens `code` as a challenge (`c`) or a replay (`r`). */
-export function shareLink(kind: 'c' | 'r', code: string): string {
+/** A link to this page that opens `code` as a challenge (`c`), a replay (`r`) or a turn of a game by link (`g`). */
+export function shareLink(kind: 'c' | 'r' | 'g', code: string): string {
   const { origin, pathname } = window.location
   return `${origin}${pathname}#${kind}=${code}`
 }
@@ -23,6 +25,8 @@ export const challengeLink = (challenge: Challenge) => shareLink('c', encodeChal
 
 export const replayLink = (record: GameRecord) => shareLink('r', encodeRecord(record))
 
+export const turnLink = (record: GameRecord) => shareLink('g', encodeRecord(record))
+
 /**
  * Reads a whole link, a `#c=…` fragment, a `c=…` pair or a bare code. A bare code is tried as a
  * replay and then as a challenge. Returns null for anything that is not a valid code of this version.
@@ -30,14 +34,14 @@ export const replayLink = (record: GameRecord) => shareLink('r', encodeRecord(re
 export function parseShared(text: string): Shared | null {
   const trimmed = text.trim()
   const hash = trimmed.includes('#') ? trimmed.slice(trimmed.indexOf('#') + 1) : trimmed
-  const pair = /^([cr])=(.*)$/.exec(hash)
+  const pair = /^([crg])=(.*)$/.exec(hash)
   const code = pair ? pair[2] : hash
   if (!CODE.test(code)) return null
   if (pair?.[1] !== 'c') {
     const record = decodeRecord(code)
-    if (record) return { kind: 'replay', record }
+    if (record) return { kind: pair?.[1] === 'g' ? 'turn' : 'replay', record }
   }
-  if (pair?.[1] !== 'r') {
+  if (pair?.[1] !== 'r' && pair?.[1] !== 'g') {
     const challenge = decodeChallenge(code)
     if (challenge) return { kind: 'challenge', challenge }
   }
