@@ -1,5 +1,6 @@
 import type { CharacterId } from '../engine/data/story'
 import { BOSSES } from '../engine/data/bosses'
+import type { PersonaId } from '../engine/data/personas'
 
 /** What sits on or behind the head; each is a flat stained-glass shape. */
 export type Gear = 'crown' | 'hood' | 'helm' | 'wings' | 'veil' | 'plume' | 'horns' | 'halo' | 'ember'
@@ -31,6 +32,14 @@ export const PORTRAITS = {
   ilse: { glass: UMBRAL_GLASS, skin: '#cdbfd0', cloth: '#3a2f7a', trim: '#e4d8ff', gear: ['hood'], glow: '#9ae0e8' },
   sable: { glass: UMBRAL_GLASS, skin: '#b9a9c8', cloth: '#14102b', trim: '#9a7cf0', gear: ['wings'], glow: '#4aa6b8' },
   duskmother: { glass: UMBRAL_GLASS, skin: '#d2c0d6', cloth: '#1d1745', trim: '#e4d8ff', gear: ['veil', 'crown'] },
+  cassia: { glass: SOLARI_GLASS, skin: '#eec29a', cloth: '#c9602a', trim: '#ffd77a', gear: ['helm', 'ember'] },
+  pym: { glass: SOLARI_GLASS, skin: '#e8c4a0', cloth: '#d9cfae', trim: '#8a5a2a', gear: ['halo'] },
+  bea: { glass: SOLARI_GLASS, skin: '#d9a877', cloth: '#4a5a7a', trim: '#e8e1cf', gear: ['helm', 'halo'] },
+  mudge: { glass: UMBRAL_GLASS, skin: '#7f9a6a', cloth: '#4a3a2a', trim: '#c9b27a', gear: ['hood', 'horns'], glow: '#e8c25a' },
+  lowen: { glass: UMBRAL_GLASS, skin: '#c9b6c4', cloth: '#1a1530', trim: '#9a7cf0', gear: ['wings', 'plume'] },
+  digby: { glass: UMBRAL_GLASS, skin: '#a8c0a0', cloth: '#5a4a6a', trim: '#e4d8ff', gear: ['plume'], glow: '#b8e08a' },
+  quill: { glass: ['#8a8f99', '#4b5160', '#d9b36a'], skin: '#e0c4a8', cloth: '#2f3440', trim: '#d9b36a', gear: ['plume'] },
+  regent: { glass: ['#8a8499', '#4b4668', '#d9c27a'], skin: '#cfd6e0', cloth: '#3a3a52', trim: '#d9c27a', gear: ['crown'], glow: '#e4d8ff' },
   'boss-veil-sister': { glass: ['#9a7cf0', '#3b2f8a', '#e4d8ff'], skin: '#d6c8e0', cloth: '#2a1f66', trim: '#e4d8ff', gear: ['veil', 'hood'], glow: '#e4d8ff' },
   'boss-ash-tyrant': { glass: ['#e8943a', '#7a2f28', '#ffd77a'], skin: '#a88469', cloth: '#2b1a18', trim: '#e8943a', gear: ['helm', 'ember'], glow: '#ff9a3a' },
   'boss-hollow-king': { glass: ['#3b2f8a', '#14102b', '#6a4cc0'], skin: '#a9a2b8', cloth: '#14102b', trim: '#9a7cf0', gear: ['horns', 'crown'], glow: '#9a7cf0', eclipse: true },
@@ -46,3 +55,6 @@ export const characterPortrait = (id: CharacterId): PortraitId => id
 
 /** A boss's window, or null for a foe without one. */
 export const bossPortrait = (id: string): PortraitId | null => (BOSSES.some((b) => b.id === id) && id in PORTRAITS ? (id as PortraitId) : null)
+
+/** An AI persona's window; each has one, named by its id. */
+export const personaPortrait = (id: PersonaId): PortraitId => id
