@@ -87,6 +87,7 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.eclipseChip} onChange={() => change({ eclipseChip: !settings.eclipseChip })} /> {t('settings.eclipseChip')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.blunderCheck} onChange={() => change({ blunderCheck: !settings.blunderCheck })} /> {t('settings.blunderCheck')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.oddsDetail} onChange={() => change({ oddsDetail: !settings.oddsDetail })} /> {t('settings.oddsDetail')}</label>
+      <label className="recharge"><input type="checkbox" checked={settings.reminders} onChange={() => change({ reminders: !settings.reminders })} /> {t('settings.reminders')}</label>
       <h3>{t('settings.duels')}</h3>
       <p className="setup-hint">{t('settings.duelHint')}</p>
       <div className="choices row">

@@ -45,6 +45,8 @@ interface Props {
   hint?: { from?: Pos; to?: Pos; square?: Pos; pieceId?: string }
   /** The squares the latest move left and reached, marked when the Last move trail setting is on. */
   trail?: { from: Pos; to: Pos }
+  /** Beacons the player could take this turn, ringed when the Reminders setting is on. */
+  reach?: Pos[]
   /** Turn the board half a turn so the Umbral edge is at the bottom. */
   flip?: boolean
   /** Hide the enemy pieces this court cannot see under fog of war. */
@@ -76,7 +78,7 @@ function HintGhost({ piece, from, to, flip, size }: { piece: Piece; from: Pos; t
   )
 }
 
-export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, flip = false, fogFor }: Props) {
+export const Board = memo(function Board({ state, selected, moves, threats = [], endangered = [], odds, nextOdds, nextLight, targetIds = [], onSquare, focus, hint, trail, reach, flip = false, fogFor }: Props) {
   const isMove = (p: Pos) => moves.some((m) => samePos(m, p))
   const isThreat = (p: Pos) => threats.some((m) => samePos(m, p))
   // A new key replays the ripple each time the day steps or the Hour turns.
@@ -160,6 +162,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
             )}
             {radius !== null && chebyshev(p, center) > radius && <rect x={cx - 0.5} y={cy - 0.5} width={1} height={1} className="doom" />}
             {isBeacon(p, state.config.beacons) && <circle cx={cx} cy={cy} r={0.4} className="beacon" />}
+            {reach?.some((b) => samePos(b, p)) && <circle cx={cx} cy={cy} r={0.47} className="beacon-reach" />}
             {target && <circle cx={cx} cy={cy} r={0.46} fill="url(#move-glow)" className="move-glow" />}
             {target && <circle cx={cx} cy={cy} r={0.16} className="move-dot" />}
             {isThreat(p) && <circle cx={cx} cy={cy} r={0.46} fill="url(#threat-glow)" className="move-glow" />}

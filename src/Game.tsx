@@ -6,7 +6,7 @@ import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './ju
 import { getSettings, updateSettings } from './settings'
 import { t } from './i18n'
 import { explainMove } from './ai/why'
-import { attackOdds, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, threatenedIds } from './ui/board/aids'
+import { attackOdds, beaconReach, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, spellReminder, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { coopPlayer } from './engine/data/coop'
 import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
@@ -21,7 +21,7 @@ import { FIGHT_TUNING, tuneCells } from './fightDifficulty'
 import { growthChoice } from './engine/rules/growth'
 import { squareLuminance } from './engine/rules/luminance'
 import { legalMoves, pieceAt } from './engine/rules/moves'
-import { spellTargets } from './engine/rules/spells'
+import { SPELL_INFO, spellTargets } from './engine/rules/spells'
 import type { Action, Court, DuelOutcome, GameState, Piece, Pos, Spell } from './engine/rules/types'
 import { Board } from './ui/board/Board'
 import { HintCard } from './ui/tray/HintCard'
@@ -228,6 +228,9 @@ export function Game({ controllers, opening, record, session, context, coach, pu
   const adviceOk = !state.config.fog && !online && !puzzleHelp && puzzleLimit === undefined && context?.kind !== 'daily' && !context?.scored
   const blunderOn = getSettings().blunderCheck && adviceOk
   const detailOn = getSettings().oddsDetail && adviceOk
+  const remindOn = getSettings().reminders && adviceOk && myTurn && !ended
+  const reach = useMemo(() => (remindOn ? beaconReach(state, human) : undefined), [remindOn, state, human])
+  const reminder = useMemo(() => (remindOn ? spellReminder(state, human) : undefined), [remindOn, state, human])
   const [blunder, setBlunder] = useState<{ action: Extract<Action, { type: 'move' }>; text: string } | null>(null)
   const [blunderSkip, setBlunderSkip] = useState(false)
   const forecastOn = getSettings().forecast && !state.config.fog && !ended
@@ -601,7 +604,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} nextOdds={nextOdds} nextLight={nextLight} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
-        focus={boardFocus} hint={boardHint} trail={trail} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
+        focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} />
       <CellLegend cells={state.config.cells} />
       {pending?.confirmed && !settled && attacker && defender && (
         <DuelView attacker={attacker} defender={defender} luminance={squareLuminance(state, pending.to)} cells={fightCells(attacker, defender, !!pending.byAi)}
@@ -692,6 +695,12 @@ export function Game({ controllers, opening, record, session, context, coach, pu
         </div>}
         <div className={!ended && !pending && myTurn ? undefined : 'keep-space'} aria-hidden={ended || !!pending || !myTurn}>
           <SpellBar state={state} active={casting} onPick={pickSpell} exchanging={!!castFirst} />
+          {reminder && reminder.ready.length > 0 && !casting && (
+            <p className="spell-hint" role="status">
+              {t('reminder.spells', { list: reminder.ready.map((r) => (r.targets ? `${SPELL_INFO[r.spell].name} (${r.targets})` : SPELL_INFO[r.spell].name)).join(', ') })}
+              {reminder.idle && ` ${t('reminder.idle')}`}
+            </p>
+          )}
         </div>
         <div className="options">
           {hotSeat ? (

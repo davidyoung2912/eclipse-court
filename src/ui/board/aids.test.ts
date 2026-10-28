@@ -3,7 +3,7 @@ import { newGame } from '../../engine/reducer'
 import { legalMoves } from '../../engine/rules/moves'
 import type { GameState, Piece } from '../../engine/rules/types'
 import { squareLuminance } from '../../engine/rules/luminance'
-import { attackOdds, blunderOf, eclipseIn, lastMoveOf, nextDetail, nextLightState, threatenedIds } from './aids'
+import { attackOdds, beaconReach, blunderOf, eclipseIn, spellReminder, lastMoveOf, nextDetail, nextLightState, threatenedIds } from './aids'
 
 const piece = (id: string, court: Piece['court'], role: Piece['role'], x: number, y: number): Piece => ({
   id, court, role, hp: 4, maxHp: 4, pos: { x, y }, rest: 0, moved: false, bound: false,
@@ -99,5 +99,24 @@ describe('nextDetail', () => {
     const d2 = nextDetail(state, a, d, d.pos)
     expect(d2.nextLuminance).toBe(squareLuminance(nextLightState(state), d.pos))
     expect(d2.next.attacker + d2.next.other + d2.next.defender).toBeCloseTo(1)
+  })
+})
+
+describe('beaconReach', () => {
+  it('lists beacons a piece could step onto, but not ones already held', () => {
+    const base = world([piece('a', 'solari', 'footsoldier', 3, 3), piece('l', 'solari', 'footsoldier', 0, 0)])
+    const state: GameState = { ...base, config: { ...base.config, beacons: [{ x: 3, y: 4 }, { x: 0, y: 0 }, { x: 6, y: 6 }] } }
+    expect(beaconReach(state, 'solari')).toEqual([{ x: 3, y: 4 }])
+  })
+})
+
+describe('spellReminder', () => {
+  it('lists castable spells and nudges once a few rounds pass unused', () => {
+    const state: GameState = { ...newGame(), round: 5 }
+    const r = spellReminder(state, 'solari')
+    expect(r.ready.length).toBeGreaterThan(0)
+    expect(r.idle).toBe(true)
+    expect(spellReminder({ ...state, round: 1 }, 'solari').idle).toBe(false)
+    expect(spellReminder({ ...state, eclipse: true }, 'solari').ready).toEqual([])
   })
 })

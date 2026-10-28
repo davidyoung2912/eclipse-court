@@ -1,9 +1,11 @@
 import { estimateOdds, type Odds } from '../../engine/reducer'
 import { duelCells } from '../../engine/rules/cells'
+import { samePos } from '../../engine/rules/board'
 import { squareLuminance } from '../../engine/rules/luminance'
 import { legalMoves, pieceAt } from '../../engine/rules/moves'
+import { canCast, loadoutOf, spellTargets } from '../../engine/rules/spells'
 import type { Step } from '../../engine/log'
-import type { Court, GameState, Piece, Pos } from '../../engine/rules/types'
+import type { Court, GameState, Piece, Pos, Spell } from '../../engine/rules/types'
 
 /** Ids of `court`'s pieces that an enemy piece could attack on its next move. */
 export function threatenedIds(state: GameState, court: Court): string[] {
@@ -90,4 +92,27 @@ export function blunderOf(state: GameState, pieceId: string, to: Pos): Blunder |
   if (leader && leader.id !== pieceId && threatenedIds(after, mover.court).includes(leader.id) && !threatenedIds(state, mover.court).includes(leader.id)) return { kind: 'leader' }
   if (leader && leader.id === pieceId && threatenedIds(after, mover.court).includes(leader.id)) return { kind: 'leader' }
   return null
+}
+
+/** Beacons that a piece of `court` could step onto this turn (not ones its own pieces already hold). */
+export function beaconReach(state: GameState, court: Court): Pos[] {
+  const reach: Pos[] = []
+  for (const beacon of state.config.beacons) {
+    if (state.pieces.some((p) => p.court === court && samePos(p.pos, beacon))) continue
+    if (state.pieces.some((p) => p.court === court && legalMoves(state, p).some((m) => samePos(m, beacon)))) reach.push(beacon)
+  }
+  return reach
+}
+
+/** Rounds a court may hold all its spells before the reminder nudges it to use one. */
+export const IDLE_SPELL_ROUND = 4
+
+/** The spells `court` can cast now with how many targets each has (0 for one that needs none), and whether none has been used for a while. */
+export function spellReminder(state: GameState, court: Court): { ready: { spell: Spell; targets: number }[]; idle: boolean } {
+  const ready = loadoutOf(state.config, court).filter((sp) => canCast(state, court, sp)).map((spell) => {
+    const t = spellTargets(state, court, spell)
+    return { spell, targets: t.pieces.length + t.squares.length }
+  })
+  const unused = state.spells[court].length === loadoutOf(state.config, court).length && state.recharging[court].length === 0
+  return { ready, idle: ready.length > 0 && unused && state.round >= IDLE_SPELL_ROUND }
 }

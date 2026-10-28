@@ -1166,6 +1166,7 @@ body:has(.duel) .play-timer { display: none; }
 /* Last move trail: a soft outline on the square just left, a stronger one on the square reached. */
 .trail { fill: none; pointer-events: none; stroke: #fff6c0; stroke-width: 0.06; }
 .trail-from { stroke-opacity: 0.35; stroke-dasharray: 0.12 0.1; }
+.beacon-reach { fill: none; pointer-events: none; stroke: var(--solari-gold); stroke-width: 0.06; stroke-dasharray: 0.14 0.1; }
 .trail-to { stroke-opacity: 0.85; fill: rgba(255, 246, 192, 0.12); }
 
 /* Keyboard play on the board */

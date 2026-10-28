@@ -92,6 +92,8 @@ export interface Settings {
   blunderCheck: boolean
   /** Show a fuller breakdown in the attack confirm: wounds, perks, status, cell effects and the odds once the light turns. */
   oddsDetail: boolean
+  /** Mark Beacons you could take this turn and list the spells you could cast. */
+  reminders: boolean
   /** Show a chip by the dial counting the rounds until the Eclipse falls. */
   eclipseChip: boolean
   /** How fast live duels play: Normal is the slowed pace, Fast is full speed, Instant settles every duel without playing it. */
@@ -115,7 +117,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -135,6 +137,7 @@ export function parseSettings(raw: unknown): Settings {
     eclipseChip: o.eclipseChip === true,
     blunderCheck: o.blunderCheck === true,
     oddsDetail: o.oddsDetail === true,
+    reminders: o.reminders === true,
     duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,
     haptics: o.haptics !== false,
     fightDifficulty: FIGHT_LEVELS.includes(o.fightDifficulty as FightLevel) ? (o.fightDifficulty as FightLevel) : DEFAULT_SETTINGS.fightDifficulty,
