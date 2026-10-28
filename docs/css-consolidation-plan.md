@@ -49,5 +49,5 @@ Each as a selector list, subject to the move rule:
 
 - [x] Phase 1: done. 1808 to 1786 lines; source 134,344 to 132,032 bytes; built CSS 111,253 to 109,256; gzip 22,962 to 22,683. Ledger diff showed only the intended removals and renames.
 - [x] Phase 2: done. 38 `.cstage` rules joined into the 38 root rules (ledger multiset identical; only order moved, and nothing between the positions touches `.pane-0/1/2`, `.sq`, `.glow`).
-- [ ] Phase 3
+- [x] Phase 3: done. Ledger multiset identical to HEAD (only order moved; checked that nothing between the old and new positions sets the same properties on the moved selectors). Joined: the three delay ladders, `.menu-buttons button`/`.tabs button` (+ `.on`/`.primary`), the tip/coach button, h4 and p rules, and the Solari/Umbral plates of `.duel-countdown`, `.turn-banner` and `.moment` (border and glow stay per rule).
 - [ ] Phase 4

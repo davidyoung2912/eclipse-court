@@ -285,14 +285,11 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   text-align: center; font-family: var(--display); font-size: 2.6rem; letter-spacing: 0.08em; text-transform: uppercase;
   transform: translate(-50%, -50%); animation: count-fade 0.75s ease-in-out forwards;
 }
-.duel-countdown.solari {
-  background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; border: 2px solid var(--solari-cream);
-  box-shadow: 0 0 28px rgba(232, 182, 74, 0.6);
-}
-.duel-countdown.umbral {
-  background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; border: 2px solid var(--umbral-violet);
-  box-shadow: 0 0 28px rgba(122, 92, 200, 0.7);
-}
+/* Coloured for the side whose turn it is: light for Solari, dark for Umbral (shared by the turn banner and the named moments) */
+.duel-countdown.solari, .turn-banner.solari, .moment.solari { background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; }
+.duel-countdown.umbral, .turn-banner.umbral, .moment.umbral { background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; }
+.duel-countdown.solari, .turn-banner.solari { border: 2px solid var(--solari-cream); box-shadow: 0 0 28px rgba(232, 182, 74, 0.6); }
+.duel-countdown.umbral, .turn-banner.umbral { border: 2px solid var(--umbral-violet); box-shadow: 0 0 28px rgba(122, 92, 200, 0.7); }
 @keyframes count-fade {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
   25%, 65% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -483,11 +480,11 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .menu h3 { margin-top: 8px; font-size: var(--fs-sm); opacity: 0.8; }
 .tagline { margin: 0 0 16px; text-align: center; opacity: 0.8; }
 .menu-buttons { position: relative; z-index: 1; display: flex; gap: 8px; margin-top: 12px; }
-.menu-buttons button {
+.menu-buttons button, .tabs button {
   flex: 1; padding: 16px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
   background: var(--umbral-indigo); color: var(--fg); font-size: var(--fs-md);
 }
-.menu-buttons button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
+.menu-buttons button.primary, .tabs button.on { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 .choices { display: flex; flex-direction: column; gap: 8px; }
 .choice {
   display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 10px; text-align: left;
@@ -745,15 +742,6 @@ main.app.timed { animation: iris-in var(--t-slow) var(--ease) backwards; }
   transform: translate(-50%, -50%); font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.08em;
   text-transform: uppercase; white-space: nowrap; animation: banner 1s ease-in-out forwards;
 }
-/* Coloured for the side whose turn it is: light for Solari, dark for Umbral */
-.turn-banner.solari {
-  background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; border: 2px solid var(--solari-cream);
-  box-shadow: 0 0 28px rgba(232, 182, 74, 0.6);
-}
-.turn-banner.umbral {
-  background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; border: 2px solid var(--umbral-violet);
-  box-shadow: 0 0 28px rgba(122, 92, 200, 0.7);
-}
 @keyframes banner {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
   18%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -773,11 +761,6 @@ main.app.timed { animation: iris-in var(--t-slow) var(--ease) backwards; }
 ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 8px; }
-.tabs button {
-  flex: 1; padding: 16px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
-  background: var(--umbral-indigo); color: var(--fg); font-size: var(--fs-md);
-}
-.tabs button.on { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
 
 /* Blitz: the turn clock */
 .clock-ring { position: relative; width: 52px; height: 52px; margin: 0 auto 6px; display: grid; place-items: center; }
@@ -891,11 +874,11 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 }
 .tip-icon .btn-icon { width: 24px; height: 24px; }
 .tip-body { flex: 1; min-width: 0; }
-.tip-body h4 { margin: 0 0 4px; font-family: var(--display); font-size: var(--fs-md); color: var(--tip-accent); }
-.tip-body p { margin: 0; font-size: var(--fs-sm); line-height: 1.42; }
+.tip-body h4, .coach-bubble h4 { margin: 0 0 4px; font-family: var(--display); font-size: var(--fs-md); color: var(--tip-accent); }
+.tip-body p, .coach-bubble p { margin: 0; font-size: var(--fs-sm); line-height: 1.42; }
 .tip-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .tip-foot small { margin-right: auto; opacity: 0.6; font-size: var(--fs-xs); }
-.tip-foot button, .next-up-body > button {
+.tip-foot button, .next-up-body > button, .coach-bubble .tip-foot button {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: var(--fs-sm); font-weight: 700;
   background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6;
 }
@@ -1190,8 +1173,8 @@ body:has(.duel) .play-timer { display: none; }
   font-family: var(--display); font-size: var(--fs-lg); letter-spacing: 0.14em; text-transform: uppercase;
   animation: moment-in 1.4s ease-out forwards;
 }
-.moment.solari { background: linear-gradient(160deg, #f2c55c, #e8943a); color: #1b1740; box-shadow: 0 0 24px rgba(232, 182, 74, 0.6); }
-.moment.umbral { background: linear-gradient(160deg, #2b2468, #1d1745); color: #d9ccff; box-shadow: 0 0 24px rgba(122, 92, 200, 0.7); }
+.moment.solari { box-shadow: 0 0 24px rgba(232, 182, 74, 0.6); }
+.moment.umbral { box-shadow: 0 0 24px rgba(122, 92, 200, 0.7); }
 .moment.both { background: #0b0820; color: var(--solari-cream); box-shadow: 0 0 24px rgba(242, 197, 92, 0.5), inset 0 0 0 2px rgba(242, 197, 92, 0.6); }
 @keyframes moment-in {
   0% { opacity: 0; transform: translateX(-50%) scaleX(0.7); letter-spacing: 0.4em; }
@@ -1239,8 +1222,6 @@ body:has(.duel) .play-timer { display: none; }
 .next-up-steps li.done { opacity: 0.55; text-decoration: line-through; }
 .next-up-list { gap: 6px; }
 .next-up-list li { animation: rise-in var(--t-slow) var(--ease) backwards; }
-.next-up-list li:nth-child(2) { animation-delay: 45ms; }
-.next-up-list li:nth-child(3) { animation-delay: 90ms; }
 .next-up-list button {
   width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left;
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg); font-size: var(--fs-sm);
@@ -1461,9 +1442,6 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
   padding: 12px 14px 10px; border-radius: 14px; background: var(--tip-bg); border: 1px solid var(--tip-border);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); animation: tip-in var(--t-mid) var(--ease) both;
 }
-.coach-bubble h4 { margin: 0 0 4px; font-family: var(--display); font-size: var(--fs-md); color: var(--tip-accent); }
-.coach-bubble p { margin: 0; font-size: var(--fs-sm); line-height: 1.42; }
-.coach-bubble .tip-foot button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: var(--fs-sm); font-weight: 700; background: var(--tip-border); color: #06343a; border: 1px solid #c9fff6; }
 .coach-bubble .tip-foot .coach-skip { background: transparent; color: var(--tip-accent); border-color: transparent; margin-right: auto; }
 @media (prefers-reduced-motion: reduce) { .coach-ring, .coach-bubble { transition: none; animation: none; } }
 .duel-brief {
@@ -1599,22 +1577,14 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 /* Lists rise in one after another. */
 @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
 .mode-cards > *, main.app:not(.main-menu) .choices > * { animation: rise-in var(--t-slow) var(--ease) backwards; }
-.mode-cards > *:nth-child(1) { animation-delay: 0ms; }
-.mode-cards > *:nth-child(2) { animation-delay: 45ms; }
-.mode-cards > *:nth-child(3) { animation-delay: 90ms; }
-.mode-cards > *:nth-child(4) { animation-delay: 135ms; }
-.mode-cards > *:nth-child(5) { animation-delay: 180ms; }
-.mode-cards > *:nth-child(6) { animation-delay: 225ms; }
-.mode-cards > *:nth-child(7) { animation-delay: 270ms; }
-.mode-cards > *:nth-child(8) { animation-delay: 315ms; }
-main.app:not(.main-menu) .choices > *:nth-child(1) { animation-delay: 0ms; }
-main.app:not(.main-menu) .choices > *:nth-child(2) { animation-delay: 45ms; }
-main.app:not(.main-menu) .choices > *:nth-child(3) { animation-delay: 90ms; }
-main.app:not(.main-menu) .choices > *:nth-child(4) { animation-delay: 135ms; }
-main.app:not(.main-menu) .choices > *:nth-child(5) { animation-delay: 180ms; }
-main.app:not(.main-menu) .choices > *:nth-child(6) { animation-delay: 225ms; }
-main.app:not(.main-menu) .choices > *:nth-child(7) { animation-delay: 270ms; }
-main.app:not(.main-menu) .choices > *:nth-child(8) { animation-delay: 315ms; }
+.mode-cards > *:nth-child(1), main.app:not(.main-menu) .choices > *:nth-child(1) { animation-delay: 0ms; }
+.mode-cards > *:nth-child(2), main.app:not(.main-menu) .choices > *:nth-child(2), .next-up-list li:nth-child(2) { animation-delay: 45ms; }
+.mode-cards > *:nth-child(3), main.app:not(.main-menu) .choices > *:nth-child(3), .next-up-list li:nth-child(3) { animation-delay: 90ms; }
+.mode-cards > *:nth-child(4), main.app:not(.main-menu) .choices > *:nth-child(4) { animation-delay: 135ms; }
+.mode-cards > *:nth-child(5), main.app:not(.main-menu) .choices > *:nth-child(5) { animation-delay: 180ms; }
+.mode-cards > *:nth-child(6), main.app:not(.main-menu) .choices > *:nth-child(6) { animation-delay: 225ms; }
+.mode-cards > *:nth-child(7), main.app:not(.main-menu) .choices > *:nth-child(7) { animation-delay: 270ms; }
+.mode-cards > *:nth-child(8), main.app:not(.main-menu) .choices > *:nth-child(8) { animation-delay: 315ms; }
 
 /* The menu's sky: a faint drifting starfield that shifts against the pointer, and the hero emblem moving a little less. */
 body:has(.main-menu)::before {
