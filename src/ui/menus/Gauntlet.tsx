@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { GAUNTLET_STAGES, RELICS, REST_STAGES, roster, stageFoe, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELICS, restStages, roster, stageFoe, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
 import { SPELL_INFO } from '../../engine/rules/spells'
 import type { Court, Role } from '../../engine/rules/types'
 import { totalStars, type Progress } from '../../progress'
+import { ascensionSnapshot, forDay, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, subscribeAscension } from '../../ascension'
+import { dailySeed } from '../../engine/data/setups'
 import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
 import { CourtPicker } from './CourtPicker'
@@ -21,11 +23,22 @@ interface Props {
   run: Run | null
   /** Lines about the run that just ended, if any. */
   report: string[]
-  onStart: (court: Court, roles: Role[]) => void
+  /** The text of the run that just ended, ready to share. */
+  summary: string | null
+  onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number }) => void
+  onDaily: () => void
   onFight: () => void
   onReward: (reward: Reward) => void
   onAbandon: () => void
   onBack: () => void
+}
+
+const copy = (text: string) => {
+  try {
+    void navigator.clipboard?.writeText(text)
+  } catch {
+    // Without a clipboard the summary can still be selected by hand.
+  }
 }
 
 const rank = (p: RunPiece) => (p.wins >= ELITE_WINS ? 'Elite' : p.wins >= VETERAN_WINS ? 'Veteran' : 'Recruit')
@@ -61,11 +74,23 @@ function Army({ run }: { run: Run }) {
 }
 
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, report, onStart, onFight, onReward, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, report, summary, onStart, onDaily, onFight, onReward, onAbandon, onBack }: Props) {
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
+  const [ascension, setAscension] = useState(0)
+  const [code, setCode] = useState('')
+  const asc = useSyncExternalStore(subscribeAscension, ascensionSnapshot)
+  const today = forDay(asc, dailySeed())
+  const parsed = code.trim() ? parseRunCode(code) : null
+  const level = Math.min(parsed ? parsed.ascension : ascension, MAX_ASCENSION)
   const g = progress.gauntlet
-  const lines = report.length > 0 && <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
+  const lines = report.length > 0 && (
+    <div className="setup-card" role="status">
+      {report.map((line) => <div key={line}>{line}</div>)}
+      {summary && <pre className="run-summary">{summary}</pre>}
+      {summary && <button onClick={() => copy(summary)}><Icon name="chain" />Copy Summary</button>}
+    </div>
+  )
   const back = <BackButton onClick={onBack} />
 
   if (!run)
@@ -78,12 +103,35 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
           Runs begun: {g.runs}, won: {g.won}, furthest stage: {g.best}.
         </p>
         {lines}
+        <h3>Ascension</h3>
+        <div className="choices">
+          {Array.from({ length: asc.unlocked + 1 }, (_, a) => (
+            <button key={a} className={`choice${a === level ? ' on' : ''}`} aria-pressed={a === level} disabled={!!parsed} onClick={() => setAscension(a)}>
+              <strong>{a === 0 ? 'Ascension 0: the standard run' : `Ascension ${a}: ${ASCENSIONS[a - 1].name}`}</strong>
+              <span>{a === 0 ? 'The eight opponents as they come.' : `${ASCENSIONS[a - 1].text} Adds to every level below. +${SHARDS_ASCENSION_WIN * a} Shards for a win.`}</span>
+            </button>
+          ))}
+        </div>
+        {asc.unlocked < MAX_ASCENSION && <p className="tagline">Win a run at ascension {asc.unlocked} to open {asc.unlocked + 1}.</p>}
+        <h3>Daily run</h3>
+        <div className="setup-card">
+          Everyone gets the same foes today, with the classic army from the Solari court.{' '}
+          {today.dayWon ? 'Won today.' : today.dayBest ? `Furthest today: stage ${today.dayBest}.` : `A first win pays ${SHARDS_DAILY_RUN} Shards.`}{' '}
+          Days won: {asc.daysWon}.
+        </div>
+        <div className="menu-buttons stacked"><button onClick={onDaily}><Icon name="play" />Begin the Daily Run</button></div>
+        <h3>Run code</h3>
+        <label className="setup-card">
+          Enter a friend’s code to fight their sequence of foes (optional):{' '}
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="G2-1k5x9a" aria-label="Run code" maxLength={12} />
+          {code.trim() !== '' && !parsed && <div role="alert">That code is not valid.</div>}
+        </label>
         <h3>Your court</h3>
         <CourtPicker value={court} onChange={setCourt} />
         <h3>Starting army</h3>
         <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />
         <div className="menu-buttons stacked">
-          <button className="primary" disabled={!!draftProblem(roles)} onClick={() => onStart(court, roles)}><Icon name="play" />Begin the Run</button>
+          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed })}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
         <TipCard page="gauntlet" />
@@ -95,7 +143,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
       <main className="app menu">
         <PageArt icon="flame" />
         <h2>Spoils of stage {run.stage - 1}</h2>
-        <p className="tagline">Take one reward. {REST_STAGES.includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
+        <p className="tagline">Take one reward. {restStages(run.ascension).includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
         {lines}
         <div className="choices">
           {run.offers.map((reward, i) => {
@@ -117,12 +165,13 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
       </main>
     )
 
-  const foe = stageFoe(run.seed, run.stage)
+  const foe = stageFoe(run.seed, run.stage, run.ascension)
   const personality = PERSONALITIES[foe.personality]
   return (
     <main className="app menu">
       <PageArt icon="flame" />
       <h2>Stage {run.stage} of {GAUNTLET_STAGES}</h2>
+      {(run.ascension > 0 || run.daily > 0) && <p className="tagline">{run.daily > 0 ? 'Daily run. ' : ''}{run.ascension > 0 ? `Ascension ${run.ascension}: ${ASCENSIONS[run.ascension - 1].name}.` : ''}</p>}
       <p className="tagline">{foe.name}: {foe.difficulty}, {personality.name}.</p>
       {lines}
       <div className="setup-card">
@@ -132,7 +181,7 @@ export function Gauntlet({ progress, run, report, onStart, onFight, onReward, on
       </div>
       <h3>Your army ({run.army.length + 1} pieces)</h3>
       <Army run={run} />
-      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; a camp after stage {REST_STAGES.find((s) => s >= run.stage) ?? 'the last'} may restore one.</p>}
+      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.ascension).find((s) => s >= run.stage) ? `a camp after stage ${restStages(run.ascension).find((s) => s >= run.stage)} may restore one.` : 'there is no camp left to restore them.'}</p>}
       <div className="menu-buttons stacked">
         <button className="primary" onClick={onFight}><Icon name="swords" />Fight</button>
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>

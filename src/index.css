@@ -837,3 +837,5 @@ body:has(.duel) .play-timer { display: none; }
 .mastery-tracks li { display: flex; flex-direction: column; gap: 4px; }
 .mastery-tracks small { opacity: 0.7; }
 .achievements li .link { align-self: flex-start; margin-top: 4px; }
+
+.run-summary { margin: 0.5rem 0; white-space: pre-wrap; font: inherit; font-size: 0.85rem; opacity: 0.85; }

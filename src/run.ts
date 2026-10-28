@@ -1,4 +1,4 @@
-import { GAUNTLET_STAGES, RELICS, RUN_VERSION, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
+import { GAUNTLET_STAGES, MAX_ASCENSION, RELICS, RUN_VERSION, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
 import { DRAFT_ROLES, MAX_DRAFTED } from './engine/data/draft'
 import { ALL_SPELLS } from './engine/rules/spells'
 import type { Court, Perk, Role, Spell } from './engine/rules/types'
@@ -57,6 +57,7 @@ export function readRun(raw: unknown): Run | null {
   return {
     v: RUN_VERSION, seed: o.seed, court: o.court as Court, stage: o.stage, leader, army, fallen,
     loadout: o.loadout as Spell[], relics: o.relics as RelicId[], offers,
+    ascension: isInt(o.ascension, MAX_ASCENSION) ? o.ascension : 0, daily: isInt(o.daily, 99991231) ? o.daily : 0,
   }
 }
 

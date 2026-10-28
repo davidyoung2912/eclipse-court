@@ -4,7 +4,7 @@ import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'
 import {
-  applyReward, applyVictory, GAUNTLET_STAGES, MAX_BONUS, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, type Run,
+  applyReward, applyVictory, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, type Run,
 } from './gauntlet'
 import { ROLE_STATS } from './roster'
 import { validConfig } from '../serialize'
@@ -159,6 +159,64 @@ describe('saving a run', () => {
     expect(readRun({ ...run, army: [{ role: 'dragon', wins: 0, bonus: 0 }] })).toBeNull()
     expect(readRun({ ...run, offers: [{ kind: 'spell', spell: 'nope' }] })).toBeNull()
     expect(readRun({ ...run, loadout: ['nope'] })).toBeNull()
+  })
+})
+
+describe('ascension', () => {
+  it('leaves level 0 as it was and stacks harder rules on top', () => {
+    for (let s = 1; s <= GAUNTLET_STAGES; s++) expect(stageFoe(5, s, 0)).toEqual(stageFoe(5, s))
+    for (let a = 1; a <= MAX_ASCENSION; a++)
+      for (let s = 1; s <= GAUNTLET_STAGES; s++) {
+        const base = stageFoe(5, s, 0)
+        const hard = stageFoe(5, s, a)
+        expect(hard.hpBonus).toBeGreaterThan(base.hpBonus)
+        expect(hard.tags.length).toBeGreaterThanOrEqual(base.tags.length)
+      }
+    expect(stageFoe(5, 1, 3).difficulty).toBe('normal')
+    expect(stageFoe(5, GAUNTLET_STAGES, 3).difficulty).toBe('hard')
+    expect(stageFoe(5, GAUNTLET_STAGES, 4).tags.length).toBe(stageFoe(5, GAUNTLET_STAGES, 0).tags.length + 1)
+    expect(stageFoe(5, GAUNTLET_STAGES, 5).rules.eclipseRound).toBe(14)
+    expect(restStages(1)).toEqual(REST_STAGES)
+    expect(restStages(2)).toEqual([])
+  })
+
+  it('never draws two win conditions, even with an extra rule', () => {
+    for (let seed = 1; seed < 60; seed++)
+      for (let s = 1; s <= GAUNTLET_STAGES; s++) {
+        const tags = stageFoe(seed, s, MAX_ASCENSION).tags.filter((t) => ['Capture their Leader', 'Score race', 'King of the Hill'].includes(t))
+        expect(tags.length).toBeLessThanOrEqual(1)
+      }
+  })
+
+  it('builds valid fights and skips camps at high ascension', () => {
+    const run = startRun('umbral', CLASSIC_ROLES, 9, { ascension: MAX_ASCENSION })
+    expect(run.ascension).toBe(MAX_ASCENSION)
+    const state = stageGame({ ...run, relics: ['sundial', 'omen'] })
+    expect(validConfig(state.config)).toBe(true)
+    expect(state.config.passives).toBe(true)
+    expect(state.config.events).toBe(true)
+    expect(relicRules(['sundial', 'omen'])).toEqual({ passives: true, events: true })
+    const camp: Run = { ...run, stage: REST_STAGES[0] + 1, fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
+    for (let i = 0; i < 10; i++) expect(runReward(camp, i).some((r) => r.kind === 'revive')).toBe(false)
+  })
+
+  it('reads old saves as level 0 and keeps the level otherwise', () => {
+    const run = newRun()
+    const { ascension: _a, daily: _d, ...old } = run
+    expect(readRun(old)).toMatchObject({ ascension: 0, daily: 0 })
+    expect(readRun({ ...run, ascension: 3, daily: 20261101 })).toMatchObject({ ascension: 3, daily: 20261101 })
+    expect(readRun({ ...run, ascension: 9 })?.ascension).toBe(0)
+  })
+
+  it('round-trips run codes and summarises a run', () => {
+    expect(parseRunCode(runCode(123456, 3))).toEqual({ seed: 123456, ascension: 3 })
+    expect(parseRunCode(' g2-ZZ '.toLowerCase())).toEqual({ seed: 1295, ascension: 2 })
+    for (const bad of ['', 'G9-1', 'x1-2', 'G1-', 'G1-zzzzzzz']) expect(parseRunCode(bad)).toBeNull()
+    const text = runSummary({ ...newRun(), ascension: 2 }, 4, false)
+    expect(text).toContain('ascension 2')
+    expect(text).toContain('fell at stage 4')
+    expect(text).toContain(`Code ${runCode(7, 2)}`)
+    expect(runSummary(newRun(), GAUNTLET_STAGES + 1, true)).toContain('WON')
   })
 })
 

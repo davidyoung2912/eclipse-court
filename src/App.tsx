@@ -12,6 +12,7 @@ import { otherCourt } from './engine/rules/board'
 import { skirmishConfig, type SetupChoice } from './engine/data/setups'
 import { CAMPAIGN, campaignGame } from './engine/data/campaign'
 import { dailyPuzzleIndex, PUZZLES } from './engine/data/puzzles'
+import { CLASSIC_ROLES } from './engine/data/draft'
 import { dailyGame, dailyMatch, DAILY_COURT, isDailyMatch } from './engine/data/daily'
 import { dailySeed } from './engine/data/setups'
 import { isWeeklyMatch, weeklyGame, weeklyMatch, weeklyScore, WEEKLY_COURT } from './engine/data/weekly'
@@ -37,7 +38,8 @@ import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
-import { applyReward, applyVictory, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { applyReward, applyVictory, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { recordAscension } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
 import { Battle } from './ui/menus/Battle'
 import { Puzzles } from './ui/menus/Puzzles'
@@ -179,6 +181,14 @@ export default function App() {
   const [seen, setSeen] = useState(tutorialSeen)
   const [saved, setSaved] = useState(loadSaved)
   const [run, setRun] = useState(loadRun)
+  const [runText, setRunText] = useState<string | null>(null)
+  /** Settles a run that has ended: ascension and daily records, their Shards, and the summary to share. Returns lines for the report. */
+  const closeRun = (ended: Run, stage: number, won: boolean) => {
+    const out = recordAscension(ended, stage, won)
+    earnShards(out.shards)
+    setRunText(runSummary(ended, stage, won))
+    return out.lines
+  }
   const progressRef = useRef(progress)
   progressRef.current = progress
   /** Adds time played to the lifetime total, whichever play screen reports it. */
@@ -411,22 +421,24 @@ export default function App() {
       if (next) saveRun(next)
       else clearRun()
     }
-    const endRun = (stage: number, won: boolean, lines: string[]) => {
+    const endRun = (ended: Run, stage: number, won: boolean, lines: string[]) => {
       const result = recordRun(progress, stage, won)
       setProgress(result.progress)
       saveProgress(result.progress)
-      setReport([...lines, ...result.earned.map((a) => `Achievement: ${a.name}`)])
+      setReport([...lines, ...result.earned.map((a) => `Achievement: ${a.name}`), ...closeRun(ended, stage, won)])
       update(null)
     }
     return (
       <Gauntlet
         progress={progress} run={run} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
-        onStart={(court, roles) => { setReport([]); update(startRun(court, roles, Date.now())) }}
+        summary={runText}
+        onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension })) }}
+        onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
-        onAbandon={() => { if (run) endRun(run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
+        onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
         onFight={() => {
           if (!run) return
-          const foe = stageFoe(run.seed, run.stage)
+          const foe = stageFoe(run.seed, run.stage, run.ascension)
           setReport([])
           setScreen({ name: 'game', human: run.court, difficulty: foe.difficulty, record: { initial: stageGame(run), actions: [] }, campaignIndex: null, gauntlet: true })
         }}
@@ -536,7 +548,7 @@ export default function App() {
         const result = recordRun(progress, run.stage, false)
         setProgress(result.progress)
         saveProgress(result.progress)
-        setReport([`${winner === 'draw' ? 'A draw' : 'A defeat'} at stage ${run.stage}: the run is over.`, ...result.earned.map((a) => `Achievement: ${a.name}`)])
+        setReport([`${winner === 'draw' ? 'A draw' : 'A defeat'} at stage ${run.stage}: the run is over.`, ...result.earned.map((a) => `Achievement: ${a.name}`), ...closeRun(run, run.stage, false)])
         setRun(null)
         clearRun()
         return
@@ -546,9 +558,10 @@ export default function App() {
         const result = recordRun(progress, next.stage, true)
         setProgress(result.progress)
         saveProgress(result.progress)
+        const extra = closeRun(run, next.stage, true)
         const shards = SHARDS_GAUNTLET_STAGE + SHARDS_GAUNTLET_WIN + result.earned.length * 10
         earnShards(shards)
-        setReport(['The Eclipse Tyrant falls. The run is won!', `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)])
+        setReport(['The Eclipse Tyrant falls. The run is won!', `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`), ...extra])
         setRun(null)
         clearRun()
         return
@@ -578,7 +591,7 @@ export default function App() {
       : weekly ? { label: 'Weekly challenge', kind: 'daily' }
       : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish' }
       : { label: 'Skirmish', kind: 'skirmish' }
-    const foe = gauntlet && run ? stageFoe(run.seed, run.stage) : null
+    const foe = gauntlet && run ? stageFoe(run.seed, run.stage, run.ascension) : null
     return (
       <>
       <PlayTimer onFlush={addTime} />

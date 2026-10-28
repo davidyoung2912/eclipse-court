@@ -1,6 +1,6 @@
 import { aiDraft, aiLoadout } from './aiDraft'
 import { PERSONALITIES, type PersonalityId } from './personality'
-import type { Difficulty } from './difficulty'
+import { DIFFICULTY_LIST, type Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import { rngNext } from '../rng'
 import { otherCourt } from '../rules/board'
@@ -35,7 +35,22 @@ export interface RunPiece {
   bonus: number
 }
 
-export type RelicId = 'moonwell' | 'hourglass' | 'dawnstone' | 'banner'
+/** The hardest ascension; each level adds a rule on top of the ones below it. */
+export const MAX_ASCENSION = 5
+
+/** What each ascension level adds to the foes, cumulatively. */
+export const ASCENSIONS: readonly { name: string; text: string }[] = [
+  { name: 'Hardened Foes', text: 'Every enemy piece has 1 extra HP.' },
+  { name: 'No Rest', text: 'The camps are gone: fallen pieces stay fallen.' },
+  { name: 'Sharper Minds', text: 'Every opponent plays one difficulty step higher.' },
+  { name: 'Cruel Rules', text: 'Each stage adds one more rule to the match.' },
+  { name: 'Early Dusk', text: 'The boss brings the Eclipse at round 14.' },
+]
+
+/** The stages after which a rest stop appears at this ascension. */
+export const restStages = (ascension: number): readonly number[] => (ascension >= 2 ? [] : REST_STAGES)
+
+export type RelicId = 'moonwell' | 'hourglass' | 'dawnstone' | 'banner' | 'sundial' | 'omen'
 
 /** Relics only switch on existing match settings, so they bend the rules for both courts. */
 export const RELICS: Record<RelicId, { name: string; text: string }> = {
@@ -43,6 +58,8 @@ export const RELICS: Record<RelicId, { name: string; text: string }> = {
   hourglass: { name: 'Hourglass', text: 'The light runs a long, 10-round day.' },
   dawnstone: { name: 'Dawnstone', text: 'The Eclipse falls 8 rounds later.' },
   banner: { name: 'Banner of the March', text: 'Footsoldiers that cross the board are promoted.' },
+  sundial: { name: 'Sundial', text: 'Court passives are in play: Solari fliers reach further in light, Umbral regenerate in the dark.' },
+  omen: { name: 'Omen', text: 'A day event strikes at the start of each day.' },
 }
 
 const RELIC_IDS = Object.keys(RELICS) as RelicId[]
@@ -71,6 +88,10 @@ export interface Run {
   relics: RelicId[]
   /** The rewards on offer after a win, until one is picked. */
   offers: Reward[] | null
+  /** Ascension level, 0 to MAX_ASCENSION. */
+  ascension: number
+  /** The `dailySeed` of the day this is the seeded daily run for, or 0. */
+  daily: number
 }
 
 export const runWon = (run: Run) => run.stage > GAUNTLET_STAGES
@@ -80,8 +101,9 @@ const fresh = (role: Role): RunPiece => ({ role, wins: 0, bonus: 0 })
 /** The spells a new run begins with. */
 export const STARTER_SPELLS: readonly Spell[] = ['blink', 'mend', 'revive', 'bind']
 
-export function startRun(court: Court, roles: readonly Role[], seed: number): Run {
+export function startRun(court: Court, roles: readonly Role[], seed: number, opts: { ascension?: number; daily?: number } = {}): Run {
   return {
+    ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
     fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: [], offers: null,
   }
@@ -144,17 +166,19 @@ function stream(seed: number) {
   }
 }
 
+const harder = (d: Difficulty): Difficulty => DIFFICULTY_LIST[Math.min(DIFFICULTY_LIST.indexOf(d) + 1, DIFFICULTY_LIST.length - 1)]
+
 const stageSeed = (seed: number, stage: number) => (seed + stage * 7919) >>> 0
 
 /** The opponent of a stage: harder each time, with its personality, board and rules drawn from the run's seed. */
-export function stageFoe(seed: number, stage: number): StageFoe {
+export function stageFoe(seed: number, stage: number, ascension = 0): StageFoe {
   const s = Math.min(Math.max(stage, 1), GAUNTLET_STAGES)
   const roll = stream(stageSeed(seed, s))
   const boss = s === GAUNTLET_STAGES
-  const difficulty = DIFFICULTIES[s - 1]
+  const difficulty = ascension >= 3 ? harder(DIFFICULTIES[s - 1]) : DIFFICULTIES[s - 1]
   const personality = boss ? 'caster' : PERSONALITY_IDS[Math.floor(roll() * PERSONALITY_IDS.length)]
   const board = BOARDS[Math.floor(roll() * BOARDS.length)].id
-  const wanted = boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0
+  const wanted = (boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0) + (ascension >= 4 ? 1 : 0)
   const pool = [...MODIFIERS]
   const chosen: Modifier[] = []
   while (chosen.length < wanted) {
@@ -165,7 +189,8 @@ export function stageFoe(seed: number, stage: number): StageFoe {
   let rules: Partial<MatchConfig> = Object.assign({}, ...chosen.map((m) => m.rules))
   const tags = chosen.map((m) => m.label)
   if (boss) {
-    rules = { ...rules, eclipseRound: 20, showdown: true }
+    const eclipseRound = ascension >= 5 ? 14 : 20
+    rules = { ...rules, eclipseRound, showdown: true }
     tags.push('Early Eclipse')
   }
   const drafted = aiDraft(stageSeed(seed, s) + 1, difficulty)
@@ -174,7 +199,7 @@ export function stageFoe(seed: number, stage: number): StageFoe {
     blurb: `${PERSONALITIES[personality].name} on the ${boardById(board).name} board.`,
     difficulty, personality, board, rules,
     army: drafted.slice(0, Math.min(MAX_DRAFTED, 6 + s)),
-    hpBonus: Math.floor((s - 1) / 3),
+    hpBonus: Math.floor((s - 1) / 3) + (ascension >= 1 ? 1 : 0),
     tags, boss,
   }
 }
@@ -185,6 +210,8 @@ export function relicRules(relics: readonly RelicId[]): Partial<MatchConfig> {
   if (relics.includes('moonwell')) out.recharge = 8
   if (relics.includes('hourglass')) out.day = DAYS.long
   if (relics.includes('banner')) out.promotion = true
+  if (relics.includes('sundial')) out.passives = true
+  if (relics.includes('omen')) out.events = true
   return out
 }
 
@@ -194,7 +221,7 @@ const maxHpOf = (p: RunPiece) => ROLE_STATS[p.role].hp + p.bonus + (p.wins >= VE
 
 /** The opening position of the run's next fight: the persistent army against the stage's opponent. */
 export function stageGame(run: Run): GameState {
-  const foe = stageFoe(run.seed, run.stage)
+  const foe = stageFoe(run.seed, run.stage, run.ascension)
   const foeCourt = otherCourt(run.court)
   const seed = stageSeed(run.seed, run.stage)
   const board = boardById(foe.board)
@@ -305,7 +332,7 @@ export function runReward(run: Run, rng: number): Reward[] {
     },
   ]
   const offers: Reward[] = []
-  if (REST_STAGES.includes(run.stage - 1) && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
+  if (restStages(run.ascension).includes(run.stage - 1) && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
   const order = kinds.map((k, i) => ({ k, key: roll(), i })).sort((a, b) => a.key - b.key)
   for (const { k } of order) {
     if (offers.length >= 3) break
@@ -341,4 +368,27 @@ function withPiece(run: Run, target: number, f: (p: RunPiece) => RunPiece): Run 
   if (target === 0) return { ...run, leader: f(run.leader) }
   if (!run.army[target - 1]) return run
   return { ...run, army: run.army.map((p, i) => (i === target - 1 ? f(p) : p)) }
+}
+
+// ---- run codes and summaries ----
+
+/** A code for a run's seed and ascension; entering it elsewhere starts the same sequence of foes. */
+export const runCode = (seed: number, ascension: number) => `G${ascension}-${(seed >>> 0).toString(36)}`
+
+export function parseRunCode(text: string): { seed: number; ascension: number } | null {
+  const m = /^G([0-5])-([0-9a-z]{1,7})$/.exec(text.trim().toLowerCase().replace(/^g/, 'G'))
+  if (!m) return null
+  const seed = parseInt(m[2], 36)
+  return seed < 2 ** 32 ? { seed, ascension: Number(m[1]) } : null
+}
+
+/** A few lines for a finished run, ready to share. `stage` is the stage lost or abandoned (GAUNTLET_STAGES + 1 when won). */
+export function runSummary(run: Run, stage: number, won: boolean): string {
+  const reached = Math.min(stage, GAUNTLET_STAGES)
+  const strongest = roster(run).filter((p) => p.wins >= VETERAN_WINS).length
+  return [
+    `Eclipse Court Gauntlet${run.ascension ? `, ascension ${run.ascension}` : ''}${run.daily ? ', daily run' : ''}: ${won ? 'WON' : `fell at stage ${reached}`} of ${GAUNTLET_STAGES}`,
+    `Army ${run.army.length + 1}, veterans ${strongest}, relics ${run.relics.length ? run.relics.map((r) => RELICS[r].name).join(', ') : 'none'}, spells ${run.loadout.length}`,
+    `Code ${runCode(run.seed, run.ascension)}`,
+  ].join('\n')
 }
