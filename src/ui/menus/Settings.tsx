@@ -3,7 +3,7 @@ import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
 import { BANTER_LEVELS, DUEL_SPEEDS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
-import { Icon } from './icons'
+import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { resetCoach, resetTips } from '../../tips'
@@ -13,6 +13,10 @@ import { getVolumes, setVolumes, isMuted, setMuted, sfx, unlockAudio } from '../
 import { downloadSave, importSave } from '../../backup'
 import { t } from '../../i18n'
 import { haptic } from '../../haptics'
+
+const SPEED_ICONS: Record<(typeof DUEL_SPEEDS)[number], IconName> = { normal: 'play', fast: 'onward', instant: 'bolt' }
+const BANTER_ICONS: Record<(typeof BANTER_LEVELS)[number], IconName> = { full: 'speakerOn', quiet: 'moon', off: 'speakerOff' }
+const FIGHT_ICONS: Record<(typeof FIGHT_LEVELS)[number], IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 interface Props {
   progress: Progress
@@ -80,29 +84,29 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.aiWhy} onChange={() => change({ aiWhy: !settings.aiWhy })} /> {t('settings.aiWhy')}</label>
       <h3>{t('settings.duels')}</h3>
       <p className="setup-hint">{t('settings.duelHint')}</p>
-      <div className="choices">
+      <div className="choices row">
         {DUEL_SPEEDS.map((s) => (
-          <button key={s} className={`choice${settings.duelSpeed === s ? ' on' : ''}`} aria-pressed={settings.duelSpeed === s} onClick={() => change({ duelSpeed: s })}>{t(`settings.speed.${s}`)}</button>
+          <button key={s} className={`choice${settings.duelSpeed === s ? ' on' : ''}`} aria-pressed={settings.duelSpeed === s} onClick={() => change({ duelSpeed: s })}><strong><Icon name={SPEED_ICONS[s]} />{t(`settings.speed.${s}`)}</strong></button>
         ))}
       </div>
       <h3>{t('settings.banter')}</h3>
       <p className="setup-hint">{t('settings.banterHint')}</p>
-      <div className="choices">
+      <div className="choices row">
         {BANTER_LEVELS.map((l) => (
-          <button key={l} className={`choice${settings.banter === l ? ' on' : ''}`} aria-pressed={settings.banter === l} onClick={() => change({ banter: l })}>{t(`settings.banter.${l}`)}</button>
+          <button key={l} className={`choice${settings.banter === l ? ' on' : ''}`} aria-pressed={settings.banter === l} onClick={() => change({ banter: l })}><strong><Icon name={BANTER_ICONS[l]} />{t(`settings.banter.${l}`)}</strong></button>
         ))}
       </div>
       <h3>{t('settings.fightDifficulty')}</h3>
       <p className="setup-hint">{t('settings.fightHint')}</p>
-      <div className="choices">
+      <div className="choices row">
         {FIGHT_LEVELS.map((l) => (
-          <button key={l} className={`choice${settings.fightDifficulty === l ? ' on' : ''}`} aria-pressed={settings.fightDifficulty === l} onClick={() => change({ fightDifficulty: l })}>{t(`settings.fight.${l}`)}</button>
+          <button key={l} className={`choice${settings.fightDifficulty === l ? ' on' : ''}`} aria-pressed={settings.fightDifficulty === l} onClick={() => change({ fightDifficulty: l })}><strong><Icon name={FIGHT_ICONS[l]} />{t(`settings.fight.${l}`)}</strong></button>
         ))}
       </div>
       <h3>{t('settings.guidance')}</h3>
       <div className="menu-buttons">
         <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote(t('settings.tipsBack')) }}><Icon name="bulb" />{t('settings.showTips')}</button>
-        <button onClick={() => { resetCoach(); setNote(t('settings.coachBack')) }}><Icon name="target" />{t('settings.showCoach')}</button>
+        <button className="two-line" onClick={() => { resetCoach(); setNote(t('settings.coachBack')) }}><Icon name="target" />{t('settings.showCoach')}</button>
       </div>
       <h3>{t('settings.save')}</h3>
       <p className="setup-hint">{t('settings.saveHint')}</p>

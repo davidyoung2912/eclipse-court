@@ -539,6 +539,11 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .setup-card strong { color: var(--solari-gold); }
 .choices.row { flex-direction: row; flex-wrap: wrap; }
 .choices.row .choice { flex: 1 1 40%; }
+/* A label that carries its own line break. */
+.menu-buttons button.two-line { white-space: pre-line; }
+/* Short option sets in Settings (speed, banter, difficulty): all on one line, icon beside the name. */
+.choices.row .choice:has(> strong:only-child) { flex: 1 1 0; min-width: 0; padding-inline: 8px; }
+.choices.row .choice > strong:only-child { justify-content: center; font-weight: 600; }
 
 .draft-row .name small { display: block; opacity: 0.7; font-size: 0.8rem; }
 .draft-row button[aria-pressed='true'] { background: var(--solari-gold); color: #1b1740; }

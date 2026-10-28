@@ -43,7 +43,7 @@ export const en = {
   'settings.guidance': 'Guidance',
   'settings.showTips': 'Show Tips Again',
   'settings.tipsBack': 'Tips, the checklist and the guided lesson are back.',
-  'settings.showCoach': 'Replay Board Coach-marks',
+  'settings.showCoach': 'Replay\nBoard Coach-marks',
   'settings.coachBack': 'The board callouts will show again in your next match.',
   'settings.save': 'Your save',
   'settings.saveHint': 'Progress lives in this browser only. Keep a backup file in case it is cleared.',
