@@ -314,7 +314,7 @@ body:has(.story-menu) {
 body:has(.gauntlet-menu) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
-    radial-gradient(ellipse at center, #123d1e, #05160b 75%);
+    radial-gradient(ellipse at center, #0c2b14, #030c06 75%);
   background-attachment: fixed;
 }
 body:has(.puzzles-menu) {
@@ -408,7 +408,7 @@ body:has(.puzzles-menu) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(232, 182, 74, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 .mode-card.card-gauntlet {
-  background: linear-gradient(180deg, #1a5629, #123d1e); border-color: rgba(100, 210, 130, 0.65);
+  background: linear-gradient(180deg, #123f1e, #0c2b14); border-color: rgba(90, 190, 120, 0.6);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(80, 190, 110, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 .mode-card.card-puzzles {
@@ -1068,3 +1068,6 @@ svg.board:focus { outline: none; }
 .menu .choice:disabled { opacity: 1; background: rgba(26, 20, 62, 0.94); border-color: rgba(154, 124, 240, 0.2); }
 .menu .choice:disabled > * { opacity: 0.4; }
 .row-pick button:disabled, .setup-seg button:disabled { opacity: 0.55; }
+
+/* The Gauntlet's army picker sits on a solid indigo panel, so it does not turn muddy over the green floor. */
+.gauntlet-menu .draft { background: rgba(32, 26, 78, 0.94); border: 1px solid rgba(154, 124, 240, 0.4); }
