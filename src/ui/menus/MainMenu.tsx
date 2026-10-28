@@ -152,7 +152,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
         <aside className="coach-card" role="note" aria-label="A suggestion">
           <Icon name="bulb" />
           <p>{advice.text}</p>
-          <button onClick={hideAdvice}><Icon name="check" />Thanks</button>
+          <button className="primary" onClick={hideAdvice}><Icon name="check" />Thanks</button>
         </aside>
       )}
       {showChecklist(steps, onboarding) && (
