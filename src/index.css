@@ -289,11 +289,19 @@ body:has(.main-menu) {
   background-attachment: fixed;
 }
 
-/* The Battle page: the same checkerboard in a matching deep red. */
+/* The Battle page and the pages under it: the same checkerboard in a matching dark red. */
 body:has(.battle-menu) {
   background:
     repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
-    radial-gradient(ellipse at center, #4a1a2a, #1f0a12 75%);
+    radial-gradient(ellipse at center, #36101e, #14050a 75%);
+  background-attachment: fixed;
+}
+
+/* The Campaign: the light court's golds, kept dark so the cards stand out. */
+body:has(.campaign-menu) {
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%) 0 0 / 56px 56px,
+    radial-gradient(ellipse at center, #4a3611, #1a1305 75%);
   background-attachment: fixed;
 }
 

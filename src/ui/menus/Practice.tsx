@@ -72,7 +72,7 @@ export function Practice({ onPlaytime, onDuel, onBack }: Props) {
     </div>
   )
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="target" />
       <h2>Practice Arena</h2>
       <p className="tagline">Fight any piece against any other. Nothing is saved.</p>

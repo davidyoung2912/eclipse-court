@@ -14,7 +14,7 @@ interface Props {
 export function Online({ onHost, onJoin, onBack }: Props) {
   const supported = rtcSupported()
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>Play Online</h2>
       <p className="tagline">Connect straight to a friend, with no account and no game server.</p>

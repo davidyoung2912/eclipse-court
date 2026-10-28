@@ -232,7 +232,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const showWin = open('win') || open('cycle') || open('reverse')
   const showHazards = open('events') || open('showdown') || open('growth') || open('promotion')
   return (
-    <main className="app menu setup">
+    <main className="app menu setup battle-menu">
       <SkirmishArt />
       <h2>Skirmish</h2>
       {!hotSeat && (

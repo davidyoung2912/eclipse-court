@@ -63,7 +63,7 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, tab = 'batt
     ?? (totalStars(progress) >= GRAND_STARS && grandBattles().some((o) => !((progress.battles[o.id] ?? 0) & STAR_WIN)) ? 'grand' : undefined)
   const currentScenarioTier = CAMPAIGN_TIERS.find(({ difficulty }) => scenariosIn(difficulty).some((x) => !((progress.scenarios[x.id] ?? 0) & STAR_WIN)))?.difficulty
   return (
-    <main className="app menu">
+    <main className="app menu campaign-menu">
       <CampaignArt />
       <h2>Campaign</h2>
       <div className="tabs" role="tablist">

@@ -36,7 +36,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
   /** The player's own rank opens; when no opponent sits in it, the one holding the suggested opponent does. */
   const openRank = groups.some((g) => g.rank === rankOf(store.rating)) ? rankOf(store.rating) : rankOf(suggested.rating)
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="trophy" />
       <h2>Ranked Ladder</h2>
       <p className="tagline">Win to climb. Beating a stronger foe earns more, and the suggested opponent keeps matches close.</p>

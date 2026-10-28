@@ -56,7 +56,7 @@ export function Mail({ incoming: arrived, onNew, onPlay, onSend, onReplay, onBac
   const receipt = incoming && receive((held && recordOfGame(held)) || null, incoming)
 
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>Play by Link</h2>
       <p className="tagline">No connection needed. Make a move, send your friend the link, and wait for the link that comes back.</p>

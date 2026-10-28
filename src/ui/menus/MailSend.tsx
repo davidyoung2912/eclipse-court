@@ -29,7 +29,7 @@ export function MailSend({ game, record, onReplay, onBack }: Props) {
   const status = statusOf(record, game.me)
   const round = replay(record)?.round ?? 1
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>{HEADLINE[status]}</h2>
       <p className="tagline">

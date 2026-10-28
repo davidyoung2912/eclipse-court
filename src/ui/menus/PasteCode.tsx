@@ -15,7 +15,7 @@ export function PasteCode({ onOpen, onBack }: Props) {
   const [text, setText] = useState('')
   const [error, setError] = useState(false)
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>Paste a Code</h2>
       <p className="tagline">Paste a challenge or replay link, or the code after the # sign.</p>

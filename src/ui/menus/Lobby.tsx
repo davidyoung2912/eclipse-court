@@ -129,7 +129,7 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
   const view = step.name === 'connected' ? step.view : null
   const shown = view?.challenge
   return (
-    <main className="app menu">
+    <main className="app menu battle-menu">
       <PageArt icon="chain" />
       <h2>{resume ? 'Reconnect' : host ? 'Host a Game' : 'Join a Game'}</h2>
       {step.name === 'making' && <p className="tagline">Making your connection code…</p>}

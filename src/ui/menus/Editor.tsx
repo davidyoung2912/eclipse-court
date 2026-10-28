@@ -55,7 +55,7 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
   const code = issues.length ? '' : encodeChallenge(challenge(1)!)
 
   return (
-    <main className="app menu editor">
+    <main className="app menu editor battle-menu">
       <PageArt icon="grid" />
       <h2>Board Editor</h2>
       <p className="tagline">Draw a board, place the armies, choose a goal. Test it, then send the link: it plays like any other match.</p>
