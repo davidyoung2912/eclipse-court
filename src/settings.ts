@@ -96,6 +96,8 @@ export interface Settings {
   reminders: boolean
   /** Show a chip by the dial counting the rounds until the Eclipse falls. */
   eclipseChip: boolean
+  /** How many hints a match allows: Unlimited, Three per match, or Off (the button is hidden). Puzzles keep their own hints. */
+  hints: HintLimit
   /** How fast live duels play: Normal is the slowed pace, Fast is full speed, Instant settles every duel without playing it. */
   duelSpeed: DuelSpeed
   /** Short vibrations for selecting, moving and capturing (where the device can). */
@@ -105,6 +107,11 @@ export interface Settings {
   /** How much named opponents talk: Full, Quiet (results and the Eclipse only) or Off. */
   banter: BanterLevel
 }
+
+export type HintLimit = 'unlimited' | 'three' | 'off'
+export const HINT_LIMITS: readonly HintLimit[] = ['unlimited', 'three', 'off']
+/** Hints a match allows under Three per match. */
+export const HINTS_PER_MATCH = 3
 
 export type BanterLevel = 'full' | 'quiet' | 'off'
 export const BANTER_LEVELS: readonly BanterLevel[] = ['full', 'quiet', 'off']
@@ -117,7 +124,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, hints: 'unlimited', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -138,6 +145,7 @@ export function parseSettings(raw: unknown): Settings {
     blunderCheck: o.blunderCheck === true,
     oddsDetail: o.oddsDetail === true,
     reminders: o.reminders === true,
+    hints: HINT_LIMITS.includes(o.hints as HintLimit) ? (o.hints as HintLimit) : DEFAULT_SETTINGS.hints,
     duelSpeed: DUEL_SPEEDS.includes(o.duelSpeed as DuelSpeed) ? (o.duelSpeed as DuelSpeed) : DEFAULT_SETTINGS.duelSpeed,
     haptics: o.haptics !== false,
     fightDifficulty: FIGHT_LEVELS.includes(o.fightDifficulty as FightLevel) ? (o.fightDifficulty as FightLevel) : DEFAULT_SETTINGS.fightDifficulty,

@@ -3,7 +3,7 @@ import { autoDuel } from './ai/autoDuel'
 import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
-import { getSettings, updateSettings } from './settings'
+import { getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
 import { explainMove } from './ai/why'
 import { attackOdds, beaconReach, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, spellReminder, threatenedIds } from './ui/board/aids'
@@ -243,7 +243,15 @@ export function Game({ controllers, opening, record, session, context, coach, pu
 
   const nextOdds = useMemo(() => (forecastOn && selected && myTurn && !targets ? nextAttackOdds(state, selected, moves) : undefined), [forecastOn, state, selected, myTurn, targets, moves])
 
-  const { hint, level: hintLevel, ask: askHint, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
+  const { hint, level: hintLevel, ask: askHintRaw, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
+  const hintMode = puzzleHelp ? 'unlimited' : getSettings().hints
+  const [hintsUsed, setHintsUsed] = useState(0)
+  const hintsLeft = Math.max(0, HINTS_PER_MATCH - hintsUsed)
+  /** Opening a hint spends one under Three per match; closing the card is free. */
+  const askHint = () => {
+    if (hintMode === 'three' && !hint) setHintsUsed((n) => n + 1)
+    askHintRaw()
+  }
 
   const clock = state.config.turnClock
   /** The clock stops for duels, dialogs, the pass screen and the AI's turn. */
@@ -743,7 +751,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
             </>
           )}
           {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />Danger</button>}
-          {!hotSeat && !online && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}</button>}
+          {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{hintMode === 'three' ? ` (${hintsLeft} left)` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (online && !ended) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>

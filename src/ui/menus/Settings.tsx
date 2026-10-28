@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { owns, shopSnapshot, subscribeShop } from '../../shop'
 import { findCosmetic } from '../../engine/data/cosmetics'
-import { BANTER_LEVELS, DUEL_SPEEDS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
+import { BANTER_LEVELS, DUEL_SPEEDS, HINT_LIMITS, FIGHT_LEVELS, getSettings, THEMES, themeUnlocked, updateSettings } from '../../settings'
 import { totalStars, type Progress } from '../../progress'
 import { Icon, type IconName } from './icons'
 import { PageArt } from './MenuArt'
@@ -16,6 +16,7 @@ import { haptic } from '../../haptics'
 
 const SPEED_ICONS: Record<(typeof DUEL_SPEEDS)[number], IconName> = { normal: 'play', fast: 'onward', instant: 'bolt' }
 const BANTER_ICONS: Record<(typeof BANTER_LEVELS)[number], IconName> = { full: 'speakerOn', quiet: 'moon', off: 'speakerOff' }
+const HINT_ICONS: Record<(typeof HINT_LIMITS)[number], IconName> = { unlimited: 'bulb', three: 'checklist', off: 'close' }
 const FIGHT_ICONS: Record<(typeof FIGHT_LEVELS)[number], IconName> = { easy: 'leaf', normal: 'shield', hard: 'flame' }
 
 interface Props {
@@ -88,6 +89,13 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <label className="recharge"><input type="checkbox" checked={settings.blunderCheck} onChange={() => change({ blunderCheck: !settings.blunderCheck })} /> {t('settings.blunderCheck')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.oddsDetail} onChange={() => change({ oddsDetail: !settings.oddsDetail })} /> {t('settings.oddsDetail')}</label>
       <label className="recharge"><input type="checkbox" checked={settings.reminders} onChange={() => change({ reminders: !settings.reminders })} /> {t('settings.reminders')}</label>
+      <h3>{t('settings.hints')}</h3>
+      <p className="setup-hint">{t('settings.hintsHint')}</p>
+      <div className="choices row">
+        {HINT_LIMITS.map((l) => (
+          <button key={l} className={`choice${settings.hints === l ? ' on' : ''}`} aria-pressed={settings.hints === l} onClick={() => change({ hints: l })}><strong><Icon name={HINT_ICONS[l]} />{t(`settings.hints.${l}`)}</strong></button>
+        ))}
+      </div>
       <h3>{t('settings.duels')}</h3>
       <p className="setup-hint">{t('settings.duelHint')}</p>
       <div className="choices row">
