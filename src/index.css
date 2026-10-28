@@ -142,7 +142,6 @@ body {
 .streak-meter .sparks { position: absolute; left: 50%; top: 3px; width: 0; height: 0; }
 .streak-meter .sparks b { position: absolute; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #fff4d0; animation: meter-spark 600ms ease-out both; }
 @keyframes meter-spark { from { opacity: 1; transform: rotate(var(--angle)) translateY(0); } to { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)); } }
-.board-glow { fill: none; stroke: var(--turn-glow); stroke-width: 0.22; filter: url(#halo-blur); pointer-events: none; transition: stroke var(--t-slow) var(--ease); }
 .move-glow { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: move-pulse 1.3s ease-in-out infinite; }
 @keyframes move-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
 
@@ -1253,6 +1252,8 @@ svg.board:focus { outline: none; }
     max-width: 1180px;
     overflow-y: auto;
     padding-top: calc(env(safe-area-inset-top) + 16px);
+    /* Room for the board's gilded frame, which sits outside the board box; the scrolling container would otherwise shave its left edge. */
+    padding-inline: 20px;
   }
   .app.timed > * { grid-column: 2; }
   .app.timed > .board {
