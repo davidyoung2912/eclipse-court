@@ -20,7 +20,18 @@ const fontReady = Promise.race([
   new Promise((done) => setTimeout(done, 1500)),
 ]).catch(() => {})
 
-void fontReady.then(() => createRoot(document.getElementById('root')!).render(
+/** Fade out and remove the first-load eclipse (drawn in index.html) once the app has painted. */
+function dismissBoot() {
+  const boot = document.getElementById('boot')
+  if (!boot) return
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    boot.classList.add('done')
+    setTimeout(() => boot.remove(), 400)
+  }))
+}
+
+void fontReady.then(() => {
+  createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <Suspense fallback={<main className="app"><p className="status">Loading…</p></main>}>
@@ -29,4 +40,6 @@ void fontReady.then(() => createRoot(document.getElementById('root')!).render(
       </Suspense>
     </ErrorBoundary>
   </StrictMode>,
-))
+)
+  dismissBoot()
+})

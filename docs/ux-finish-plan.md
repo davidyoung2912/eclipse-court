@@ -77,3 +77,5 @@ Status: **in progress.** Written 2026-10-28 from the UX review. Items are the on
 ## Status
 
 Phase 1 done: the type scale tokens are in `:root` and `index.css` uses them; tabular figures are on changing numbers; small labels no longer use Cinzel.
+
+Phase 2 done: `index.html` draws the eclipse loader (inline CSS, so it shows before React and the fonts load); `main.tsx` fades it out and removes it after the first render. Reduce motion (setting or OS) shows the still, closed eclipse.

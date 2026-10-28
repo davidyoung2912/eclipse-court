@@ -7,9 +7,25 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#14102b" />
     <title>Eclipse Court</title>
+    <style>
+      html, body { margin: 0; background: #14102b; }
+      #boot { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #14102b; transition: opacity 0.35s ease; }
+      #boot.done { opacity: 0; pointer-events: none; }
+      #boot .eclipse { position: relative; width: min(38vw, 9rem); aspect-ratio: 1; }
+      #boot .sun { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff2b8, #e8b64a 70%); box-shadow: 0 0 2.5rem 0.6rem rgba(232, 182, 74, 0.45); animation: boot-glow 3.2s ease-in-out infinite alternate; }
+      #boot .moon { position: absolute; inset: 0; border-radius: 50%; background: #14102b; box-shadow: inset -0.3rem 0.2rem 0.6rem rgba(120, 100, 200, 0.25); animation: boot-moon 3.2s ease-in-out infinite alternate; }
+      @keyframes boot-moon { from { transform: translateX(-115%); } to { transform: translateX(0); } }
+      @keyframes boot-glow { from { box-shadow: 0 0 2.5rem 0.6rem rgba(232, 182, 74, 0.45); } to { box-shadow: 0 0 1rem 0.1rem rgba(232, 182, 74, 0.12); } }
+      @media (prefers-reduced-motion: reduce) { #boot .sun, #boot .moon { animation: none; } #boot .moon { transform: none; } #boot .sun { box-shadow: 0 0 1rem 0.1rem rgba(232, 182, 74, 0.12); } #boot { transition: none; } }
+      :root[data-motion='reduced'] #boot .sun, :root[data-motion='reduced'] #boot .moon { animation: none; }
+      :root[data-motion='reduced'] #boot .moon { transform: none; }
+      :root[data-motion='reduced'] #boot .sun { box-shadow: 0 0 1rem 0.1rem rgba(232, 182, 74, 0.12); }
+      :root[data-motion='reduced'] #boot { transition: none; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot" role="status" aria-label="Loading"><div class="eclipse"><div class="sun"></div><div class="moon"></div></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
