@@ -389,6 +389,14 @@ body:has(.puzzles-menu) {
 .today h3::after { display: none; }
 .streak { display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.04em; text-transform: none; color: var(--solari-gold); }
 .today-row { display: flex; gap: 8px; }
+.suggested { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.suggested h3 { margin: 0; }
+.suggested ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.suggested button {
+  width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left;
+  border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg); font-size: 0.9rem;
+  background: linear-gradient(180deg, rgb(74, 58, 150), rgb(43, 36, 104));
+}
 .today-row button, .mode-card, .utility button {
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg);
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.88), rgba(43, 36, 104, 0.88));

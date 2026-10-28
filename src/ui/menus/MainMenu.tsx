@@ -6,7 +6,7 @@ import type { Progress } from '../../progress'
 import { dailySeed } from '../../engine/data/setups'
 import { Bar } from './Bar'
 import { TipCard } from '../tips/TipCard'
-import { cardSummaries, primaryAction, type CardInfo } from './menuModel'
+import { cardSummaries, primaryAction, suggestions, type CardInfo, type SuggestionTarget } from './menuModel'
 import { adviceFor, checklist, hideAdvice, hideChecklist, onboardingSnapshot, showChecklist, subscribeOnboarding } from '../../onboarding'
 import { storySnapshot, subscribeStory } from '../../story'
 
@@ -114,6 +114,8 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
   const steps = checklist(progress, !firstRun)
   const advice = adviceFor(onboarding)
   const summary = cardSummaries(progress, dailySeed(), storyRead)
+  const next = firstRun ? [] : suggestions(progress, dailyDone)
+  const go: Record<SuggestionTarget, () => void> = { daily: onDaily, dailyPuzzle: onDailyPuzzle, weekly: onWeekly, puzzles: onPuzzles, campaign: onCampaign }
   const cards: Card[] = [
     { icon: 'book', title: 'Story', info: summary.story, onClick: onStory, wide: true },
     { icon: 'swords', title: 'Battle', info: summary.battle, onClick: onBattle },
@@ -158,6 +160,14 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
             {steps.map((s) => <li key={s.id} className={s.done ? 'done' : undefined}><Icon name={s.done ? 'check' : 'star'} />{s.text}</li>)}
           </ul>
           <button className="primary" onClick={hideChecklist}><Icon name="check" />Hide</button>
+        </section>
+      )}
+      {next.length > 0 && !showChecklist(steps, onboarding) && (
+        <section className="suggested" aria-label="Suggested">
+          <h3>Suggested</h3>
+          <ul>
+            {next.map((x) => <li key={x.target}><button onClick={go[x.target]}><Icon name={x.icon} />{x.text}</button></li>)}
+          </ul>
         </section>
       )}
       <section className="today" aria-label="Today">

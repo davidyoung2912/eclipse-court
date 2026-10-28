@@ -3,7 +3,7 @@ import { CAMPAIGN } from '../../engine/data/campaign'
 import { PUZZLES } from '../../engine/data/puzzles'
 import { emptyProgress, recordDaily, recordPuzzle } from '../../progress'
 import { rulesetById } from '../../engine/data/setups'
-import { cardSummaries, changedRuleSections, changedSections, primaryAction } from './menuModel'
+import { cardSummaries, changedRuleSections, changedSections, primaryAction, suggestions } from './menuModel'
 
 describe('primaryAction', () => {
   it('puts an unfinished game before everything else', () => {
@@ -79,5 +79,26 @@ describe('changedSections', () => {
     const classic = rulesetById('classic')!.rules
     expect(changedSections({ ...plain, rules: classic }, classic)).toEqual([])
     expect(changedRuleSections(standard, classic)).toEqual(['hazards'])
+  })
+})
+
+describe('suggestions', () => {
+  const none = { match: false, puzzle: false, weekly: false }
+  const all = { match: true, puzzle: true, weekly: true }
+
+  it('leads with the dailies not yet played, at most three', () => {
+    const list = suggestions(emptyProgress(), none)
+    expect(list.map((x) => x.target)).toEqual(['daily', 'dailyPuzzle', 'weekly'])
+  })
+
+  it('falls back to the next unsolved puzzle tier and the next scenario', () => {
+    const list = suggestions(emptyProgress(), all)
+    expect(list.map((x) => x.target)).toEqual(['puzzles', 'campaign'])
+    expect(list[1].text).toMatch(/^Next scenario: /)
+  })
+
+  it('drops the puzzle row once every puzzle is solved', () => {
+    const p = { ...emptyProgress(), puzzles: PUZZLES.map((x) => x.id) }
+    expect(suggestions(p, all).map((x) => x.target)).toEqual(['campaign'])
   })
 })

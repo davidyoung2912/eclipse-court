@@ -1,5 +1,5 @@
 import { CAMPAIGN } from '../../engine/data/campaign'
-import { PUZZLES } from '../../engine/data/puzzles'
+import { PUZZLES, PUZZLE_TIERS, puzzlesIn } from '../../engine/data/puzzles'
 import { normalRules, type PresetRules } from '../../engine/data/setups'
 import { GAUNTLET_STAGES } from '../../engine/data/gauntlet'
 import { SCENARIOS } from '../../engine/data/scenarios'
@@ -80,6 +80,30 @@ export function cardSummaries(progress: Progress, today: number, story: StorySta
     },
     streak: liveStreak(progress, today),
   }
+}
+
+export type SuggestionTarget = 'daily' | 'dailyPuzzle' | 'weekly' | 'puzzles' | 'campaign'
+
+export interface Suggestion {
+  target: SuggestionTarget
+  icon: 'sun' | 'puzzle' | 'cycle' | 'banner'
+  text: string
+}
+
+/** Up to three things worth doing next: the unplayed dailies, then the next unsolved puzzle, then the next scenario. */
+export function suggestions(progress: Progress, done: { match: boolean; puzzle: boolean; weekly: boolean }): Suggestion[] {
+  const list: Suggestion[] = []
+  if (!done.match) list.push({ target: 'daily', icon: 'sun', text: "Play today's daily match" })
+  if (!done.puzzle) list.push({ target: 'dailyPuzzle', icon: 'puzzle', text: "Solve today's daily puzzle" })
+  if (!done.weekly) list.push({ target: 'weekly', icon: 'cycle', text: "Play this week's match" })
+  const tier = PUZZLE_TIERS.find(({ tier: t }) => puzzlesIn(t).some((p) => !progress.puzzles.includes(p.id)))
+  if (tier) {
+    const left = puzzlesIn(tier.tier).filter((p) => !progress.puzzles.includes(p.id)).length
+    list.push({ target: 'puzzles', icon: 'puzzle', text: `${tier.name} puzzles: ${left} still unsolved` })
+  }
+  const scenario = SCENARIOS.find((x) => !((progress.scenarios[x.id] ?? 0) & STAR_WIN))
+  if (scenario) list.push({ target: 'campaign', icon: 'banner', text: `Next scenario: ${scenario.name}` })
+  return list.slice(0, 3)
 }
 
 export type SectionId = 'army' | 'spells' | 'win' | 'hazards' | 'clock' | 'twists'
