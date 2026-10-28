@@ -34,6 +34,14 @@ const DATA = {
     { id: 'battle-modes', icon: 'swords', title: 'One-off matches',
       text: 'Nothing here touches your campaign. Skirmish lets you design a match against the AI or a friend sharing your device. Practice drops you into a single duel so you can learn how each piece fights. Paste Code opens a challenge or replay that someone sent you. Pick whichever suits your mood; you can always come back.' },
   ],
+  editor: [
+    { id: 'editor-paint', icon: 'grid', title: 'Paint a board',
+      text: 'Pick a tool, then tap squares. Walls block movement and shots, beacons mark what to hold, and cells give the piece standing on them an effect. Tap a square again with the same tool to undo it. Pieces are placed the same way; tapping the same piece again takes it away.' },
+    { id: 'editor-goal', icon: 'target', title: 'Goals and puzzles',
+      text: 'The first three goals make an ordinary match. Survive, Escort and Hold a square are puzzles for Solari: turn off Mirror the armies to give Umbral a different force, and use the Goal square tool to mark where the Solarch must go or stand. Each side needs exactly one Leader.' },
+    { id: 'editor-share', icon: 'chain', title: 'Test and share',
+      text: 'Test It plays your design against the AI and counts for nothing, so you can try it freely. Copy Challenge Link sends the board to a friend, who opens it from the link or the Paste Code page. A board that arrives as a link can be opened in the editor and changed.' },
+  ],
   skirmish: [
     { id: 'skirmish-start', icon: 'gear', title: 'Build your match',
       text: 'The card at the top always summarises the match you have set up, so check it before you press Start. Choose one player or two, your court, and how tough the AI is. Solari favour bright squares and Umbral favour dark ones. If something is missing, a notice above Start says what, and tapping it jumps to the section to fix.' },

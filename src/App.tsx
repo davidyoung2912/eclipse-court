@@ -3,6 +3,9 @@ import { challengeLink, parseShared, type Shared } from './share'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
 import { PasteCode } from './ui/menus/PasteCode'
+import { Editor } from './ui/menus/Editor'
+import { designFromConfig, isCustom, type Design } from './engine/data/editor'
+import { editorDraft, saveDraft } from './editor'
 import { unlockAudio } from './audio/synth'
 import { HOT_SEAT, versusAi, versusOnline } from './controllers'
 import type { Session } from './net/session'
@@ -89,6 +92,7 @@ type Screen =
   | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu'; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
+  | { name: 'editor' }
   /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
   | { name: 'online' }
   | { name: 'lobby'; challenge?: ChallengeCode; offer?: string; /** A dropped game to pick up again, with the game so far. */ resume?: { session: Session; record: GameRecord } }
@@ -110,6 +114,8 @@ type Screen =
     story?: string
     /** A ranked ladder game: the id of the opponent; not resumable. */
     ladder?: string
+    /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
+    editor?: boolean
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -176,6 +182,8 @@ function skirmishRecord(setup: SetupChoice, human: Court, difficulty: Difficulty
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => takeLinkScreen() ?? { name: 'menu' })
   const [progress, setProgress] = useState(loadProgress)
+  const [design, setDesign] = useState(editorDraft)
+  const changeDesign = (next: Design) => { setDesign(next); saveDraft(next) }
   /** What the battle just finished earned, shown on the campaign screen. */
   const [report, setReport] = useState<string[]>([])
   const [seen, setSeen] = useState(tutorialSeen)
@@ -350,7 +358,7 @@ export default function App() {
     )
 
   if (screen.name === 'battle')
-    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onOnline={() => setScreen({ name: 'online' })} />
+    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} />
 
   if (screen.name === 'online')
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
@@ -390,9 +398,16 @@ export default function App() {
   if (screen.name === 'paste')
     return <PasteCode onBack={() => setScreen({ name: 'battle' })} onOpen={(shared) => setScreen(sharedScreen(shared))} />
 
+  if (screen.name === 'editor')
+    return (
+      <Editor design={design} onChange={changeDesign} onBack={() => setScreen({ name: 'battle' })}
+        onTest={(challenge) => setScreen({ name: 'game', human: challenge.side, difficulty: 'normal', record: { initial: newGame(challenge.config), actions: [] }, campaignIndex: null, editor: true })} />
+    )
+
   if (screen.name === 'challenge')
     return (
       <Challenge challenge={screen.challenge} onBack={() => setScreen({ name: 'menu' })}
+        onEdit={isCustom(screen.challenge.config) ? () => { changeDesign(designFromConfig(screen.challenge.config, screen.challenge.side)); setScreen({ name: 'editor' }) } : undefined}
         onPlay={(human, difficulty, hotSeat) =>
           setScreen({ name: 'game', human, difficulty, hotSeat, record: { initial: newGame(screen.challenge.config), actions: [] }, campaignIndex: null })} />
     )
@@ -475,7 +490,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, story, ladder, editor } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -484,7 +499,9 @@ export default function App() {
     const weeklyToday = weeklyMatch()
     const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && campaignIndex === null && human === WEEKLY_COURT
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
-    const transient = !!ladder || !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
+    /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
+    const custom = !!editor || isCustom(record.initial.config)
+    const transient = custom || !!ladder || !!online || !!puzzle || !!series || !!gauntlet || scenario !== undefined || !!story
 
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
@@ -621,6 +638,7 @@ export default function App() {
             online.close()
             return setScreen({ name: 'online' })
           }
+          if (custom && !hotSeat) return setScreen(editor ? { name: 'editor' } : { name: 'menu' })
           if (gauntlet) return finishFight(winner, finished)
           if (story) return finishStory(story, winner, finished)
           if (puzzle) return finishPuzzle(winner)

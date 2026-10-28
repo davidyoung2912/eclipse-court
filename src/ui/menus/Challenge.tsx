@@ -14,11 +14,13 @@ import { BackButton } from './BackButton'
 interface Props {
   challenge: ChallengeCode
   onPlay: (human: Court, difficulty: Difficulty, hotSeat: boolean) => void
+  /** Opens a board from the editor in the editor; absent for other matches. */
+  onEdit?: () => void
   onBack: () => void
 }
 
 /** A match someone sent: its rules, a court to take, and whether to face the AI or a friend. */
-export function Challenge({ challenge, onPlay, onBack }: Props) {
+export function Challenge({ challenge, onPlay, onEdit, onBack }: Props) {
   const [court, setCourt] = useState<Court>(challenge.side)
   return (
     <main className="app menu">
@@ -39,6 +41,7 @@ export function Challenge({ challenge, onPlay, onBack }: Props) {
           </button>
         ))}
         <button onClick={() => onPlay(court, 'normal', true)}><Icon name="versus" />With a Friend on This Device</button>
+        {onEdit && <button onClick={onEdit}><Icon name="grid" />Open in the Editor</button>}
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="challenge" />

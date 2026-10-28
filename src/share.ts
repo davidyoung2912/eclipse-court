@@ -3,6 +3,7 @@ import type { GameRecord } from './engine/log'
 import { boardById, grandBoardById } from './engine/data/boards'
 import { SETUP_INFO, type SetupMode } from './engine/data/setups'
 import { modeOf, MODE_INFO, objectiveGoal } from './engine/rules/events'
+import { isCustom } from './engine/data/editor'
 import { decodeRecord, encodeRecord } from './engine/serialize'
 
 /** What a pasted link or code holds. */
@@ -64,7 +65,10 @@ export async function shareOrCopy(title: string, url: string, text?: string): Pr
 
 /** The match's rules in a few words, for the screen that asks whether to accept. */
 export function describeConfig({ config }: Challenge): string[] {
-  const out = [
+  const out = isCustom(config) ? [
+    `Custom ${config.size === 9 ? '9x9' : '7x7'} board from the editor`,
+    `Win by: ${config.objective ? objectiveGoal(config.objective) : MODE_INFO[modeOf(config)].goal}`,
+  ] : [
     `${SETUP_INFO[config.setup && config.setup in SETUP_INFO ? (config.setup as SetupMode) : 'classic'].name} army on the ${(config.size === 9 ? grandBoardById(config.board) : boardById(config.board)).name} board`,
     `Win by: ${config.objective ? objectiveGoal(config.objective) : MODE_INFO[modeOf(config)].goal}`,
   ]

@@ -839,3 +839,23 @@ body:has(.duel) .play-timer { display: none; }
 .achievements li .link { align-self: flex-start; margin-top: 4px; }
 
 .run-summary { margin: 0.5rem 0; white-space: pre-wrap; font: inherit; font-size: 0.85rem; opacity: 0.85; }
+
+/* Board editor */
+.editor .ed-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.editor .ed-tools button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.06); color: inherit; font: inherit; font-size: 0.8rem; cursor: pointer; }
+.editor .ed-tools button.on { border-color: var(--solari-gold); background: rgba(232, 182, 74, 0.2); }
+.editor .ed-tools button:disabled { opacity: 0.4; cursor: not-allowed; }
+.editor .ed-tools .piece-tool { display: flex; align-items: center; gap: 4px; }
+.editor .piece-tool svg { width: 26px; height: 26px; }
+.editor .cell-tool { border-left: 4px solid var(--cell); }
+.ed-board { max-width: 480px; margin: 8px auto; }
+.ed-sq.even { fill: #2b2552; }
+.ed-sq.odd { fill: #231e45; }
+.ed-sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; cursor: pointer; }
+.ed-goal { fill: none; stroke: #6fe08a; stroke-width: 0.06; stroke-dasharray: 0.14 0.08; pointer-events: none; }
+.ed-piece.ghost { opacity: 0.55; }
+.ed-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; }
+.ed-field select, .ed-field input { padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.35); color: inherit; font: inherit; }
+.ed-numbers { display: flex; gap: 12px; flex-wrap: wrap; }
+.ed-numbers .ed-field { flex: 1 1 40%; }
+.ed-problems { color: #ffb3b3; }

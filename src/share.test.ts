@@ -5,7 +5,8 @@ import { recordOf, replaySteps } from './engine/log'
 import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord, toBase64Url } from './engine/serialize'
 import { skirmishConfig } from './engine/data/setups'
-import { parseShared } from './share'
+import { blankDesign, designChallenge } from './engine/data/editor'
+import { describeConfig, parseShared } from './share'
 
 const challenge = { config: matchConfig({ seed: 77, mode: 'hill', events: true }), side: 'umbral' } as const
 const code = encodeChallenge(challenge)
@@ -77,5 +78,14 @@ describe('parseShared', () => {
     expect(parseShared(`#c=${encodeRecord(record)}`)).toBeNull()
     expect(parseShared('hello world')).toBeNull()
     expect(parseShared('#c=')).toBeNull()
+  })
+})
+
+describe('editor boards', () => {
+  it('open from a pasted link and are described as custom', () => {
+    const made = designChallenge({ ...blankDesign(9), goal: 'leader' }, 4)!
+    const shared = parseShared(encodeChallenge(made))
+    expect(shared).toEqual({ kind: 'challenge', challenge: made })
+    expect(describeConfig(made)[0]).toBe('Custom 9x9 board from the editor')
   })
 })

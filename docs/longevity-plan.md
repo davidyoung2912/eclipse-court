@@ -1,6 +1,6 @@
 # Longevity and engagement: twelve additions
 
-**Status: L1 to L7 done; L8 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
+**Status: L1 to L8 done; L9 to L12 not started.** Each phase ends with a commit and a stop (see CLAUDE.md). Verify with `npm run test`, `npm run lint`, `npx tsc -b` and `npm run build`; no browser testing.
 
 Goal: give players reasons to come back (goals, rewards, fresh content), help them improve, and make the game worth sharing. Every phase is a feature in its own right and none needs a later one, except where noted.
 
@@ -42,7 +42,7 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - **L5 (done): modifiers and handicaps.** Opt-in toggles on Skirmish: fog of war, an AI head start, capture timers, sudden death at a set round. Each carries a shard multiplier that is shown before the match. Needs L2.
 - **L6 (done): ranked ladder.** An Elo-style rating per player, played against the AI personas. The next suggested opponent keeps matches close; the rating and a rank title show on Stats. Local only (online ranked is out of scope).
 - **L7 (done): Gauntlet ascension.** Extends the existing Gauntlet: ascension levels (each adds a harder rule or foe buff once the run is won), a daily seeded run, more perks and relics, and a run summary with a share code.
-- **L8: editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
+- **L8 (done): editor and share codes.** A board editor (blocked squares, beacons, cell effects, starting pieces) and a puzzle editor, with a "test it" step, exported through `share.ts` as a code or link. Imported boards are validated and play like any other match.
 - **L9: juice.** Capture and win animations, a combo or streak counter, screen shake tied to the reduce-motion setting, and reactive music layers in `audio/synth.ts` that build toward the Eclipse.
 - **L10: onboarding.** A guided first battle with contextual prompts (building on `tips.ts` and the tutorial), a first-session path through the menu, and a gentle difficulty suggestion after early losses.
 - **L11: shareable replays.** A share card image drawn on a canvas (final position, result, rule tags), an auto-playing replay link, and a short animated clip if it can be done without a dependency. Needs L1.
@@ -89,3 +89,9 @@ Goal: give players reasons to come back (goals, rewards, fresh content), help th
 - `src/ascension.ts` (+ test): store `eclipse-court:ascension` with the unlocked level (a win at the top level opens the next), the daily run's day record and days won; Shards: 20 x level for an ascension win, 30 for a day's first daily-run win.
 - `src/ui/menus/Gauntlet.tsx`: ascension picker, Daily Run button (seed = `dailySeed`, Solari, classic army), run-code field, and a copyable summary after a run. `App.tsx` `closeRun` settles records and Shards.
 - Not done: new perks (the perk system lives in the engine; left alone to avoid balance changes).
+
+## L8 file map
+- `src/engine/data/editor.ts` (+ test): `Design` (size, beacons, walls, cells, both armies, mirror flag, goal), `applyTool`, `setMirror`, `resize`, `problems` (one Leader a side, no piece on a wall, goal square rules), `designConfig`/`designChallenge` (config marked `board: 'custom'`, `setup: 'custom'`), `designFromConfig` (opens a shared board for editing) and `parseDesign`. Goals are the three match modes plus the puzzle objectives Survive, Escort and Hold, which are Solari's.
+- `src/editor.ts`: draft store `eclipse-court:editor`, held in memory too.
+- `src/ui/menus/Editor.tsx`, reached from Battle: tools, board, goal, problems list, Test It, Copy Challenge Link and a code box. Sharing reuses `encodeChallenge`, so no new format and no `FORMAT_VERSION` bump; `describeConfig` calls such boards "Custom".
+- `src/App.tsx`: `editor` screen; a game with `editor: true` or a custom board is transient and unscored (no stats, Shards or saved game), and Back from an editor test returns to the editor. A challenge for a custom board offers "Open in the Editor".
