@@ -1374,9 +1374,13 @@ main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255,
 .preview-btn { flex: none; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: var(--fg); font-size: 0.8rem; }
 .preview-btn[aria-pressed='true'] { border-color: var(--rarity); color: var(--rarity); }
 .rarity-legend.choice-row { background: linear-gradient(90deg, rgba(255, 201, 74, 0.12), transparent 60%); }
+.choice-row.unlocked { animation: reveal-flip var(--flip, 600ms) var(--ease) both; }
 .choice-row.unlocked::after { content: ''; position: absolute; inset: -2px; border-radius: 14px; border: 2px solid var(--rarity); pointer-events: none; animation: unlock var(--t-slow) var(--ease) both; }
+@keyframes reveal-flip { 0% { transform: perspective(600px) rotateX(90deg); opacity: 0; } 70% { transform: perspective(600px) rotateX(-8deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
 @keyframes unlock { 0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 var(--rarity); } 100% { opacity: 0; transform: scale(1.04); box-shadow: 0 0 28px 8px var(--rarity); } }
-:root[data-motion='reduced'] .cstage-view, :root[data-motion='reduced'] .choice-row.unlocked::after { animation: none; }
+:root[data-motion='reduced'] .cstage-view, :root[data-motion='reduced'] .choice-row.unlocked, :root[data-motion='reduced'] .choice-row.unlocked::after, :root[data-motion='reduced'] .reveal-spark { animation: none; }
+.reveal-spark { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--rarity); box-shadow: 0 0 8px var(--rarity); pointer-events: none; animation: reveal-spark calc(var(--flip, 600ms) + 300ms) ease-out both; }
+@keyframes reveal-spark { 0% { opacity: 1; transform: rotate(var(--angle)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(90px); } }
 @media (prefers-reduced-motion: reduce) {
   main .cstage[data-pieces] [class*='pane-'], main .cstage[data-board] .board .sq, main .cstage[data-board] .board .glow { animation: none !important; }
 }
@@ -1569,3 +1573,28 @@ body:has(.main-menu)::before {
   animation: skeleton 1.4s linear infinite;
 }
 @keyframes skeleton { to { background-position: -220% 0; } }
+
+/* Reward bursts: the shard chip the coins fly to, and first-win confetti */
+.shard-toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; z-index: 69; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--solari-gold); background: rgba(20, 15, 48, 0.92); color: var(--solari-cream); font-family: var(--display); font-variant-numeric: tabular-nums; pointer-events: none; animation: toast-in 300ms var(--ease) both, toast-out 400ms ease-in 2000ms forwards; }
+.shard-toast svg { width: 18px; height: 18px; fill: var(--solari-gold); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-6px); } }
+.confetti { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
+.confetti span { position: absolute; width: 7px; height: 12px; margin: -6px 0 0 -3px; border-radius: 2px; animation: confetti-fly 1.6s ease-out both; }
+@keyframes confetti-fly {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) rotate(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1.6)) rotate(var(--spin)); }
+}
+:root[data-motion='reduced'] .confetti, :root[data-motion='reduced'] .shard-toast { animation: none; }
+:root[data-motion='reduced'] .confetti { display: none; }
+@media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
+
+/* Reduce flashes: steady in place of pulsing or brightening */
+:root[data-flashes='reduced'] .leader-danger::before { animation: none; opacity: 0.22; }
+:root[data-flashes='reduced'] .win-shimmer { animation: none; opacity: 0.8; }
+:root[data-flashes='reduced'] .win-halo, :root[data-flashes='reduced'] .confetti { display: none; }
+:root[data-flashes='reduced'] .result-banner.lose .result-scroll { animation-name: banner-unroll; animation-duration: var(--t-slow); }
+:root[data-flashes='reduced'] .choice-row.unlocked::after { animation: none; opacity: 0.6; box-shadow: none; }
+:root[data-flashes='reduced'] .reveal-spark, :root[data-flashes='reduced'] .fx-sheen { display: none; }
+:root[data-flashes='reduced'] .story-ray, :root[data-flashes='reduced'] .story-ray.dim { animation: none; opacity: 0.6; }

@@ -4,6 +4,8 @@ import { buy, equip, equippedId, owns, shopSnapshot, subscribeShop } from '../..
 import { cosmeticKey, cosmeticsOf, KIND_TITLES, KINDS, rarityOf, type Cosmetic } from '../../engine/data/cosmetics'
 import { getSettings, themeById, updateSettings } from '../../settings'
 import { sfx, unlockAudio } from '../../audio/synth'
+import { FLIP_MS, REVEAL_SPARKS } from '../../rewardFx'
+import { haptic } from '../../haptics'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { BackButton } from './BackButton'
@@ -45,12 +47,16 @@ export function Collection({ onBack }: Props) {
               const have = owns(c, shop)
               const on = have && isOn(c)
               return (
-                <div key={c.id} className={`choice-row rarity-${rarityOf(c)}${fresh === cosmeticKey(c) ? ' unlocked' : ''}`}>
+                <div key={c.id} className={`choice-row rarity-${rarityOf(c)}${fresh === cosmeticKey(c) ? ' unlocked' : ''}`}
+                  style={fresh === cosmeticKey(c) ? { ['--flip' as string]: `${FLIP_MS[rarityOf(c)]}ms` } : undefined}>
+                  {fresh === cosmeticKey(c) && Array.from({ length: REVEAL_SPARKS[rarityOf(c)] }, (_, i) => (
+                    <i key={i} className="reveal-spark" aria-hidden="true" style={{ ['--angle' as string]: `${(360 / REVEAL_SPARKS[rarityOf(c)]) * i}deg` }} />
+                  ))}
                   <button className={`choice${on ? ' on' : ''}`} aria-pressed={have ? on : undefined}
                     disabled={!have && shop.shards < c.cost}
                     onClick={() => {
                       if (have) return use(c)
-                      if (buy(c)) { setFresh(cosmeticKey(c)); use(c) }
+                      if (buy(c)) { setFresh(cosmeticKey(c)); use(c); haptic('unlock') }
                     }}>
                     <strong>
                       {!have && <Icon name="lock" />}

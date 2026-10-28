@@ -20,6 +20,7 @@ export const en = {
   'settings.haptics': 'Haptics: short vibrations when you select, move and capture',
   'settings.accessibility': 'Accessibility',
   'settings.largeUi': 'Larger text and buttons',
+  'settings.reduceFlashes': 'Reduce flashes: no white flashes or pulsing warnings (on with Reduce motion)',
   'settings.marks': 'Mark the light on every square with + and − (colour is never the only clue)',
   'settings.reduceMotion': 'Reduce motion: no animation or screen shake',
   'settings.playAids': 'Play aids',

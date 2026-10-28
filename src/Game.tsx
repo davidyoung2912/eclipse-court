@@ -10,7 +10,7 @@ import { killShotOf, type KillShot } from './killCam'
 import { flyBeacon } from './ui/board/flyBeacon'
 import { beaconPickups, castPath, eclipseCinemaMs, type CastFx } from './spellFx'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
-import { getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
+import { flashesReduced, getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
 import { explainMove } from './ai/why'
 import { attackOdds, beaconReach, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, spellReminder, threatenedIds } from './ui/board/aids'
@@ -62,6 +62,8 @@ import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 import { WinBurst } from './ui/tray/WinBurst'
+import { Confetti } from './ui/tray/Confetti'
+import { confettiCount } from './rewardFx'
 import { ResultBanner, type ResultStat, type ResultTone } from './ui/tray/ResultBanner'
 
 interface Props {
@@ -79,6 +81,8 @@ interface Props {
   context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean; /** Two people share the Solari court and alternate by round. */ coop?: boolean; /** Which scored mode this is, for its guidance card. */ flavour?: 'weekly' | 'ladder' }
   /** The player's first campaign battle: a line of coaching sits above the board's cards. */
   coach?: boolean
+  /** The player has never won a game: a win now is their first, and gets confetti. */
+  firstWin?: boolean
   /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
   puzzle?: { name: string; text: string; /** A Puzzle Rush run: a failed puzzle ends it, so there is no retry. */ rush?: boolean }
   /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
@@ -127,7 +131,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, opening, record, session, context, coach, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
+export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const coop = !!context?.coop
@@ -725,6 +729,7 @@ export function Game({ controllers, opening, record, session, context, coach, pu
       {ended && (
         <div className="confirm result" role="dialog" aria-label="Game over">
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
+          {winner === human && !hotSeat && !online && <Confetti count={confettiCount(!!firstWin, flashesReduced())} />}
           <ResultBanner title={result} tone={resultTone} stats={resultStats} />
           {persona && !even && farewell && <p className="persona-farewell"><b>{persona.name}</b> “{farewell}”</p>}
           <div className="buttons">

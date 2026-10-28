@@ -3,7 +3,8 @@ import { createDuelAi } from '../../ai/duelAi'
 import { setMuffled, sfx, startDuelDrums } from '../../audio/synth'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { ROLE_INFO } from '../../engine/data/pieceInfo'
-import { ASSIST_SLOW_SECONDS, ASSIST_SLOWDOWN, DUEL_PACE, getSettings } from '../../settings'
+import { ASSIST_SLOW_SECONDS, ASSIST_SLOWDOWN, DUEL_PACE, flashesReduced, getSettings } from '../../settings'
+import { HAPTIC_PATTERNS, hitHaptic } from '../../haptics'
 import { Icon } from '../menus/icons'
 import { AUTO_DUEL_SKILL, profileForSkill } from '../../ai/profile'
 import { createDuel, DEFAULT_CONFIG, duelOutcome, stepDuel } from '../../engine/duel/duel'
@@ -167,7 +168,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     let combo = NO_COMBO
     let muffled = false
     const fx = createFx({
-      luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion,
+      luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion, reduceFlashes: flashesReduced(),
       courts: [attacker.court, defender.court], mineSide: playerSide, assistSide: assist ? playerSide : undefined,
     })
     const drums = startDuelDrums()
@@ -228,7 +229,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
             if (ko) sfx.crowd()
             freeze = hitStopFor(e.damage, ko)
             shake = getSettings().reduceMotion ? 0 : Math.min(14, 4 + e.damage * 3)
-            if (optionsRef.current.haptics) navigator.vibrate?.(e.damage >= 2 ? 40 : 18)
+            if (optionsRef.current.haptics) navigator.vibrate?.([...HAPTIC_PATTERNS[hitHaptic(e.damage, ko)]])
           } else if (e.type === 'suddenDeath') setBanner('Sudden death!')
         }
       }

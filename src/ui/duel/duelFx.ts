@@ -1,3 +1,4 @@
+import { flashScale, pulseHz } from '../../rewardFx'
 import { debrisCount, healthColor, lowHealthPulse, punchFor, PUNCH_RETURN, shockwaveRadius, stepGhost, struck, type Ghost } from '../../duelImpact'
 import { ambientLight, chargeAura, easeTo, flareFor, followZoom, loserFade, PARALLAX, telegraphFill } from '../../duelPresentation'
 import { lostPanes, PALETTE, pieceArtSvg } from '../../art/pieceGeometry'
@@ -37,6 +38,8 @@ export interface DuelLook {
   /** Cell effect under the attacker and the defender. */
   cells: [CellEffect | null, CellEffect | null]
   reduceMotion: boolean
+  /** Reduce flashes: no white hit flash or arena flare, and a steady low-health edge. */
+  reduceFlashes: boolean
   /** The fighter the player steers, which gets the low-health edge pulse. */
   mineSide?: 0 | 1
   /** The courts of the attacker and the defender. */
@@ -142,7 +145,7 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
       }
       push(fx, { kind: 'text', x: e.at.x, y: e.at.y - victim.radius, vx: 0, vy: -1.4, life: 0.9, max: 0.9, r: 0, color: '#ff8088', text: `-${fmt(e.damage)}` })
       if (fx.look.assistSide !== undefined) push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.6, max: 0.6, r: 1.1, color: '#ff8088' })
-      fx.flash[e.target] = 0.18
+      fx.flash[e.target] = 0.18 * flashScale(fx.look.reduceFlashes)
       push(fx, { kind: 'ring', x: e.at.x, y: e.at.y, vx: 0, vy: 0, life: 0.35, max: 0.35, r: shockwaveRadius(e.damage), color: '#ffffff' })
       for (let i = debrisCount(e.damage, calm); i > 0; i--) {
         const a = Math.random() * Math.PI * 2
@@ -153,7 +156,7 @@ export function updateFx(fx: Fx, s: DuelState, dt: number, events: DuelEvent[]) 
       fx.punch = Math.max(fx.punch, punchFor(e.damage, ko, calm))
       fx.punchAt = e.at
       fx.ghost[e.target] = struck(fx.ghost[e.target])
-      fx.flare = Math.max(fx.flare, flareFor(e.damage))
+      fx.flare = Math.max(fx.flare, flareFor(e.damage) * flashScale(fx.look.reduceFlashes))
       if (ko && !fx.ko) {
         fx.ko = { t: 0, side: e.target }
         // The fallen fighter breaks up into motes of its court's colour.
@@ -888,7 +891,8 @@ export function drawDuel(ctx: Ctx, fx: Fx, s: DuelState, w: number, h: number, d
   const pulse = mine ? lowHealthPulse(mine.hp / mine.maxHp) : null
   if (pulse) {
     // Red creeps in from the edges, beating faster as health runs out.
-    const beat = calm ? 0.5 : 0.5 + 0.5 * Math.sin(t * pulse.hz * Math.PI * 2)
+    const hz = pulseHz(pulse.hz, calm || look.reduceFlashes)
+    const beat = hz === 0 ? 0.5 : 0.5 + 0.5 * Math.sin(t * hz * Math.PI * 2)
     const edge = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.5)
     edge.addColorStop(0, 'rgba(255, 40, 60, 0)')
     edge.addColorStop(1, `rgba(255, 40, 60, ${pulse.strength * (0.12 + 0.28 * beat)})`)

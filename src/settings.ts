@@ -76,6 +76,8 @@ export interface Settings {
   theme: string
   /** Stop animation and screen shake whatever the device asks for. */
   reduceMotion: boolean
+  /** Tone down flashes: no white hit flash, steady instead of pulsing warnings, no sudden brightening. */
+  reduceFlashes: boolean
   /** Write the light level (+ or −) on every square, so colour is never the only clue. */
   marks: boolean
   /** Larger text and bigger buttons. */
@@ -136,7 +138,10 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, reduceFlashes: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+
+/** Flashes are toned down when asked for, and whenever motion is reduced. */
+export const flashesReduced = (s: Pick<Settings, 'reduceMotion' | 'reduceFlashes'> = getSettings()) => s.reduceMotion || s.reduceFlashes
 
 export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEMES[0]
 export const themeUnlocked = (theme: Theme, stars: number) => stars >= theme.stars
@@ -147,6 +152,7 @@ export function parseSettings(raw: unknown): Settings {
   return {
     theme: typeof o.theme === 'string' && THEMES.some((t) => t.id === o.theme) ? o.theme : DEFAULT_SETTINGS.theme,
     reduceMotion: o.reduceMotion === true,
+    reduceFlashes: o.reduceFlashes === true,
     marks: o.marks === true,
     largeUi: o.largeUi === true,
     aids: o.aids === true,
@@ -187,6 +193,7 @@ export function applySettings(s: Settings = getSettings()) {
   for (const t of THEMES) for (const k of Object.keys(t.vars)) root.style.removeProperty(k)
   for (const [k, v] of Object.entries(themeById(s.theme).vars)) root.style.setProperty(k, v)
   root.dataset.motion = s.reduceMotion ? 'reduced' : 'full'
+  root.dataset.flashes = flashesReduced(s) ? 'reduced' : 'full'
   root.dataset.size = s.largeUi ? 'large' : 'normal'
 }
 

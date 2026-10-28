@@ -778,6 +778,7 @@ export default function App() {
         mail={mail ? (moved) => { const game = mailGame(mail); if (game) putMail(moved, game.me); setScreen({ name: 'mailsend', id: mail }) } : undefined}
         context={context}
         coach={!series && isFirstBattle(progress, campaignIndex)}
+        firstWin={progress.stats.wins === 0}
         puzzle={puzzle && { name: current!.name, text: current!.text, rush: !!puzzle.rush || !!puzzle.endless }}
         onRematch={online && ((view) => setScreen({ name: 'game', human: view.me!, difficulty: 'normal', online, record: { initial: view.state!, actions: [] }, campaignIndex: null }))}
         onReconnect={online && ((record) => setScreen({ name: 'lobby', resume: { session: online, record } }))}

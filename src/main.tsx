@@ -8,6 +8,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './ErrorBoundary'
 import { applySettings } from './settings'
+import { ShardToast } from './ui/ShardToast'
 import { applyCosmetics } from './cosmetics'
 
 applySettings()
@@ -24,6 +25,7 @@ void fontReady.then(() => createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <Suspense fallback={<main className="app"><p className="status">Loading…</p></main>}>
         <App />
+        <ShardToast />
       </Suspense>
     </ErrorBoundary>
   </StrictMode>,

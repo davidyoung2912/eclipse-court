@@ -1,6 +1,6 @@
 # UX sizzle: phased plan
 
-Status: **phases 1-7 done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
+Status: **all eight phases done.** Written 2026-10-28. Every idea from the "more UX sizzle" discussion, grouped into eight phases (duel first, then board, then app-wide).
 
 ## Ground rules
 
@@ -78,3 +78,5 @@ Phase 7 notes: pure numbers are in `src/appMotion.ts`. Screen changes go through
 - Reward bursts: coin or shard burst flying to the wallet on unlocks, level-ups and purchases; rarity-coloured flip reveal for cosmetics; confetti on a first win.
 - Distinct haptic patterns per event (double tap for a capture, long rumble for the Eclipse).
 - **Reduce flashes** setting, gating every flash and chromatic-aberration effect added in earlier phases; photosensitivity pass over all new effects.
+
+Phase 8 notes: pure numbers are in `src/rewardFx.ts`. A **Reduce flashes** setting (`flashesReduced`, also on whenever Reduce motion is) sets `data-flashes` on the page and gates the duel's white hit flash, arena flare and pulsing low-health edge (steady instead), the Leader-danger and win shimmer pulses, the loss banner's brightening, the win halo, light-ray twinkles and the reveal sparkle. Shard earnings of any kind (`ShardToast`, watching the wallet) show a `+N` chip with a burst of coins flying to it and a chime; buying a cosmetic flips its row in with a rarity-scaled duration and sparks, plus an unlock haptic; a first-ever win rains confetti from the result dialog. Duel hits use distinct haptic patterns (tick, thud, long K.O.), joining the capture double-tap and the Eclipse rumble. Coin flight, flip and confetti are skipped under reduce motion. Level-ups have no event of their own in the app (mastery pays on a button), so they ride on the same Shard chip.
