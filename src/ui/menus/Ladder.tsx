@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react'
-import { foeById, LADDER_FOES, rankOf, RANKS, suggestFoe } from '../../engine/data/ladder'
+import { BOSS_UNLOCK } from '../../engine/data/bosses'
+import { foeById, LADDER_BOSSES, LADDER_FOES, rankOf, RANKS, suggestFoe } from '../../engine/data/ladder'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { canStartSeason, ladderSnapshot, startSeason, subscribeLadder } from '../../ladder'
 import { Icon, type IconName } from './icons'
@@ -64,11 +65,26 @@ export function Ladder({ report, onPlay, onBack }: Props) {
           </div>
         </details>
       ))}
+      <details className="tier-fold" open={foe.boss !== undefined}>
+        <summary><h3><Icon name="champion" />Bosses ({LADDER_BOSSES.length})</h3></summary>
+        {store.peak < BOSS_UNLOCK ? (
+          <p className="tagline">Reach {BOSS_UNLOCK} to face the bosses; each plays by a rule of its own.</p>
+        ) : (
+          <div className="choices">
+            {LADDER_BOSSES.map((f) => (
+              <button key={f.id} className={`choice${f.id === foe.id ? ' on' : ''}`} aria-pressed={f.id === foe.id} onClick={() => setChosen(f.id)}>
+                <strong><Icon name="champion" />{f.name} · {f.rating}{store.rivals[f.id] ? ` · ${store.rivals[f.id].w}–${store.rivals[f.id].l}${store.rivals[f.id].d ? `–${store.rivals[f.id].d}` : ''}` : ''}</strong>
+                <span>Boss rule: {f.boss?.rule}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </details>
       {store.history.length > 0 && (
         <p className="tagline">Recent: {store.history.slice().reverse().map((h) => `${h.result === 'win' ? 'W' : h.result === 'loss' ? 'L' : 'D'} ${h.change >= 0 ? '+' : ''}${h.change}`).join(' · ')}</p>
       )}
       <div className="menu-buttons stacked">
-        <button className="primary" onClick={() => onPlay(foe.id)}><Icon name="play" />Play {foe.name}</button>
+        <button className="primary" disabled={foe.boss !== undefined && store.peak < BOSS_UNLOCK} onClick={() => onPlay(foe.id)}><Icon name="play" />Play {foe.name}</button>
         {canStartSeason(store) && <button onClick={() => { if (window.confirm('Start a new season? Your rating moves halfway back toward the start and your season peak is kept.')) startSeason() }}><Icon name="cycle" />Start Season {store.season + 1}</button>}
         <BackButton onClick={onBack} />
       </div>

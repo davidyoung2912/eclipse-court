@@ -136,6 +136,7 @@ const validConfigFor = (c: Partial<MatchConfig>, size: number): c is MatchConfig
   (c.turnClock === undefined || validClock(c.turnClock)) &&
   (c.suddenDeath === undefined || inRange(c.suddenDeath, 1, MAX_ROUNDS)) &&
   (c.edge === undefined || ((c.edge?.court === 'solari' || c.edge?.court === 'umbral') && inRange(c.edge.hp, 1, 5))) &&
+  (c.freeCast === undefined || c.freeCast === 'solari' || c.freeCast === 'umbral') &&
   (['events', 'showdown', 'reverse', 'growth', 'promotion', 'fog'] as const).every((k) => c[k] === undefined || typeof c[k] === 'boolean')
 
 /** The game a code describes, or null if it is damaged, from another version, or not a legal game. */

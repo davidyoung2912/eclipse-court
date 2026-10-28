@@ -393,7 +393,7 @@ export default function App() {
           const foe = foeById(id)
           if (!foe) return
           setReport([])
-          setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007), actions: [] }, campaignIndex: null, ladder: id })
+          setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007, foe), actions: [] }, campaignIndex: null, ladder: id })
         }} />
     )
 

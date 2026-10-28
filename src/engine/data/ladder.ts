@@ -3,6 +3,7 @@ import type { AiLevel, Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import type { GameState, MatchConfig } from '../rules/types'
 import { skirmishConfig } from './setups'
+import { BOSSES, type Boss } from './bosses'
 
 /** Ladder games are always played from the Solari court. */
 export const LADDER_COURT = 'solari'
@@ -20,6 +21,8 @@ export interface LadderFoe {
   difficulty: Difficulty
   name: string
   rating: number
+  /** The signature rule, for a boss. */
+  boss?: Boss
 }
 
 /** The six rungs, one per rank: its id prefix, title, the AI strength it plays at and the middle of its rank's rating band. */
@@ -48,7 +51,12 @@ export const LADDER_FOES: readonly LadderFoe[] = RUNGS
   })))
   .sort((a, b) => a.rating - b.rating)
 
-export const foeById = (id: string) => LADDER_FOES.find((f) => f.id === id)
+/** The bosses, beyond the Grandmasters, as ladder foes. */
+export const LADDER_BOSSES: readonly LadderFoe[] = BOSSES.map((boss) => ({
+  id: boss.id, personality: boss.personality, level: boss.level, difficulty: boss.difficulty, name: boss.name, rating: boss.rating, boss,
+}))
+
+export const foeById = (id: string) => LADDER_FOES.find((f) => f.id === id) ?? LADDER_BOSSES.find((f) => f.id === id)
 
 /** Rank titles, from the rating each begins at. */
 export const RANKS: readonly { from: number; title: string }[] = [
@@ -83,9 +91,9 @@ export function suggestFoe(rating: number): LadderFoe {
   })
 }
 
-/** The match for a ladder game: a seeded random army on the classic board. */
-export function ladderConfig(seed: number): MatchConfig {
-  return { ...skirmishConfig({ mode: 'random', board: 'classic' }, LADDER_COURT, seed), setup: 'ladder' }
+/** The match for a ladder game: a seeded random army on the classic board, with a boss's signature rule added. */
+export function ladderConfig(seed: number, foe?: LadderFoe): MatchConfig {
+  return { ...skirmishConfig({ mode: 'random', board: 'classic' }, LADDER_COURT, seed), setup: 'ladder', ...foe?.boss?.rules }
 }
 
-export const ladderGame = (seed: number): GameState => newGame(ladderConfig(seed))
+export const ladderGame = (seed: number, foe?: LadderFoe): GameState => newGame(ladderConfig(seed, foe))

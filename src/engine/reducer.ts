@@ -262,7 +262,7 @@ function finishTurn(state: GameState): GameState {
   return next
 }
 
-/** A cast costs the Leader HP and the whole turn; each spell works once per game unless the match recharges. */
+/** A cast costs the Leader HP and the whole turn (except a boss's first cast, see `freeCast`); each spell works once per game unless the match recharges. */
 function cast(state: GameState, a: Extract<Action, { type: 'cast' }>): GameState {
   const court = state.turn
   const leader = leaderOf(state, court)
@@ -277,7 +277,10 @@ function cast(state: GameState, a: Extract<Action, { type: 'cast' }>): GameState
     ? { ...applied.recharging, [court]: [...applied.recharging[court], { spell: a.spell, ready: state.round + recharge }] }
     : applied.recharging
   const lastCast = { ...applied.lastCast, [court]: a.spell }
-  return finishTurn({ ...applied, pieces, spells, recharging, lastCast, lastDuel: null })
+  const next = { ...applied, pieces, spells, recharging, lastCast, lastDuel: null }
+  // A free cast keeps the turn, once: the Leader is marked as having acted, so the next cast ends it as usual.
+  if (state.config.freeCast === court && !leader.moved && leader.hp - cost > 0) return next
+  return finishTurn(next)
 }
 
 /** Pure, deterministic transition. Illegal actions return the state unchanged. */

@@ -146,6 +146,8 @@ export interface MatchConfig {
   suddenDeath?: number
   /** Every piece of this court starts with this much more HP (a head start for the AI). */
   edge?: { court: Court; hp: number }
+  /** This court's Leader may cast once a turn without ending it (a boss rule); the turn then goes on with a move or a second cast that ends it. */
+  freeCast?: Court
 }
 
 /** A spell cast earlier, waiting to return to its Leader. */
