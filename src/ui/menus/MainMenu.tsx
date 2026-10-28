@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
 import { Icon, type IconName } from './icons'
 import { PieceArt } from '../../art/PieceArt'
@@ -40,6 +40,12 @@ const STARS = Array.from({ length: 36 }, (_, i) => ({
   r: 0.6 + (i % 4) * 0.35,
   delay: (i % 7) * 0.6,
 }))
+
+/** Opening sequence stages: sun and moon alone, a pause, the whole title centred, then it rises into place. */
+type Intro = 'sun' | 'pause' | 'centred' | 'rise' | 'done'
+const INTRO_STEPS: [Intro, number][] = [['pause', 500], ['centred', 750], ['rise', 1600], ['done', 2100]]
+let introPlayed = false
+
 const RAYS = Array.from({ length: 24 }, (_, i) => i * 15)
 
 /** An eclipse over the two courts' Leaders: the sun with a moon sliding across it. */
@@ -61,10 +67,12 @@ function Hero() {
           <stop offset="1" stopColor="#0d0a22" />
         </radialGradient>
       </defs>
-      {STARS.map((s, i) => (
-        <circle key={i} className="star" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${s.delay}s` }} />
-      ))}
-      <g transform="translate(160 110) scale(0.9)">
+      <g className="hero-late">
+        {STARS.map((s, i) => (
+          <circle key={i} className="star" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${s.delay}s` }} />
+        ))}
+      </g>
+      <g transform="translate(160 110) scale(0.9)" className="hero-core">
         <circle r="112" fill="url(#hero-corona)" className="corona" />
         <g className="rays">
           {RAYS.map((a) => (
@@ -77,8 +85,10 @@ function Hero() {
           <circle r="54" fill="none" stroke="#9a7cf0" strokeWidth="1.2" opacity="0.7" />
         </g>
       </g>
-      <g transform="translate(52 196) scale(92)"><PieceArt role="leader" court="solari" /></g>
-      <g transform="translate(268 196) scale(92)"><PieceArt role="leader" court="umbral" /></g>
+      <g className="hero-late">
+        <g transform="translate(52 196) scale(92)"><PieceArt role="leader" court="solari" /></g>
+        <g transform="translate(268 196) scale(92)"><PieceArt role="leader" court="umbral" /></g>
+      </g>
     </svg>
   )
 }
@@ -93,6 +103,9 @@ interface Card {
 }
 
 export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+  const [intro, setIntro] = useState<Intro>(() => (introPlayed || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'done' : 'sun'))
+  const menuRef = useRef<HTMLElement>(null)
+  const brandRef = useRef<HTMLDivElement>(null)
   const [sound, setSound] = useState(() => !isMuted())
   const primary = primaryAction(progress, !!onResume, firstRun)
   const start = { resume: onResume, learn: onTutorial, campaign: onCampaign, skirmish: onSkirmish }[primary.kind]
@@ -108,11 +121,30 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
     { icon: 'flame', title: 'Gauntlet', info: summary.gauntlet, onClick: onGauntlet },
     { icon: 'puzzle', title: 'Puzzles', info: summary.puzzles, onClick: onPuzzles },
   ]
+  useLayoutEffect(() => {
+    if (intro === 'done') { introPlayed = true; return }
+    introPlayed = true
+    const menu = menuRef.current
+    const brand = brandRef.current
+    const hero = brand?.querySelector<SVGElement>('.hero')
+    if (!menu || !brand || !hero) return
+    // Offsets are layout-based so they ignore the transform already applied.
+    const middle = menu.clientHeight / 2
+    const heroBox = hero.getBoundingClientRect()
+    const sunY = brand.offsetTop + (heroBox.top - brand.getBoundingClientRect().top) + heroBox.height * (110 / 250)
+    menu.style.setProperty('--intro-sun', `${middle - sunY}px`)
+    menu.style.setProperty('--intro-all', `${middle - (brand.offsetTop + brand.offsetHeight / 2)}px`)
+    const timers = INTRO_STEPS.map(([step, at]) => window.setTimeout(() => setIntro(step), at))
+    return () => timers.forEach(window.clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   return (
-    <main className="app menu main-menu">
-      <Hero />
-      <h1><span>Eclipse</span> Court</h1>
-      <div className="divider" aria-hidden="true"><i /></div>
+    <main ref={menuRef} className="app menu main-menu" data-intro={intro}>
+      <div ref={brandRef} className="brand">
+        <Hero />
+        <h1><span>Eclipse</span> Court</h1>
+        <div className="divider" aria-hidden="true"><i /></div>
+      </div>
       <div className="menu-buttons">
         <button className="primary" onClick={start}><Icon name="play" />{primary.label}</button>
       </div>

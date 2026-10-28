@@ -252,6 +252,21 @@ button:disabled { box-shadow: none !important; animation: none !important; }
     radial-gradient(ellipse 60% 30% at 50% 100%, rgba(232, 182, 74, 0.14), transparent 70%);
 }
 .hero { width: 100%; max-height: 16vh; margin-top: -10px; flex-shrink: 1; overflow: visible; }
+.brand { display: flex; flex-direction: column; gap: 3px; }
+.main-menu { position: relative; }
+
+/* Opening sequence: sun and moon fade in mid-screen, the full title joins, then everything rises into place. */
+.main-menu[data-intro='sun'] .hero-core { animation: intro-fade 0.5s ease-out backwards; }
+.main-menu[data-intro]:not([data-intro='done']) { overflow: hidden; }
+.main-menu[data-intro]:not([data-intro='done']) > :not(.brand) { opacity: 0; pointer-events: none; }
+.main-menu[data-intro='sun'] .brand, .main-menu[data-intro='pause'] .brand { transform: translateY(var(--intro-sun, 0)); }
+.main-menu[data-intro='centred'] .brand { transform: translateY(var(--intro-all, 0)); transition: transform 0.35s ease-in-out; }
+.main-menu[data-intro='rise'] .brand { transition: transform 0.5s ease-in-out; }
+.main-menu[data-intro='sun'] .hero-late, .main-menu[data-intro='pause'] .hero-late,
+.main-menu[data-intro='sun'] .brand > :not(.hero), .main-menu[data-intro='pause'] .brand > :not(.hero) { opacity: 0; }
+.main-menu[data-intro='centred'] .hero-late, .main-menu[data-intro='centred'] .brand > :not(.hero) { animation: intro-fade 0.35s ease-out backwards; }
+.main-menu[data-intro='done'] > :not(.brand) { animation: intro-fade 0.4s ease-out backwards; }
+@keyframes intro-fade { from { opacity: 0; } }
 .star { fill: #fbf1d4; opacity: 0.2; animation: twinkle 3.6s ease-in-out infinite; }
 .corona, .rays { transform-box: fill-box; transform-origin: center; }
 .corona { animation: breathe 4.35s ease-in-out infinite; }
