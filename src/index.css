@@ -995,7 +995,7 @@ body:has(.duel) .play-timer { display: none; }
 .editor .ed-tools .piece-tool { display: flex; align-items: center; gap: 4px; }
 .editor .piece-tool svg { width: 26px; height: 26px; }
 .editor .cell-tool { border-left: 4px solid var(--cell); }
-.ed-board { max-width: 480px; margin: 8px auto; }
+.ed-board { max-width: 480px; margin: 8px auto; flex: 0 0 auto; max-height: none; }
 .ed-sq.even { fill: #2b2552; }
 .ed-sq.odd { fill: #231e45; }
 .ed-sq { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.02; cursor: pointer; }
