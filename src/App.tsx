@@ -43,6 +43,9 @@ import { recordPersonaGame } from './personaRecord'
 import { markGrudge, recordArcWin, settleGrudge } from './personaArcs'
 import { arcFight, arcGame } from './engine/data/personaArcs'
 import { Arcs } from './ui/menus/Arcs'
+import { Tournament } from './ui/menus/Tournament'
+import { cupGame, cupOpponent, roundName, sidesOf } from './engine/data/tournament'
+import { matchCourts, openMatch, PLAYER, settleMatch, tournamentSnapshot } from './tournaments'
 import { ladderVoice, resolvePersona, rivalLine, type PersonaChoice } from './personaMenu'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
@@ -122,6 +125,7 @@ type Screen =
   | { name: 'ghost'; ghost: GhostResult }
   | { name: 'ladder' }
   | { name: 'arcs' }
+  | { name: 'tournament' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
   | { name: 'stats' }
@@ -167,6 +171,8 @@ type Screen =
     persona?: PersonaId
     /** A fight of a persona's arc (`step` from 0); not resumable. */
     arc?: { persona: PersonaId; step: number }
+    /** A match of the tournament in progress (hot-seat or the Persona Cup); the bracket is kept apart from the saved game. */
+    tourney?: boolean
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
     /** A try-out from a position in a reviewed game: nothing is recorded and Back returns to the menu. */
@@ -517,8 +523,26 @@ export default function App() {
         }} />
     )
 
+  if (screen.name === 'tournament')
+    return (
+      <Tournament report={report} onBack={() => setScreen({ name: 'battle' })}
+        onPlay={() => {
+          const live = tournamentSnapshot().active
+          const ref = live && openMatch(live)
+          if (!live || !ref) return
+          setReport([])
+          const seed = seedNow()
+          if (live.kind === 'hotseat')
+            return setScreen({ name: 'game', human: 'solari', difficulty: 'normal', hotSeat: true, tourney: true, record: skirmishRecord({ mode: 'classic', board: 'classic' }, 'solari', 'normal', true, seed), campaignIndex: null })
+          const foeIndex = sidesOf(live.bracket, ref).find((e) => e !== PLAYER)!
+          const persona = live.field[foeIndex - 1]
+          const fight = cupOpponent(persona, ref.round)
+          setScreen({ name: 'game', human: 'solari', difficulty: fight.difficulty, persona, tourney: true, record: { initial: cupGame(fight, seed), actions: [] }, campaignIndex: null })
+        }} />
+    )
+
   if (screen.name === 'battle')
-    return <Battle onArcs={() => { setReport([]); setScreen({ name: 'arcs' }) }} onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} onMail={() => setScreen({ name: 'mail' })} />
+    return <Battle onTournament={() => { setReport([]); setScreen({ name: 'tournament' }) }} onArcs={() => { setReport([]); setScreen({ name: 'arcs' }) }} onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} onMail={() => setScreen({ name: 'mail' })} />
 
   if (screen.name === 'online')
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
@@ -697,7 +721,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc, ghost } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc, ghost, tourney } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -708,7 +732,7 @@ export default function App() {
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
     const custom = !!editor || !!tryout || isCustom(record.initial.config)
-    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story || !!arc || !!ghost
+    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story || !!arc || !!ghost || !!tourney
 
     const current = puzzle && (puzzle.endless?.puzzle ?? PUZZLES[puzzle.index])
     const finishPuzzle = (winner: GameState['winner']) => {
@@ -800,6 +824,17 @@ export default function App() {
       return extra.length > 0 ? { ...done, lines: [...extra.flatMap((o) => o.lines), ...done.lines] } : done
     }
 
+    /** A tournament match ends: the bracket moves on, and the Cup pays its Shards. A game left unfinished changes nothing. */
+    const finishTourney = (winner: GameState['winner']) => {
+      const live = tournamentSnapshot().active
+      const courts = live && matchCourts(live)
+      if (!live || !courts || winner === null) return setScreen({ name: 'tournament' })
+      const out = settleMatch(winner === 'draw' ? 'draw' : courts[winner])
+      if (out.shards > 0) earnShards(out.shards)
+      setReport(out.lines)
+      setScreen({ name: 'tournament' })
+    }
+
     const finishSeries = (winner: GameState['winner'], finished: GameRecord) => {
       const opponent = CAMPAIGN[campaignIndex!]
       const done = finishGame(winner, finished, false)
@@ -881,6 +916,15 @@ export default function App() {
       setScreen({ name: 'aftermath', id: chapterId, won: !!final })
     }
 
+    /** The label of the tournament match in play: the round and who plays whom. */
+    const tourneyContext = (): { label: string; kind: 'skirmish' } => {
+      const live = tournamentSnapshot().active
+      const ref = live && openMatch(live)
+      const courts = live && matchCourts(live)
+      if (!live || !ref || !courts) return { label: 'Tournament', kind: 'skirmish' }
+      const names = live.bracket.names
+      return { label: `${roundName(ref.round, live.bracket.results.length)}: ${names[courts.solari]} vs ${names[courts.umbral]}`, kind: 'skirmish' }
+    }
     const context: ComponentProps<typeof Game>['context'] =
       mail ? { label: 'By link', kind: 'skirmish' }
       : story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
@@ -890,13 +934,14 @@ export default function App() {
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
       : daily ? { label: 'Daily match', kind: 'daily' }
       : weekly ? { label: 'Weekly challenge', kind: 'daily', flavour: 'weekly' }
+      : tourney ? tourneyContext()
       : arc ? { label: `${arcFight(arc.persona, arc.step)?.name ?? 'Arc'}`, kind: 'skirmish' }
       : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish', scored: true, flavour: 'ladder' }
       : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? runFoe(run) : null
     const gameKey = `${record.initial.rng}${human}`
     /** Plain games are paid when the result opens; every other kind settles on Continue. */
-    const plain = !mail && !online && !(custom && !hotSeat) && !gauntlet && !story && !puzzle && !series && !hotSeat
+    const plain = !mail && !tourney && !online && !(custom && !hotSeat) && !gauntlet && !story && !puzzle && !series && !hotSeat
     return (
       <>
       <PlayTimer onFlush={addTime} />
@@ -967,6 +1012,7 @@ export default function App() {
           if (custom && !hotSeat) return setScreen(editor ? { name: 'editor' } : { name: 'menu' })
           if (gauntlet) return finishFight(winner, finished)
           if (story) return finishStory(story, winner, finished)
+          if (tourney) return finishTourney(winner)
           if (puzzle) return finishPuzzle(winner)
           if (series) return finishSeries(winner, finished)
           clearSaved()

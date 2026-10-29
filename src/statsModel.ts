@@ -7,6 +7,7 @@ import type { IconName } from './ui/menus/icons'
 import {
   ACHIEVEMENTS, clearedCount, liveStreak, scenarioStars, starCount, STAR_WIN, totalStars, type Progress, type Tally,
 } from './progress'
+import type { Cups } from './tournaments'
 import { achievements as storyAchievements, bondRead, type StoryState } from './story'
 
 export interface StatRow {
@@ -47,7 +48,7 @@ export function totals(p: Progress): StatRow[] {
 }
 
 /** One section for each part of the game, with how far the player has got in it. */
-export function sections(p: Progress, story: StoryState, today: number): StatSection[] {
+export function sections(p: Progress, story: StoryState, today: number, cups?: Cups): StatSection[] {
   const battleTotal = CAMPAIGN.length
   const stars = totalStars(p)
   const campaignTiers: [string, typeof CAMPAIGN][] = [
@@ -64,6 +65,7 @@ export function sections(p: Progress, story: StoryState, today: number): StatSec
         return { label: name, value: outOf(done, list.length), fraction: ratio(done, list.length) }
       }),
       { label: 'Tournaments won', value: String(p.tournaments) },
+      ...(cups ? [{ label: 'Persona Cups won', value: outOf(cups.won, cups.entered) }, { label: 'Persona Cup finals', value: String(cups.finals) }] : []),
       { label: 'Battle record', value: record(p.areas.campaign) },
     ],
   }

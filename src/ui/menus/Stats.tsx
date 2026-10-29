@@ -8,6 +8,7 @@ import { claimRoleGoals, rewardsFor, roleGoalsSnapshot, subscribeRoleGoals, uncl
 import { goalDone, GOAL_ROLES, GOAL_ROLE_NAMES, progressOf, ROLE_GOALS } from '../../engine/data/roleGoals'
 import { ladderSnapshot, subscribeLadder } from '../../ladder'
 import { recordsSnapshot, subscribeRecords } from '../../records'
+import { subscribeTournaments, tournamentSnapshot } from '../../tournaments'
 import { rushBest } from '../../rush'
 import { rankOf } from '../../engine/data/ladder'
 import { Bar } from './Bar'
@@ -36,6 +37,7 @@ export function Stats({ progress, onReplay, onReset, onGoals, onBack }: Props) {
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
   const ladder = useSyncExternalStore(subscribeLadder, ladderSnapshot)
   const records = useSyncExternalStore(subscribeRecords, recordsSnapshot)
+  const { cups } = useSyncExternalStore(subscribeTournaments, tournamentSnapshot)
   const goals = useSyncExternalStore(subscribeRoleGoals, roleGoalsSnapshot)
   const [claimed, setClaimed] = useState<number | null>(null)
   const [goalClaim, setGoalClaim] = useState<GoalClaim | null>(null)
@@ -45,7 +47,7 @@ export function Stats({ progress, onReplay, onReset, onGoals, onBack }: Props) {
   const rank = courtRank(tracks.reduce((n, x) => n + x.level, 0))
   const owed = tracks.reduce((n, t) => n + t.owed, 0)
   const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
-  const list = sections(progress, story, dailySeed())
+  const list = sections(progress, story, dailySeed(), cups)
   const done = overall(list)
   const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) },
     ...(ladder.games > 0 ? [{ label: `Ladder rating (${rankOf(ladder.rating)})`, value: String(ladder.rating) }] : [])]

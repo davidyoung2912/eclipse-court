@@ -162,3 +162,18 @@ ul.setup-card { margin: 0; padding-left: 28px; list-style: disc; }
 }
 .play-timer svg { width: 14px; height: 14px; }
 
+
+/* Tournaments: the bracket as a row of rounds, scrolling sideways on a narrow screen. */
+.bracket { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.bracket-round { display: flex; flex: 1 0 120px; flex-direction: column; justify-content: space-around; gap: 8px; }
+.bracket-round h4 { margin: 0; font-size: var(--fs-sm); text-align: center; }
+.bracket-match { display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(232, 182, 74, 0.35); border-radius: 8px; font-size: var(--fs-sm); }
+.bracket-match.now { border-color: var(--solari-gold); box-shadow: 0 0 0 1px var(--solari-gold); }
+.bracket-side { padding: 4px 8px; background: rgb(26, 20, 62); }
+.bracket-side + .bracket-side { border-top: 1px solid rgba(232, 182, 74, 0.2); }
+.bracket-side.won { color: var(--solari-gold); font-weight: 700; }
+.bracket-side.lost { opacity: 0.55; text-decoration: line-through; }
+.name-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.name-row span { flex: 0 0 5em; }
+.name-row input { flex: 1; min-width: 0; }
+.winner-card h3 { display: flex; align-items: center; gap: 6px; }
