@@ -1,6 +1,6 @@
 # Longevity plan: depth, rewards and reach
 
-Status: **phase 1 done.** Written 2026-10-28 from the full-game review. Each phase is one commit; stop after each so the context can be cleared. Do not start the next phase until asked.
+Status: **phases 1-2 done.** Written 2026-10-28 from the full-game review. Each phase is one commit; stop after each so the context can be cleared. Do not start the next phase until asked.
 
 ## Ground rules
 
@@ -112,3 +112,5 @@ Items 1-3 of `docs/accessibility-plan.md` phase 1.
 ## Status
 
 Phase 1 done: pinch zoom is allowed (`user-scalable=no` removed from the viewport meta; the CSS uses rem and `dvh`-free sizing with no fixed pixel heights that clip, only the piece card's rem-based ellipsis, but 200% zoom was read, not run). The board shows a gold focus ring on its frame when focused by keyboard, and the keyboard cursor has a dark halo so it reads on pale squares in every theme. oxlint now runs the `jsx-a11y` plugin with `prefer-tag-over-role` off (`role="status"` and `role="dialog"` are fine here), `aria-role` ignoring non-DOM components (the `role` prop on `PieceArt`) and `label-has-associated-control` at depth 3. Fixed: the setup switch gets `aria-checked`, the moment toast uses `aria-live` instead of a role on a button. Kept with a reasoned `oxlint-disable-next-line`: pointer-only click shortcuts on the kill cam, story stage and replay eval bar (each has a keyboard route), and `autoFocus` on the modal tip and coach card until the shared dialog hook in accessibility phase 2.
+
+Phase 2 done: the game-over dialog offers **Play Again** (and **Swap Sides** against the AI) for skirmishes and hot-seat games started from the setup screen; the screen carries the setup (`again`) so it is dealt again with a new seed and a re-rolled persona. Daily, weekly, ladder, campaign, scenario, co-op, puzzle, story, Gauntlet, editor, link and online games do not show it, nor do resumed saves (their setup is not kept). The Practice screen is a duel trainer with its own loop and has no game-over dialog, so it is left as is. The **Goals** screen (`src/goals.ts`, `src/ui/menus/Goals.tsx`, linked from Stats and the main menu's Suggested card) lists up to ten open goals, three at most per source: mastery levels, piece goals, the next "earn N achievements" badge and today's unclaimed bounties. Claimable goals come first, the rest by nearness; each has a button to the screen that advances it, and claims still happen in Stats. Achievements in general have no partial progress, so only the badge-count ones appear.

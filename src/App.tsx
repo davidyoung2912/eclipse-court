@@ -37,7 +37,7 @@ import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
 import { personaById, type PersonaId } from './engine/data/personas'
-import { ladderVoice, resolvePersona, rivalLine } from './personaMenu'
+import { ladderVoice, resolvePersona, rivalLine, type PersonaChoice } from './personaMenu'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
@@ -71,6 +71,8 @@ import { markBondRead, markChapterRead, recordEnding, recordStoryLoss, recordSto
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
+import { Goals } from './ui/menus/Goals'
+import type { GoalTarget } from './goals'
 import { PlayTimer } from './ui/PlayTimer'
 import { Online } from './ui/menus/Online'
 import { Lobby } from './ui/menus/Lobby'
@@ -108,6 +110,7 @@ type Screen =
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
   | { name: 'stats' }
+  | { name: 'goals' }
   | { name: 'puzzles' }
   | { name: 'endless' }
   | { name: 'practice' }
@@ -152,6 +155,8 @@ type Screen =
     tryout?: boolean
     /** A game played by link: its id in the saved list. The other court is not here, and each move ends the visit. */
     mail?: string
+    /** A skirmish started from the setup screen: what it takes to deal the same match again with a new seed. */
+    again?: { setup: SetupChoice; voice: PersonaChoice }
   }
 
 const TUTORIAL_KEY = 'eclipse-court:tutorial'
@@ -300,9 +305,17 @@ export default function App() {
       </>
     )
 
+  /** Opens the screen a goal points at. */
+  const goTo = (target: GoalTarget) => {
+    setReport([])
+    setScreen({ name: target })
+  }
+
+  if (screen.name === 'goals') return <Goals progress={progress} onGo={goTo} onBack={() => setScreen({ name: 'menu' })} />
+
   if (screen.name === 'stats')
     return (
-      <Stats progress={progress} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
+      <Stats progress={progress} onGoals={() => setScreen({ name: 'goals' })} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
         onReplay={progress.last ? () => {
           const record = decodeRecord(progress.last!)
           if (record) setScreen({ name: 'replay', record, own: true })
@@ -538,7 +551,7 @@ export default function App() {
         onStart={(human, difficulty, setup, hotSeat, voice) => {
           setClassicNext(false)
           const seed = Date.now()
-          setScreen({ name: 'game', human, difficulty, hotSeat, persona: hotSeat ? undefined : resolvePersona(voice, seed), record: skirmishRecord(setup, human, difficulty, hotSeat, seed), campaignIndex: null })
+          setScreen({ name: 'game', human, difficulty, hotSeat, persona: hotSeat ? undefined : resolvePersona(voice, seed), record: skirmishRecord(setup, human, difficulty, hotSeat, seed), campaignIndex: null, again: { setup, voice } })
         }}
       />
     )
@@ -613,7 +626,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -809,7 +822,15 @@ export default function App() {
           if (done.lines.some((line) => shardsIn(line) > 0)) claimFlight()
           return done.lines
         } : undefined}
-        onExit={(winner, finished, review) => {
+        canPlayAgain={!!again && !daily && !weekly && !custom}
+        onExit={(winner, finished, review, repeat) => {
+          /** Deals the same setup again with a new seed, on the other court when swapping. */
+          const playAgain = (kind: 'same' | 'swap') => {
+            const seed = Date.now()
+            const side = kind === 'swap' ? otherCourt(human) : human
+            setReport([])
+            setScreen({ name: 'game', human: side, difficulty, hotSeat, persona: hotSeat ? undefined : resolvePersona(again!.voice, seed), record: skirmishRecord(again!.setup, side, difficulty, !!hotSeat, seed), campaignIndex: null, again })
+          }
           if (mail) {
             // Quitting before a move changes nothing; a game decided by the last move is kept and its link shown.
             const game = mailGame(mail)
@@ -835,7 +856,7 @@ export default function App() {
           // Games between two people say nothing about the player's own record.
           if (hotSeat) {
             if (winner) { const next = recordVersus(progress, 'hotseat', winner === 'draw' ? null : winner === 'solari'); setProgress(next); saveProgress(next) }
-            return setScreen({ name: 'menu' })
+            return repeat ? playAgain(repeat) : setScreen({ name: 'menu' })
           }
           const cached = settledGame.current?.key === gameKey ? settledGame.current.done : null
           settledGame.current = null
@@ -855,6 +876,7 @@ export default function App() {
           if (scenario !== undefined) { setCampaignTab('scenarios'); saveChoices('campaign', { tab: 'scenarios' }) }
           if (coop !== undefined) { setCampaignTab('coop'); saveChoices('campaign', { tab: 'coop' }) }
           if (review) return setScreen({ name: 'replay', record: finished, own: true })
+          if (repeat && again) return playAgain(repeat)
           setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
@@ -865,7 +887,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen} progress={progress} onBattle={() => setScreen({ name: 'battle' })}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onGoals={() => setScreen({ name: 'goals' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }} onWeekly={() => { setReport([]); setScreen({ name: 'weekly' }) }}
       dailyDone={{ weekly: forWeek(weeklySnapshot(), weeklyMatch().week).paid, match: !!dailyResult(progress, dailySeed()), puzzle: progress.puzzles.includes(PUZZLES[dailyPuzzleIndex()].id) }}
       onDailyPuzzle={() => {

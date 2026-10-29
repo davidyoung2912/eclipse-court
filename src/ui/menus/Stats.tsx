@@ -18,6 +18,7 @@ import { ShareButton } from '../ShareButton'
 import { ResetButton } from './ResetButton'
 import { formatTime } from '../formatTime'
 import { Icon } from './icons'
+import { t } from '../../i18n'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
@@ -26,10 +27,11 @@ interface Props {
   progress: Progress
   onReplay?: () => void
   onReset: () => void
+  onGoals?: () => void
   onBack: () => void
 }
 
-export function Stats({ progress, onReplay, onReset, onBack }: Props) {
+export function Stats({ progress, onReplay, onReset, onGoals, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
   const ladder = useSyncExternalStore(subscribeLadder, ladderSnapshot)
@@ -168,6 +170,7 @@ export function Stats({ progress, onReplay, onReset, onBack }: Props) {
         )
       })}
       <div className="menu-buttons stacked">
+        {onGoals && <button onClick={onGoals}><Icon name="star" />{t('goals.title')}</button>}
         {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay Last Game</button>}
         {progress.last && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => shareLink('r', progress.last!)} />}
         <ResetButton label="Reset Stats" warning="Clear every stat, the Gauntlet record, achievements and the last replay? Campaign, puzzle and scenario progress is kept." onReset={onReset} />

@@ -96,7 +96,9 @@ interface Props {
   /** Play by link: the other court is not here, so no AI answers; called with the game once the person has moved and the turn has passed on. */
   mail?: (record: GameRecord) => void
   onSave: (record: GameRecord | null) => void
-  onExit: (winner: GameState['winner'], record: GameRecord, review?: boolean) => void
+  /** The setup can be played again: the result offers Play Again (and Swap Sides against the AI), which exit with `again` set. */
+  canPlayAgain?: boolean
+  onExit: (winner: GameState['winner'], record: GameRecord, review?: boolean, again?: 'same' | 'swap') => void
   /** Once, when the game is decided and the result opens: settles the payouts and returns the lines to show; absent when nothing is paid here. */
   onEnded?: (winner: GameState['winner'], record: GameRecord) => string[]
   /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
@@ -138,7 +140,7 @@ const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
   version: 'Different game versions',
 }
 
-export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, onSave, onExit, onEnded, onReconnect, onRematch }: Props) {
+export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, canPlayAgain, onSave, onExit, onEnded, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
   const online = isOnline(controllers) && !!session
   const coop = !!context?.coop
@@ -799,6 +801,8 @@ export function Game({ controllers, opening, record, session, context, coach, fi
             {!hotSeat && !online && !mail && puzzleLimit === undefined && !dropped && history.length > 1 && (context?.kind === 'skirmish' || context?.kind === 'campaign' || context?.kind === 'daily') && (
               <button onClick={() => onExit(winner ?? foe, recordOf(history), true)}><Icon name="flame" />Review Game</button>
             )}
+            {canPlayAgain && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'same')}><Icon name="undo" />Play Again</button>}
+            {canPlayAgain && !hotSeat && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'swap')}><Icon name="cycle" />Swap Sides</button>}
             <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />Continue</button>
           </div>
         </div>

@@ -27,6 +27,7 @@ interface Props {
   onGauntlet: () => void
   onTutorial: () => void
   onStats: () => void
+  onGoals: () => void
   onPuzzles: () => void
   onSettings: () => void
   onCollection: () => void
@@ -179,7 +180,7 @@ interface Card {
   wide?: boolean
 }
 
-export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onGoals, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [intro, setIntro] = useState<Intro>(() => (introPlayed || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'done' : 'centred'))
   const menuRef = useRef<HTMLElement>(null)
   const brandRef = useRef<HTMLDivElement>(null)
@@ -253,6 +254,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
                 <h3>{t('menu.suggested')}</h3>
                 <ul className="next-up-list">
                   {next.map((x) => <li key={x.target}><button onClick={go[x.target]}><Icon name={x.icon} />{x.text}</button></li>)}
+                  <li><button onClick={onGoals}><Icon name="star" />{t('menu.goals')}</button></li>
                 </ul>
               </>
             )}
