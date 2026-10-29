@@ -86,6 +86,12 @@
 .mastery-tracks { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .mastery-tracks li { display: flex; flex-direction: column; gap: 4px; }
 .mastery-tracks small { opacity: 0.7; }
+.mastery-tracks button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--umbral-violet); background: var(--umbral-indigo); color: var(--fg); font-size: var(--fs-md);
+}
+.mastery-tracks button.primary { background: var(--solari-gold); color: #1b1740; border-color: var(--solari-cream); font-weight: 700; }
+.mastery-tracks .quest-actions button { padding: 6px 12px; font-size: var(--fs-sm); }
 .achievements li .link { align-self: flex-start; margin-top: 4px; }
 
 .route { list-style: none; margin: 0.5rem 0; padding: 0; display: grid; gap: 0.25rem; font-size: var(--fs-sm); }
