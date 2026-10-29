@@ -70,6 +70,8 @@ import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Ghost } from './ui/menus/Ghost'
+import { Highlights } from './ui/menus/Highlights'
+import { recordHighlight } from './highlights'
 import { t } from './i18n'
 import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, canReroll, endlessDepth, enterEndless, enterNode, heatShards, rerollOffers, resolveEvent, runFoe, runSummary, runWon, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
@@ -134,12 +136,13 @@ type Screen =
   | { name: 'stats' }
   | { name: 'goals' }
   | { name: 'season' }
+  | { name: 'highlights' }
   | { name: 'puzzles' }
   | { name: 'endless' }
   | { name: 'practice' }
   | { name: 'settings' }
   | { name: 'collection' }
-  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' | 'mail'; /** Opened from a watch link: a spectator's view, which cannot take over the game. */ watch?: boolean; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
+  | { name: 'replay'; record: GameRecord; /** Where Back goes; the stats page unless the replay came from a link. */ from?: 'menu' | 'mail' | 'highlights'; /** Opened from a watch link: a spectator's view, which cannot take over the game. */ watch?: boolean; /** The record is the last game the player finished, so its review can earn achievements. */ own?: boolean }
   | { name: 'challenge'; challenge: ChallengeCode }
   | { name: 'paste' }
   /** Games played by link: the list, with a move that arrived by link waiting to be accepted. */
@@ -345,12 +348,13 @@ export default function App() {
     setScreen({ name: target })
   }
 
+  if (screen.name === 'highlights') return <Highlights onWatch={(record) => setScreen({ name: 'replay', record, from: 'highlights' })} onBack={() => setScreen({ name: 'stats' })} />
   if (screen.name === 'season') return <Season onBack={() => setScreen({ name: 'menu' })} />
   if (screen.name === 'goals') return <Goals progress={progress} onGo={goTo} onSeason={() => setScreen({ name: 'season' })} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'stats')
     return (
-      <Stats progress={progress} onGoals={() => setScreen({ name: 'goals' })} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
+      <Stats progress={progress} onGoals={() => setScreen({ name: 'goals' })} onHighlights={() => setScreen({ name: 'highlights' })} onReset={() => { const next = resetStats(progress); setProgress(next); saveProgress(next) }} onBack={() => setScreen({ name: 'menu' })}
         onReplay={progress.last ? () => {
           const record = decodeRecord(progress.last!)
           if (record) setScreen({ name: 'replay', record, own: true })
@@ -589,7 +593,7 @@ export default function App() {
       saveProgress(result.progress)
       return [`Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`)]
     }
-    return <Replay record={screen.record} watch={screen.watch} onPlayOn={screen.watch ? undefined : (state, court) => setScreen({ name: 'game', human: court, difficulty: 'normal', record: { initial: state, actions: [] }, campaignIndex: null, tryout: true })} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
+    return <Replay record={screen.record} watch={screen.watch} onPlayOn={screen.watch ? undefined : (state, court) => setScreen({ name: 'game', human: court, difficulty: 'normal', record: { initial: state, actions: [] }, campaignIndex: null, tryout: true })} autoplay={screen.from === 'menu'} onReviewed={screen.own ? reviewed : undefined} onBack={() => setScreen(screen.from === 'mail' ? { name: 'mail' } : screen.from === 'highlights' ? { name: 'highlights' } : screen.from ? { name: 'menu' } : { name: 'stats' })} />
   }
 
   if (screen.name === 'paste')
@@ -799,6 +803,7 @@ export default function App() {
         recordQuestEvent({ kind: 'game', summary: settled.summary })
         recordGameResult(settled.summary)
         recordRoleDuels(finished, human)
+        if (!hotSeat) recordHighlight(finished, human)
       }
       let extra: ReturnType<typeof recordWeekly> | null = null
       if (settled.summary && stats && (daily || weekly)) {
