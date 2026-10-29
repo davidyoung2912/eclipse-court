@@ -3,6 +3,7 @@ import { PieceArt } from '../../art/PieceArt'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import type { DuelOutcome, Piece } from '../../engine/rules/types'
 import { Icon } from '../menus/icons'
+import { t } from '../../i18n'
 
 interface Props {
   attacker: Piece
@@ -33,20 +34,20 @@ export function DuelResult({ attacker, defender, outcome, onContinue }: Props) {
   const name = (p: Piece) => ROLE_NAMES[p.court][p.role]
   const winner = verdict === 'attacker' ? attacker : verdict === 'defender' ? defender : null
   const winnerAfter = verdict === 'attacker' ? outcome.attackerHp : outcome.defenderHp
-  const headline = winner ? `${name(winner)} wins` : verdict === 'both' ? 'Both pieces fall' : 'Draw: the defender holds'
+  const headline = winner ? t('tray.wins', { name: name(winner) }) : verdict === 'both' ? t('tray.bothFall') : t('tray.drawHolds')
   const fighters = [
-    { piece: attacker, after: outcome.attackerHp, role: 'Attacker' },
-    { piece: defender, after: outcome.defenderHp, role: 'Defender' },
+    { piece: attacker, after: outcome.attackerHp, role: t('tray.attacker') },
+    { piece: defender, after: outcome.defenderHp, role: t('tray.defender') },
   ]
   return (
     <div className="modal-backdrop">
-      <div className="modal duel-result" role="dialog" aria-modal="true" aria-label="Combat result">
-        <p className="modal-kicker">Combat result</p>
+      <div className="modal duel-result" role="dialog" aria-modal="true" aria-label={t('tray.combatResult')}>
+        <p className="modal-kicker">{t('tray.combatResult')}</p>
         <h2>{headline}</h2>
         {winner && (
           <p className="result-line">
-            Started with <b>{winner.hp}</b> HP, ended with <b>{winnerAfter}</b>
-            {winner.hp > winnerAfter ? ` (−${winner.hp - winnerAfter})` : ' (unhurt)'}
+            {t('tray.startedWith', { start: winner.hp, end: winnerAfter })}
+            {winner.hp > winnerAfter ? ` (−${winner.hp - winnerAfter})` : t('tray.unhurt')}
           </p>
         )}
         <div className="result-fighters">
@@ -59,13 +60,13 @@ export function DuelResult({ attacker, defender, outcome, onContinue }: Props) {
                 </svg>
                 <b>{name(piece)}</b>
                 <small>{role}</small>
-                <span className="result-hp">{fell ? `${piece.hp} → fallen` : `${piece.hp} → ${after} HP`}</span>
+                <span className="result-hp">{fell ? t('tray.fallen', { hp: piece.hp }) : t('tray.hpChange', { hp: piece.hp, after })}</span>
               </div>
             )
           })}
         </div>
         <div className="buttons">
-          <button className="primary" autoFocus onClick={onContinue}><Icon name="onward" />Continue</button>
+          <button className="primary" autoFocus onClick={onContinue}><Icon name="onward" />{t('tray.continue')}</button>
         </div>
         <div className="result-timer" aria-hidden="true"><i style={{ animationDuration: `${SHOWN_MS}ms` }} /></div>
       </div>

@@ -3,6 +3,7 @@ import { burstCount, shardsIn } from '../../rewardFx'
 import { sfx } from '../../audio/synth'
 import { getSettings } from '../../settings'
 import { flyCoins } from '../flyCoins'
+import { t } from '../../i18n'
 
 /** How long the shard chip takes to settle in before the coins aim at it. */
 const CHIP_WAIT_MS = 380
@@ -36,7 +37,7 @@ export function RewardLines({ lines }: { lines: string[] }) {
   }, [])
   if (lines.length === 0) return null
   return (
-    <ul className="reward-lines" aria-label="Rewards">
+    <ul className="reward-lines" aria-label={t('tray.rewards')}>
       {lines.map((line, i) => (
         <li key={line} ref={(el) => { rows.current[i] = el }} className={shardsIn(line) > 0 ? 'pays' : undefined}>{line}</li>
       ))}

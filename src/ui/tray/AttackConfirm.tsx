@@ -4,6 +4,7 @@ import { Icon } from '../menus/icons'
 import type { CellEffect, Piece } from '../../engine/rules/types'
 import { CELL_INFO } from '../../engine/rules/cells'
 import { adviceFor } from './attackAdvice'
+import { t } from '../../i18n'
 
 interface Props {
   attacker: Piece
@@ -25,32 +26,32 @@ export function AttackConfirm({ attacker, defender, luminance, odds, live, cells
   const advice = adviceFor(odds, defender)
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
-    <div className="confirm" role="dialog" aria-label="Confirm attack">
-      <p className="confirm-title">{name(attacker)} attacks {name(defender)}</p>
-      <div className="odds" aria-label="Win odds">
+    <div className="confirm" role="dialog" aria-label={t('tray.confirmAttack')}>
+      <p className="confirm-title">{t('tray.attacks', { attacker: name(attacker), defender: name(defender) })}</p>
+      <div className="odds" aria-label={t('tray.winOdds')}>
         <span className={`odds-a ${attacker.court}`} style={{ flexGrow: odds.attacker }} />
         <span className="odds-o" style={{ flexGrow: odds.other }} />
         <span className={`odds-d ${defender.court}`} style={{ flexGrow: odds.defender }} />
       </div>
       <p className="odds-text">
-        Attacker {pct(odds.attacker)} · Draw {pct(odds.other)} · Defender {pct(odds.defender)}
+        {t('tray.oddsLine', { attacker: pct(odds.attacker), draw: pct(odds.other), defender: pct(odds.defender) })}
         <br />
-        Square light {luminance > 0 ? `+${luminance}` : luminance}
-        {cells?.attacker && <><br />Attacker on {CELL_INFO[cells.attacker].name}</>}
-        {cells?.defender && <><br />Defender on {CELL_INFO[cells.defender].name}</>}
+        {t('tray.squareLight', { light: luminance > 0 ? `+${luminance}` : luminance })}
+        {cells?.attacker && <><br />{t('tray.attackerOn', { cell: CELL_INFO[cells.attacker].name })}</>}
+        {cells?.defender && <><br />{t('tray.defenderOn', { cell: CELL_INFO[cells.defender].name })}</>}
       </p>
       {detail && (
-        <ul className="odds-detail" aria-label="Odds detail">
+        <ul className="odds-detail" aria-label={t('tray.oddsDetail')}>
           {[attacker, defender].map((p, i) => (
-            <li key={p.id}>{i === 0 ? 'Attacker' : 'Defender'}: {p.hp}/{p.maxHp} HP{p.perk ? `, ${p.perk}` : ''}{p.wins ? `, ${p.wins} win${p.wins === 1 ? '' : 's'}` : ''}{p.bound ? ', bound' : ''}{p.shrouded ? ', shrouded' : ''}</li>
+            <li key={p.id}>{i === 0 ? t('tray.attacker') : t('tray.defender')}: {t('tray.hpOf', { hp: p.hp, max: p.maxHp })}{p.perk ? `, ${p.perk}` : ''}{p.wins ? `, ${t('tray.winsN', { count: p.wins })}` : ''}{p.bound ? `, ${t('tray.boundLower')}` : ''}{p.shrouded ? `, ${t('tray.shroudedLower')}` : ''}</li>
           ))}
-          <li>Next round: square light {detail.nextLuminance > 0 ? `+${detail.nextLuminance}` : detail.nextLuminance}, attacker {pct(detail.next.attacker)} · draw {pct(detail.next.other)} · defender {pct(detail.next.defender)}</li>
+          <li>{t('tray.nextRound', { light: detail.nextLuminance > 0 ? `+${detail.nextLuminance}` : detail.nextLuminance, attacker: pct(detail.next.attacker), draw: pct(detail.next.other), defender: pct(detail.next.defender) })}</li>
         </ul>
       )}
       <p className={`confirm-advice ${advice.tone}`}>{advice.text}</p>
       <div className="buttons">
-        <button onClick={onCancel}><Icon name="close" />Withdraw</button>
-        <button className="primary" onClick={onConfirm}>{live ? <><Icon name="swords" />Attack</> : <><Icon name="bolt" />Auto-resolve</>}</button>
+        <button onClick={onCancel}><Icon name="close" />{t('tray.withdraw')}</button>
+        <button className="primary" onClick={onConfirm}>{live ? <><Icon name="swords" />{t('tray.attack')}</> : <><Icon name="bolt" />{t('tray.autoResolve')}</>}</button>
       </div>
     </div>
   )

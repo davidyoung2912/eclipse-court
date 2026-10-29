@@ -32,11 +32,11 @@ interface Props {
 
 const same = (a: Tool, b: Tool) => JSON.stringify(a) === JSON.stringify(b)
 
-const TOOLS: { tool: Tool; label: string }[] = [
-  { tool: { kind: 'wall' }, label: 'Wall' },
-  { tool: { kind: 'beacon' }, label: 'Beacon' },
-  { tool: { kind: 'target' }, label: 'Goal square' },
-  { tool: { kind: 'erase' }, label: 'Erase' },
+const TOOLS: { tool: Tool; label: 'wall' | 'beacon' | 'target' | 'erase' }[] = [
+  { tool: { kind: 'wall' }, label: 'wall' },
+  { tool: { kind: 'beacon' }, label: 'beacon' },
+  { tool: { kind: 'target' }, label: 'target' },
+  { tool: { kind: 'erase' }, label: 'erase' },
 ]
 
 const toNumber = (text: string, min: number, max: number, fallback: number) => {
@@ -54,7 +54,7 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
   const solari = design.solari
   const umbral = umbralPieces(design)
   const challenge = (seed: number) => designChallenge(design, seed)
-  const tools = TOOLS.filter((t) => t.tool.kind !== 'target' || needsTarget)
+  const tools = TOOLS.filter((x) => x.tool.kind !== 'target' || needsTarget)
   const code = issues.length ? '' : encodeChallenge(challenge(1)!)
   const [draft, setDraft] = useState(() => packSnapshot().draft)
   const [packName, setPackName] = useState('')
@@ -65,33 +65,33 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
   return (
     <main className="app menu editor battle-menu">
       <PageArt icon="grid" />
-      <h2>Board Editor</h2>
-      <p className="tagline">Draw a board, place the armies, choose a goal. Test it, then send the link: it plays like any other match.</p>
+      <h2>{t('editor.title')}</h2>
+      <p className="tagline">{t('editor.tagline')}</p>
 
-      <Segmented<BoardSize> label="Board size" value={size} onChange={(s) => onChange(resize(design, s))}
+      <Segmented<BoardSize> label={t('setup.boardSize')} value={size} onChange={(s) => onChange(resize(design, s))}
         options={[{ value: 7, label: '7x7' }, { value: 9, label: '9x9' }]} />
 
-      <h3>Paint</h3>
-      <div className="ed-tools" role="toolbar" aria-label="Editor tools">
-        {tools.map(({ tool: t, label }) => (
-          <button key={label} type="button" aria-pressed={same(tool, t)} className={same(tool, t) ? 'on' : ''} onClick={() => setTool(t)}>{label}</button>
+      <h3>{t('editor.paint')}</h3>
+      <div className="ed-tools" role="toolbar" aria-label={t('editor.tools')}>
+        {tools.map(({ tool: tl, label }) => (
+          <button key={label} type="button" aria-pressed={same(tool, tl)} className={same(tool, tl) ? 'on' : ''} onClick={() => setTool(tl)}>{t(`editor.tool.${label}`)}</button>
         ))}
         {CELL_EFFECTS.map((effect) => {
-          const t: Tool = { kind: 'cell', effect }
+          const tl: Tool = { kind: 'cell', effect }
           return (
-            <button key={effect} type="button" aria-pressed={same(tool, t)} className={`cell-tool cell-${effect}${same(tool, t) ? ' on' : ''}`} title={CELL_INFO[effect].text} onClick={() => setTool(t)}>
+            <button key={effect} type="button" aria-pressed={same(tool, tl)} className={`cell-tool cell-${effect}${same(tool, tl) ? ' on' : ''}`} title={CELL_INFO[effect].text} onClick={() => setTool(tl)}>
               {CELL_INFO[effect].name}
             </button>
           )
         })}
       </div>
       {(['solari', 'umbral'] as Court[]).map((court) => (
-        <div key={court} className="ed-tools" role="toolbar" aria-label={`${court === 'solari' ? 'Solari' : 'Umbral'} pieces`}>
+        <div key={court} className="ed-tools" role="toolbar" aria-label={t('editor.pieces', { court: court === 'solari' ? 'Solari' : 'Umbral' })}>
           {ROLES.map((role) => {
-            const t: Tool = { kind: 'piece', court, role }
+            const tl: Tool = { kind: 'piece', court, role }
             const off = design.mirror && court === 'umbral'
             return (
-              <button key={role} type="button" disabled={off} aria-pressed={same(tool, t)} className={`piece-tool${same(tool, t) ? ' on' : ''}`} title={ROLE_NAMES[court][role]} onClick={() => setTool(t)}>
+              <button key={role} type="button" disabled={off} aria-pressed={same(tool, tl)} className={`piece-tool${same(tool, tl) ? ' on' : ''}`} title={ROLE_NAMES[court][role]} onClick={() => setTool(tl)}>
                 <svg viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true"><PieceArt role={role} court={court} /></svg>
                 <span>{ROLE_NAMES[court][role]}</span>
               </button>
@@ -100,12 +100,12 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
         </div>
       ))}
 
-      <svg className="board ed-board" viewBox={`0 0 ${size} ${size}`} role="grid" aria-label="Board being edited">
+      <svg className="board ed-board" viewBox={`0 0 ${size} ${size}`} role="grid" aria-label={t('editor.boardLabel')}>
         {Array.from({ length: size * size }, (_, i) => {
           const p: Pos = { x: Math.floor(i / size), y: i % size }
           const effect = cellAt(design, p)
           return (
-            <g key={i} role="gridcell" aria-label={`Column ${p.x + 1}, row ${p.y + 1}`} onClick={() => onChange(applyTool(design, tool, p))}>
+            <g key={i} role="gridcell" aria-label={t('editor.cell', { col: p.x + 1, row: p.y + 1 })} onClick={() => onChange(applyTool(design, tool, p))}>
               <rect x={p.x} y={p.y} width={1} height={1} className={`ed-sq ${(p.x + p.y) % 2 ? 'odd' : 'even'}`} />
               {isBlocked(design, p) && (
                 <g className="wall">
@@ -127,16 +127,16 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
         ))}
       </svg>
 
-      <ToggleRow label="Mirror the armies" text="Umbral's army is Solari's, flipped across the board. Turn off to place each side by hand." checked={design.mirror} onChange={() => onChange(setMirror(design, !design.mirror))} />
+      <ToggleRow label={t('editor.mirror')} text={t('editor.mirrorText')} checked={design.mirror} onChange={() => onChange(setMirror(design, !design.mirror))} />
 
-      <h3>Goal</h3>
+      <h3>{t('editor.goal')}</h3>
       <label className="ed-field">
-        <span>How it is won</span>
+        <span>{t('editor.howWon')}</span>
         <select value={design.goal} onChange={(e) => onChange({ ...design, goal: e.target.value as EditorGoal })}>
-          <optgroup label="Match goals">
+          <optgroup label={t('editor.matchGoals')}>
             {EDITOR_GOALS.filter((g) => !isPuzzleGoal(g)).map((g) => <option key={g} value={g}>{GOAL_INFO[g].name}</option>)}
           </optgroup>
-          <optgroup label="Puzzle goals (Solari)">
+          <optgroup label={t('editor.puzzleGoals')}>
             {EDITOR_GOALS.filter(isPuzzleGoal).map((g) => <option key={g} value={g}>{GOAL_INFO[g].name}</option>)}
           </optgroup>
         </select>
@@ -144,32 +144,32 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
       <p className="setup-hint">{GOAL_INFO[design.goal].text}</p>
       {puzzle && (
         <div className="ed-numbers">
-          <label className="ed-field"><span>{design.goal === 'survive' ? 'Rounds to survive' : 'Round limit'}</span>
+          <label className="ed-field"><span>{design.goal === 'survive' ? t('editor.roundsSurvive') : t('editor.roundLimit')}</span>
             <input type="number" min={1} max={ROUNDS_MAX} value={design.rounds} onChange={(e) => onChange({ ...design, rounds: toNumber(e.target.value, 1, ROUNDS_MAX, design.rounds) })} /></label>
           {design.goal === 'hold' && (
-            <label className="ed-field"><span>Turns to hold</span>
+            <label className="ed-field"><span>{t('editor.turnsHold')}</span>
               <input type="number" min={1} max={TURNS_MAX} value={design.turns} onChange={(e) => onChange({ ...design, turns: toNumber(e.target.value, 1, TURNS_MAX, design.turns) })} /></label>
           )}
         </div>
       )}
       {!puzzle && (
-        <Segmented<Court> label="Court offered" value={design.side} onChange={(side) => onChange({ ...design, side })}
+        <Segmented<Court> label={t('editor.courtOffered')} value={design.side} onChange={(side) => onChange({ ...design, side })}
           options={[{ value: 'solari', label: 'Solari', icon: 'sun' }, { value: 'umbral', label: 'Umbral', icon: 'moon' }]} />
       )}
 
       {issues.length > 0
         ? <ul className="setup-card ed-problems" role="alert">{issues.map((line) => <li key={line}>{line}</li>)}</ul>
-        : <p className="setup-hint">Ready: the recipient plays {sideOf(design) === 'solari' ? 'Solari' : 'Umbral'}.</p>}
+        : <p className="setup-hint">{t('editor.ready', { court: sideOf(design) === 'solari' ? 'Solari' : 'Umbral' })}</p>}
 
       <div className="menu-buttons stacked">
         <button className="primary" disabled={issues.length > 0} onClick={() => { const c = challenge(Date.now() % 1000000007); if (c) onTest(c) }}>
-          <Icon name="play" />Test It Against the AI
+          <Icon name="play" />{t('editor.test')}
         </button>
         {issues.length === 0 && (
-          <ShareButton title="Eclipse Court board" label="Copy Challenge Link" link={() => challengeLink(challenge(Date.now() % 1000000007)!)} />
+          <ShareButton title={t('editor.shareTitle')} label={t('editor.copyLink')} link={() => challengeLink(challenge(Date.now() % 1000000007)!)} />
         )}
-        <button onClick={() => onChange(blankDesign(size))}><Icon name="undo" />Reset to the Classic Setup</button>
-        <button onClick={() => onChange(clearBoard(design))}><Icon name="close" />Clear the Board</button>
+        <button onClick={() => onChange(blankDesign(size))}><Icon name="undo" />{t('editor.reset')}</button>
+        <button onClick={() => onChange(clearBoard(design))}><Icon name="close" />{t('editor.clear')}</button>
         <BackButton onClick={onBack} />
       </div>
       <h3>{t('editor.pack')}</h3>
@@ -196,7 +196,7 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
           <label className="ed-field"><span>{t('editor.packName')}</span>
             <input type="text" maxLength={MAX_PACK_NAME} value={packName} onChange={(e) => { setPackName(e.target.value); setKept(false) }} /></label>
           <div className="menu-buttons stacked">
-            {name && <ShareButton title="Eclipse Court puzzle pack" label={t('editor.packLink')} link={() => packLink({ name, puzzles: draft })} />}
+            {name && <ShareButton title={t('editor.packShareTitle')} label={t('editor.packLink')} link={() => packLink({ name, puzzles: draft })} />}
             <button disabled={!name} onClick={() => setKept(keepPack({ name, puzzles: draft }))}><Icon name="check" />{kept ? t('editor.packKept') : t('editor.packKeep')}</button>
             <button onClick={() => edit(clearDraft)}><Icon name="close" />{t('editor.packClear')}</button>
           </div>
@@ -204,8 +204,8 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
       )}
       {code && (
         <>
-          <h3>Code</h3>
-          <textarea className="code-box" readOnly rows={3} value={code} aria-label="Challenge code" onFocus={(e) => e.currentTarget.select()} />
+          <h3>{t('editor.code')}</h3>
+          <textarea className="code-box" readOnly rows={3} value={code} aria-label={t('editor.codeLabel')} onFocus={(e) => e.currentTarget.select()} />
         </>
       )}
       <TipCard page="editor" />

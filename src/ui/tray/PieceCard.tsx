@@ -6,6 +6,7 @@ import { CELL_INFO, cellAt } from '../../engine/rules/cells'
 import { isBeacon } from '../../engine/rules/board'
 import { favouredCourt, squareLuminance } from '../../engine/rules/luminance'
 import type { GameState, Piece } from '../../engine/rules/types'
+import { t } from '../../i18n'
 
 interface Props {
   state: GameState
@@ -26,34 +27,34 @@ export function PieceCard({ state, piece, human, hint }: Props) {
   const lum = squareLuminance(state, piece.pos)
   const favoured = favouredCourt(lum)
   const note =
-    piece.bound ? 'Bound: cannot move this turn'
-      : piece.shrouded ? 'Shrouded: cannot be attacked or targeted'
-      : isBeacon(piece.pos, state.config.beacons) ? 'On a beacon: spell-proof, heals +1'
-        : piece.hp < piece.maxHp ? 'Wounded: heals 1 per 2 resting rounds'
-          : favoured === piece.court ? 'The light favours it here'
-            : favoured ? 'The light works against it here' : ''
+    piece.bound ? t('tray.bound')
+      : piece.shrouded ? t('tray.shrouded')
+      : isBeacon(piece.pos, state.config.beacons) ? t('tray.beaconNote')
+        : piece.hp < piece.maxHp ? t('tray.wounded')
+          : favoured === piece.court ? t('tray.lightFavours')
+            : favoured ? t('tray.lightAgainst') : ''
   const cell = cellAt(state.config, piece.pos)
   const gift = state.config.passives ? courtPassive(piece.court, piece.role) : ''
   const rank = rankOf(piece)
   const record = state.config.growth
-    ? `${piece.wins ?? 0} duel win${piece.wins === 1 ? '' : 's'}${rank === 'recruit' ? '' : ` · ${rank === 'elite' ? 'Elite' : 'Veteran'}`}${piece.perk ? ` · ${PERK_INFO[piece.perk].name}: ${PERK_INFO[piece.perk].text}` : ''}`
+    ? `${t('tray.duelWins', { count: piece.wins ?? 0 })}${rank === 'recruit' ? '' : ` · ${rank === 'elite' ? t('tray.elite') : t('tray.veteran')}`}${piece.perk ? ` · ${PERK_INFO[piece.perk].name}: ${PERK_INFO[piece.perk].text}` : ''}`
     : ''
   const duel = [info.fight, courtFight(piece.court, piece.role)].filter(Boolean).join(' · ')
   return (
     <section className={`piece-card ${piece.court}`} aria-live="polite">
       <header>
         <b>{ROLE_NAMES[piece.court][piece.role]}</b>
-        <span>{info.label} · {piece.court === 'solari' ? 'Solari' : 'Umbral'}{piece.court === human ? '' : ' (enemy)'}</span>
-        <em>HP {piece.hp}/{piece.maxHp}</em>
+        <span>{info.label} · {piece.court === 'solari' ? 'Solari' : 'Umbral'}{piece.court === human ? '' : t('tray.enemyTag')}</span>
+        <em>{t('tray.hpLabel', { hp: piece.hp, max: piece.maxHp })}</em>
       </header>
-      <p><i>Moves</i>{info.move}</p>
-      <p><i>Duel</i>{duel}</p>
-      {cell && <p><i>Cell</i>{CELL_INFO[cell].name}: {CELL_INFO[cell].text}</p>}
-      {gift && <p><i>Gift</i>{gift}</p>}
-      {record && <p><i>Record</i>{record}</p>}
+      <p><i>{t('tray.moves')}</i>{info.move}</p>
+      <p><i>{t('tray.duel')}</i>{duel}</p>
+      {cell && <p><i>{t('tray.cell')}</i>{CELL_INFO[cell].name}: {CELL_INFO[cell].text}</p>}
+      {gift && <p><i>{t('tray.gift')}</i>{gift}</p>}
+      {record && <p><i>{t('tray.record')}</i>{record}</p>}
       <p className="piece-stats">
-        <i>Power</i><span className="dots">{stars(st.damage * 2)}</span>
-        <i>Speed</i><span className="dots">{stars(st.speed * 1.2)}</span>
+        <i>{t('tray.power')}</i><span className="dots">{stars(st.damage * 2)}</span>
+        <i>{t('tray.speed')}</i><span className="dots">{stars(st.speed * 1.2)}</span>
         {note && <small>{note}</small>}
       </p>
     </section>
