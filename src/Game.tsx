@@ -12,16 +12,15 @@ import { flyBeacon } from './ui/board/flyBeacon'
 import { beaconPickups, castPath, eclipseCinemaMs, type CastFx } from './spellFx'
 import { hourBed } from './audio/cues'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
-import { flashesReduced, getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
+import { getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
 import { consumePackHint, sinksSnapshot, subscribeSinks } from './sinks'
 import { explainMove } from './ai/why'
 import { attackOdds, beaconReach, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, spellReminder, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
 import { coopPlayer } from './engine/data/coop'
-import { humanCourt, isHotSeat, isHuman, isOnline, type Controllers } from './controllers'
-import type { EndReason, Session } from './net/session'
-import { recordOf, replaySteps, type GameRecord, type Step } from './engine/log'
+import { humanCourt, isHotSeat, isHuman, isOnline } from './controllers'
+import { recordOf, replaySteps, type Step } from './engine/log'
 import { ROLE_NAMES } from './engine/data/roster'
 import { matchGoal, modeOf } from './engine/rules/events'
 import { estimateOdds, reduce } from './engine/reducer'
@@ -50,7 +49,6 @@ import { personaById } from './engine/data/personas'
 import type { LineCategory } from './engine/data/personaLines'
 import { PersonaBubble } from './ui/tray/PersonaBubble'
 import { farewellLine, recordLine } from './personaMenu'
-import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
 import { useHint } from './hooks/useHint'
 import { useLatest } from './hooks/useLatest'
@@ -60,90 +58,18 @@ import { DuelView, type DuelOptions } from './ui/duel/DuelView'
 import { cellAt } from './engine/rules/cells'
 import { CellLegend } from './ui/board/CellLegend'
 import { AttackConfirm } from './ui/tray/AttackConfirm'
-import { replayLink, watchLink } from './share'
-import { ShareButton } from './ui/ShareButton'
 import { Icon } from './ui/menus/icons'
 import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
-import { WinBurst } from './ui/tray/WinBurst'
-import { Confetti } from './ui/tray/Confetti'
-import { RewardLines } from './ui/tray/RewardLines'
-import { confettiCount } from './rewardFx'
-import { ResultBanner, type ResultStat, type ResultTone } from './ui/tray/ResultBanner'
+import { GameOver } from './ui/tray/GameOver'
+import type { ResultStat, ResultTone } from './ui/tray/ResultBanner'
 
-interface Props {
-  /** Who plays each court: a person at the screen, or the AI. Two people make a hot-seat game. */
-  controllers: Controllers
-  /** What a named opponent says before the first move, when the menu has a better line than the default briefing. */
-  opening?: string
-  /** The game to play: a fresh one has no actions, a resumed one carries what has been played. */
-  record: GameRecord
-  /** The connection to the other player, for an online game. */
-  session?: Session
-  /** A puzzle: you win by winning within this many of your own turns. */
-  puzzleLimit?: number
-  /** Where the game comes from, for the line above the board and the guidance cards that suit it. */
-  context?: { label: string; kind: 'skirmish' | 'campaign' | 'scenario' | 'story' | 'daily' | 'gauntlet' | 'series'; /** A rated game: no take-backs. */ scored?: boolean; /** Two people share the Solari court and alternate by round. */ coop?: boolean; /** Which scored mode this is, for its guidance card. */ flavour?: 'weekly' | 'ladder' }
-  /** The player's first campaign battle: a line of coaching sits above the board's cards. */
-  coach?: boolean
-  /** The player has never won a game: a win now is their first, and gets confetti. */
-  firstWin?: boolean
-  /** A puzzle's name and description, shown over the board when it starts and boiled down to its first sentence above it. */
-  puzzle?: { name: string; text: string; /** A Puzzle Rush run: a failed puzzle ends it, so there is no retry. */ rush?: boolean }
-  /** A puzzle's own hints and solution; the Hint button walks through them in place of the AI's advice. */
-  puzzleHelp?: PuzzleHelp
-  /** Called after every action with the game so far, or null once it has ended. */
-  /** Play by link: the other court is not here, so no AI answers; called with the game once the person has moved and the turn has passed on. */
-  mail?: (record: GameRecord) => void
-  onSave: (record: GameRecord | null) => void
-  /** The setup can be played again: the result offers Play Again (and Swap Sides against the AI), which exit with `again` set. */
-  canPlayAgain?: boolean
-  /** After a loss to the named opponent the result offers a Grudge Match: the same fight again, which pays Shards if won. */
-  canGrudge?: boolean
-  /** Play Again may swap courts too; false where the player's court is fixed. */
-  canSwap?: boolean
-  onExit: (winner: GameState['winner'], record: GameRecord, review?: boolean, again?: 'same' | 'swap' | 'grudge') => void
-  /** Once, when the game is decided and the result opens: settles the payouts and returns the lines to show; absent when nothing is paid here. */
-  onEnded?: (winner: GameState['winner'], record: GameRecord) => string[]
-  /** Online, when the connection drops mid-game: go and make a new one, handing over the game so far. */
-  onReconnect?: (record: GameRecord) => void
-  /** Online, once both players asked for a rematch and the next match has begun: swap to it. */
-  onRematch?: (view: ReturnType<Session['view']>) => void
-}
-
-/** A capture waiting to be settled; `byAi` means the human is the defender. */
-interface Pending {
-  pieceId: string
-  to: Pos
-  confirmed: boolean
-  byAi: boolean
-}
-
-type DuelMode = 'live' | 'auto'
+import type { GameProps as Props, Pending, DuelMode } from './gameTypes'
+import { COURT_NAME, DROPPED_TEXT, IDLE_MS, TURN_BANNER_MS, describeDuel } from './gameText'
 
 const NO_SQUARES: Pos[] = []
 const NO_IDS: string[] = []
-
-const COURT_NAME: Record<Court, string> = { solari: 'Solari', umbral: 'Umbral' }
-
-/** How long "Your Turn" / "AI Turn" stays up between players. */
-const TURN_BANNER_MS = 1000
-
-/** How long the player may think before a named opponent says something. */
-const IDLE_MS = 45_000
-
-function describeDuel({ attackerHp, defenderHp }: DuelOutcome): string {
-  if (defenderHp <= 0) return attackerHp > 0 ? 'attacker won' : 'both fell'
-  return attackerHp <= 0 ? 'defender won' : 'draw, defender holds'
-}
-
-const DROPPED_TEXT: Partial<Record<EndReason, string>> = {
-  'opponent-left': 'Your opponent left',
-  desync: 'The games disagreed',
-  illegal: 'The games disagreed',
-  version: 'Different game versions',
-}
 
 export function Game({ controllers, opening, record, session, context, coach, firstWin, puzzle, puzzleLimit, puzzleHelp, mail, canPlayAgain, canGrudge, canSwap = true, onSave, onExit, onEnded, onReconnect, onRematch }: Props) {
   const hotSeat = isHotSeat(controllers)
@@ -789,31 +715,16 @@ export function Game({ controllers, opening, record, session, context, coach, fi
       )}
       {online && net?.chat && net.chat.from === 'them' && <div key={net.chat.n} className="chat-bubble" role="status">{CHAT_LINES[net.chat.id]}</div>}
       {ended && (
-        <div className="confirm result" role="dialog" aria-label={t('game.over')}>
-          {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
-          {winner === human && !hotSeat && !online && <Confetti count={confettiCount(!!firstWinAtStart, flashesReduced())} />}
-          <ResultBanner title={result} tone={resultTone} stats={resultStats} />
-          <RewardLines lines={rewards} />
-          {persona && !even && farewell && <p className="persona-farewell"><b>{persona.name}</b> “{farewell}”</p>}
-          <div className="buttons">
-            {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />{t('game.tryAgain')}</button>}
-            {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />{t('game.copyReport')}</button>}
-            {puzzleLimit === undefined && !dropped && <ShareButton title={t('game.replayTitle')} label={t('game.copyReplay')} link={() => replayLink(recordOf(history))} />}
-            {online && !dropped && history.length > 1 && <ShareButton title={t('game.watchTitle')} label={t('game.copyWatch')} link={() => watchLink(recordOf(history))} />}
-            {online && net && net.rematch !== 'none' && (
-              <button disabled={net.rematch === 'sent'} onClick={() => session!.rematch()}>
-                <Icon name="undo" />{net.rematch === 'sent' ? t('game.waitingThem') : net.rematch === 'asked' ? t('game.acceptRematch') : t('game.rematch')}
-              </button>
-            )}
-            {!hotSeat && !online && !mail && puzzleLimit === undefined && !dropped && history.length > 1 && (context?.kind === 'skirmish' || context?.kind === 'campaign' || context?.kind === 'daily') && (
-              <button onClick={() => onExit(winner ?? foe, recordOf(history), true)}><Icon name="flame" />{t('game.review')}</button>
-            )}
-            {canGrudge && persona && winner === foe && <button onClick={() => onExit(winner, recordOf(history), false, 'grudge')}><Icon name="flame" />{t('game.grudge')}</button>}
-            {canPlayAgain && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'same')}><Icon name="undo" />{t('game.playAgain')}</button>}
-            {canPlayAgain && canSwap && !hotSeat && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'swap')}><Icon name="cycle" />{t('game.swapSides')}</button>}
-            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />{t('tray.continue')}</button>
-          </div>
-        </div>
+        <GameOver hotSeat={hotSeat} online={online} human={human} foe={foe} winner={winner} firstWin={!!firstWinAtStart}
+          result={result} tone={resultTone} stats={resultStats} rewards={rewards}
+          farewell={persona && !even && farewell ? { name: persona.name, line: farewell } : null}
+          canRetry={puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human}
+          canShareReplay={puzzleLimit === undefined && !dropped} canWatch={online && !dropped && history.length > 1}
+          canReview={!hotSeat && !online && !mail && puzzleLimit === undefined && !dropped && history.length > 1 && (context?.kind === 'skirmish' || context?.kind === 'campaign' || context?.kind === 'daily')}
+          canGrudge={!!canGrudge && !!persona && winner === foe} canPlayAgain={!!canPlayAgain} canSwap={!!canSwap && !hotSeat}
+          rematch={online && net ? net.rematch : 'none'} onRematch={() => session!.rematch()}
+          report={disagreed ? () => session!.report() : undefined}
+          record={() => recordOf(history)} onRetry={retry} onExit={onExit} />
       )}
       {coach && !ended && !pending && !asking && (() => {
         const line = coachLine(state, human, selected, moves)
