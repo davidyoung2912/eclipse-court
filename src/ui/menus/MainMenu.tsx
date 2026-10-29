@@ -1,4 +1,3 @@
-import { Quests } from './Quests'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
 import { SoundPrompt } from './SoundPrompt'
@@ -272,7 +271,6 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
           <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />{t('menu.weekly')}</button>
           <button onClick={onSeason}><Icon name="star" />{t('menu.season')}</button>
         </div>
-        <Quests />
       </section>
       <div className="mode-cards">
         {cards.map((c) => (
@@ -285,6 +283,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
       </div>
       <nav className="utility" aria-label={t('menu.more')}>
         <button onClick={onStats}><Icon name="trophy" /><span>{t('menu.stats')}</span></button>
+        <button onClick={onGoals}><Icon name="checklist" /><span>{t('menu.goals')}</span></button>
         <button onClick={onCollection}><Icon name="star" /><span>{t('menu.collection')}</span></button>
         <button onClick={onSettings}><Icon name="gear" /><span>{t('menu.settings')}</span></button>
         <button onClick={onTutorial}><Icon name="book" /><span>{t('menu.howToPlay')}</span></button>
