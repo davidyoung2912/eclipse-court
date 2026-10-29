@@ -6,7 +6,7 @@ import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'
 import {
-  applyReward, applyVictory, altarRelic, eventAvailable, eventChoices, MIN_BONUS, pactSpell, RELICS, resolveEvent, shrineBoon, EVENTS, relicUnlocked, type RelicId, type EventId, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, roster, runFoe, runMap, layerNodes, needsPick, enterNode, runBoss, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
+  applyReward, applyVictory, canReroll, endlessDepth, endlessKind, enterEndless, HEAT_IDS, heatFromMask, heatMask, heatScore, heatShards, type HeatId, altarRelic, eventAvailable, eventChoices, MIN_BONUS, pactSpell, RELICS, resolveEvent, shrineBoon, EVENTS, relicUnlocked, type RelicId, type EventId, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, roster, runFoe, runMap, layerNodes, needsPick, enterNode, runBoss, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
 } from './gauntlet'
 import { ROLE_STATS } from './roster'
 import { validConfig } from '../serialize'
@@ -220,8 +220,8 @@ describe('ascension', () => {
   })
 
   it('round-trips run codes and summarises a run', () => {
-    expect(parseRunCode(runCode(123456, 3))).toEqual({ seed: 123456, ascension: 3 })
-    expect(parseRunCode(' g2-ZZ '.toLowerCase())).toEqual({ seed: 1295, ascension: 2 })
+    expect(parseRunCode(runCode(123456, 3))).toEqual({ seed: 123456, ascension: 3, heat: [] })
+    expect(parseRunCode(' g2-ZZ '.toLowerCase())).toEqual({ seed: 1295, ascension: 2, heat: [] })
     for (const bad of ['', 'G9-1', 'x1-2', 'G1-', 'G1-zzzzzzz']) expect(parseRunCode(bad)).toBeNull()
     const text = runSummary({ ...newRun(), ascension: 2 }, 4, false)
     expect(text).toContain('ascension 2')
@@ -514,5 +514,140 @@ describe('the map', () => {
     expect(readRun({ ...run, path: [0, 0, 0] })).toBeNull()
     expect(readRun({ ...run, stage: 3, path: [0] })).toBeNull()
     expect(runMap(run)[0].length).toBeGreaterThan(0)
+  })
+})
+
+describe('heat', () => {
+  const run = (heat: HeatId[], seed = 7) => startRun('solari', CLASSIC_ROLES, seed, { heat })
+
+  it('scores, pays and encodes in a fixed order', () => {
+    expect(heatScore([])).toBe(0)
+    expect(heatScore(HEAT_IDS)).toBe(10)
+    expect(heatShards(60, [])).toBe(60)
+    expect(heatShards(60, HEAT_IDS)).toBe(120)
+    for (const heat of [[], ['dusk'], ['packed', 'thin'], HEAT_IDS] as HeatId[][]) {
+      expect(heatFromMask(heatMask(heat))).toEqual(HEAT_IDS.filter((h) => heat.includes(h)))
+    }
+    expect(heatFromMask(128)).toBeNull()
+    expect(heatFromMask(-1)).toBeNull()
+  })
+
+  it('rides in the run code, and old codes still read', () => {
+    expect(runCode(1234, 2)).toBe(`G2-${(1234).toString(36)}`)
+    for (const heat of [[], ['thick'], HEAT_IDS] as HeatId[][]) {
+      expect(parseRunCode(runCode(98765, 3, heat))).toEqual({ seed: 98765, ascension: 3, heat })
+    }
+    expect(parseRunCode('G1-abc')).toEqual({ seed: parseInt('abc', 36), ascension: 1, heat: [] })
+    expect(parseRunCode('G1hzz-abc')).toBeNull()
+    expect(parseRunCode('G1h-abc')).toBeNull()
+  })
+
+  it('starts the run with the chosen penalties, ignoring unknown ones', () => {
+    expect(run(['lean', 'dusk']).heat).toEqual(['lean', 'dusk'])
+    expect(run(['bogus' as HeatId]).heat).toEqual([])
+    expect(run(['thin']).loadout).toHaveLength(2)
+    expect(run([]).loadout.length).toBeGreaterThan(2)
+  })
+
+  it('toughens the foes', () => {
+    const base = stageFoe(5, 4)
+    expect(stageFoe(5, 4, 0, null, 'umbral', ['packed']).army.length).toBe(base.army.length + 1)
+    expect(stageFoe(5, 4, 0, null, 'umbral', ['thick']).hpBonus).toBe(base.hpBonus + 1)
+    expect(stageFoe(5, 4, 0, null, 'umbral', ['thin', 'lean', 'dusk']).hpBonus).toBe(base.hpBonus)
+    const elite = stageFoe(5, 4, 0, { kind: 'elite', slot: 0 })
+    const hard = stageFoe(5, 4, 0, { kind: 'elite', slot: 0 }, 'umbral', ['hardened'])
+    expect(hard.hpBonus).toBe(elite.hpBonus + 1)
+    expect(hard.tags.length).toBe(elite.tags.length + 1)
+    // Only elites feel Hardened Elites.
+    expect(stageFoe(5, 4, 0, { kind: 'fight', slot: 0 }, 'umbral', ['hardened'])).toEqual(stageFoe(5, 4, 0, { kind: 'fight', slot: 0 }))
+  })
+
+  it('takes away rerolls, spoils and the Eclipse', () => {
+    const offered = (heat: HeatId[]) => ({ ...run(heat), stage: 3, offers: runReward({ ...run(heat), stage: 3 }, 5) })
+    expect(canReroll(offered([]))).toBe(true)
+    expect(canReroll(offered(['nodice']))).toBe(false)
+    expect(offered(['lean']).offers.length).toBe(offered([]).offers.length - 1)
+    const dusk = run(['dusk'])
+    expect(stageGame({ ...dusk, path: [0] }).config.eclipseRound).toBe(24)
+    expect(stageGame({ ...run([]), path: [0] }).config.eclipseRound).toBe(30)
+    expect(stageGame({ ...dusk, ascension: 5, stage: GAUNTLET_STAGES, path: Array<number>(GAUNTLET_STAGES).fill(0) }).config.eclipseRound).toBe(14)
+  })
+
+  it('shows in the summary', () => {
+    expect(runSummary(run(['thick', 'dusk']), 3, false)).toContain('heat 3')
+    expect(runSummary(run(['thick']), 3, false)).toContain(runCode(7, 0, ['thick']))
+  })
+})
+
+describe('endless', () => {
+  const won = (seed = 7): Run => ({ ...startRun('solari', CLASSIC_ROLES, seed), stage: GAUNTLET_STAGES + 1, path: Array<number>(GAUNTLET_STAGES).fill(0) })
+
+  it('is entered from a won run with a first set of spoils', () => {
+    const run = won()
+    expect(runWon(run)).toBe(true)
+    expect(enterEndless({ ...run, stage: 3 })).toEqual({ ...run, stage: 3 })
+    const next = enterEndless(run)
+    expect(next.endless).toBe(true)
+    expect(runWon(next)).toBe(false)
+    expect(endlessDepth(next)).toBe(0)
+    expect(next.offers?.length).toBeGreaterThan(0)
+    expect(needsPick(next)).toBe(false)
+    expect(enterEndless(next)).toEqual(next)
+  })
+
+  it('makes boss every fourth fight and elite every other', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map(endlessKind)).toEqual(['fight', 'elite', 'fight', 'boss', 'fight', 'elite', 'fight', 'boss'])
+  })
+
+  it('keeps scaling without end, and is the same for the same seed', () => {
+    const hpAt = (depth: number) => stageFoe(11, GAUNTLET_STAGES + depth, 4).hpBonus
+    for (let depth = 1; depth <= 60; depth++) {
+      const foe = stageFoe(11, GAUNTLET_STAGES + depth, 4)
+      expect(foe).toEqual(stageFoe(11, GAUNTLET_STAGES + depth, 4))
+      expect(foe.boss).toBe(endlessKind(depth) === 'boss')
+      expect(foe.elite).toBe(endlessKind(depth) === 'elite')
+      expect(foe.army.length).toBeLessThanOrEqual(MAX_DRAFTED)
+      // Foes of the same kind (every fourth fight) only grow.
+      if (depth > 4) expect(foe.hpBonus).toBeGreaterThanOrEqual(hpAt(depth - 4))
+      expect(foe.difficulty).toBe('hard')
+    }
+    expect(hpAt(60)).toBeGreaterThan(hpAt(4))
+  })
+
+  it('meets the ladder bosses in turn', () => {
+    const names = [4, 8, 12, 16, 20, 24].map((d) => stageFoe(3, GAUNTLET_STAGES + d).name)
+    expect(names[0]).not.toBe(runBoss(3).name)
+    expect(new Set(names.slice(0, BOSSES.length)).size).toBe(Math.min(BOSSES.length, names.length))
+    for (const d of [4, 8]) expect(stageFoe(3, GAUNTLET_STAGES + d).rules.eclipseRound).toBe(20)
+  })
+
+  it('builds a playable fight at depth', () => {
+    const run = { ...enterEndless(won()), offers: null, stage: GAUNTLET_STAGES + 6 }
+    const state = stageGame(run)
+    expect(state.pieces.some((p) => p.court === 'umbral')).toBe(true)
+    expect(runFoe(run).name).toBeTruthy()
+  })
+
+  it('goes on to more spoils after a win and counts its depth', () => {
+    const run = { ...enterEndless(won()), offers: null, stage: GAUNTLET_STAGES + 1 }
+    const final = stageGame(run)
+    const next = applyVictory(run, { ...final, winner: 'solari' })
+    expect(next.stage).toBe(GAUNTLET_STAGES + 2)
+    expect(runWon(next)).toBe(false)
+    expect(endlessDepth(next)).toBe(1)
+    expect(next.offers?.length).toBeGreaterThan(0)
+  })
+
+  it('saves and reads back, including old saves with neither field', () => {
+    const run = { ...enterEndless(won()), heat: ['thick', 'dusk'] as HeatId[] }
+    expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
+    const deep = { ...run, stage: GAUNTLET_STAGES + 40 }
+    expect(readRun(JSON.parse(JSON.stringify(deep)))?.stage).toBe(GAUNTLET_STAGES + 40)
+    const { heat: _h, endless: _e, ...old } = startRun('solari', CLASSIC_ROLES, 7)
+    expect(readRun(JSON.parse(JSON.stringify(old)))).toMatchObject({ heat: [], endless: false })
+    // Without the flag a run cannot sit past the boss, and a flagged one cannot sit before it.
+    expect(readRun({ ...JSON.parse(JSON.stringify(deep)), endless: false })).toBeNull()
+    expect(readRun({ ...JSON.parse(JSON.stringify(startRun('solari', CLASSIC_ROLES, 7))), endless: true })).toBeNull()
+    expect(readRun({ ...JSON.parse(JSON.stringify(run)), heat: ['dusk', 'nonsense'] })?.heat).toEqual(['dusk'])
   })
 })

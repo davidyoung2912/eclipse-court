@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, EVENTS, MIN_BONUS, RELICS, eventChoices, relicUnlockText, MAX_REROLLS, canReroll, restStages, relicUnlocked, roster, stageFoe, runFoe, runMap, layerNodes, needsPick, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, endlessDepth, GAUNTLET_STAGES, HEATS, HEAT_IDS, heatScore, runWon, type HeatId, MAX_ASCENSION, parseRunCode, EVENTS, MIN_BONUS, RELICS, eventChoices, relicUnlockText, MAX_REROLLS, canReroll, restStages, relicUnlocked, roster, stageFoe, runFoe, runMap, layerNodes, needsPick, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { NODE_NAMES, type NodeKind } from '../../engine/data/gauntletMap'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
@@ -30,7 +30,7 @@ interface Props {
   report: string[]
   /** The text of the run that just ended, ready to share. */
   summary: string | null
-  onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number; relic?: RelicId }) => void
+  onStart: (court: Court, roles: Role[], opts: { ascension: number; seed?: number; relic?: RelicId; heat: HeatId[] }) => void
   onDaily: () => void
   onFight: () => void
   /** A fight of this stage was left unfinished; Fight picks it up where it stopped. */
@@ -42,6 +42,10 @@ interface Props {
   onPick: (slot: number) => void
   /** Takes choice `i` of the event being faced. */
   onEvent: (choice: number) => void
+  /** Goes on past the boss of a won run. */
+  onEndless: () => void
+  /** Ends a won run without going on. */
+  onLeave: () => void
   onAbandon: () => void
   onBack: () => void
 }
@@ -108,17 +112,19 @@ function Route({ run }: { run: Run }) {
 }
 
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onPick, onEvent, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onPick, onEvent, onEndless, onLeave, onAbandon, onBack }: Props) {
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
   const [ascension, setAscension] = useState(0)
+  const [heat, setHeat] = useState<HeatId[]>([])
   const [relic, setRelic] = useState<RelicId | null>(null)
   const [code, setCode] = useState('')
   const asc = useSyncExternalStore(subscribeAscension, ascensionSnapshot)
   const today = forDay(asc, dailySeed())
   const parsed = code.trim() ? parseRunCode(code) : null
   const level = Math.min(parsed ? parsed.ascension : ascension, MAX_ASCENSION)
+  const heated = parsed ? parsed.heat : heat
   const g = progress.gauntlet
   const lines = report.length > 0 && (
     <div className="setup-card" role="status">
@@ -149,6 +155,20 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
           ))}
         </div>
         {asc.unlocked < MAX_ASCENSION && <p className="tagline">Win a run at ascension {asc.unlocked} to open {asc.unlocked + 1}.</p>}
+        <h3>{t('gauntlet.heat')}</h3>
+        <p className="tagline">{t('gauntlet.heatTagline')}</p>
+        <div className="choices">
+          {HEAT_IDS.map((h) => {
+            const on = heated.includes(h)
+            return (
+              <button key={h} className={`choice${on ? ' on' : ''}`} aria-pressed={on} disabled={!!parsed} onClick={() => setHeat(on ? heat.filter((x) => x !== h) : [...heat, h])}>
+                <strong>{HEATS[h].name} (+{HEATS[h].heat})</strong>
+                <span>{HEATS[h].text}</span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="tagline">{t('gauntlet.heatScore', { heat: heatScore(heated), pct: heatScore(heated) * 10 })}{g.won > 0 && asc.endlessBest > 0 ? ` ${t('gauntlet.endlessBest', { depth: asc.endlessBest })}` : ''}</p>
         <h3>Daily run</h3>
         <div className="setup-card">
           Everyone gets the same foes today, with the classic army from the Solari court.{' '}
@@ -183,10 +203,26 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
           {code.trim() !== '' && !parsed && <div role="alert">That code is not valid.</div>}
         </label>
         <div className="menu-buttons stacked">
-          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed, relic: relic && relicUnlocked(relic, g.won, asc.unlocked) ? relic : undefined })}><Icon name="play" />Begin the Run</button>
+          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, heat: heated, seed: parsed?.seed, relic: relic && relicUnlocked(relic, g.won, asc.unlocked) ? relic : undefined })}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
         <TipCard page="gauntlet" />
+      </main>
+    )
+
+  if (runWon(run))
+    return (
+      <main className="app menu gauntlet-menu">
+        <PageArt icon="flame" />
+        <h2>{t('gauntlet.won')}</h2>
+        <p className="tagline">{t('gauntlet.wonTagline')}</p>
+        {lines}
+        <Army run={run} />
+        <div className="menu-buttons stacked">
+          <button className="primary" onClick={onEndless}><Icon name="flame" />{t('gauntlet.goDeeper')}</button>
+          <button onClick={onLeave}><Icon name="exit" />{t('gauntlet.endRun')}</button>
+        </div>
+        <TipCard page="gauntlet-run" />
       </main>
     )
 
@@ -215,7 +251,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
     return (
       <main className="app menu gauntlet-menu">
         <PageArt icon="flame" />
-        <h2>Spoils of stage {run.stage - 1}</h2>
+        <h2>{run.endless ? t('gauntlet.endlessSpoils', { depth: endlessDepth(run) }) : `Spoils of stage ${run.stage - 1}`}</h2>
         <p className="tagline">Take one reward. {run.offers.some((r) => r.kind === 'revive') ? 'A quiet camp: the fallen may rise again.' : ''}</p>
         {lines}
         <div className="choices">
@@ -279,7 +315,8 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
   return (
     <main className="app menu gauntlet-menu">
       <PageArt icon="flame" />
-      <h2>Stage {run.stage} of {GAUNTLET_STAGES}</h2>
+      <h2>{run.endless ? t('gauntlet.endlessDepth', { depth: endlessDepth(run) + 1 }) : `Stage ${run.stage} of ${GAUNTLET_STAGES}`}</h2>
+      {run.heat.length > 0 && <p className="tagline">{t('gauntlet.heatOn', { heat: heatScore(run.heat), names: run.heat.map((h) => HEATS[h].name).join(', ') })}</p>}
       {foe.elite && <p className="tagline">{t('gauntlet.node.eliteText')}</p>}
       {(run.ascension > 0 || run.daily > 0) && <p className="tagline">{run.daily > 0 ? 'Daily run. ' : ''}{run.ascension > 0 ? `Ascension ${run.ascension}: ${ASCENSIONS[run.ascension - 1].name}.` : ''}</p>}
       <p className="tagline">{foe.name}: {foe.difficulty}, {personality.name}.</p>
@@ -292,8 +329,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
       <h3>Your army ({run.army.length + 1} pieces)</h3>
       <Army run={run} />
       {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.relics).some((s) => s >= run.stage) ? 'a camp after this fight may restore one.' : 'a camp on the map may restore one.'}</p>}
-      <h3>{t('gauntlet.route')}</h3>
-      <Route run={run} />
+      {!run.endless && (<><h3>{t('gauntlet.route')}</h3><Route run={run} /></>)}
       <div className="menu-buttons stacked">
         <button className="primary" onClick={onFight}><Icon name="swords" />{resuming ? 'Resume Fight' : 'Fight'}</button>
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>

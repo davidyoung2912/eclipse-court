@@ -58,8 +58,8 @@ import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
-import { applyReward, applyVictory, canReroll, enterNode, rerollOffers, resolveEvent, runFoe, runSummary, runWon, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
-import { recordAscension } from './ascension'
+import { applyReward, applyVictory, canReroll, endlessDepth, enterEndless, enterNode, heatShards, rerollOffers, resolveEvent, runFoe, runSummary, runWon, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { recordAscension, recordEndless } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
 import { saveLegacy } from './legacy'
 import { legacyOf, withLegacy } from './engine/data/legacy'
@@ -577,17 +577,27 @@ export default function App() {
       setReport([...lines, ...result.earned.map((a) => `Achievement: ${a.name}`), ...closeRun(ended, stage, won)])
       update(null)
     }
+    /** An Endless run ends, by a loss or by walking away: its depth is the record, not another run. */
+    const endEndless = (ended: Run, lines: string[]) => {
+      const depth = endlessDepth(ended)
+      recordEndless(depth)
+      setRunText(runSummary(ended, ended.stage, true))
+      setReport([...lines, `Endless depth ${depth}.`])
+      update(null)
+    }
     return (
       <Gauntlet
         progress={progress} run={run} resuming={!!left} report={report} onBack={() => { setReport([]); setScreen({ name: 'menu' }) }}
         summary={runText}
-        onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic })) }}
+        onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic, heat: opts.heat })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
         onPick={(slot: number) => { if (run) { setReport([]); update(enterNode(run, slot)) } }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
         onEvent={(choice: number) => { if (run?.event) { const done = resolveEvent(run, choice); setReport([done.text]); update(done.run) } }}
         onReroll={() => { if (run && canReroll(run) && payReroll()) update(rerollOffers(run)) }}
-        onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
+        onEndless={() => { if (run) { setReport([]); update(enterEndless(run)) } }}
+        onLeave={() => { setReport([]); update(null) }}
+        onAbandon={() => { if (run) { if (run.endless) endEndless(run, ['You walk away from the Endless.']); else endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) } }}
         onFight={() => {
           if (!run) return
           const foe = runFoe(run)
@@ -743,6 +753,15 @@ export default function App() {
       setScreen({ name: 'gauntlet' })
       if (!run || winner === null) return
       const final = winner === human ? replay(finished) : null
+      if (!final && run.endless) {
+        const depth = endlessDepth(run)
+        recordEndless(depth)
+        setReport([`${winner === 'draw' ? 'A draw' : 'A defeat'} at depth ${depth + 1} of the Endless.`, `Endless depth ${depth}.`])
+        setRunText(runSummary(run, run.stage, true))
+        setRun(null)
+        clearRun()
+        return
+      }
       if (!final) {
         const result = recordRun(progress, run.stage, false)
         setProgress(result.progress)
@@ -754,22 +773,24 @@ export default function App() {
       }
       const next = applyVictory(run, final)
       const foe = runFoe(run)
-      const stageShards = SHARDS_GAUNTLET_STAGE * (foe.elite ? 2 : 1)
+      const stageShards = heatShards(SHARDS_GAUNTLET_STAGE * (foe.elite ? 2 : 1), run.heat)
       recordQuestEvent({ kind: 'stage' })
       if (runWon(next)) {
         const result = recordRun(progress, next.stage, true)
         setProgress(result.progress)
         saveProgress(result.progress)
         const extra = closeRun(run, next.stage, true)
-        const shards = stageShards + SHARDS_GAUNTLET_WIN + result.earned.length * 10
+        const shards = stageShards + heatShards(SHARDS_GAUNTLET_WIN, run.heat) + result.earned.length * 10
         earnShards(shards)
         setReport([`${foe.name} falls. The run is won!`, `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`), ...extra])
-        setRun(null)
-        clearRun()
+        // The won run is kept so the player can go on into the Endless or end it.
+        setRun(next)
+        saveRun(next)
         return
       }
       earnShards(stageShards)
-      setReport([`Stage ${run.stage} cleared.`, `Shards: +${stageShards}.`])
+      if (next.endless) recordEndless(endlessDepth(next))
+      setReport([next.endless ? `Endless depth ${endlessDepth(next)} cleared.` : `Stage ${run.stage} cleared.`, `Shards: +${stageShards}.`])
       setRun(next)
       saveRun(next)
     }

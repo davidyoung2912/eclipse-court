@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ascensionSnapshot, forDay, parseAscension, recordAscension, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, SHARDS_STREAK_STEP, liveStreak } from './ascension'
+import { ascensionSnapshot, forDay, parseAscension, recordAscension, recordEndless, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, SHARDS_STREAK_STEP, liveStreak } from './ascension'
 
 describe('parseAscension', () => {
   it('repairs junk', () => {
-    expect(parseAscension(null)).toEqual({ unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0 })
+    expect(parseAscension(null)).toEqual({ unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0, endlessBest: 0 })
     expect(parseAscension({ unlocked: 99, day: -1, dayBest: 3, dayWon: 'yes' }).unlocked).toBe(0)
     expect(parseAscension({ unlocked: 2, dayBest: 3, dayWon: true }).dayBest).toBe(3)
   })
@@ -45,5 +45,18 @@ describe('recordAscension', () => {
     const later = recordAscension({ ascension: 0, daily: 20280305 }, 9, true)
     expect(later.shards).toBe(SHARDS_DAILY_RUN)
     expect(ascensionSnapshot()).toMatchObject({ streak: 1, bestStreak: 2 })
+  })
+})
+
+describe('endless record', () => {
+  it('reads an old record as zero and keeps the deepest', () => {
+    expect(parseAscension({}).endlessBest).toBe(0)
+    expect(parseAscension({ endlessBest: 12 }).endlessBest).toBe(12)
+    expect(parseAscension({ endlessBest: -3 }).endlessBest).toBe(0)
+    expect(recordEndless(5)).toBe(true)
+    expect(recordEndless(3)).toBe(false)
+    expect(ascensionSnapshot().endlessBest).toBe(5)
+    expect(recordEndless(9)).toBe(true)
+    expect(ascensionSnapshot().endlessBest).toBe(9)
   })
 })

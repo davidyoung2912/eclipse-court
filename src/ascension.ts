@@ -22,9 +22,11 @@ export interface AscensionState {
   /** Consecutive days the daily run has been won, as of `lastWon`. */
   streak: number
   bestStreak: number
+  /** The most Endless fights won past the boss in one run. */
+  endlessBest: number
 }
 
-const EMPTY: AscensionState = { unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0 }
+const EMPTY: AscensionState = { unlocked: 0, day: 0, dayBest: 0, dayWon: false, daysWon: 0, lastWon: 0, streak: 0, bestStreak: 0, endlessBest: 0 }
 
 export const SHARDS_ASCENSION_WIN = 20
 export const SHARDS_DAILY_RUN = 30
@@ -36,7 +38,7 @@ const count = (x: unknown, max = 1e9) => (typeof x === 'number' && Number.isInte
 
 export function parseAscension(raw: unknown): AscensionState {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
-  return { unlocked: count(o.unlocked, MAX_ASCENSION), day: count(o.day), dayBest: count(o.dayBest, 9), dayWon: o.dayWon === true, daysWon: count(o.daysWon), lastWon: count(o.lastWon, 99991231), streak: count(o.streak), bestStreak: count(o.bestStreak) }
+  return { unlocked: count(o.unlocked, MAX_ASCENSION), day: count(o.day), dayBest: count(o.dayBest, 9), dayWon: o.dayWon === true, daysWon: count(o.daysWon), lastWon: count(o.lastWon, 99991231), streak: count(o.streak), bestStreak: count(o.bestStreak), endlessBest: count(o.endlessBest, 9999) }
 }
 
 function load(): AscensionState {
@@ -106,4 +108,11 @@ export function recordAscension(run: { ascension: number; daily: number }, stage
   }
   if (next !== state) commit(next)
   return { shards, lines }
+}
+
+/** Records how deep an Endless run got; true if that is a new record. */
+export function recordEndless(depth: number): boolean {
+  if (depth <= state.endlessBest) return false
+  commit({ ...state, endlessBest: Math.min(depth, 9999) })
+  return true
 }

@@ -27,6 +27,38 @@ const MAX_FALLEN = 6
 
 export const RUN_VERSION = 2
 
+export type HeatId = 'packed' | 'thick' | 'hardened' | 'thin' | 'lean' | 'nodice' | 'dusk'
+
+/**
+ * Penalties a player may take on at the start of a run, beside the fixed ascensions. Each adds its `heat`; the total
+ * raises the Shards a run pays. The order is the bit order of a run code, so it must never change.
+ */
+export const HEATS: Record<HeatId, { name: string; text: string; heat: number }> = {
+  packed: { name: 'Packed Ranks', text: 'Every opponent fields one more piece.', heat: 1 },
+  thick: { name: 'Thick Hides', text: 'Every enemy piece has 1 extra HP.', heat: 2 },
+  hardened: { name: 'Hardened Elites', text: 'Elites gain 1 more HP and one more rule.', heat: 2 },
+  thin: { name: 'Thin Book', text: 'Your Leader begins with two spells, not four.', heat: 2 },
+  lean: { name: 'Lean Spoils', text: 'Every spoils screen offers one reward fewer (never fewer than two).', heat: 1 },
+  nodice: { name: 'No Second Thoughts', text: 'Rerolls are not allowed.', heat: 1 },
+  dusk: { name: 'Falling Dusk', text: 'The Eclipse falls no later than round 24 in every fight.', heat: 1 },
+}
+
+export const HEAT_IDS = Object.keys(HEATS) as HeatId[]
+
+/** The Eclipse round Falling Dusk caps every fight at. */
+export const DUSK_ROUND = 24
+
+export const heatScore = (heat: readonly HeatId[]) => heat.reduce((n, h) => n + HEATS[h].heat, 0)
+
+/** A Shard payment raised by 10% per point of heat. */
+export const heatShards = (base: number, heat: readonly HeatId[]) => Math.round(base * (1 + heatScore(heat) / 10))
+
+/** The chosen heats as a number, one bit each in `HEAT_IDS` order. */
+export const heatMask = (heat: readonly HeatId[]) => HEAT_IDS.reduce((n, h, i) => (heat.includes(h) ? n | (1 << i) : n), 0)
+
+export const heatFromMask = (mask: number): HeatId[] | null =>
+  Number.isInteger(mask) && mask >= 0 && mask < 1 << HEAT_IDS.length ? HEAT_IDS.filter((_, i) => mask & (1 << i)) : null
+
 /** A piece of the persistent army: its role and what it has earned, rebuilt at full health for each fight. */
 export interface RunPiece {
   role: Role
@@ -148,23 +180,39 @@ export interface Run {
   rerolls: number
   /** The node taken in each layer of the map so far, as an index into that layer. */
   path: number[]
+  /** The heat penalties taken at the start. */
+  heat: HeatId[]
+  /** True once the run has gone on past the boss; each fight after is one depth of Endless. */
+  endless: boolean
 }
 
 /** Reroll tokens a run may spend. */
 export const MAX_REROLLS = 2
 
-export const runWon = (run: Run) => run.stage > GAUNTLET_STAGES
+/** The deepest Endless fight a saved run may hold. */
+export const MAX_ENDLESS = 500
+
+/** The boss is beaten and the run is won, until it either ends or goes on into Endless. */
+export const runWon = (run: Run) => run.stage > GAUNTLET_STAGES && !run.endless
+
+/** Fights won in Endless so far. */
+export const endlessDepth = (run: Run) => (run.endless ? run.stage - GAUNTLET_STAGES - 1 : 0)
+
+/** The kind of fight at Endless depth `depth` (1-based): every fourth is a boss, every other one else an elite. */
+export const endlessKind = (depth: number): 'fight' | 'elite' | 'boss' => (depth % 4 === 0 ? 'boss' : depth % 2 === 0 ? 'elite' : 'fight')
 
 const fresh = (role: Role): RunPiece => ({ role, wins: 0, bonus: 0 })
 
 /** The spells a new run begins with. */
 export const STARTER_SPELLS: readonly Spell[] = ['blink', 'mend', 'revive', 'bind']
 
-export function startRun(court: Court, roles: readonly Role[], seed: number, opts: { ascension?: number; daily?: number; relic?: RelicId } = {}): Run {
+export function startRun(court: Court, roles: readonly Role[], seed: number, opts: { ascension?: number; daily?: number; relic?: RelicId; heat?: readonly HeatId[] } = {}): Run {
+  const heat = HEAT_IDS.filter((h) => opts.heat?.includes(h))
   return {
     ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
-    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, event: null, rerolls: 0, path: [],
+    fallen: [], loadout: STARTER_SPELLS.slice(0, heat.includes('thin') ? 2 : LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, event: null, rerolls: 0, path: [],
+    heat, endless: false,
   }
 }
 
@@ -243,6 +291,12 @@ export interface NodeRef {
 /** The ladder boss that closes a run. */
 export const runBoss = (seed: number): Boss => BOSSES[Math.floor(stream(stageSeed(seed, GAUNTLET_STAGES) ^ 0xb055)() * BOSSES.length)]
 
+/** The boss met at Endless depth `depth` (a multiple of 4): the ladder bosses in turn, starting after the run's own. */
+const endlessBoss = (seed: number, depth: number): Boss => {
+  const first = BOSSES.indexOf(runBoss(seed))
+  return BOSSES[(first + depth / 4) % BOSSES.length]
+}
+
 /** A boss's own rules for the court it plays here; the board it names is chosen through the foe's `board`. */
 function bossRules(boss: Boss, foeCourt: Court): Partial<MatchConfig> {
   const { board: _board, beacons: _beacons, blocked: _blocked, cells: _cells, ...rest } = boss.rules
@@ -257,21 +311,25 @@ function bossRules(boss: Boss, foeCourt: Court): Partial<MatchConfig> {
  * The opponent of a stage: harder each time, with its personality, board and rules drawn from the run's seed. `node` picks
  * which node of the layer it is (the default is the first, a plain fight); the last stage is a ladder boss playing `foeCourt`.
  */
-export function stageFoe(seed: number, stage: number, ascension = 0, node: NodeRef | null = null, foeCourt: Court = 'umbral'): StageFoe {
+export function stageFoe(seed: number, stage: number, ascension = 0, node: NodeRef | null = null, foeCourt: Court = 'umbral', heat: readonly HeatId[] = []): StageFoe {
   const s = Math.min(Math.max(stage, 1), GAUNTLET_STAGES)
   const slot = node?.slot ?? 0
-  const roll = stream(nodeSeed(seed, s, slot))
-  const boss = s === GAUNTLET_STAGES
-  const elite = !boss && node?.kind === 'elite'
-  const ladderBoss = boss ? runBoss(seed) : null
+  // Past the last stage the foes keep growing: `depth` counts the fights of Endless.
+  const depth = Math.max(0, stage - GAUNTLET_STAGES)
+  const kind = depth ? endlessKind(depth) : node?.kind
+  const roll = stream(depth ? nodeSeed(seed, stage, 0) : nodeSeed(seed, s, slot))
+  const boss = depth ? kind === 'boss' : s === GAUNTLET_STAGES
+  const elite = !boss && kind === 'elite'
+  const ladderBoss = boss ? (depth ? endlessBoss(seed, depth) : runBoss(seed)) : null
   const base = ascension >= 3 ? harder(DIFFICULTIES[s - 1]) : DIFFICULTIES[s - 1]
   const difficulty = elite ? harder(base) : base
   const personality = ladderBoss ? ladderBoss.personality : PERSONALITY_IDS[Math.floor(roll() * PERSONALITY_IDS.length)]
   const board = (ladderBoss?.rules.board ?? BOARDS[Math.floor(roll() * BOARDS.length)].id) as string
-  const wanted = (boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0) + (ascension >= 4 ? 1 : 0) + (elite ? 1 : 0)
+  const hardElite = elite && heat.includes('hardened')
+  const wanted = Math.min((boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0) + (ascension >= 4 ? 1 : 0) + (elite ? 1 : 0) + (hardElite ? 1 : 0) + Math.min(Math.floor(depth / 2), 2), 5)
   const pool = [...MODIFIERS]
   const chosen: Modifier[] = []
-  while (chosen.length < wanted) {
+  while (chosen.length < wanted && pool.length) {
     const m = pool.splice(Math.floor(roll() * pool.length), 1)[0]
     if (m.win && chosen.some((c) => c.win)) continue
     chosen.push(m)
@@ -283,14 +341,14 @@ export function stageFoe(seed: number, stage: number, ascension = 0, node: NodeR
     rules = { ...rules, ...bossRules(ladderBoss, foeCourt), eclipseRound, showdown: true }
     tags.push('Early Eclipse')
   }
-  const drafted = aiDraft(nodeSeed(seed, s, slot) + 1, difficulty)
-  const name = ladderBoss ? ladderBoss.name : `${elite ? 'Elite: ' : ''}${FOE_NAMES[(s - 1 + slot * 3) % FOE_NAMES.length]}`
+  const drafted = aiDraft((depth ? nodeSeed(seed, stage, 0) : nodeSeed(seed, s, slot)) + 1, difficulty)
+  const name = ladderBoss ? ladderBoss.name : `${elite ? 'Elite: ' : ''}${FOE_NAMES[(depth ? stage - 1 : s - 1 + slot * 3) % FOE_NAMES.length]}`
   return {
     name,
     blurb: ladderBoss ? ladderBoss.rule : `${PERSONALITIES[personality].name} on the ${boardById(board).name} board.`,
     difficulty, personality, board, rules,
-    army: drafted.slice(0, Math.min(MAX_DRAFTED, 6 + s + (elite ? 1 : 0))),
-    hpBonus: Math.floor((s - 1) / 3) + (ascension >= 1 ? 1 : 0) + (elite ? 1 : 0),
+    army: drafted.slice(0, Math.min(MAX_DRAFTED, 6 + s + (elite ? 1 : 0) + (heat.includes('packed') ? 1 : 0))),
+    hpBonus: Math.floor((s - 1) / 3) + (ascension >= 1 ? 1 : 0) + (elite ? 1 : 0) + (heat.includes('thick') ? 1 : 0) + (hardElite ? 1 : 0) + Math.floor(depth / 2),
     tags, boss, elite,
   }
 }
@@ -311,10 +369,10 @@ function nodeTaken(run: Run, layer: number): NodeRef | null {
 export const layerNodes = (run: Run): MapNode[] => runMap(run)[Math.min(run.stage, GAUNTLET_STAGES) - 1] ?? []
 
 /** Whether the run is waiting for a node to be chosen: nothing is pending and the layer has no node taken yet. */
-export const needsPick = (run: Run) => !runWon(run) && !run.offers && !run.event && run.path.length < run.stage
+export const needsPick = (run: Run) => run.stage <= GAUNTLET_STAGES && !run.offers && !run.event && run.path.length < run.stage
 
 /** The opponent of the run's current stage, from the node taken for it (a plain fight if none is taken yet). */
-export const runFoe = (run: Run): StageFoe => stageFoe(run.seed, run.stage, run.ascension, nodeTaken(run, run.stage), otherCourt(run.court))
+export const runFoe = (run: Run): StageFoe => stageFoe(run.seed, run.stage, run.ascension, nodeTaken(run, run.stage), otherCourt(run.court), run.heat)
 
 /**
  * The run after taking node `slot` of the current layer. A fight, elite or boss waits to be fought; an event opens its
@@ -368,6 +426,7 @@ export function stageGame(run: Run): GameState {
   const mine = arrange(run.army.map((p) => p.role))
   const theirs = arrange(foe.army)
   const rules = { ...foe.rules, ...relicRules(run.relics, run.court) }
+  if (run.heat.includes('dusk')) rules.eclipseRound = Math.min(rules.eclipseRound ?? DEFAULT_CONFIG.eclipseRound, DUSK_ROUND)
   const config: MatchConfig = {
     ...DEFAULT_CONFIG, ...rules, seed, beacons: board.beacons, blocked: board.blocked, cells: board.cells, board: board.id, setup: 'gauntlet', growth: true,
     layout: run.court === 'solari' ? mine : theirs,
@@ -485,8 +544,8 @@ export function runReward(run: Run, rng: number): Reward[] {
     },
   ]
   const offers: Reward[] = []
-  const done = nodeTaken(run, run.stage - 1)
-  const width = (run.relics.includes('lens') ? 4 : 3) + (done?.kind === 'elite' ? 1 : 0)
+  const done = run.stage - 1 > GAUNTLET_STAGES ? { kind: endlessKind(run.stage - 1 - GAUNTLET_STAGES) } : nodeTaken(run, run.stage - 1)
+  const width = Math.max(2, (run.relics.includes('lens') ? 4 : 3) + (done?.kind === 'elite' ? 1 : 0) - (run.heat.includes('lean') ? 1 : 0))
   const camp = done?.kind === 'rest' || (done?.kind !== 'event' && restStages(run.relics).includes(run.stage - 1))
   if (camp && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
   const order = kinds.map((k, i) => ({ k, key: roll(), i })).sort((a, b) => a.key - b.key)
@@ -498,7 +557,14 @@ export function runReward(run: Run, rng: number): Reward[] {
   return offers
 }
 
-export const canReroll = (run: Run) => !!run.offers && run.rerolls < MAX_REROLLS
+export const canReroll = (run: Run) => !!run.offers && run.rerolls < MAX_REROLLS && !run.heat.includes('nodice')
+
+/** A won run, carried on past the boss into Endless with a first set of spoils. */
+export function enterEndless(run: Run): Run {
+  if (!runWon(run)) return run
+  const next: Run = { ...run, endless: true, offers: null, event: null }
+  return { ...next, offers: runReward(next, stageSeed(run.seed, run.stage - 1) ^ 0x5bd1e995) }
+}
 
 /** The run with a fresh set of offers, drawn from a seed of the stage and the reroll count so a run code still reproduces it. */
 export function rerollOffers(run: Run): Run {
@@ -649,23 +715,28 @@ export function resolveEvent(run: Run, choice: number): { run: Run; text: string
 
 // ---- run codes and summaries ----
 
-/** A code for a run's seed and ascension; entering it elsewhere starts the same sequence of foes. */
-export const runCode = (seed: number, ascension: number) => `G${ascension}-${(seed >>> 0).toString(36)}`
+/** A code for a run's seed, ascension and heat; entering it elsewhere starts the same sequence of foes. */
+export const runCode = (seed: number, ascension: number, heat: readonly HeatId[] = []) =>
+  `G${ascension}${heat.length ? `h${heatMask(heat).toString(36)}` : ''}-${(seed >>> 0).toString(36)}`
 
-export function parseRunCode(text: string): { seed: number; ascension: number } | null {
-  const m = /^G([0-5])-([0-9a-z]{1,7})$/.exec(text.trim().toLowerCase().replace(/^g/, 'G'))
+export function parseRunCode(text: string): { seed: number; ascension: number; heat: HeatId[] } | null {
+  const m = /^G([0-5])(?:h([0-9a-z]{1,2}))?-([0-9a-z]{1,7})$/.exec(text.trim().toLowerCase().replace(/^g/, 'G'))
   if (!m) return null
-  const seed = parseInt(m[2], 36)
-  return seed < 2 ** 32 ? { seed, ascension: Number(m[1]) } : null
+  const seed = parseInt(m[3], 36)
+  const heat = m[2] ? heatFromMask(parseInt(m[2], 36)) : []
+  return seed < 2 ** 32 && heat ? { seed, ascension: Number(m[1]), heat } : null
 }
 
 /** A few lines for a finished run, ready to share. `stage` is the stage lost or abandoned (GAUNTLET_STAGES + 1 when won). */
 export function runSummary(run: Run, stage: number, won: boolean): string {
   const reached = Math.min(stage, GAUNTLET_STAGES)
   const strongest = roster(run).filter((p) => p.wins >= VETERAN_WINS).length
+  const depth = endlessDepth(run)
+  const heat = heatScore(run.heat)
+  const head = `Eclipse Court Gauntlet${run.ascension ? `, ascension ${run.ascension}` : ''}${heat ? `, heat ${heat}` : ''}${run.daily ? ', daily run' : ''}`
   return [
-    `Eclipse Court Gauntlet${run.ascension ? `, ascension ${run.ascension}` : ''}${run.daily ? ', daily run' : ''}: ${won ? 'WON' : `fell at stage ${reached}`} of ${GAUNTLET_STAGES}`,
+    run.endless ? `${head}: won, then Endless depth ${depth}` : `${head}: ${won ? 'WON' : `fell at stage ${reached}`} of ${GAUNTLET_STAGES}`,
     `Army ${run.army.length + 1}, veterans ${strongest}, relics ${run.relics.length ? run.relics.map((r) => RELICS[r].name).join(', ') : 'none'}, spells ${run.loadout.length}`,
-    `Code ${runCode(run.seed, run.ascension)}`,
+    `Code ${runCode(run.seed, run.ascension, run.heat)}`,
   ].join('\n')
 }
