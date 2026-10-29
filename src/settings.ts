@@ -27,7 +27,7 @@ export const THEMES: readonly Theme[] = [
   {
     id: 'ember', name: 'Ember', stars: 2,
     vars: {
-      '--solari-gold': '#f08a3c', '--solari-cream': '#ffe6d0', '--umbral-indigo': '#3a1420', '--umbral-violet': '#c0505a',
+      '--solari-gold': '#f08a3c', '--solari-cream': '#ffe6d0', '--umbral-indigo': '#3a1420', '--umbral-violet': '#cc5f69',
       '--bg': '#1c0d12', '--pane-s0': '#f5a05c', '--pane-s1': '#d4572e', '--pane-s2': '#ffd2a0',
       '--pane-u0': '#a8404c', '--pane-u1': '#5c1a2a', '--pane-u2': '#d08a5a',
     },
