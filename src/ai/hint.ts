@@ -26,6 +26,23 @@ export interface Hint {
   square?: Pos
 }
 
+/** A puzzle's remaining solution in words, one numbered step per action, for the paid fourth hint. */
+export function solutionLine(state: GameState, actions: readonly Action[]): string {
+  const name = (id: string) => {
+    const p = state.pieces.find((x) => x.id === id)
+    return p ? ROLE_NAMES[p.court][p.role] : 'piece'
+  }
+  const square = ({ x, y }: Pos) => `${String.fromCharCode(97 + y)}${x + 1}`
+  return actions
+    .map((a, i) => {
+      const what = a.type === 'pass' ? 'End the turn'
+        : a.type === 'cast' ? `Cast ${SPELL_INFO[a.spell].name}${a.pieceId ? ` on ${name(a.pieceId)}` : ''}${a.to ? ` at ${square(a.to)}` : ''}`
+        : `Move ${name(a.pieceId)} to ${square(a.to)}`
+      return `${i + 1}. ${what}`
+    })
+    .join('  ')
+}
+
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
 /** Turns the action the AI would take for the side to move into a plain-language hint. */

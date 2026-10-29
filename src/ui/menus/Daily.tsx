@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+import { sinksSnapshot, subscribeSinks } from '../../sinks'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { seasonalEvent } from '../../engine/data/events'
 import { dailyShareText, type DailyMatch } from '../../engine/data/daily'
@@ -26,7 +28,8 @@ const dateLabel = (date: number) => `${Math.floor(date / 10000)}-${String(Math.f
 /** Today's match: the same board, army, rules and opponent for everyone, with one scored attempt. */
 export function Daily({ match, progress, report, onPlay, onBack }: Props) {
   const result = dailyResult(progress, match.date)
-  const streak = liveStreak(progress, match.date)
+  const { freezes } = useSyncExternalStore(subscribeSinks, sinksSnapshot)
+  const streak = liveStreak(progress, match.date, freezes)
   const event = seasonalEvent()
   const week = stampWeek(match.date, progress.daily.last?.date ?? null, streak)
   return (
@@ -46,6 +49,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
       <dl className="stats">
         <div><dt>{t('daily.today')}</dt><dd>{result ? t(result.won ? 'daily.won' : 'daily.lost', { turns: result.turns, lost: result.lost }) : t('common.notPlayed')}</dd></div>
         <div><dt>{t('daily.streak')}</dt><dd>{t('daily.streakValue', { days: t('common.day', { count: streak }), best: progress.daily.best })}</dd></div>
+        {freezes > 0 && <div><dt>{t('sinks.freeze')}</dt><dd>{t('daily.freezes', { count: freezes })}</dd></div>}
       </dl>
       <ol className="stamp-week" aria-label={t('daily.week')}>
         {week.map((d, i) => (

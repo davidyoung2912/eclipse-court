@@ -437,10 +437,14 @@ export function recordRun(p: Progress, stage: number, won: boolean) {
 }
 
 /** The days-in-a-row count that is still alive on `today`: it lapses after a day with no attempt. */
-export function liveStreak(p: Progress, today: number): number {
+export function liveStreak(p: Progress, today: number, freezes = 0): number {
   const last = p.daily.last
-  return last && dayIndex(today) - dayIndex(last.date) <= 1 ? p.daily.streak : 0
+  return last && dayIndex(today) - dayIndex(last.date) <= 1 + (freezes > 0 ? 1 : 0) ? p.daily.streak : 0
 }
+
+/** Whether a held streak freeze is what keeps the streak alive on `today`: exactly one day was missed. */
+export const freezeSaves = (p: Progress, today: number, freezes: number): boolean =>
+  freezes > 0 && !!p.daily.last && dayIndex(today) - dayIndex(p.daily.last.date) === 2
 
 /** The scored attempt of `date`, if one was made. */
 export const dailyResult = (p: Progress, date: number) => (p.daily.last?.date === date ? p.daily.last : null)
@@ -449,11 +453,12 @@ export const dailyResult = (p: Progress, date: number) => (p.daily.last?.date ==
  * The progress after a daily match is finished. Only the first attempt of a day is scored, so a
  * replay changes nothing and `scored` is false.
  */
-export function recordDaily(p: Progress, attempt: DailyAttempt) {
-  if (p.daily.last && p.daily.last.date >= attempt.date) return { progress: p, earned: [] as Achievement[], scored: false }
-  const streak = liveStreak(p, attempt.date) + 1
+export function recordDaily(p: Progress, attempt: DailyAttempt, freezes = 0) {
+  if (p.daily.last && p.daily.last.date >= attempt.date) return { progress: p, earned: [] as Achievement[], scored: false, froze: false }
+  const froze = freezeSaves(p, attempt.date, freezes)
+  const streak = liveStreak(p, attempt.date, freezes) + 1
   const daily: Daily = { last: attempt, streak, best: Math.max(p.daily.best, streak) }
-  return { ...award({ ...p, daily }, NO_GAME, p), scored: true }
+  return { ...award({ ...p, daily }, NO_GAME, p), scored: true, froze }
 }
 
 /** How a finished game went for `human`, found by replaying it. Null if the record is not a legal game. */

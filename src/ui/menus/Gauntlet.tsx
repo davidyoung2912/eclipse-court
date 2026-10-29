@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELIC_UNLOCK_WINS, RELICS, restStages, startingRelics, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELIC_UNLOCK_WINS, RELICS, MAX_REROLLS, canReroll, restStages, startingRelics, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
 import { SPELL_INFO } from '../../engine/rules/spells'
@@ -9,6 +9,9 @@ import type { Court, Role } from '../../engine/rules/types'
 import { totalStars, type Progress } from '../../progress'
 import { ascensionSnapshot, forDay, liveStreak, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, subscribeAscension } from '../../ascension'
 import { dailySeed } from '../../engine/data/setups'
+import { shopSnapshot, subscribeShop } from '../../shop'
+import { PRICE_REROLL } from '../../sinks'
+import { t } from '../../i18n'
 import { PieceArt } from '../../art/PieceArt'
 import { DraftPicker } from './DraftPicker'
 import { CourtPicker } from './CourtPicker'
@@ -31,6 +34,8 @@ interface Props {
   /** A fight of this stage was left unfinished; Fight picks it up where it stopped. */
   resuming?: boolean
   onReward: (reward: Reward) => void
+  /** Pays for and draws a fresh set of offers. */
+  onReroll: () => void
   onAbandon: () => void
   onBack: () => void
 }
@@ -76,7 +81,8 @@ function Army({ run }: { run: Run }) {
 }
 
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onAbandon, onBack }: Props) {
+  const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
   const [ascension, setAscension] = useState(0)
@@ -177,6 +183,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
         </div>
         <Army run={run} />
         <div className="menu-buttons stacked">
+          {canReroll(run) && <button disabled={shop.shards < PRICE_REROLL} onClick={onReroll}><Icon name="cycle" />{t('gauntlet.reroll', { cost: PRICE_REROLL, left: MAX_REROLLS - run.rerolls })}</button>}
           <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
           {back}
         </div>

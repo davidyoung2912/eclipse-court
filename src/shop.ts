@@ -72,6 +72,13 @@ export function earnShards(n: number) {
   commit({ ...state, shards: state.shards + n, earned: state.earned + n })
 }
 
+/** Takes `n` Shards from the wallet; false (and nothing taken) if there are too few. */
+export function spend(n: number): boolean {
+  if (!Number.isInteger(n) || n <= 0 || state.shards < n) return false
+  commit({ ...state, shards: state.shards - n })
+  return true
+}
+
 /** Spends Shards on a cosmetic; false if it is already owned or too dear. */
 export function buy(c: Cosmetic): boolean {
   if (c.goals || owns(c) || state.shards < c.cost) return false

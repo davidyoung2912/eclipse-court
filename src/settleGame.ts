@@ -21,6 +21,8 @@ export interface Settled {
   lines: string[]
   /** Shards earned by the game; the caller adds them to the wallet. */
   shards: number
+  /** A streak freeze kept the daily streak alive; the caller uses one up. */
+  froze: boolean
 }
 
 interface Context {
@@ -35,6 +37,8 @@ interface Context {
   coop?: number
   /** The game is today's daily match. */
   daily: boolean
+  /** Streak freezes held, which cover one missed day of the daily streak. */
+  freezes?: number
   today: Pick<DailyMatch, 'date'>
   /** Count the game towards the player's record and stars (tournament games are scored apart). */
   stats: boolean
@@ -45,12 +49,12 @@ export function settleGame(progress: Progress, c: Context): Settled {
   const { winner, finished, human, difficulty, campaignIndex, daily, today, stats } = c
   const set = c.scenario !== undefined ? SCENARIOS[c.scenario] : c.coop !== undefined ? COOP_SCENARIOS[c.coop] : undefined
   const summary = winner ? summarise(finished, human, difficulty, stats ? campaignIndex : null) : null
-  if (!summary) return { summary: null, lines: [], progress, shards: 0 }
+  if (!summary) return { summary: null, lines: [], progress, shards: 0, froze: false }
   const area: PlayArea = set ? 'scenario' : stats && daily ? 'daily' : campaignIndex !== null ? 'campaign' : 'skirmish'
   const { progress: played, earned } = recordGame(progress, summary, encodeRecord(finished), area)
   const stars = starsEarned(summary)
   const scored = stats && daily
-    ? recordDaily(played, { date: today.date, won: summary.won, turns: summary.turns, lost: summary.lost })
+    ? recordDaily(played, { date: today.date, won: summary.won, turns: summary.turns, lost: summary.lost }, c.freezes ?? 0)
     : null
   let next = scored?.progress ?? played
   const lines: string[] = []
@@ -73,8 +77,10 @@ export function settleGame(progress: Progress, c: Context): Settled {
     summary,
     progress: next,
     shards,
+    froze: !!scored?.froze,
     lines: [
       `Shards: +${shards}.`,
+      ...(scored?.froze ? ['A streak freeze covered the day you missed.'] : []),
       ...(scored?.scored ? [`Daily match scored: ${summary.won ? 'won' : 'lost'} in ${summary.turns} rounds.`] : daily && stats ? ['Daily match: replays are not scored.'] : []),
       ...(scored?.earned ?? []).map((a) => `Achievement: ${a.name}`),
       ...(stats && campaignIndex !== null && summary.won ? [`Stars: ${STAR_TEXT.filter((t) => stars & t.bit).map((t) => t.text).join(', ')}.`] : []),

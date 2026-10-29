@@ -43,6 +43,7 @@ import { clearSaved, loadSaved, saveGame } from './saved'
 import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle } from './fights'
 import { settleGame } from './settleGame'
 import { claimFlight, shardsIn } from './rewardFx'
+import { consumeFreeze, payReroll, sinksSnapshot } from './sinks'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
 import { recordRoleDuels } from './roleGoals'
 import { rememberCourt, masterySnapshot } from './mastery'
@@ -56,7 +57,7 @@ import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
-import { applyReward, applyVictory, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { applyReward, applyVictory, canReroll, rerollOffers, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { recordAscension } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
 import { saveLegacy } from './legacy'
@@ -579,6 +580,7 @@ export default function App() {
         onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
+        onReroll={() => { if (run && canReroll(run) && payReroll()) update(rerollOffers(run)) }}
         onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
         onFight={() => {
           if (!run) return
@@ -680,7 +682,8 @@ export default function App() {
 
     /** Records a finished game and returns the lines to show about it. */
     const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
-      const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, coop, daily, today, stats })
+      const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, coop, daily, today, stats, freezes: sinksSnapshot().freezes })
+      if (settled.froze) consumeFreeze()
       if (settled.summary) rememberCourt(human)
       if (settled.summary && stats) {
         recordGameResult(settled.summary)

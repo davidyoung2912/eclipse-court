@@ -98,7 +98,12 @@ export interface Run {
   ascension: number
   /** The `dailySeed` of the day this is the seeded daily run for, or 0. */
   daily: number
+  /** Reroll tokens used so far this run, up to MAX_REROLLS. */
+  rerolls: number
 }
+
+/** Reroll tokens a run may spend. */
+export const MAX_REROLLS = 2
 
 export const runWon = (run: Run) => run.stage > GAUNTLET_STAGES
 
@@ -111,7 +116,7 @@ export function startRun(court: Court, roles: readonly Role[], seed: number, opt
   return {
     ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
-    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null,
+    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, rerolls: 0,
   }
 }
 
@@ -346,6 +351,15 @@ export function runReward(run: Run, rng: number): Reward[] {
     if (reward) offers.push(reward)
   }
   return offers
+}
+
+export const canReroll = (run: Run) => !!run.offers && run.rerolls < MAX_REROLLS
+
+/** The run with a fresh set of offers, drawn from a seed of the stage and the reroll count so a run code still reproduces it. */
+export function rerollOffers(run: Run): Run {
+  if (!canReroll(run)) return run
+  const rerolls = run.rerolls + 1
+  return { ...run, rerolls, offers: runReward(run, (stageSeed(run.seed, run.stage - 1) ^ 0x5bd1e995) + rerolls * 0x9e3779b1) }
 }
 
 /** The run with one reward taken; the other offers are gone. */

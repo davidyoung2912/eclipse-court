@@ -19,6 +19,11 @@ describe('backup', () => {
     expect(importSave(exportSave(src), dst)).toBe(1)
     expect([...dst.m.keys()]).toEqual(['eclipse-court:shop'])
   })
+  it('carries the Shard sinks', () => {
+    const dst = fake({})
+    importSave(exportSave(fake({ 'eclipse-court:sinks': '{"freezes":1}' })), dst)
+    expect(dst.m.get('eclipse-court:sinks')).toBe('{"freezes":1}')
+  })
   it('rejects text that is not a backup', () => {
     expect(importSave('nope', fake({}))).toBeNull()
     expect(importSave('{"format":"x","data":{}}', fake({}))).toBeNull()

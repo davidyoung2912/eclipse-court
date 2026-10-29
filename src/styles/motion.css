@@ -162,3 +162,11 @@ body:has(.main-menu)::before {
   .fall, .win-burst, .eclipse-cinema, .kill-cam, .confetti { display: none; }
   .moment { transform: translateX(-50%); }
 }
+
+/* Prestige: a growing pulse of light round an owned cosmetic's card. */
+.choice-row.prestige-1, .choice-row.prestige-2, .choice-row.prestige-3 { --pg: 0.25; animation: prestige-pulse 4.5s ease-in-out infinite alternate; }
+.choice-row.prestige-2 { --pg: 0.45; animation-duration: 3.5s; }
+.choice-row.prestige-3 { --pg: 0.7; animation-duration: 2.6s; }
+@keyframes prestige-pulse { to { box-shadow: 0 0 calc(var(--pg) * 22px) color-mix(in srgb, var(--rarity, #ffc94a) calc(var(--pg) * 100%), transparent); } }
+.prestige-btn { flex: none; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: var(--fg); font-size: var(--fs-xs); }
+.prestige-btn:disabled { opacity: 0.5; }

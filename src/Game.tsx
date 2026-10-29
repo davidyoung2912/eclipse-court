@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { autoDuel } from './ai/autoDuel'
 import { haptic } from './haptics'
 import { isMusicOn, isMuted, setMusicOn, setMuted, sfx, startMusic, turnBell } from './audio/synth'
@@ -14,6 +14,7 @@ import { hourBed } from './audio/cues'
 import { musicLevel, piecesLost, shakeFor, streakAfter, streakLabel } from './juice'
 import { flashesReduced, getSettings, HINTS_PER_MATCH, updateSettings } from './settings'
 import { t } from './i18n'
+import { consumePackHint, sinksSnapshot, subscribeSinks } from './sinks'
 import { explainMove } from './ai/why'
 import { attackOdds, beaconReach, blunderOf, lastMoveOf, nextAttackOdds, nextDetail, nextLightState, spellReminder, threatenedIds } from './ui/board/aids'
 import { AUTO_DUEL_SKILL, DIFFICULTY } from './ai/profile'
@@ -271,7 +272,9 @@ export function Game({ controllers, opening, record, session, context, coach, fi
 
   const nextOdds = useMemo(() => (forecastOn && selected && myTurn && !targets ? nextAttackOdds(state, selected, moves) : undefined), [forecastOn, state, selected, myTurn, targets, moves])
 
-  const { hint, level: hintLevel, ask: askHintRaw, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken)
+  const sinks = useSyncExternalStore(subscribeSinks, sinksSnapshot)
+  const packHints = { held: sinks.hints, spend: consumePackHint }
+  const { hint, level: hintLevel, ask: askHintRaw, clear: clearHint } = useHint(state, puzzleHelp, turnsTaken, packHints)
   const hintMode = puzzleHelp ? 'unlimited' : getSettings().hints
   const [hintsUsed, setHintsUsed] = useState(0)
   const hintsLeft = Math.max(0, HINTS_PER_MATCH - hintsUsed)
@@ -870,7 +873,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
             </>
           )}
           {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />Danger</button>}
-          {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{hintMode === 'three' ? ` (${hintsLeft} left)` : ''}</button>}
+          {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{puzzleHelp && hintLevel === 3 && sinks.hints > 0 ? ` (${t('puzzle.seer')}, ${sinks.hints})` : ''}{hintMode === 'three' ? ` (${hintsLeft} left)` : ''}</button>}
           <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
           <button className="back" onClick={() => { if (ended) onExit(null, recordOf(history)); else setQuitAsk(true) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
         </div>
