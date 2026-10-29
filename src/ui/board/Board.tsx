@@ -20,6 +20,7 @@ import { describeSquare } from '../../narrate'
 import { cascadeDelay, lungeOffset } from '../../boardMotion'
 import { rayDelay, slashEnds } from '../../boardDrama'
 import { BLOOM_MS, CHARGE_MS, impactDelayMs, SPELL_FX, toScreen, TRAVEL_MS, type CastFx } from '../../spellFx'
+import { t } from '../../i18n'
 
 interface Props {
   state: GameState
@@ -130,7 +131,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
   return (
     <>
     <p className="sr-only" role="status" aria-live="polite">{cursor ? describeSquare(state, cursor) : ''}</p>
-    <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label="Board: arrow keys move, Enter selects" onKeyDown={onKey} onBlur={() => setCursor(null)}>
+    <svg className="board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label={t('board.label')} onKeyDown={onKey} onBlur={() => setCursor(null)}>
       <BoardDefs />
       <rect x={-0.06} y={-0.06} width={size + 0.12} height={size + 0.12} rx={0.06} className="board-frame" />
       {allSquares(size).map((p) => {
@@ -229,7 +230,7 @@ export const Board = memo(function Board({ state, selected, moves, threats = [],
               <text className="odds-tag next" x={0} y={0.5}>{`→${nextOdds[pc.id]}%`}</text>
             )}
             {pc.bound && (
-              <g className="bound-badge" aria-label="Bound">
+              <g className="bound-badge" aria-label={t('board.bound')}>
                 <circle cx={0.28} cy={-0.28} r={0.15} />
                 <g transform="translate(0.28 -0.28) scale(0.0125) translate(-12 -12)"><IconShape name="chain" /></g>
               </g>

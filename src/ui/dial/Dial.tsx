@@ -25,7 +25,7 @@ export const Dial = memo(function Dial({ state, chip, face, mood }: { state: Gam
         {notes.length > 0 && <span className="hud-note">{notes.join(' · ')}</span>}
       </div>
       {face && <PersonaFace id={face} className={`persona-corner mood-${mood ?? 'calm'}`} />}
-      <div className="dial" aria-label="Luminance dial">
+      <div className="dial" aria-label={t('dial.label')}>
         <span className="dial-now" style={{ background: lumColor(now) }}>{now > 0 ? `+${now}` : now}</span>
         {next.map((l, i) => (
           <span key={i} className="dial-next" style={{ background: lumColor(l) }}>{l > 0 ? `+${l}` : l}</span>

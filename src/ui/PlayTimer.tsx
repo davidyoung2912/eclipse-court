@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from './menus/icons'
 import { formatTime } from './formatTime'
+import { t } from '../i18n'
 
 interface Props {
   /** Receives whole seconds played since the last call: every half minute and when the screen closes. */
@@ -46,5 +47,5 @@ export function PlayTimer({ onFlush }: Props) {
     }
   }, [])
 
-  return <div className="play-timer" role="timer" aria-label="Play time"><Icon name="clock" />{formatTime(shown)}</div>
+  return <div className="play-timer" role="timer" aria-label={t('timer.label')}><Icon name="clock" />{formatTime(shown)}</div>
 }

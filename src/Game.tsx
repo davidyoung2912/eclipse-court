@@ -652,21 +652,21 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     [hinted],
   )
   const result = puzzleLimit !== undefined
-    ? winner === human ? 'Solved' : 'Not solved'
-    : dropped ? DROPPED_TEXT[net?.reason ?? 'closed'] ?? 'Connection lost'
-    : winner === 'draw' ? 'Draw'
-    : hotSeat ? `${COURT_NAME[winner ?? 'solari']} wins`
-    : winner === human ? 'Victory' : 'Defeat'
+    ? winner === human ? t('game.solved') : t('game.notSolved')
+    : dropped ? DROPPED_TEXT[net?.reason ?? 'closed'] ?? t('game.connLost')
+    : winner === 'draw' ? t('game.draw')
+    : hotSeat ? t('game.courtWins', { court: COURT_NAME[winner ?? 'solari'] })
+    : winner === human ? t('game.victory') : t('game.defeat')
   const resultTone: ResultTone = dropped || puzzleLimit !== undefined && winner !== human ? 'plain'
     : winner === 'draw' ? 'draw' : hotSeat ? 'win' : winner === human ? 'win' : 'lose'
   const resultStats: ResultStat[] = hotSeat || dropped || puzzleLimit !== undefined ? [] : [
-    { label: 'Rounds', value: state.round },
-    { label: 'Felled', value: history[0].state.pieces.filter((p) => p.court !== human).length - state.pieces.filter((p) => p.court !== human).length },
-    { label: 'Standing', value: state.pieces.filter((p) => p.court === human).length },
+    { label: t('game.rounds'), value: state.round },
+    { label: t('game.felled'), value: history[0].state.pieces.filter((p) => p.court !== human).length - state.pieces.filter((p) => p.court !== human).length },
+    { label: t('game.standing'), value: state.pieces.filter((p) => p.court === human).length },
   ]
   /** One line on what this battle is for: a puzzle's first sentence, else the goal followed by where the game comes from. */
   const objective = puzzle ? puzzle.text.split(/(?<=[.!?])\s/)[0]
-    : [matchGoal(state.config), online ? 'Online' : hotSeat ? 'Hot-seat' : context?.label, coop && state.turn === 'solari' ? `Player ${coopTurn}` : null].filter(Boolean).join(' · ')
+    : [matchGoal(state.config), online ? t('setup.online') : hotSeat ? t('game.hotSeat') : context?.label, coop && state.turn === 'solari' ? t('game.player', { n: coopTurn }) : null].filter(Boolean).join(' · ')
   /** The attack summary is up: it takes over the tray, and the tray's own controls step aside. */
   /** Pieces of the side to move that an enemy Bind has frozen for this turn. */
   const bound = state.pieces.filter((p) => p.court === state.turn && p.bound)
@@ -721,10 +721,10 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   return (
     <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}${leaderDanger ? ' leader-danger' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} chip={chipOn} face={persona && !even && getSettings().banter !== 'off' ? persona.id : undefined} mood={ended ? (state.winner === foe ? 'pleased' : state.winner === human ? 'stung' : 'calm') : mood?.mood} />
-      <ol className="sr-only" role="log" aria-label="Moves" aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
-      <p className="objective" aria-label="Objective">{objective}</p>
+      <ol className="sr-only" role="log" aria-label={t('game.moves')} aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
+      <p className="objective" aria-label={t('game.objective')}>{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
-      <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? `${persona.name} says: ${bubble}` : ''}</p>
+      <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? t('game.says', { name: persona.name, line: bubble }) : ''}</p>
       {persona && bubble && !even && !ended && <PersonaBubble persona={persona} text={bubble} onDismiss={() => setBubble(null)} />}
       <Board state={state} selected={selected} moves={moves} threats={threats} endangered={endangered} odds={odds} nextOdds={nextOdds} nextLight={nextLight} targetIds={targets?.pieces ?? NO_IDS} onSquare={onSquare}
         focus={boardFocus} hint={boardHint} trail={trail} reach={reach} fogFor={state.config.fog && !hotSeat && !online && !ended ? human : undefined} flip={human === 'umbral' && (!hotSeat || flipBoard)} winAt={winAt} cast={castFx} />
@@ -749,8 +749,8 @@ export function Game({ controllers, opening, record, session, context, coach, fi
       )}
       {banner && !ended && handover && (
         <button key={banner.court + history.length} className={`pass-screen ${banner.court}`} onClick={() => setBanner(null)}>
-          <strong>{coop ? `Player ${coopTurn} to move` : `${COURT_NAME[banner.court]} to move`}</strong>
-          <span>Hand over the device, then tap to begin</span>
+          <strong>{coop ? t('game.playerToMove', { n: coopTurn }) : t('game.courtToMove', { court: COURT_NAME[banner.court] })}</strong>
+          <span>{t('game.handOver')}</span>
         </button>
       )}
       {banner && !ended && !handover && (
@@ -760,7 +760,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
             const board = el?.parentElement?.querySelector('.board')?.getBoundingClientRect()
             if (el && board) { el.style.left = `${board.left + board.width / 2}px`; el.style.top = `${board.top + board.height / 2}px` }
           }}>
-          {hotSeat ? `${COURT_NAME[banner.court]} Turn` : coop && banner.court === human ? `Player ${coopTurn} Turn` : banner.court === human ? 'Your Turn' : online ? 'Their Turn' : 'AI Turn'}
+          {hotSeat ? t('game.courtTurn', { court: COURT_NAME[banner.court] }) : coop && banner.court === human ? t('game.playerTurn', { n: coopTurn }) : banner.court === human ? t('game.yourTurn') : online ? t('game.theirTurn') : t('game.aiTurn')}
         </div>
       )}
       {combo && !ended && <div key={combo.key} className={`combo ${hotSeat ? combo.court : combo.court === human ? 'mine' : 'theirs'}`} role="status">{combo.label}</div>}
@@ -768,50 +768,50 @@ export function Game({ controllers, opening, record, session, context, coach, fi
         <button key={moment.key} className={`moment ${moment.court ?? 'both'}`} aria-live="polite" onClick={() => setMoment(null)}>{t(`moment.${moment.id}`)}</button>
       )}
       {lost && (
-        <div className="confirm result" role="dialog" aria-label="Connection lost">
-          <p className="confirm-title">Connection lost</p>
-          <p>The game is kept. Make a new connection with the same player to carry on.</p>
+        <div className="confirm result" role="dialog" aria-label={t('game.connLost')}>
+          <p className="confirm-title">{t('game.connLost')}</p>
+          <p>{t('game.connKept')}</p>
           <div className="buttons">
-            {onReconnect && <button className="primary" onClick={() => onReconnect({ initial: record.initial, actions: [...net!.actions] })}><Icon name="chain" />Reconnect</button>}
-            <button className="back" onClick={() => { session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />Resign</button>
+            {onReconnect && <button className="primary" onClick={() => onReconnect({ initial: record.initial, actions: [...net!.actions] })}><Icon name="chain" />{t('game.reconnect')}</button>}
+            <button className="back" onClick={() => { session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{t('game.resign')}</button>
           </div>
         </div>
       )}
       {online && !ended && net?.draw === 'asked' && (
-        <div className="confirm result" role="dialog" aria-label="Draw offered">
-          <p className="confirm-title">Draw offered</p>
-          <p>Your opponent proposes a draw. Moving instead declines it.</p>
+        <div className="confirm result" role="dialog" aria-label={t('game.drawOffered')}>
+          <p className="confirm-title">{t('game.drawOffered')}</p>
+          <p>{t('game.drawText')}</p>
           <div className="buttons">
-            <button className="primary" onClick={() => session!.answerDraw(true)}><Icon name="check" />Accept</button>
-            <button onClick={() => session!.answerDraw(false)}><Icon name="close" />Decline</button>
+            <button className="primary" onClick={() => session!.answerDraw(true)}><Icon name="check" />{t('game.accept')}</button>
+            <button onClick={() => session!.answerDraw(false)}><Icon name="close" />{t('game.decline')}</button>
           </div>
         </div>
       )}
       {online && net?.chat && net.chat.from === 'them' && <div key={net.chat.n} className="chat-bubble" role="status">{CHAT_LINES[net.chat.id]}</div>}
       {ended && (
-        <div className="confirm result" role="dialog" aria-label="Game over">
+        <div className="confirm result" role="dialog" aria-label={t('game.over')}>
           {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
           {winner === human && !hotSeat && !online && <Confetti count={confettiCount(!!firstWinAtStart, flashesReduced())} />}
           <ResultBanner title={result} tone={resultTone} stats={resultStats} />
           <RewardLines lines={rewards} />
           {persona && !even && farewell && <p className="persona-farewell"><b>{persona.name}</b> “{farewell}”</p>}
           <div className="buttons">
-            {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />Try Again</button>}
-            {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />Copy Report</button>}
-            {puzzleLimit === undefined && !dropped && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => replayLink(recordOf(history))} />}
-            {online && !dropped && history.length > 1 && <ShareButton title="Watch my Eclipse Court game" label="Copy Watch Link" link={() => watchLink(recordOf(history))} />}
+            {puzzleLimit !== undefined && !puzzle?.rush && state.winner !== human && <button onClick={retry}><Icon name="undo" />{t('game.tryAgain')}</button>}
+            {disagreed && <button onClick={() => void navigator.clipboard?.writeText(session!.report()).catch(() => {})}><Icon name="chain" />{t('game.copyReport')}</button>}
+            {puzzleLimit === undefined && !dropped && <ShareButton title={t('game.replayTitle')} label={t('game.copyReplay')} link={() => replayLink(recordOf(history))} />}
+            {online && !dropped && history.length > 1 && <ShareButton title={t('game.watchTitle')} label={t('game.copyWatch')} link={() => watchLink(recordOf(history))} />}
             {online && net && net.rematch !== 'none' && (
               <button disabled={net.rematch === 'sent'} onClick={() => session!.rematch()}>
-                <Icon name="undo" />{net.rematch === 'sent' ? 'Waiting for them' : net.rematch === 'asked' ? 'Accept Rematch' : 'Rematch'}
+                <Icon name="undo" />{net.rematch === 'sent' ? t('game.waitingThem') : net.rematch === 'asked' ? t('game.acceptRematch') : t('game.rematch')}
               </button>
             )}
             {!hotSeat && !online && !mail && puzzleLimit === undefined && !dropped && history.length > 1 && (context?.kind === 'skirmish' || context?.kind === 'campaign' || context?.kind === 'daily') && (
-              <button onClick={() => onExit(winner ?? foe, recordOf(history), true)}><Icon name="flame" />Review Game</button>
+              <button onClick={() => onExit(winner ?? foe, recordOf(history), true)}><Icon name="flame" />{t('game.review')}</button>
             )}
-            {canGrudge && persona && winner === foe && <button onClick={() => onExit(winner, recordOf(history), false, 'grudge')}><Icon name="flame" />Grudge Match</button>}
-            {canPlayAgain && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'same')}><Icon name="undo" />Play Again</button>}
-            {canPlayAgain && canSwap && !hotSeat && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'swap')}><Icon name="cycle" />Swap Sides</button>}
-            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />Continue</button>
+            {canGrudge && persona && winner === foe && <button onClick={() => onExit(winner, recordOf(history), false, 'grudge')}><Icon name="flame" />{t('game.grudge')}</button>}
+            {canPlayAgain && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'same')}><Icon name="undo" />{t('game.playAgain')}</button>}
+            {canPlayAgain && canSwap && !hotSeat && <button onClick={() => onExit(winner ?? foe, recordOf(history), false, 'swap')}><Icon name="cycle" />{t('game.swapSides')}</button>}
+            <button className="primary" onClick={() => onExit(winner ?? foe, recordOf(history))}><Icon name="onward" />{t('tray.continue')}</button>
           </div>
         </div>
       )}
@@ -819,10 +819,10 @@ export function Game({ controllers, opening, record, session, context, coach, fi
         const line = coachLine(state, human, selected, moves)
         return line && <p className="coach-line" role="status"><Icon name="bulb" />{line}</p>
       })()}
-      {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? 'From the puzzle setter' : undefined} />
+      {hint && myTurn ? <HintCard hint={hint} source={puzzleHelp ? t('game.fromSetter') : undefined} />
         : !shown && inspectSq ? <CellCard state={state} pos={inspectSq} /> : (
         <PieceCard state={state} human={human} piece={shown}
-          hint={myTurn ? 'Tap one of your pieces to see what it can do. Tap an enemy to inspect it.' : 'Tap any piece to inspect it.'} />
+          hint={myTurn ? t('game.tapYours') : t('game.tapAny')} />
       )}
       <footer className={`tray${confirming ? ' confirming' : ''}`}>
         {clock && <div className={myTurn && !ended ? undefined : 'keep-space'} aria-hidden={!myTurn || ended}>
@@ -840,64 +840,64 @@ export function Game({ controllers, opening, record, session, context, coach, fi
         <div className="options">
           {hotSeat ? (
             <>
-              <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>
-              <label><input type="checkbox" checked={flipBoard} onChange={() => setFlipBoard((v) => !v)} /> Face the player</label>
+              <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> {t('game.passScreen')}</label>
+              <label><input type="checkbox" checked={flipBoard} onChange={() => setFlipBoard((v) => !v)} /> {t('game.facePlayer')}</label>
             </>
           ) : online ? null : (<>
-            {coop && <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> Pass screen</label>}
-            <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> Auto-duel</label>
+            {coop && <label><input type="checkbox" checked={passScreen} onChange={() => setPassScreen((v) => !v)} /> {t('game.passScreen')}</label>}
+            <label><input type="checkbox" checked={duelMode === 'auto'} onChange={() => setDuelMode((m) => (m === 'live' ? 'auto' : 'live'))} /> {t('game.autoDuel')}</label>
           </>)}
-          <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> Mirror</label>
-          <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> Aim assist</label>
-          <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> Haptics</label>
-          <label><input type="checkbox" checked={sound} onChange={toggleSound} /> Sound</label>
-          <label><input type="checkbox" checked={music} onChange={() => { setMusicOn(!music); setMusic(!music) }} /> Music</label>
+          <label><input type="checkbox" checked={options.mirror} onChange={() => toggle('mirror')} /> {t('game.mirror')}</label>
+          <label><input type="checkbox" checked={options.aimAssist} onChange={() => toggle('aimAssist')} /> {t('game.aimAssist')}</label>
+          <label><input type="checkbox" checked={options.haptics} onChange={() => toggle('haptics')} /> {t('game.haptics')}</label>
+          <label><input type="checkbox" checked={sound} onChange={toggleSound} /> {t('game.sound')}</label>
+          <label><input type="checkbox" checked={music} onChange={() => { setMusicOn(!music); setMusic(!music) }} /> {t('game.music')}</label>
         </div>
         <p className="status">
           {ended
             ? result
             : puzzleLimit !== undefined && myTurn
-              ? `Turn ${turnsTaken + 1} of ${puzzleLimit}`
+              ? t('game.turnOf', { n: turnsTaken + 1, total: puzzleLimit })
               : !myTurn
-              ? online ? 'Waiting for your opponent…' : 'Opponent is thinking…'
+              ? online ? t('game.waitingOpp') : t('game.oppThinking')
               : bound.length
-                ? `${hotSeat ? COURT_NAME[state.turn] : 'Your'} ${ROLE_NAMES[state.turn][bound[0].role]}${bound.length > 1 ? ` and ${bound.length - 1} more are` : ' is'} bound and cannot move`
+                ? t(bound.length > 1 ? 'game.boundMany' : 'game.boundOne', { who: hotSeat ? COURT_NAME[state.turn] : t('game.your'), name: ROLE_NAMES[state.turn][bound[0].role], more: bound.length - 1 })
               : duel
-                ? `Last duel: ${describeDuel(duel)}`
-                : 'Tap a piece, then a glowing square'}
+                ? t('game.lastDuel', { text: describeDuel(duel) })
+                : t('game.tapSquare')}
         </p>
         <div className="buttons">
-          {!online && !mail && context?.kind !== 'daily' && !context?.scored && takeBackOk && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />Undo</button>}
+          {!online && !mail && context?.kind !== 'daily' && !context?.scored && takeBackOk && <button disabled={history.length < 2} onClick={undo}><Icon name="undo" />{t('game.undo')}</button>}
           {online && !ended && net?.status === 'playing' && (
             <>
-              <button disabled={net.draw !== 'none'} onClick={() => session!.offerDraw()}><Icon name="swap" />{net.draw === 'offered' ? 'Draw Offered' : 'Offer Draw'}</button>
-              <select aria-label="Say something" value="" onChange={(e) => { if (e.target.value) session!.say(e.target.value as (typeof CHAT_IDS)[number]) }}>
-                <option value="">Say…</option>
+              <button disabled={net.draw !== 'none'} onClick={() => session!.offerDraw()}><Icon name="swap" />{net.draw === 'offered' ? t('game.drawOfferedBtn') : t('game.offerDraw')}</button>
+              <select aria-label={t('game.say')} value="" onChange={(e) => { if (e.target.value) session!.say(e.target.value as (typeof CHAT_IDS)[number]) }}>
+                <option value="">{t('game.sayOption')}</option>
                 {CHAT_IDS.map((id) => <option key={id} value={id}>{CHAT_LINES[id]}</option>)}
               </select>
             </>
           )}
-          {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />Danger</button>}
-          {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />Hint{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{puzzleHelp && hintLevel === 3 && sinks.hints > 0 ? ` (${t('puzzle.seer')}, ${sinks.hints})` : ''}{hintMode === 'three' ? ` (${hintsLeft} left)` : ''}</button>}
-          <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />End Turn</button>
-          <button className="back" onClick={() => { if (ended) onExit(null, recordOf(history)); else setQuitAsk(true) }}><Icon name="exit" />{online && !ended ? 'Resign' : 'Quit'}</button>
+          {!state.config.fog && <button aria-pressed={aids} className={aids ? 'on' : undefined} onClick={() => setAids(updateSettings({ aids: !aids }).aids)}><Icon name="shield" />{t('game.danger')}</button>}
+          {!hotSeat && !online && hintMode !== 'off' && <button className={hint ? 'hint on' : 'hint'} disabled={ended || !myTurn || !!pending || !!banner || (hintMode === 'three' && !hint && hintsLeft === 0)} onClick={askHint}><Icon name="bulb" />{t('tray.hint')}{puzzleHelp && hintLevel > 0 && hintLevel < 3 ? ` ${hintLevel}/3` : ''}{puzzleHelp && hintLevel === 3 && sinks.hints > 0 ? ` (${t('puzzle.seer')}, ${sinks.hints})` : ''}{hintMode === 'three' ? ` (${t('game.hintsLeft', { n: hintsLeft })})` : ''}</button>}
+          <button disabled={ended || !myTurn || !!pending || !!banner} onClick={() => play({ type: 'pass' })}><Icon name="hourglass" />{t('game.endTurn')}</button>
+          <button className="back" onClick={() => { if (ended) onExit(null, recordOf(history)); else setQuitAsk(true) }}><Icon name="exit" />{online && !ended ? t('game.resign') : t('game.quit')}</button>
         </div>
         {quitAsk && !ended && (
-          <div className="confirm" role="dialog" aria-label={online ? 'Confirm resign' : 'Confirm quit'}>
-            <p className="confirm-title">{online ? 'Resign this game? Your opponent wins.' : 'Quit this game? Your progress is kept only as an unfinished game.'}</p>
+          <div className="confirm" role="dialog" aria-label={online ? t('game.confirmResign') : t('game.confirmQuit')}>
+            <p className="confirm-title">{online ? t('game.resignAsk') : t('game.quitAsk')}</p>
             <div className="buttons">
-              <button onClick={() => setQuitAsk(false)}><Icon name="close" />Keep Playing</button>
-              <button className="primary" onClick={() => { setQuitAsk(false); if (online) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online ? 'Resign' : 'Quit'}</button>
+              <button onClick={() => setQuitAsk(false)}><Icon name="close" />{t('game.keepPlaying')}</button>
+              <button className="primary" onClick={() => { setQuitAsk(false); if (online) session?.resign(); onExit(null, recordOf(history)) }}><Icon name="exit" />{online ? t('game.resign') : t('game.quit')}</button>
             </div>
           </div>
         )}
         {blunder && !pending && (
-          <div className="confirm" role="dialog" aria-label="Confirm move">
+          <div className="confirm" role="dialog" aria-label={t('game.confirmMove')}>
             <p className="confirm-title">{blunder.text}</p>
             <label className="recharge"><input type="checkbox" checked={blunderSkip} onChange={() => setBlunderSkip(!blunderSkip)} /> {t('blunder.skip')}</label>
             <div className="buttons">
-              <button onClick={() => setBlunder(null)}><Icon name="close" />Rethink</button>
-              <button className="primary" onClick={() => { const { action } = blunder; setBlunder(null); commit(action) }}><Icon name="check" />Move anyway</button>
+              <button onClick={() => setBlunder(null)}><Icon name="close" />{t('game.rethink')}</button>
+              <button className="primary" onClick={() => { const { action } = blunder; setBlunder(null); commit(action) }}><Icon name="check" />{t('game.moveAnyway')}</button>
             </div>
           </div>
         )}
@@ -912,12 +912,12 @@ export function Game({ controllers, opening, record, session, context, coach, fi
       </footer>
       {briefing && puzzle && (
         <div className="puzzle-intro-backdrop">
-          <section className="puzzle-intro" role="dialog" aria-label={`Puzzle: ${puzzle.name}`}>
+          <section className="puzzle-intro" role="dialog" aria-label={t('game.puzzleLabel', { name: puzzle.name })}>
             <div className="puzzle-intro-icon"><Icon name="puzzle" /></div>
             <h2>{puzzle.name}</h2>
-            <span className="pill">win in {puzzleLimit} {puzzleLimit === 1 ? 'turn' : 'turns'}</span>
+            <span className="pill">{t('game.winIn', { count: puzzleLimit ?? 0 })}</span>
             <p>{puzzle.text}</p>
-            <div className="puzzle-intro-foot"><button onClick={() => setBriefing(false)}><Icon name="check" />Got It!</button></div>
+            <div className="puzzle-intro-foot"><button onClick={() => setBriefing(false)}><Icon name="check" />{t('tip.gotIt')}</button></div>
           </section>
         </div>
       )}
