@@ -46,36 +46,36 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
   const goalsOwed = unclaimedGoals(goals).reduce((n, g) => n + g.shards, 0)
   const tracks = standings(progress, mastery)
   const rank = courtRank(tracks.reduce((n, x) => n + x.level, 0))
-  const owed = tracks.reduce((n, t) => n + t.owed, 0)
+  const owed = tracks.reduce((n, x) => n + x.owed, 0)
   const showcase = mastery.showcase.flatMap((id) => ACHIEVEMENTS.filter((a) => a.id === id && progress.achievements.includes(id)))
   const list = sections(progress, story, dailySeed(), cups)
   const done = overall(list)
-  const tiles = [...totals(progress), { label: 'Total time played', value: formatTime(progress.stats.playSeconds) },
-    ...(ladder.games > 0 ? [{ label: `Ladder rating (${rankOf(ladder.rating)})`, value: String(ladder.rating) }] : [])]
+  const tiles = [...totals(progress), { label: t('stats.timePlayed'), value: formatTime(progress.stats.playSeconds) },
+    ...(ladder.games > 0 ? [{ label: t('stats.ladderRating', { rank: rankOf(ladder.rating) }), value: String(ladder.rating) }] : [])]
   const bests = [
-    ...(ladder.games > 0 ? [{ label: 'Ladder peak', value: String(ladder.peak) }] : []),
-    ...(progress.daily.best > 0 ? [{ label: 'Longest daily streak', value: `${progress.daily.best} days` }] : []),
-    ...(records.bestStreak > 0 ? [{ label: 'Longest win streak', value: String(records.bestStreak) }] : []),
-    ...(records.fastestWin > 0 ? [{ label: 'Fastest win', value: `${records.fastestWin} rounds` }] : []),
-    ...(records.flawless > 0 ? [{ label: 'Flawless wins', value: String(records.flawless) }] : []),
-    ...(records.mostTaken > 0 ? [{ label: 'Most pieces taken in a game', value: String(records.mostTaken) }] : []),
-    ...(progress.gauntlet.best > 0 ? [{ label: 'Furthest gauntlet stage', value: String(progress.gauntlet.best) }] : []),
-    ...(rushBest() > 0 ? [{ label: 'Puzzle Rush best', value: String(rushBest()) }] : []),
+    ...(ladder.games > 0 ? [{ label: t('stats.ladderPeak'), value: String(ladder.peak) }] : []),
+    ...(progress.daily.best > 0 ? [{ label: t('stats.dailyStreak'), value: t('common.day', { count: progress.daily.best }) }] : []),
+    ...(records.bestStreak > 0 ? [{ label: t('stats.winStreak'), value: String(records.bestStreak) }] : []),
+    ...(records.fastestWin > 0 ? [{ label: t('stats.fastestWin'), value: t('stats.rounds', { count: records.fastestWin }) }] : []),
+    ...(records.flawless > 0 ? [{ label: t('stats.flawless'), value: String(records.flawless) }] : []),
+    ...(records.mostTaken > 0 ? [{ label: t('stats.mostTaken'), value: String(records.mostTaken) }] : []),
+    ...(progress.gauntlet.best > 0 ? [{ label: t('stats.gauntletStage'), value: String(progress.gauntlet.best) }] : []),
+    ...(rushBest() > 0 ? [{ label: t('stats.rushBest'), value: String(rushBest()) }] : []),
   ]
   return (
     <main className="app menu blue-menu">
       <PageArt icon="trophy" />
-      <h2>Stats</h2>
+      <h2>{t('stats.title')}</h2>
       <RankCrest rank={rank} />
-      <div className="stat-overall" role="group" aria-label="Overall completion">
+      <div className="stat-overall" role="group" aria-label={t('stats.overallLabel')}>
         <strong>{percent(done)}</strong>
-        <span>complete across the campaign, scenarios, puzzles, gauntlet, story and achievements</span>
+        <span>{t('stats.overall')}</span>
         <Bar fraction={done} />
       </div>
-      <section className="showcase" aria-label="Showcase">
-        <h3>Showcase</h3>
+      <section className="showcase" aria-label={t('stats.showcase')}>
+        <h3>{t('stats.showcase')}</h3>
         {showcase.length === 0
-          ? <p className="tagline">Pin up to {SHOWCASE_SLOTS} earned achievements below to show them here.</p>
+          ? <p className="tagline">{t('stats.showcaseEmpty', { slots: SHOWCASE_SLOTS })}</p>
           : <ul className="achievements">{showcase.map((a) => <li key={a.id} className="got"><strong><Icon name="trophy" />{a.name}</strong><span>{a.text}</span></li>)}</ul>}
       </section>
       <dl className="stat-tiles">
@@ -83,7 +83,7 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
       </dl>
       {bests.length > 0 && (
         <details className="stat-section" open>
-          <summary><h3><Icon name="trophy" />Personal bests</h3></summary>
+          <summary><h3><Icon name="trophy" />{t('stats.bests')}</h3></summary>
           <dl className="stat-rows">{bests.map((b) => <div key={b.label}><dt>{b.label}</dt><dd>{b.value}</dd></div>)}</dl>
         </details>
       )}
@@ -106,33 +106,33 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
         </details>
       ))}
       <details className="stat-section" open>
-        <summary><h3><Icon name="star" />Mastery</h3></summary>
+        <summary><h3><Icon name="star" />{t('stats.mastery')}</h3></summary>
         <ul className="mastery-tracks">
-          {tracks.map((t) => (
-            <li key={t.track.id}>
-              <strong>{t.track.title}</strong> level {t.level}
-              <Bar fraction={t.next === null ? 1 : t.points / t.next} thin />
-              <small>{t.points}{t.next === null ? '' : ` of ${t.next}`} {t.track.unit}{t.next === null ? ' · top level' : ` · level ${t.level + 1} pays ${levelReward(t.level + 1)} Shards`}</small>
+          {tracks.map((x) => (
+            <li key={x.track.id}>
+              <strong>{x.track.title}</strong> {t('stats.level', { level: x.level })}
+              <Bar fraction={x.next === null ? 1 : x.points / x.next} thin />
+              <small>{x.points}{x.next === null ? '' : t('stats.of', { total: x.next })} {x.track.unit}{x.next === null ? t('stats.topLevel') : t('stats.nextLevel', { level: x.level + 1, shards: levelReward(x.level + 1) })}</small>
             </li>
           ))}
         </ul>
         <button className="primary" disabled={owed === 0} onClick={() => setClaimed(claimMastery(progress))}>
-          <Icon name="star" />{owed > 0 ? `Claim ${owed} Shards` : 'No Shards to claim'}
+          <Icon name="star" />{owed > 0 ? t('stats.claim', { shards: owed }) : t('stats.noShards')}
         </button>
-        {claimed !== null && claimed > 0 && <p className="status" role="status">Shards: +{claimed}.</p>}
+        {claimed !== null && claimed > 0 && <p className="status" role="status">{t('stats.claimed', { shards: claimed })}</p>}
       </details>
       <details className="stat-section">
-        <summary><h3><Icon name="trophy" />Piece goals ({goalsDone}/{ROLE_GOALS.length})</h3></summary>
-        <p className="tagline">Duels your pieces win, counted by role and by the light on the square. Completed goals pay Shards; finishing enough of them earns cosmetics.</p>
+        <summary><h3><Icon name="trophy" />{t('stats.pieceGoals', { done: goalsDone, total: ROLE_GOALS.length })}</h3></summary>
+        <p className="tagline">{t('stats.pieceGoalsText')}</p>
         {GOAL_ROLES.map((role) => (
           <div key={role} className="role-goals">
-            <strong>{GOAL_ROLE_NAMES[role]}</strong> <small>{goals.tally[role].wins} duels won</small>
+            <strong>{GOAL_ROLE_NAMES[role]}</strong> <small>{t('stats.duelsWon', { count: goals.tally[role].wins })}</small>
             <ul className="mastery-tracks">
               {ROLE_GOALS.filter((g) => g.role === role).map((g) => (
                 <li key={g.id}>
                   {g.text}
                   <Bar fraction={progressOf(g, goals.tally) / g.target} thin />
-                  <small>{progressOf(g, goals.tally)} of {g.target} · {goals.claimed.includes(g.id) ? 'claimed' : `${g.shards} Shards`}</small>
+                  <small>{t('stats.goalProgress', { done: progressOf(g, goals.tally), target: g.target })}{goals.claimed.includes(g.id) ? t('stats.goalClaimed') : t('stats.goalShards', { shards: g.shards })}</small>
                 </li>
               ))}
             </ul>
@@ -140,15 +140,15 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
         ))}
         <ul className="mastery-tracks">
           {rewardsFor(ROLE_GOALS.length).map((c) => (
-            <li key={`${c.kind}:${c.id}`}><strong>{c.name}</strong> <small>{c.goals} goals · {goalsDone >= (c.goals ?? 0) ? 'earned' : `${(c.goals ?? 0) - goalsDone} to go`}</small></li>
+            <li key={`${c.kind}:${c.id}`}><strong>{c.name}</strong> <small>{t('stats.rewardGoals', { count: c.goals ?? 0 })} · {goalsDone >= (c.goals ?? 0) ? t('stats.rewardEarned') : t('stats.rewardToGo', { count: (c.goals ?? 0) - goalsDone })}</small></li>
           ))}
         </ul>
         <button className="primary" disabled={goalsOwed === 0 && rewardsFor(goalsDone).length === 0} onClick={() => setGoalClaim(claimRoleGoals())}>
-          <Icon name="star" />{goalsOwed > 0 ? `Claim ${goalsOwed} Shards` : 'Nothing to claim'}
+          <Icon name="star" />{goalsOwed > 0 ? t('stats.claim', { shards: goalsOwed }) : t('stats.nothingToClaim')}
         </button>
-        {goalClaim && <p className="status" role="status">{goalClaim.shards > 0 ? `Shards: +${goalClaim.shards}. ` : ''}{goalClaim.cosmetics.map((n) => `Earned ${n}.`).join(' ')}</p>}
+        {goalClaim && <p className="status" role="status">{goalClaim.shards > 0 ? `${t('stats.claimed', { shards: goalClaim.shards })} ` : ''}{goalClaim.cosmetics.map((n) => t('stats.earnedItem', { name: n })).join(' ')}</p>}
       </details>
-      <h3>Achievements ({progress.achievements.length} of {ACHIEVEMENTS.length})</h3>
+      <h3>{t('stats.achievements', { earned: progress.achievements.length, total: ACHIEVEMENTS.length })}</h3>
       {ACHIEVEMENT_CATEGORIES.map((category) => {
         const list = ACHIEVEMENTS.filter((a) => a.category === category)
         const earned = list.filter((a) => progress.achievements.includes(a.id)).length
@@ -163,7 +163,7 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
                     <strong><Icon name={got ? 'trophy' : 'lock'} />{a.name}</strong>
                     <span>{a.text}</span>
                     {got && <button className="link" aria-pressed={mastery.showcase.includes(a.id)} onClick={() => togglePin(a.id)}>
-                      {mastery.showcase.includes(a.id) ? 'Unpin' : mastery.showcase.length >= SHOWCASE_SLOTS ? 'Showcase full' : 'Pin'}
+                      {mastery.showcase.includes(a.id) ? t('stats.unpin') : mastery.showcase.length >= SHOWCASE_SLOTS ? t('stats.showcaseFull') : t('stats.pin')}
                     </button>}
                   </li>
                 )
@@ -175,9 +175,9 @@ export function Stats({ progress, onReplay, onReset, onGoals, onHighlights, onBa
       <div className="menu-buttons stacked">
         {onGoals && <button onClick={onGoals}><Icon name="star" />{t('goals.title')}</button>}
         {onHighlights && <button onClick={onHighlights}><Icon name="trophy" />{t('highlights.open')}</button>}
-        {onReplay && <button onClick={onReplay}><Icon name="replay" />Replay Last Game</button>}
-        {progress.last && <ShareButton title="Eclipse Court replay" label="Copy Replay Link" link={() => shareLink('r', progress.last!)} />}
-        <ResetButton label="Reset Stats" warning="Clear every stat, the Gauntlet record, achievements and the last replay? Campaign, puzzle and scenario progress is kept." onReset={onReset} />
+        {onReplay && <button onClick={onReplay}><Icon name="replay" />{t('stats.replayLast')}</button>}
+        {progress.last && <ShareButton title={t('stats.replayTitle')} label={t('stats.copyReplay')} link={() => shareLink('r', progress.last!)} />}
+        <ResetButton label={t('stats.reset')} warning={t('stats.resetWarning')} onReset={onReset} />
         <BackButton onClick={onBack} />
       </div>
       <TipCard page="stats" />

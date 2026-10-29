@@ -10,6 +10,7 @@ import { Dial } from '../dial/Dial'
 import { canRecordClip, cardClip, cardImage } from '../../shareCard'
 import { saveBlob } from '../../saveFile'
 import { Icon } from './icons'
+import { t } from '../../i18n'
 import { TipCard } from '../tips/TipCard'
 
 interface Props {
@@ -38,7 +39,7 @@ function EvalBar({ values, at, onPick }: { values: number[]; at: number; onPick:
   return (
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <svg className="eval-bar" viewBox={`0 0 ${n} 20`} preserveAspectRatio="none" role="img"
-      aria-label="Evaluation over the game; higher favours Solari"
+      aria-label={t('replay.evalLabel')}
       onClick={(e) => {
         const box = e.currentTarget.getBoundingClientRect()
         onPick(Math.max(0, Math.min(values.length - 1, Math.round(((e.clientX - box.left) / box.width) * n))))
@@ -87,10 +88,10 @@ export function Replay({ record, autoplay, watch, onBack, onPlayOn, onReviewed }
     setSaveNote(null)
     try {
       const blob = await (kind === 'card' ? cardImage(record) : cardClip(record))
-      if (!blob) setSaveNote('Could not make that here.')
-      else setSaveNote(saveBlob(blob, kind === 'card' ? 'eclipse-court.png' : 'eclipse-court.webm') ? 'Saved.' : 'Could not save that.')
+      if (!blob) setSaveNote(t('replay.cannotMake'))
+      else setSaveNote(saveBlob(blob, kind === 'card' ? 'eclipse-court.png' : 'eclipse-court.webm') ? t('replay.saved') : t('replay.cannotSave'))
     } catch {
-      setSaveNote('Could not make that here.')
+      setSaveNote(t('replay.cannotMake'))
     }
     setSaving(null)
   }
@@ -98,8 +99,8 @@ export function Replay({ record, autoplay, watch, onBack, onPlayOn, onReviewed }
   const running = playing && at < last
   useEffect(() => {
     if (!running) return
-    const t = setTimeout(() => setAt((i) => i + 1), STEP_MS)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setAt((i) => i + 1), STEP_MS)
+    return () => clearTimeout(timer)
   }, [running, at])
 
   const mine = phase !== 'idle' && at > 0 ? reviews[at - 1] : null
@@ -115,64 +116,64 @@ export function Replay({ record, autoplay, watch, onBack, onPlayOn, onReviewed }
   const mover: Court = at > 0 ? steps[at - 1].state.turn : state.turn
   const to = action && action.type === 'move' ? action.to : undefined
   const caption = at === 0
-    ? 'The opening position.'
-    : action?.type === 'cast' ? `${mover} cast ${action.spell}.`
-      : action?.type === 'pass' ? `${mover} ended the turn.`
-        : state.lastDuel ? `${mover} attacked; ${state.lastDuel.defenderHp <= 0 ? 'the defender fell' : state.lastDuel.attackerHp <= 0 ? 'the attacker fell' : 'a draw'}.`
-          : `${mover} moved.`
+    ? t('replay.opening')
+    : action?.type === 'cast' ? t('replay.cast', { mover, spell: action.spell })
+      : action?.type === 'pass' ? t('replay.pass', { mover })
+        : state.lastDuel ? t('replay.attack', { mover, result: state.lastDuel.defenderHp <= 0 ? t('replay.defenderFell') : state.lastDuel.attackerHp <= 0 ? t('replay.attackerFell') : t('replay.draw') })
+          : t('replay.moved', { mover })
   const sides = phase === 'idle' ? null : (['solari', 'umbral'] as const).map((c) => ({ court: c, ...summarise(reviews, c) }))
   const status = showBetter && bestHint
-    ? `A better move: ${bestHint.headline}. ${bestHint.detail}`
-    : `Round ${state.round}, move ${at} of ${last}. ${caption}${at === last && state.winner ? ` ${state.winner === 'draw' ? 'Draw.' : `${state.winner} won.`}` : ''}`
+    ? t('replay.better', { headline: bestHint.headline, detail: bestHint.detail })
+    : `${t('replay.position', { round: state.round, at, last })} ${caption}${at === last && state.winner ? ` ${state.winner === 'draw' ? t('replay.drawn') : t('replay.won', { court: state.winner })}` : ''}`
   return (
     <main className="app">
       <Dial state={state} />
       <Board state={state} selected={null} moves={[]} onSquare={() => {}}
         focus={!showBetter && to ? { mover: action && action.type === 'move' ? action.pieceId : undefined } : undefined}
         hint={showBetter && bestHint ? { from: bestHint.from, to: bestHint.to, square: bestHint.square, pieceId: bestHint.mover } : to ? { to } : undefined} />
-      {watch && <p className="tagline" role="status">Watching a finished game</p>}
+      {watch && <p className="tagline" role="status">{t('replay.watching')}</p>}
       <p className="status">{status}</p>
       {mine && (
         <p className={`review-note grade-${mine.grade}`} role="status">
           <strong>{GRADE_TEXT[mine.grade]}</strong>
-          {flagged ? ` (gave up about ${mine.loss.toFixed(1)} points). ` : '. '}
-          {flagged && <button className="link" onClick={() => setBetter((b) => !b)}>{showBetter ? 'Back to the game' : 'Show the better move'}</button>}
+          {flagged ? t('replay.gaveUp', { points: mine.loss.toFixed(1) }) : '. '}
+          {flagged && <button className="link" onClick={() => setBetter((b) => !b)}>{showBetter ? t('replay.backToGame') : t('replay.showBetter')}</button>}
         </p>
       )}
       {phase !== 'idle' && <EvalBar values={evals} at={at} onPick={(i) => { setPlaying(false); setBetter(false); setAt(i) }} />}
-      {phase === 'running' && <p className="status" role="status">Reviewing: move {reviews.filter(Boolean).length} of {last}.</p>}
+      {phase === 'running' && <p className="status" role="status">{t('replay.reviewing', { done: reviews.filter(Boolean).length, total: last })}</p>}
       {notes.length > 0 && <div className="setup-card" role="status">{notes.map((line) => <div key={line}>{line}</div>)}</div>}
       {sides && (
         <div className="setup-card review-summary">
           {sides.map((side) => (
             <div key={side.court}>
-              <strong>{side.court === 'solari' ? 'Solari' : 'Umbral'}</strong>: accuracy {side.accuracy}%, {side.counts.best} best, {side.counts.inaccuracy} inaccurate, {side.counts.mistake} mistakes, {side.counts.blunder} blunders.
+              <strong>{side.court === 'solari' ? 'Solari' : 'Umbral'}</strong>: {t('replay.summary', { accuracy: side.accuracy, best: side.counts.best, inaccuracy: side.counts.inaccuracy, mistake: side.counts.mistake, blunder: side.counts.blunder })}
             </div>
           ))}
         </div>
       )}
       <div className="buttons">
-        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt(0) }}><Icon name="replay" />Start</button>
-        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i - 1) }}><Icon name="stepBack" />Prev</button>
-        <button className={running ? 'on' : ''} disabled={at >= last} onClick={() => setPlaying((p) => !p)}><Icon name="play" />{running ? 'Pause' : 'Play'}</button>
-        <button disabled={at >= last} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i + 1) }}><Icon name="stepNext" />Next</button>
-        <button onClick={onBack}><Icon name="exit" />Close</button>
+        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt(0) }}><Icon name="replay" />{t('replay.start')}</button>
+        <button disabled={at === 0} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i - 1) }}><Icon name="stepBack" />{t('replay.prev')}</button>
+        <button className={running ? 'on' : ''} disabled={at >= last} onClick={() => setPlaying((p) => !p)}><Icon name="play" />{running ? t('replay.pause') : t('replay.play')}</button>
+        <button disabled={at >= last} onClick={() => { setPlaying(false); setBetter(false); setAt((i) => i + 1) }}><Icon name="stepNext" />{t('replay.next')}</button>
+        <button onClick={onBack}><Icon name="exit" />{t('replay.close')}</button>
       </div>
       {last > 0 && (
         <div className="buttons">
-          {phase === 'idle' && <button className="primary" onClick={review}><Icon name="flame" />Review Game</button>}
-          {phase === 'running' && <button onClick={cancel}><Icon name="exit" />Stop Review</button>}
-          {phase !== 'idle' && <button disabled={prevMoment === undefined} onClick={() => jump(prevMoment!)}><Icon name="keyBack" />Prev Key Move</button>}
-          {phase !== 'idle' && <button disabled={nextMoment === undefined} onClick={() => jump(nextMoment!)}><Icon name="keyNext" />Next Key Move</button>}
+          {phase === 'idle' && <button className="primary" onClick={review}><Icon name="flame" />{t('replay.review')}</button>}
+          {phase === 'running' && <button onClick={cancel}><Icon name="exit" />{t('replay.stopReview')}</button>}
+          {phase !== 'idle' && <button disabled={prevMoment === undefined} onClick={() => jump(prevMoment!)}><Icon name="keyBack" />{t('replay.prevKey')}</button>}
+          {phase !== 'idle' && <button disabled={nextMoment === undefined} onClick={() => jump(nextMoment!)}><Icon name="keyNext" />{t('replay.nextKey')}</button>}
         </div>
       )}
       <div className="buttons">
-        <button disabled={saving !== null} onClick={() => void save('card')}><Icon name="chain" />{saving === 'card' ? 'Drawing…' : 'Save Card'}</button>
-        {canRecordClip() && <button disabled={saving !== null} onClick={() => void save('clip')}><Icon name="play" />{saving === 'clip' ? 'Recording…' : 'Save Clip'}</button>}
+        <button disabled={saving !== null} onClick={() => void save('card')}><Icon name="chain" />{saving === 'card' ? t('replay.drawing') : t('replay.saveCard')}</button>
+        {canRecordClip() && <button disabled={saving !== null} onClick={() => void save('clip')}><Icon name="play" />{saving === 'clip' ? t('replay.recording') : t('replay.saveClip')}</button>}
       </div>
       {onPlayOn && !steps[at].state.winner && (
         <div className="buttons">
-          <button onClick={() => onPlayOn(steps[at].state, steps[at].state.turn)}><Icon name="swords" />Play On From Here</button>
+          <button onClick={() => onPlayOn(steps[at].state, steps[at].state.turn)}><Icon name="swords" />{t('replay.playOn')}</button>
         </div>
       )}
       {saveNote && <p className="status" role="status">{saveNote}</p>}
