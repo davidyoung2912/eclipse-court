@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { METER_SEGMENTS, meterSparks } from '../../boardDrama'
 import type { Court } from '../../engine/rules/types'
+import { t } from '../../i18n'
 
 /** A row of segments that fills with each capture in a row, throws more sparks as it climbs and cracks when the streak ends. */
 export function StreakMeter({ count, court }: { count: number; court: Court }) {
@@ -20,7 +21,7 @@ export function StreakMeter({ count, court }: { count: number; court: Court }) {
   if (shown < 1) return null
   const sparks = meterSparks(shown)
   return (
-    <div className={`streak-meter ${court}${cracked ? ' cracked' : ''}`} role="img" aria-label={`Capture streak ${shown}`}>
+    <div className={`streak-meter ${court}${cracked ? ' cracked' : ''}`} role="img" aria-label={t('streak.label', { n: shown })}>
       {Array.from({ length: METER_SEGMENTS }, (_, i) => (
         <i key={i} className={i < shown ? 'on' : ''} />
       ))}

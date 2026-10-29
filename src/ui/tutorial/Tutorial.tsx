@@ -19,6 +19,7 @@ import { CellCard } from '../tray/CellCard'
 import { PieceCard } from '../tray/PieceCard'
 import { SpellBar } from '../tray/SpellBar'
 import { BackButton } from '../menus/BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   onExit: () => void
@@ -109,7 +110,7 @@ export function Tutorial({ onExit }: Props) {
       )}
       {!shown && inspectSq
         ? <CellCard state={state} pos={inspectSq} />
-        : <PieceCard state={state} human="solari" piece={shown} hint="Tap any piece to read its card." />}
+        : <PieceCard state={state} human="solari" piece={shown} hint={t('tutorial.tapHint')} />}
       <footer className="tray">
         <section className="lesson" aria-live="polite">
           {/* Every step is laid out in one cell and only the current one shows, so the card keeps the tallest step's height and the board never shifts. */}
@@ -122,9 +123,9 @@ export function Tutorial({ onExit }: Props) {
         </section>
         {current.kind === 'spell' && <SpellBar state={state} active={casting} onPick={setCasting} />}
         <div className="buttons">
-          {current.kind === 'end' ? <BackButton onClick={onExit} /> : <button onClick={onExit}><Icon name="skip" />Skip</button>}
-          {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setInspectSq(null); setStep(step + 1) }}><Icon name="check" />Got It</button>}
-          {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />Play</button>}
+          {current.kind === 'end' ? <BackButton onClick={onExit} /> : <button onClick={onExit}><Icon name="skip" />{t('tutorial.skip')}</button>}
+          {current.kind === 'info' && <button className="primary" onClick={() => { setInspectId(null); setInspectSq(null); setStep(step + 1) }}><Icon name="check" />{t('tutorial.gotIt')}</button>}
+          {current.kind === 'end' && <button className="primary" onClick={onExit}><Icon name="play" />{t('tutorial.play')}</button>}
         </div>
       </footer>
     </main>

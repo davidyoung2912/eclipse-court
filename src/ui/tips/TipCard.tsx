@@ -1,6 +1,7 @@
 import { markTipSeen } from '../../tips'
 import { Icon } from '../menus/icons'
 import { useQueue, type Pages } from './useTipQueue'
+import { t } from '../../i18n'
 
 interface Props {
   /** The page or pages whose cards may show; the first unread card of the first page with one is shown. */
@@ -20,16 +21,16 @@ export function TipCard({ page, float = false, hidden = false, modal = false }: 
   if (!tip || hidden) return null
   const number = tips.length - left.length + 1
   const card = (
-    <aside key={tip.id} className={`tip-card${float ? ' float' : ''}${modal ? ' modal' : ''}`} role={modal ? 'dialog' : 'note'} aria-modal={modal || undefined} aria-label={`Tip: ${tip.title}`}>
+    <aside key={tip.id} className={`tip-card${float ? ' float' : ''}${modal ? ' modal' : ''}`} role={modal ? 'dialog' : 'note'} aria-modal={modal || undefined} aria-label={t('tip.label', { title: tip.title })}>
       <div className="tip-icon"><Icon name={tip.icon} /></div>
       <div className="tip-body">
         <h4>{tip.title}</h4>
         <p>{tip.text}</p>
         <div className="tip-foot">
-          {tips.length > 1 && <small>Tip {number} of {tips.length}</small>}
+          {tips.length > 1 && <small>{t('tip.count', { n: number, total: tips.length })}</small>}
           {/* A modal tip takes focus; a shared dialog hook replaces this in accessibility phase 2. */}
           {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
-          <button className="primary" autoFocus={modal} onClick={() => markTipSeen(tip.id)}><Icon name="check" />Got It!</button>
+          <button className="primary" autoFocus={modal} onClick={() => markTipSeen(tip.id)}><Icon name="check" />{t('tip.gotIt')}</button>
         </div>
       </div>
     </aside>

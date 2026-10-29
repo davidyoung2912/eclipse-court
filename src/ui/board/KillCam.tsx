@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { sizeOf } from '../../engine/rules/board'
 import { KILL_HOLD_MS, KILL_PLAY_MS, KILL_PUSH_MS, KILL_ZOOM, killCamMs, killOrigin, type KillShot } from '../../killCam'
 import { Board } from './Board'
+import { t } from '../../i18n'
 
 const NO_MOVES: never[] = []
 const noop = () => {}
@@ -23,13 +24,13 @@ export function KillCam({ shot, flip, onDone }: { shot: KillShot; flip: boolean;
   return (
     // Escape (a window handler) and the Skip button are the keyboard routes; the click is for pointers.
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <div className="kill-cam" role="dialog" aria-label="Final capture replay" onClick={onDone}
+    <div className="kill-cam" role="dialog" aria-label={t('killcam.label')} onClick={onDone}
       style={{ ['--kill-zoom' as string]: KILL_ZOOM, ['--kill-push' as string]: `${KILL_PUSH_MS}ms`, ['--kill-play' as string]: `${KILL_PLAY_MS}ms`, ['--kill-hold' as string]: `${KILL_HOLD_MS}ms` }}>
       <div className="kill-stage" style={{ transformOrigin: `${origin.x}% ${origin.y}%` }}>
         <Board state={played ? shot.after : shot.before} selected={null} moves={NO_MOVES} onSquare={noop} flip={flip} />
       </div>
       <div className="kill-vignette" />
-      <button className="kill-skip" onClick={onDone}>Skip</button>
+      <button className="kill-skip" onClick={onDone}>{t('killcam.skip')}</button>
     </div>
   )
 }

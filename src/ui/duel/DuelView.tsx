@@ -17,6 +17,7 @@ import { createFx, drawDuel, updateFx } from './duelFx'
 import { DuelBriefing } from './DuelBriefing'
 import { TipCard } from '../tips/TipCard'
 import { useTipsPending } from '../tips/useTipQueue'
+import { t } from '../../i18n'
 
 export interface DuelOptions {
   /** Swap the attack button to the left side of the screen. */
@@ -350,20 +351,20 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const court = (p: Piece) => (p.court === 'solari' ? 'Solari' : 'Umbral')
   const mine = playerSide === 0 ? attacker : defender
   const foe = playerSide === 0 ? defender : attacker
-  const light = luminance > 0 ? `Light +${luminance}` : luminance < 0 ? `Light ${luminance}` : 'Neutral light'
+  const light = luminance > 0 ? t('duel.light', { light: `+${luminance}` }) : luminance < 0 ? t('duel.light', { light: luminance }) : t('duel.neutral')
 
   return (
     <div className={`duel duel-${mine.court}`}>
       <div className="duel-frame">
         <header className="duel-head">
-          <h2>{named(mine)} <span>vs</span> {named(foe)}</h2>
+          <h2>{named(mine)} <span>{t('duel.vs')}</span> {named(foe)}</h2>
           <p>
-            {court(mine)} {ROLE_INFO[mine.role].label} {playerSide === 0 ? 'attacks' : 'defends against'} {court(foe)} {ROLE_INFO[foe.role].label}
-            {' · '}{light}{playerSide === 1 ? ' · hold your ground!' : ''}
+            {t(playerSide === 0 ? 'duel.attacks' : 'duel.defends', { mine: `${court(mine)} ${ROLE_INFO[mine.role].label}`, foe: `${court(foe)} ${ROLE_INFO[foe.role].label}` })}
+            {' · '}{light}{playerSide === 1 ? ` · ${t('duel.holdGround')}` : ''}
           </p>
-          <div className="duel-timer" aria-label="Time left">{Math.ceil(time)}s</div>
+          <div className="duel-timer" aria-label={t('duel.timeLeft')}>{Math.ceil(time)}s</div>
           {!waiting && count >= COUNTDOWN.length && !banner.match(/^(Victory|Defeat|Both|Draw)/) && (
-            <button className="duel-skip" onClick={() => { skipping.current = true; input.current = { ...NO_INPUT }; setHeld(false) }}>Skip</button>
+            <button className="duel-skip" onClick={() => { skipping.current = true; input.current = { ...NO_INPUT }; setHeld(false) }}>{t('duel.skip')}</button>
           )}
         </header>
         <div className="duel-stage" ref={stage} onPointerDown={onStagePointerDown}>
@@ -376,15 +377,15 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           {!waiting && !briefing && count < COUNTDOWN.length && (
             <div key={count} className={`duel-countdown ${attacker.court}`} role="status" aria-label={COUNTDOWN[count]}>{COUNTDOWN[count]}</div>
           )}
-          {desktop && !waiting && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">Click the arena to take control with the mouse</p>}
+          {desktop && !waiting && !locked && count >= COUNTDOWN.length && <p className="duel-mouse-hint prompt">{t('duel.clickArena')}</p>}
         </div>
         {desktop ? (
-          <aside className="duel-info" aria-label="Mouse controls">
-            <h3>Mouse controls</h3>
+          <aside className="duel-info" aria-label={t('duel.mouseControls')}>
+            <h3>{t('duel.mouseControls')}</h3>
             <ul>
-              <li><strong>Move the mouse</strong> to steer; you glide on, then ease to a stop. You always face the foe.</li>
-              <li><strong>Hold left click</strong> to attack.</li>
-              <li><strong>Esc</strong> frees the mouse.</li>
+              <li><strong>{t('duel.mouseMove')}</strong> {t('duel.mouseMoveText')}</li>
+              <li><strong>{t('duel.mouseHold')}</strong> {t('duel.mouseHoldText')}</li>
+              <li><strong>{t('duel.mouseEsc')}</strong> {t('duel.mouseEscText')}</li>
             </ul>
           </aside>
         ) : (
@@ -392,7 +393,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
           <div className={`duel-pad${options.mirror ? ' mirror' : ''}`}>
             <div className="stick-zone" onPointerDown={onStickDown} onPointerMove={onStickMove}
               onPointerUp={onStickUp} onPointerCancel={onStickUp}>
-              {!stick && <span className="stick-idle">Drag to move</span>}
+              {!stick && <span className="stick-idle">{t('duel.drag')}</span>}
               {stick && (
                 <>
                   <div className="stick-base" style={{ left: stick.ox, top: stick.oy }} />
@@ -407,7 +408,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
               onPointerCancel={() => setAttack(false)}
             >
               <Icon name="swords" />
-              Attack
+              {t('duel.attack')}
             </button>
           </div>
         </div>

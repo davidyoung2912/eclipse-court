@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'reac
 import { markTipSeen, subscribeTips, tipsSnapshot } from '../../tips'
 import { Icon } from '../menus/icons'
 import { COACH } from './coachData'
+import { t } from '../../i18n'
 
 interface Props {
   /** Holds the callouts back, such as during a banner, a duel or a dialog. */
@@ -46,16 +47,16 @@ export function CoachMarks({ hidden = false, onActive }: Props) {
   const done = () => COACH.forEach((s) => markTipSeen(s.id))
   const left = COACH.filter((s) => !seen.has(s.id) && !skipped.has(s.id)).length
   return (
-    <div className="coach" role="note" aria-label={`Coach-mark: ${step.title}`}>
+    <div className="coach" role="note" aria-label={t('coach.label', { title: step.title })}>
       <div className="coach-ring" style={spot} />
       <aside className="coach-bubble" style={below ? { top: spot.top + spot.height + 12 } : { bottom: window.innerHeight - spot.top + 12 }}>
         <h4>{step.title}</h4>
         <p>{step.text}</p>
         <div className="tip-foot">
-          {left > 1 && <button className="coach-skip" onClick={done}>Skip all</button>}
+          {left > 1 && <button className="coach-skip" onClick={done}>{t('coach.skipAll')}</button>}
           {/* The coach card takes focus; a shared dialog hook replaces this in accessibility phase 2. */}
           {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
-          <button className="primary" autoFocus onClick={() => markTipSeen(step.id)}><Icon name="check" />{left > 1 ? 'Next' : 'Got It!'}</button>
+          <button className="primary" autoFocus onClick={() => markTipSeen(step.id)}><Icon name="check" />{left > 1 ? t('coach.next') : t('tip.gotIt')}</button>
         </div>
       </aside>
     </div>
