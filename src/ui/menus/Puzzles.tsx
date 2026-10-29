@@ -1,5 +1,8 @@
 import { dailyPuzzleIndex, PUZZLE_TIERS, PUZZLES, puzzlesIn } from '../../engine/data/puzzles'
 import type { Progress } from '../../progress'
+import { puzzleGoal } from '../../engine/data/pack'
+import { GOAL_INFO } from '../../engine/data/editor'
+import type { KeptPack } from '../../packs'
 import { loadEndless } from '../../endless'
 import { rushBest } from '../../rush'
 import { Icon } from './icons'
@@ -15,6 +18,10 @@ interface Props {
   report?: string[]
   /** A puzzle (or Rush) left unfinished. */
   resume?: { name: string; rush: boolean; onResume: () => void }
+  /** Packs kept from the editor or a link. */
+  packs: KeptPack[]
+  onPlayPack: (id: string, index: number) => void
+  onDeletePack: (id: string) => void
   onPlay: (index: number, daily: boolean) => void
   onRush: () => void
   onEndless: () => void
@@ -22,7 +29,7 @@ interface Props {
   onBack: () => void
 }
 
-export function Puzzles({ progress, report, resume, onPlay, onRush, onEndless, onReset, onBack }: Props) {
+export function Puzzles({ progress, report, resume, packs, onPlayPack, onDeletePack, onPlay, onRush, onEndless, onReset, onBack }: Props) {
   const daily = dailyPuzzleIndex()
   const isSolved = (id: string) => progress.puzzles.includes(id)
   const solved = PUZZLES.filter((p) => isSolved(p.id)).length
@@ -78,6 +85,28 @@ export function Puzzles({ progress, report, resume, onPlay, onRush, onEndless, o
           </details>
         )
       })}
+      <h3>{t('puzzles.packs')}</h3>
+      <p className="tagline">{packs.length ? t('puzzles.packsText') : t('puzzles.packPaste')}</p>
+      {packs.map((pack) => (
+        <details key={pack.id} className="tier-fold">
+          <summary><h3>{pack.name} ({pack.solved.length}/{pack.puzzles.length})</h3></summary>
+          <ol className="campaign">
+            {pack.puzzles.map((c, i) => {
+              const { kind, limit } = puzzleGoal(c)
+              const done = pack.solved.includes(i)
+              return (
+                <li key={i}>
+                  <button className={`choice${done ? ' won' : ''}`} onClick={() => onPlayPack(pack.id, i)}>
+                    <strong><Icon name={done ? 'check' : 'puzzle'} />{i + 1}. {GOAL_INFO[kind].name} <span className="pill">{t('puzzles.packLimit', { count: limit })}</span></strong>
+                    <span>{GOAL_INFO[kind].text}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+          <ResetButton label={t('puzzles.packDelete')} warning={t('puzzles.packDeleteWarning')} onReset={() => onDeletePack(pack.id)} />
+        </details>
+      ))}
       <div className="menu-buttons stacked">
         <ResetButton label={t('puzzles.reset')} disabled={solved === 0} warning={t('puzzles.resetWarning')} onReset={onReset} />
         <BackButton onClick={onBack} />

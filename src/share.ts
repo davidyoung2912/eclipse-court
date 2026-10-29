@@ -1,6 +1,7 @@
 import { decodeChallenge, encodeChallenge, type Challenge } from './engine/challenge'
 import { decodeGhost, encodeGhost, type Ghost } from './engine/ghost'
 import type { GameRecord } from './engine/log'
+import { decodePack, encodePack, type Pack } from './engine/data/pack'
 import { boardById, grandBoardById } from './engine/data/boards'
 import { SETUP_INFO, type SetupMode } from './engine/data/setups'
 import { modeOf, MODE_INFO, objectiveGoal } from './engine/rules/events'
@@ -12,6 +13,8 @@ export type Shared =
   | { kind: 'challenge'; challenge: Challenge }
   /** A friend's daily or weekly result to beat on the same match. */
   | { kind: 'ghost'; ghost: Ghost }
+  /** Several editor puzzles to keep on the Puzzles screen. */
+  | { kind: 'pack'; pack: Pack }
   | { kind: 'replay'; record: GameRecord }
   /** A game played by link: the same record as a replay, but meant to be continued. */
   | { kind: 'turn'; record: GameRecord }
@@ -20,13 +23,15 @@ export type Shared =
 
 const CODE = /^[A-Za-z0-9_-]+$/
 
-/** A link to this page that opens `code` as a challenge (`c`), a replay (`r`), a spectated game (`w`), a ghost result (`x`) or a turn of a game by link (`g`). */
-export function shareLink(kind: 'c' | 'r' | 'w' | 'g' | 'x', code: string): string {
+/** A link to this page that opens `code` as a challenge (`c`), a replay (`r`), a spectated game (`w`), a ghost result (`x`), a puzzle pack (`p`) or a turn of a game by link (`g`). */
+export function shareLink(kind: 'c' | 'r' | 'w' | 'g' | 'x' | 'p', code: string): string {
   const { origin, pathname } = window.location
   return `${origin}${pathname}#${kind}=${code}`
 }
 
 export const challengeLink = (challenge: Challenge) => shareLink('c', encodeChallenge(challenge))
+
+export const packLink = (pack: Pack) => shareLink('p', encodePack(pack))
 
 export const ghostLink = (ghost: Ghost) => shareLink('x', encodeGhost(ghost))
 
@@ -38,25 +43,30 @@ export const turnLink = (record: GameRecord) => shareLink('g', encodeRecord(reco
 
 /**
  * Reads a whole link, a `#c=…` fragment, a `c=…` pair or a bare code. A bare code is tried as a
- * replay, then a challenge, then a ghost. Returns null for anything that is not a valid code of this version.
+ * replay, then a challenge, then a ghost, then a pack. Returns null for anything that is not a valid code of this version.
  */
 export function parseShared(text: string): Shared | null {
   const trimmed = text.trim()
   const hash = trimmed.includes('#') ? trimmed.slice(trimmed.indexOf('#') + 1) : trimmed
-  const pair = /^([crgwx])=(.*)$/.exec(hash)
+  const pair = /^([crgwxp])=(.*)$/.exec(hash)
   const code = pair ? pair[2] : hash
   if (!CODE.test(code)) return null
-  if (pair?.[1] !== 'c' && pair?.[1] !== 'x') {
+  const kind = pair?.[1]
+  if (kind !== 'c' && kind !== 'x' && kind !== 'p') {
     const record = decodeRecord(code)
     if (record) return { kind: pair?.[1] === 'g' ? 'turn' : pair?.[1] === 'w' ? 'watch' : 'replay', record }
   }
-  if (pair?.[1] !== 'r' && pair?.[1] !== 'g' && pair?.[1] !== 'w' && pair?.[1] !== 'x') {
+  if (kind !== 'r' && kind !== 'g' && kind !== 'w' && kind !== 'x' && kind !== 'p') {
     const challenge = decodeChallenge(code)
     if (challenge) return { kind: 'challenge', challenge }
   }
-  if (!pair || pair[1] === 'x') {
+  if (!pair || kind === 'x') {
     const ghost = decodeGhost(code)
     if (ghost) return { kind: 'ghost', ghost }
+  }
+  if (!pair || kind === 'p') {
+    const pack = decodePack(code)
+    if (pack) return { kind: 'pack', pack }
   }
   return null
 }

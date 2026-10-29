@@ -8,6 +8,9 @@ import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
 import { PasteCode } from './ui/menus/PasteCode'
 import { Editor } from './ui/menus/Editor'
+import { PackImport } from './ui/menus/PackImport'
+import { deletePack, keepPack, markPackSolved, packSnapshot } from './packs'
+import type { Pack } from './engine/data/pack'
 import { designFromConfig, isCustom, type Design } from './engine/data/editor'
 import { editorDraft, saveDraft } from './editor'
 import { unlockAudio } from './audio/synth'
@@ -144,6 +147,7 @@ type Screen =
   /** The link to send for a game played by link. */
   | { name: 'mailsend'; id: string }
   | { name: 'editor' }
+  | { name: 'pack'; pack: Pack }
   /** Online play: the menu, the skirmish setup that hosts, and the lobby (a host brings its match, a guest may bring an offer code). */
   | { name: 'online' }
   | { name: 'lobby'; challenge?: ChallengeCode; offer?: string; /** A dropped game to pick up again, with the game so far. */ resume?: { session: Session; record: GameRecord } }
@@ -173,6 +177,8 @@ type Screen =
     arc?: { persona: PersonaId; step: number }
     /** A match of the tournament in progress (hot-seat or the Persona Cup); the bracket is kept apart from the saved game. */
     tourney?: boolean
+    /** A puzzle of a kept pack, by pack id and index; played as an editor board, with no record kept but the pack's own progress. */
+    pack?: { id: string; index: number }
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
     /** A try-out from a position in a reviewed game: nothing is recorded and Back returns to the menu. */
@@ -236,6 +242,7 @@ function setClassicNext(on: boolean) {
 const sharedScreen = (shared: Shared): Screen =>
   shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge }
     : shared.kind === 'ghost' ? { name: 'ghost', ghost: shared.ghost }
+    : shared.kind === 'pack' ? { name: 'pack', pack: shared.pack }
     : shared.kind === 'turn' ? { name: 'mail', incoming: shared.record }
     : shared.kind === 'watch' ? { name: 'replay', record: shared.record, from: 'menu', watch: true }
     : { name: 'replay', record: shared.record, from: 'menu' }
@@ -243,7 +250,7 @@ const sharedScreen = (shared: Shared): Screen =>
 /** Reads a `#c=`, `#r=` or `#g=` link out of the address, then removes it so a reload does not reopen it. */
 function takeLinkScreen(): Screen | null {
   const { hash, pathname, search } = window.location
-  if (!/^#[crgj]=/.test(hash)) return null
+  if (!/^#[crgjp]=/.test(hash)) return null
   history.replaceState(null, '', pathname + search)
   if (hash.startsWith('#j=')) return { name: 'lobby', offer: hash.slice(3) }
   const shared = parseShared(hash)
@@ -426,6 +433,12 @@ export default function App() {
     const left = loadPuzzle(PUZZLES.length)
     return (
       <Puzzles progress={progress} report={report}
+        packs={packSnapshot().packs}
+        onPlayPack={(id, index) => {
+          const puzzle = packSnapshot().packs.find((p) => p.id === id)?.puzzles[index]
+          if (puzzle) setScreen({ name: 'game', human: 'solari', difficulty: 'normal', record: { initial: newGame(puzzle.config), actions: [] }, campaignIndex: null, pack: { id, index } })
+        }}
+        onDeletePack={(id) => { deletePack(id); setReport([]); setScreen({ name: 'puzzles' }) }}
         resume={left ? { name: PUZZLES[left.index].name, rush: !!left.rush, onResume: () => {
           setReport([])
           setScreen({ name: 'game', human: 'solari', difficulty: PUZZLES[left.index].difficulty, record: left.record, campaignIndex: null, puzzle: { index: left.index, daily: left.daily, rush: left.rush } })
@@ -588,6 +601,9 @@ export default function App() {
         onTest={(challenge) => setScreen({ name: 'game', human: challenge.side, difficulty: 'normal', record: { initial: newGame(challenge.config), actions: [] }, campaignIndex: null, editor: true })} />
     )
 
+  if (screen.name === 'pack')
+    return <PackImport pack={screen.pack} onKeep={keepPack} onPuzzles={() => { setReport([]); setScreen({ name: 'puzzles' }) }} onBack={() => setScreen({ name: 'menu' })} />
+
   if (screen.name === 'challenge')
     return (
       <Challenge challenge={screen.challenge} onBack={() => setScreen({ name: 'menu' })}
@@ -721,7 +737,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc, ghost, tourney } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc, ghost, tourney, pack } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -927,6 +943,7 @@ export default function App() {
     }
     const context: ComponentProps<typeof Game>['context'] =
       mail ? { label: 'By link', kind: 'skirmish' }
+      : pack ? { label: `Pack: ${packSnapshot().packs.find((p) => p.id === pack.id)?.name ?? 'puzzle'}`, kind: 'skirmish' }
       : story ? { label: `Story: ${chapterById(story)?.title ?? 'battle'}`, kind: 'story' }
       : gauntlet ? { label: `Gauntlet stage ${run?.stage ?? ''}`.trim(), kind: 'gauntlet' }
       : coop !== undefined ? { label: `Co-op: ${COOP_SCENARIOS[coop].name}`, kind: 'scenario', coop: true }
@@ -1008,6 +1025,12 @@ export default function App() {
             if (winner) { const next = recordVersus(progress, 'online', winner === 'draw' ? null : winner === human); setProgress(next); saveProgress(next) }
             online.close()
             return setScreen({ name: 'online' })
+          }
+          if (pack) {
+            const solved = winner === human
+            if (solved) markPackSolved(pack.id, pack.index)
+            setReport([t(solved ? 'puzzles.packSolved' : 'puzzles.packFailed')])
+            return setScreen({ name: 'puzzles' })
           }
           if (custom && !hotSeat) return setScreen(editor ? { name: 'editor' } : { name: 'menu' })
           if (gauntlet) return finishFight(winner, finished)

@@ -79,6 +79,8 @@ const DATA = {
       text: 'The first three goals make an ordinary match, and you choose which court the recipient plays. Survive, Escort and Hold a square are puzzles for Solari: turn off Mirror the armies to give Umbral a different force, and use the Goal square tool to mark where the Solarch must go or stand. Each side needs exactly one Leader, and any problem is listed above the buttons.' },
     { id: 'editor-share', icon: 'chain', title: 'Test and Share',
       text: 'Test It plays your design against the AI and counts for nothing, so you can try it freely. Copy Challenge Link sends the board to a friend, and the Code box shows the same thing as text. A board that arrives as a link can be opened in the editor and changed.' },
+    { id: 'editor-pack', icon: 'puzzle', title: 'Puzzle Packs',
+      text: 'With a puzzle goal chosen, Add This Puzzle to the Pack collects boards, up to twelve. Name the pack to copy one link for all of them, or keep it on your own Puzzles screen. Whoever opens the link can add the pack to their Puzzles screen. Packs pay nothing and count for no record.' },
   ],
   ladder: [
     { id: 'ladder-intro', icon: 'trophy', title: 'The Ranked Ladder',

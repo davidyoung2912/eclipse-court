@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { PieceArt } from '../../art/PieceArt'
 import { encodeChallenge } from '../../engine/challenge'
+import { MAX_PACK, MAX_PACK_NAME, cleanPackName, puzzleGoal } from '../../engine/data/pack'
+import { addToDraft, clearDraft, keepPack, packSnapshot, removeFromDraft } from '../../packs'
+import { t } from '../../i18n'
 import {
   applyTool, blankDesign, clearBoard, designChallenge, EDITOR_GOALS, GOAL_INFO, isPuzzleGoal, problems, resize, ROLES, ROUNDS_MAX, setMirror,
   sideOf, TURNS_MAX, umbralPieces, type Design, type EditorGoal, type Tool,
@@ -10,7 +13,7 @@ import { cellAt, CELL_EFFECTS, CELL_INFO } from '../../engine/rules/cells'
 import { isBeacon, isBlocked, samePos } from '../../engine/rules/board'
 import type { Challenge } from '../../engine/challenge'
 import type { BoardSize, Court, Pos } from '../../engine/rules/types'
-import { challengeLink } from '../../share'
+import { challengeLink, packLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
@@ -53,6 +56,11 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
   const challenge = (seed: number) => designChallenge(design, seed)
   const tools = TOOLS.filter((t) => t.tool.kind !== 'target' || needsTarget)
   const code = issues.length ? '' : encodeChallenge(challenge(1)!)
+  const [draft, setDraft] = useState(() => packSnapshot().draft)
+  const [packName, setPackName] = useState('')
+  const [kept, setKept] = useState(false)
+  const name = cleanPackName(packName)
+  const edit = (change: () => void) => { change(); setDraft(packSnapshot().draft); setKept(false) }
 
   return (
     <main className="app menu editor battle-menu">
@@ -164,6 +172,36 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
         <button onClick={() => onChange(clearBoard(design))}><Icon name="close" />Clear the Board</button>
         <BackButton onClick={onBack} />
       </div>
+      <h3>{t('editor.pack')}</h3>
+      <p className="setup-hint">{t('editor.packText', { max: MAX_PACK })}</p>
+      <div className="menu-buttons stacked">
+        <button disabled={issues.length > 0 || !puzzle || draft.length >= MAX_PACK} onClick={() => { const c = challenge(Date.now() % 1000000007); if (c) edit(() => addToDraft(c)) }}>
+          <Icon name="puzzle" />{draft.length >= MAX_PACK ? t('editor.packFull') : t('editor.packAdd')}
+        </button>
+      </div>
+      {draft.length > 0 && (
+        <>
+          <p className="setup-hint">{t('editor.packCount', { count: draft.length })}</p>
+          <ol className="setup-card">
+            {draft.map((c, i) => {
+              const { kind, limit } = puzzleGoal(c)
+              return (
+                <li key={i}>
+                  {t('pack.goalLine', { goal: GOAL_INFO[kind].name, limit })}{' '}
+                  <button type="button" onClick={() => edit(() => removeFromDraft(i))}>{t('editor.packRemove')}</button>
+                </li>
+              )
+            })}
+          </ol>
+          <label className="ed-field"><span>{t('editor.packName')}</span>
+            <input type="text" maxLength={MAX_PACK_NAME} value={packName} onChange={(e) => { setPackName(e.target.value); setKept(false) }} /></label>
+          <div className="menu-buttons stacked">
+            {name && <ShareButton title="Eclipse Court puzzle pack" label={t('editor.packLink')} link={() => packLink({ name, puzzles: draft })} />}
+            <button disabled={!name} onClick={() => setKept(keepPack({ name, puzzles: draft }))}><Icon name="check" />{kept ? t('editor.packKept') : t('editor.packKeep')}</button>
+            <button onClick={() => edit(clearDraft)}><Icon name="close" />{t('editor.packClear')}</button>
+          </div>
+        </>
+      )}
       {code && (
         <>
           <h3>Code</h3>
