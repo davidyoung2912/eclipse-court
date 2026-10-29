@@ -1,6 +1,6 @@
 # Accessibility plan: ADA / WCAG 2.2 AA
 
-Status: phases 2 and 3 done (see the notes at the end); phases 4 and 5 follow. Written 2026-10-28 from a read-only code survey (no audits were run); every gap below is "likely", to be confirmed when its phase starts.
+Status: all phases done except item 12, which is a separate project (see the notes at the end). Written 2026-10-28 from a read-only code survey (no audits were run); every gap below is "likely", to be confirmed when its phase starts.
 
 ## Background
 
@@ -66,3 +66,7 @@ Suggested order: 1, 2, 4, 3, 5. Phases 1 and 2 remove the likeliest findings.
 Phase 2 done: `src/hooks/useDialog.ts` traps Tab, closes on Escape when given a close handler, moves focus in and returns it; used by `AttackConfirm` (Escape withdraws), `DuelResult`, `GrowthPrompt`, `GameOver`, `SoundPrompt` (Escape answers No), the modal `TipCard` and the new `PuzzleIntro`. Dialogs stack, so only the innermost answers keys. The Editor board takes focus, arrows move a cursor and Enter or Space paints. The story reader's stage is no longer a fake button, and its Enter and Space keys no longer fire when a button has focus. The board's clickable cells were already reachable through its grid cursor. Not done: the Collection showcase has no dialog role yet.
 
 Phase 3 done: a **No turn clocks** setting (`noClock`) lifts a Blitz clock for the player; duels stay real-time, which is the real-time exception. The move log (`role="log"`) already narrated plays from `src/narrate.ts`; a polite status now also announces the round, the court to move, the Eclipse and the result. Sound: audio starts off behind the sound prompt, and every combat result, clock warning and win also shows on screen (result dialog, banner, clock ring). Flashing: no infinite animation runs faster than about 1.1 cycles a second, and `reduceFlashes` (also on with Reduce motion) removes the white flashes and pulsing warnings.
+
+Phase 4 done: `src/contrast.ts` holds the WCAG maths and each theme's pairs (page text 4.5:1, Solari and Umbral text on the page 4.5:1, Solari on the Umbral square 3:1); `src/contrast.test.ts` fails the suite if any theme, paid ones included, drops below, and `npx vite-node scripts/contrast.ts` prints the table. The Twilight and Ember Umbral violets were lightened to pass. Not checked: dim text set by `opacity` in the stylesheets, and hard-coded colours in the art and canvas drawing.
+
+Phase 5 done: an Accessibility section in Settings and the README lists the supported features and known gaps, and points to the repository's issue tracker as the contact path. Replace that link with a monitored email if one exists (`ISSUES_URL` in `src/ui/menus/Settings.tsx`). Item 12 (full non-visual play) is not started.

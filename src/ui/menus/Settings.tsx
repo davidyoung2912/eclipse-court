@@ -14,6 +14,9 @@ import { downloadSave, importSave } from '../../backup'
 import { LOCALES, t } from '../../i18n'
 import { haptic } from '../../haptics'
 
+/** Where to report an accessibility problem. */
+const ISSUES_URL = 'https://github.com/davidyoung2912/eclipse-court/issues'
+
 const SPEED_ICONS: Record<(typeof DUEL_SPEEDS)[number], IconName> = { normal: 'play', fast: 'onward', instant: 'bolt' }
 const BANTER_ICONS: Record<(typeof BANTER_LEVELS)[number], IconName> = { full: 'speakerOn', quiet: 'moon', off: 'speakerOff' }
 const HINT_ICONS: Record<(typeof HINT_LIMITS)[number], IconName> = { unlimited: 'bulb', three: 'checklist', off: 'close' }
@@ -141,6 +144,15 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
         <button onClick={() => { resetTips(); resetOnboarding(); onShowGuidance(); setNote(t('settings.tipsBack')) }}><Icon name="bulb" />{t('settings.showTips')}</button>
         <button className="two-line" onClick={() => { resetCoach(); setNote(t('settings.coachBack')) }}><Icon name="target" />{t('settings.showCoach')}</button>
       </div>
+      <details className="tier-fold">
+        <summary><h3>{t('a11y.title')}</h3></summary>
+        <p className="setup-hint">{t('a11y.intro')}</p>
+        <ul className="setup-card">
+          {(['motion', 'large', 'marks', 'keyboard', 'clock', 'sound'] as const).map((k) => <li key={k}>{t(`a11y.feature.${k}`)}</li>)}
+        </ul>
+        <p className="setup-hint">{t('a11y.gaps')}</p>
+        <p className="setup-hint">{t('a11y.contact')} <a href={ISSUES_URL} target="_blank" rel="noreferrer">{ISSUES_URL}</a></p>
+      </details>
       <h3>{t('settings.save')}</h3>
       <p className="setup-hint">{t('settings.saveHint')}</p>
       <div className="menu-buttons">
