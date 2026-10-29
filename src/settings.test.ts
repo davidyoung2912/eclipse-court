@@ -5,7 +5,7 @@ describe('settings', () => {
   it('falls back to the defaults for damaged data', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings({ theme: 'nope', reduceMotion: 'yes', marks: 1 })).toEqual(DEFAULT_SETTINGS)
-    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, reduceFlashes: false, buttonSheen: false, marks: true, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full', language: 'en' })
+    expect(parseSettings({ theme: 'frost', reduceMotion: true, marks: true })).toEqual({ theme: 'frost', reduceMotion: true, reduceFlashes: false, noClock: false, buttonSheen: false, marks: true, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full', language: 'en' })
   })
 
   it('keeps a known language and ignores an unknown one', () => {

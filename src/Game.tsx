@@ -221,7 +221,8 @@ export function Game({ controllers, opening, record, session, context, coach, fi
   /** Casual games are skirmishes and hot-seat; Undo stays hidden elsewhere under Casual games only. */
   const takeBackOk = takeBacks === 'always' || (takeBacks === 'casual' && (hotSeat || context?.kind === 'skirmish'))
 
-  const clock = state.config.turnClock
+  /** The Untimed setting lifts a game's turn clock for this player. */
+  const clock = getSettings().noClock ? undefined : state.config.turnClock
   /** The clock stops for duels, dialogs, the pass screen and the AI's turn. */
   const clockRunning = !!clock && myTurn && !ended && !pending && !banner && !asking && !settled
   const turnClock = useTurnClock({
@@ -649,6 +650,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     <main className={`app timed game-${human}${eclipseFallen ? ' eclipsed' : ''}${leaderDanger ? ' leader-danger' : ''}`} style={{ '--dusk': dusk, '--card-rows': 4 + (state.config.cells?.length ? 1 : 0) + (state.config.passives ? 1 : 0) + (state.config.growth ? 1 : 0) } as CSSProperties}>
       <Dial state={state} chip={chipOn} face={persona && !even && getSettings().banter !== 'off' ? persona.id : undefined} mood={ended ? (state.winner === foe ? 'pleased' : state.winner === human ? 'stung' : 'calm') : mood?.mood} />
       <ol className="sr-only" role="log" aria-label={t('game.moves')} aria-relevant="additions">{log.map((line, i) => <li key={history.length - log.length + i}>{line}</li>)}</ol>
+      <p className="sr-only" role="status" aria-live="polite">{ended ? result : t(state.eclipse ? 'game.announceEclipse' : 'game.announce', { round: state.round, court: COURT_NAME[state.turn] })}</p>
       <p className="objective" aria-label={t('game.objective')}>{objective}</p>
       {aiWhy && myTurn && !ended && history.length > aiWhy.at && <p className="ai-why" role="status">{aiWhy.text}</p>}
       <p className="sr-only" role="status" aria-live="polite">{persona && bubble && !even && !ended ? t('game.says', { name: persona.name, line: bubble }) : ''}</p>

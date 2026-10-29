@@ -1,6 +1,6 @@
 # Accessibility plan: ADA / WCAG 2.2 AA
 
-Status: **deferred, all phases, until the user says to start.** Do not work on any phase yet. Not started. Written 2026-10-28 from a read-only code survey (no audits were run); every gap below is "likely", to be confirmed when its phase starts.
+Status: phases 2 and 3 done (see the notes at the end); phases 4 and 5 follow. Written 2026-10-28 from a read-only code survey (no audits were run); every gap below is "likely", to be confirmed when its phase starts.
 
 ## Background
 
@@ -60,3 +60,9 @@ Status: **deferred, all phases, until the user says to start.** Do not work on a
 | 5 (item 12) | weeks; separate project |
 
 Suggested order: 1, 2, 4, 3, 5. Phases 1 and 2 remove the likeliest findings.
+
+## Done notes
+
+Phase 2 done: `src/hooks/useDialog.ts` traps Tab, closes on Escape when given a close handler, moves focus in and returns it; used by `AttackConfirm` (Escape withdraws), `DuelResult`, `GrowthPrompt`, `GameOver`, `SoundPrompt` (Escape answers No), the modal `TipCard` and the new `PuzzleIntro`. Dialogs stack, so only the innermost answers keys. The Editor board takes focus, arrows move a cursor and Enter or Space paints. The story reader's stage is no longer a fake button, and its Enter and Space keys no longer fire when a button has focus. The board's clickable cells were already reachable through its grid cursor. Not done: the Collection showcase has no dialog role yet.
+
+Phase 3 done: a **No turn clocks** setting (`noClock`) lifts a Blitz clock for the player; duels stay real-time, which is the real-time exception. The move log (`role="log"`) already narrated plays from `src/narrate.ts`; a polite status now also announces the round, the court to move, the Eclipse and the result. Sound: audio starts off behind the sound prompt, and every combat result, clock warning and win also shows on screen (result dialog, banner, clock ring). Flashing: no infinite animation runs faster than about 1.1 cycles a second, and `reduceFlashes` (also on with Reduce motion) removes the white flashes and pulsing warnings.

@@ -80,6 +80,8 @@ export interface Settings {
   reduceMotion: boolean
   /** Tone down flashes: no white hit flash, steady instead of pulsing warnings, no sudden brightening. */
   reduceFlashes: boolean
+  /** Turn clocks never run out: a Blitz game is played without its time limit (a duel is real-time whatever this is). */
+  noClock: boolean
   /** A glimmer sweeps across a button when the mouse moves onto it. */
   buttonSheen: boolean
   /** Write the light level (+ or −) on every square, so colour is never the only clue. */
@@ -144,7 +146,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, reduceFlashes: false, buttonSheen: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full', language: 'en' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, reduceFlashes: false, noClock: false, buttonSheen: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full', language: 'en' }
 
 /** Flashes are toned down when asked for, and whenever motion is reduced. */
 export const flashesReduced = (s: Pick<Settings, 'reduceMotion' | 'reduceFlashes'> = getSettings()) => s.reduceMotion || s.reduceFlashes
@@ -159,6 +161,7 @@ export function parseSettings(raw: unknown): Settings {
     theme: typeof o.theme === 'string' && THEMES.some((t) => t.id === o.theme) ? o.theme : DEFAULT_SETTINGS.theme,
     reduceMotion: o.reduceMotion === true,
     reduceFlashes: o.reduceFlashes === true,
+    noClock: o.noClock === true,
     buttonSheen: o.buttonSheen === true,
     marks: o.marks === true,
     largeUi: o.largeUi === true,
