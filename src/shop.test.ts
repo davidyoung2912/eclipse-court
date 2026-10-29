@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { CAPTURE_FX, COSMETICS, cosmeticKey, cosmeticsOf, defaultOf, KINDS, VOICES } from './engine/data/cosmetics'
 import { THEMES } from './settings'
-import { buy, earnShards, equip, equippedId, owns, parseShop, shardsForGame, shopSnapshot, type Earning } from './shop'
+import { buy, earnShards, grantEndingFrame, equip, equippedId, owns, parseShop, shardsForGame, shopSnapshot, type Earning } from './shop'
 
 const win: Earning = { won: true, draw: false, difficulty: 'normal', firstClear: false, campaign: false, scenario: false, dailyScored: false, achievements: 0 }
 
 describe('cosmetics catalog', () => {
   it('has unique ids per kind and a free default for each', () => {
     expect(new Set(COSMETICS.map(cosmeticKey)).size).toBe(COSMETICS.length)
-    for (const kind of KINDS.filter((k) => k !== 'theme')) expect(cosmeticsOf(kind).filter((c) => c.cost === 0 && !c.goals && !c.arc)).toHaveLength(1)
+    for (const kind of KINDS.filter((k) => k !== 'theme')) expect(cosmeticsOf(kind).filter((c) => c.cost === 0 && !c.goals && !c.arc && !c.ending)).toHaveLength(1)
     expect(defaultOf('sound')).toBe('classic')
   })
 
@@ -61,5 +61,18 @@ describe('shardsForGame', () => {
     expect(shardsForGame({ ...win, won: false })).toBeGreaterThan(0)
     expect(shardsForGame({ ...win, achievements: 2 })).toBe(shardsForGame(win) + 20)
     expect(shardsForGame({ ...win, dailyScored: true })).toBeGreaterThan(shardsForGame(win))
+  })
+})
+
+describe('ending frames', () => {
+  it('are earned by an epilogue, never bought, and granted once', () => {
+    const frame = COSMETICS.find((c) => c.ending === 'free')!
+    expect(owns(frame)).toBe(false)
+    earnShards(5000)
+    expect(buy(frame)).toBe(false)
+    expect(grantEndingFrame('free')).toBe(true)
+    expect(owns(frame)).toBe(true)
+    expect(grantEndingFrame('free')).toBe(false)
+    expect(parseShop(JSON.parse(JSON.stringify(shopSnapshot()))).owned).toContain(cosmeticKey(frame))
   })
 })

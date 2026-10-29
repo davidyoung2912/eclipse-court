@@ -95,7 +95,7 @@ export function Collection({ onBack }: Props) {
                       {c.name}
                     </strong>
                     <span>{c.text}</span>
-                    <span className="cost">{on ? t('collection.equipped') : have ? t(kind === 'theme' || kind === 'sound' ? 'collection.ownedUse' : 'collection.ownedEquip') : c.arc ? t('collection.arcOnly') : t('collection.cost', { cost: c.cost }) + (shop.shards < c.cost ? t('collection.short', { count: c.cost - shop.shards }) : '')}</span>
+                    <span className="cost">{on ? t('collection.equipped') : have ? t(kind === 'theme' || kind === 'sound' ? 'collection.ownedUse' : 'collection.ownedEquip') : c.arc ? t('collection.arcOnly') : c.ending ? t('collection.endingOnly') : t('collection.cost', { cost: c.cost }) + (shop.shards < c.cost ? t('collection.short', { count: c.cost - shop.shards }) : '')}</span>
                   </button>
                   {have && canPrestige(c) && (
                     <button className="prestige-btn" disabled={tier >= MAX_PRESTIGE || shop.shards < nextCost} aria-label={t('sinks.prestigeOf', { name: c.name })}

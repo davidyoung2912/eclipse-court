@@ -49,7 +49,7 @@ import { settleGame } from './settleGame'
 import { claimFlight, shardsIn } from './rewardFx'
 import { consumeFreeze, payReroll, sinksSnapshot } from './sinks'
 import { recordQuestEvent } from './quests'
-import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
+import { earnShards, grantEndingFrame, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
 import { recordRoleDuels } from './roleGoals'
 import { rememberCourt, masterySnapshot } from './mastery'
 import { Collection } from './ui/menus/Collection'
@@ -73,7 +73,7 @@ import { Story } from './ui/menus/Story'
 import { StoryReader } from './ui/story/StoryReader'
 import { afterVictory, battleCourt, bondById, chapterById, scenarioOf, storyBattleGame, type EndingId } from './engine/data/story'
 import { StoryEnding } from './ui/story/StoryEnding'
-import { markBondRead, markChapterRead, recordEnding, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
+import { markBondRead, markChapterRead, markEpilogueRead, recordEnding, recordStoryLoss, recordStoryWin, storySnapshot, visibleBeats } from './story'
 import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
@@ -111,6 +111,7 @@ type Screen =
   /** The choice that ends the story, and the epilogue read once it is made. */
   | { name: 'ending'; id: string }
   | { name: 'epilogue'; id: string; ending: EndingId }
+  | { name: 'afterword'; id: string; ending: EndingId }
   | { name: 'daily' }
   | { name: 'weekly' }
   | { name: 'ladder' }
@@ -336,7 +337,7 @@ export default function App() {
 
   if (screen.name === 'story')
     return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onEnding={(id) => setScreen({ name: 'ending', id })}
-      onBond={(id) => setScreen({ name: 'bond', id })} onBack={() => setScreen({ name: 'menu' })} />
+      onBond={(id) => setScreen({ name: 'bond', id })} onAfterword={(id, ending) => setScreen({ name: 'afterword', id, ending })} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'bond') {
     const bond = bondById(screen.id)
@@ -393,6 +394,16 @@ export default function App() {
     return (
       <StoryReader key={`${chapter.id}-${option.id}`} chapter={chapter} beats={visibleBeats(option.beats, storySnapshot())}
         onBack={() => setScreen({ name: 'story' })} onDone={() => setScreen({ name: 'story' })} />
+    )
+  }
+
+  if (screen.name === 'afterword') {
+    const chapter = chapterById(screen.id)
+    const option = chapter?.ending?.options.find((o) => o.id === screen.ending)
+    if (!chapter || !option || !storySnapshot().endings.has(option.id)) return <Story onOpen={(id) => setScreen({ name: 'chapter', id })} onBack={() => setScreen({ name: 'menu' })} />
+    return (
+      <StoryReader key={`${chapter.id}-${option.id}-after`} chapter={{ ...chapter, title: option.epilogue.title }} beats={visibleBeats(option.epilogue.beats, storySnapshot())}
+        onBack={() => setScreen({ name: 'story' })} onDone={() => { markEpilogueRead(option.id); grantEndingFrame(option.id); setScreen({ name: 'story' }) }} />
     )
   }
 

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
-import { CHAPTERS, CHARACTERS, actLabel } from '../../engine/data/story'
-import { ACHIEVEMENT_GROUPS, achievements, availableBonds, bondRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
+import { CHAPTERS, CHARACTERS, actLabel, type EndingId } from '../../engine/data/story'
+import { ACHIEVEMENT_GROUPS, achievements, availableBonds, availableEpilogues, bondRead, epilogueRead, characterState, chapterUnlocked, endingChapter, metCharacters, resetStory, storySnapshot, subscribeStory } from '../../story'
 import { Portrait } from '../../art/Portrait'
 import { characterPortrait } from '../../art/portraits'
 import { Icon } from './icons'
@@ -15,15 +15,18 @@ interface Props {
   onEnding?: (chapterId: string) => void
   /** Opens a bond scene between two characters. */
   onBond?: (id: string) => void
+  /** Opens the epilogue of a chosen ending. */
+  onAfterword?: (chapterId: string, ending: EndingId) => void
   onBack: () => void
 }
 
 /** The chapters of the tale of the two courts, opened in order. */
-export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
+export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) {
   const story = useSyncExternalStore(subscribeStory, storySnapshot)
   const read = story.read
   const ending = endingChapter()
   const bonds = availableBonds(story)
+  const afterwords = availableEpilogues(story)
   const medals = achievements(story)
   const company = metCharacters(story).filter((id) => CHARACTERS[id].portrait)
   const chapterButton = ({ c, i }: { c: (typeof CHAPTERS)[number]; i: number }) => {
@@ -65,6 +68,17 @@ export function Story({ onOpen, onEnding, onBond, onBack }: Props) {
             <Icon name="book" />{story.ending ? `Ending: ${ending.ending!.options.find((o) => o.id === story.ending)?.label}` : 'Choose who keeps the Hour'}
           </button>
         </div>
+      )}
+      {afterwords.length > 0 && (
+        <section className="story-cast" aria-label="Epilogues">
+          <h3>Epilogues</h3>
+          {afterwords.map(({ chapterId, option }) => (
+            <button key={option.id} className={`choice${epilogueRead(story, option.id) ? ' won' : ''}`} onClick={() => onAfterword?.(chapterId, option.id)}>
+              <strong><Icon name={epilogueRead(story, option.id) ? 'check' : 'book'} />{option.epilogue.title}</strong>
+              <span>{option.epilogue.blurb}</span>
+            </button>
+          ))}
+        </section>
       )}
       {!ending && <p className="tagline">More chapters are still to be told.</p>}
       {company.length > 0 && (

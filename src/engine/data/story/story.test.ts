@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { COSMETICS } from '../cosmetics'
 import { BONDS, actLabel, afterVictory, battleCourt, CHAPTERS, CHARACTERS, chapterById, scenarioOf, storyBattleGame } from '.'
 
 describe('story data', () => {
@@ -147,6 +148,23 @@ describe('story data', () => {
         expect(beat.text.trim().length).toBeGreaterThan(0)
         if (beat.kind === 'say') expect(b.between).toContain(beat.who)
       }
+    }
+  })
+
+  it('gives every ending an epilogue of its own and a codex frame that reading it awards', () => {
+    const options = CHAPTERS.find((c) => c.ending)!.ending!.options
+    expect(options.map((o) => o.id).sort()).toEqual(['duskmother', 'free', 'shared', 'solarch'])
+    for (const o of options) {
+      expect(o.epilogue.title.length).toBeGreaterThan(0)
+      expect(o.epilogue.blurb.length).toBeGreaterThan(0)
+      expect(o.epilogue.beats.length).toBeGreaterThanOrEqual(6)
+      for (const b of o.epilogue.beats) {
+        expect(b.text.trim().length).toBeGreaterThan(0)
+        if (b.kind === 'say') expect(CHARACTERS[b.who]).toBeDefined()
+      }
+      const frames = COSMETICS.filter((c) => c.ending === o.id)
+      expect(frames).toHaveLength(1)
+      expect(frames[0].kind).toBe('codex')
     }
   })
 })

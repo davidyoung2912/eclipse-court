@@ -75,6 +75,10 @@
 :root[data-codex='gilt'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 0 0 18px rgba(232, 182, 74, 0.3); }
 :root[data-codex='moon'] .story-stage { border-color: #9ec8f0; box-shadow: 0 0 0 2px rgba(158, 200, 240, 0.5), 0 0 18px rgba(158, 200, 240, 0.35); }
 :root[data-codex='laurel'] .story-stage { border-color: #b8c85a; box-shadow: 0 0 0 2px rgba(184, 200, 90, 0.5), 0 0 18px rgba(214, 190, 80, 0.35); }
+:root[data-codex='sunhold'] .story-stage { border-color: #f2dc9a; box-shadow: 0 0 0 2px rgba(242, 220, 154, 0.5), 0 0 18px rgba(242, 220, 154, 0.3); }
+:root[data-codex='duskhold'] .story-stage { border-color: #8b5fd0; box-shadow: 0 0 0 2px rgba(139, 95, 208, 0.5), 0 0 22px rgba(139, 95, 208, 0.4); }
+:root[data-codex='twinhour'] .story-stage { border-color: #e8b64a; box-shadow: 0 0 0 2px rgba(232, 182, 74, 0.5), 6px 0 18px rgba(139, 95, 208, 0.4), -6px 0 18px rgba(232, 182, 74, 0.35); }
+:root[data-codex='firstdawn'] .story-stage { border-color: #f6d4dc; box-shadow: 0 0 0 2px rgba(246, 212, 220, 0.55), 0 0 22px rgba(255, 240, 240, 0.4); }
 :root[data-codex='ember'] .story-stage { border-color: #f07a4a; box-shadow: 0 0 0 2px rgba(240, 122, 74, 0.5), 0 0 18px rgba(240, 122, 74, 0.35); }
 
 .showcase { width: 100%; }

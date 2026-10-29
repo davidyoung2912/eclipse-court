@@ -14,6 +14,10 @@
 main .cstage[data-codex='gilt'] .show-codex { border-color: #e8b64a; box-shadow: 0 0 14px rgba(232, 182, 74, 0.4); }
 main .cstage[data-codex='moon'] .show-codex { border-color: #9ec8f0; box-shadow: 0 0 14px rgba(158, 200, 240, 0.4); }
 main .cstage[data-codex='laurel'] .show-codex { border-color: #b8c85a; box-shadow: 0 0 14px rgba(214, 190, 80, 0.4); }
+main .cstage[data-codex='sunhold'] .show-codex { border-color: #f2dc9a; box-shadow: 0 0 14px rgba(242, 220, 154, 0.4); }
+main .cstage[data-codex='duskhold'] .show-codex { border-color: #8b5fd0; box-shadow: 0 0 14px rgba(139, 95, 208, 0.45); }
+main .cstage[data-codex='twinhour'] .show-codex { border-color: #e8b64a; box-shadow: 6px 0 14px rgba(139, 95, 208, 0.45), -6px 0 14px rgba(232, 182, 74, 0.4); }
+main .cstage[data-codex='firstdawn'] .show-codex { border-color: #f6d4dc; box-shadow: 0 0 16px rgba(255, 240, 240, 0.45); }
 main .cstage[data-codex='ember'] .show-codex { border-color: #f07a4a; box-shadow: 0 0 14px rgba(240, 122, 74, 0.4); }
 main .cstage[data-codex='plain'] .show-codex { border-color: rgba(255, 255, 255, 0.3); }
 @keyframes stage-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }

@@ -1,5 +1,6 @@
 /** What Shards buy. Cosmetics only: they change colours, art, sound and animation, never a rule. */
 import type { PersonaId } from './personas'
+import type { EndingId } from './story/types'
 
 export type CosmeticKind = 'theme' | 'pieces' | 'capture' | 'board' | 'sound' | 'codex'
 
@@ -14,7 +15,12 @@ export interface Cosmetic {
   goals?: number
   /** The persona whose arc awards it when the arc's last fight is won; it is never sold. */
   arc?: PersonaId
+  /** The story ending whose epilogue awards it when read; it is never sold. */
+  ending?: EndingId
 }
+
+/** Earned, never bought: by piece goals, a persona arc or a story epilogue. */
+export const earnedOnly = (c: Pick<Cosmetic, 'goals' | 'arc' | 'ending'>) => !!(c.goals || c.arc || c.ending)
 
 export const KIND_TITLES: Record<CosmeticKind, string> = {
   theme: 'Board themes',
@@ -71,6 +77,10 @@ export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'codex', id: 'gilt', name: 'Gilt Frame', text: 'A gold border around every scene.', cost: 70 },
   { kind: 'codex', id: 'moon', name: 'Moonlit Frame', text: 'A pale blue border and glow.', cost: 70 },
   { kind: 'codex', id: 'ember', name: 'Emberlit Frame', text: 'A red-orange border and glow.', cost: 90 },
+  { kind: 'codex', id: 'sunhold', name: 'Sun-Held Frame', text: 'A pale gold border, ruled and exact. Earned by letting the Solarch keep the Hour.', cost: 0, ending: 'solarch' },
+  { kind: 'codex', id: 'duskhold', name: 'Dusk-Held Frame', text: 'A deep violet border with a low glow. Earned by letting the Duskmother keep the Hour.', cost: 0, ending: 'duskmother' },
+  { kind: 'codex', id: 'twinhour', name: 'Twin-Hour Frame', text: 'A border that is half gold and half violet. Earned by sharing the Hour.', cost: 0, ending: 'shared' },
+  { kind: 'codex', id: 'firstdawn', name: 'First Dawn Frame', text: 'A white-rose border like a morning no one tends. Earned by freeing the Queen.', cost: 0, ending: 'free' },
   { kind: 'codex', id: 'laurel', name: 'Laurel Frame', text: 'A green-gold border, for those who have mastered the pieces.', cost: 0, goals: 14 },
 ]
 
@@ -78,7 +88,7 @@ export const cosmeticsOf = (kind: CosmeticKind) => COSMETICS.filter((c) => c.kin
 export const cosmeticKey = (c: Pick<Cosmetic, 'kind' | 'id'>) => `${c.kind}:${c.id}`
 export const findCosmetic = (kind: CosmeticKind, id: string) => COSMETICS.find((c) => c.kind === kind && c.id === id)
 /** What each kind starts equipped with: its free first entry. */
-export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0 && !c.goals && !c.arc)?.id ?? ''
+export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0 && !earnedOnly(c))?.id ?? ''
 
 /** A sound pack: a pitch ratio and, optionally, a wave that replaces the plain tones'. */
 export interface Voice {
@@ -122,8 +132,8 @@ export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legend'
 export const RARITY_LABELS: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legend: 'Legend' }
 
 /** How rare a cosmetic is: earned ones are Legend, sold ones rank by price. */
-export function rarityOf(c: Pick<Cosmetic, 'cost' | 'goals' | 'arc'>): Rarity {
-  if (c.goals || c.arc) return 'legend'
+export function rarityOf(c: Pick<Cosmetic, 'cost' | 'goals' | 'arc' | 'ending'>): Rarity {
+  if (earnedOnly(c)) return 'legend'
   if (c.cost >= 280) return 'epic'
   if (c.cost >= 110) return 'rare'
   if (c.cost > 0) return 'uncommon'

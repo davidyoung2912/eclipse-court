@@ -58,6 +58,8 @@ export interface EndingOption {
   /** `clean` is open only if the chapter's battle was won without losing it first. */
   requires?: 'clean'
   beats: readonly Beat[]
+  /** A later chapter, readable from the Story screen once this ending has been chosen; reading it awards the ending's codex frame. */
+  epilogue: { title: string; blurb: string; beats: readonly Beat[] }
 }
 
 /** The choice that closes the story, offered once its chapter's battle is won. */

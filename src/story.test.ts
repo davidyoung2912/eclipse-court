@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { BONDS, CHAPTERS } from './engine/data/story'
-import { ACHIEVEMENT_GROUPS, achievements, availableBonds, bondRead, markBondRead, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
+import { ACHIEVEMENT_GROUPS, achievements, availableBonds, availableEpilogues, epilogueRead, markEpilogueRead, bondRead, markBondRead, chapterRead, chapterUnlocked, cleanVictory, endingChapter, recordEnding, markChapterRead, metCharacters, recordStoryLoss, recordStoryWin, resetStory, visibleBeats, storySnapshot, storySummary, subscribeStory } from './story'
 
 describe('story progress', () => {
   beforeEach(() => resetStory())
@@ -133,5 +133,20 @@ describe('story progress', () => {
     const all = achievements(storySnapshot())
     expect(new Set(all.map((a) => a.id)).size).toBe(all.length)
     expect(all.every((a) => ACHIEVEMENT_GROUPS.includes(a.group))).toBe(true)
+  })
+})
+
+describe('epilogues', () => {
+  beforeEach(() => resetStory())
+
+  it('open only for the endings chosen and are remembered once read', () => {
+    expect(availableEpilogues(storySnapshot())).toEqual([])
+    recordEnding('free')
+    expect(availableEpilogues(storySnapshot()).map((e) => e.option.id)).toEqual(['free'])
+    expect(epilogueRead(storySnapshot(), 'free')).toBe(false)
+    markEpilogueRead('free')
+    expect(epilogueRead(storySnapshot(), 'free')).toBe(true)
+    expect(epilogueRead(storySnapshot(), 'shared')).toBe(false)
+    expect(achievements(storySnapshot()).find((a) => a.id === 'afterwords')!.earned).toBe(true)
   })
 })

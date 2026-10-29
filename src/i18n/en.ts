@@ -252,6 +252,7 @@ export const en = {
   'collection.ownedEquip': 'Owned · tap to equip',
   'collection.cost': '{cost} Shards',
   'collection.arcOnly': 'Earned in a Persona Arc',
+  'collection.endingOnly': 'Earned in a Story epilogue',
   'collection.short': ' · {count} short',
   'collection.freeThemes': 'The four star-themes (Ember, Frost, Verdant) stay free: they open in Settings as campaign stars are earned.',
 

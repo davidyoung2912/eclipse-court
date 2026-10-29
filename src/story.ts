@@ -160,6 +160,22 @@ export function markBondRead(id: string) {
 /** Bonds whose chapter has been read, in the order they were written. */
 export const availableBonds = (s: Pick<StoryState, 'read'>): Bond[] => BONDS.filter((b) => s.read.has(b.after))
 
+/** Epilogues are remembered under their own prefix, one per ending. */
+const epilogueKey = (id: EndingId) => `epilogue:${id}`
+
+export const epilogueRead = (s: Pick<StoryState, 'read'>, id: EndingId) => s.read.has(epilogueKey(id))
+
+export function markEpilogueRead(id: EndingId) {
+  if (state.read.has(epilogueKey(id))) return
+  commit({ ...state, read: new Set(state.read).add(epilogueKey(id)) })
+}
+
+/** The epilogues of the endings chosen so far, each with its chapter, in the order the endings were written. */
+export function availableEpilogues(s: Pick<StoryState, 'endings'>) {
+  const chapter = endingChapter()
+  return (chapter?.ending?.options ?? []).filter((o) => s.endings.has(o.id)).map((o) => ({ chapterId: chapter!.id, option: o }))
+}
+
 /** The groups the Story page folds its achievements into. */
 export const ACHIEVEMENT_GROUPS = ['The Tale', 'Trials', 'Company', 'Bonds', 'Endings'] as const
 export type AchievementGroup = (typeof ACHIEVEMENT_GROUPS)[number]
@@ -216,6 +232,7 @@ export function achievements(s: StoryState): Achievement[] {
     [G[4], 'end-duskmother', 'The Dusk Holds', 'Let the Duskmother keep the Hour.', ended('duskmother')],
     [G[4], 'end-shared', 'Two Courts, One Hour', 'Share the Hour.', ended('shared')],
     [G[4], 'end-free', 'The Queen Freed', 'Free the Queen.', ended('free')],
+    [G[4], 'afterwords', 'Afterwords', 'Read an epilogue.', (['solarch', 'duskmother', 'shared', 'free'] as const).some((id) => epilogueRead(s, id))],
     [G[4], 'every-ending', 'Every Hour', 'Choose all four endings.', ended('solarch') && ended('duskmother') && ended('shared') && ended('free')],
   ]
   return defs.map(([group, id, title, text, earned]) => ({ id, group, title, text, earned }))

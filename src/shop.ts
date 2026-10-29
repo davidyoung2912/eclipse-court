@@ -1,5 +1,6 @@
-import { COSMETICS, cosmeticKey, defaultOf, findCosmetic, KINDS, type Cosmetic, type CosmeticKind } from './engine/data/cosmetics'
+import { COSMETICS, cosmeticKey, defaultOf, earnedOnly, findCosmetic, KINDS, type Cosmetic, type CosmeticKind } from './engine/data/cosmetics'
 import type { Difficulty } from './engine/data/difficulty'
+import type { EndingId } from './engine/data/story'
 
 /** Shards, what they bought and what is equipped; kept apart from the campaign's progress. */
 const KEY = 'eclipse-court:shop'
@@ -24,7 +25,7 @@ const count = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x
 export function parseShop(raw: unknown): ShopState {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof ShopState, unknown>>
   const owned = Array.isArray(o.owned)
-    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => (c.cost > 0 || c.goals || c.arc) && cosmeticKey(c) === k)))]
+    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => (c.cost > 0 || earnedOnly(c)) && cosmeticKey(c) === k)))]
     : []
   const equipped: Partial<Record<CosmeticKind, string>> = {}
   if (o.equipped && typeof o.equipped === 'object')
@@ -64,7 +65,7 @@ export function subscribeShop(l: Listener) {
   return () => { listeners.delete(l) }
 }
 
-export const owns = (c: Cosmetic, s: Pick<ShopState, 'owned'> = state) => (c.cost === 0 && !c.goals && !c.arc) || s.owned.includes(cosmeticKey(c))
+export const owns = (c: Cosmetic, s: Pick<ShopState, 'owned'> = state) => (c.cost === 0 && !earnedOnly(c)) || s.owned.includes(cosmeticKey(c))
 export const equippedId = (kind: CosmeticKind, s: ShopState = state) => s.equipped[kind] ?? defaultOf(kind)
 
 export function earnShards(n: number) {
@@ -81,7 +82,7 @@ export function spend(n: number): boolean {
 
 /** Spends Shards on a cosmetic; false if it is already owned or too dear. */
 export function buy(c: Cosmetic): boolean {
-  if (c.goals || c.arc || owns(c) || state.shards < c.cost) return false
+  if (earnedOnly(c) || owns(c) || state.shards < c.cost) return false
   commit({ ...state, shards: state.shards - c.cost, owned: [...state.owned, cosmeticKey(c)] })
   return true
 }
@@ -131,6 +132,12 @@ export function award(c: Cosmetic): boolean {
   if (owns(c)) return false
   commit({ ...state, owned: [...state.owned, cosmeticKey(c)] })
   return true
+}
+
+/** Gives the codex frame a story ending earns; false if there is none or it is already owned. */
+export function grantEndingFrame(ending: EndingId): boolean {
+  const frame = COSMETICS.find((c) => c.ending === ending)
+  return !!frame && award(frame)
 }
 
 /** Gives an earned cosmetic (one set by `goals`); false if it is not one or already owned. */
