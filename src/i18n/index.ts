@@ -14,6 +14,9 @@ export function registerLocale(code: string, catalog: Catalog) {
   catalogs[code] = { ...catalogs[code], ...catalog }
 }
 
+/** The languages the setting offers, each named in itself; add one here when its catalog is registered. */
+export const LOCALES: readonly { code: string; name: string }[] = [{ code: 'en', name: 'English' }]
+
 export function setLocale(code: string) {
   locale = catalogs[code] ? code : 'en'
 }

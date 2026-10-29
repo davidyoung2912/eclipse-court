@@ -11,7 +11,7 @@ import { resetOnboarding } from '../../onboarding'
 import { BackButton } from './BackButton'
 import { getVolumes, setVolumes, isMuted, setMuted, sfx, unlockAudio } from '../../audio/synth'
 import { downloadSave, importSave } from '../../backup'
-import { t } from '../../i18n'
+import { LOCALES, t } from '../../i18n'
 import { haptic } from '../../haptics'
 
 const SPEED_ICONS: Record<(typeof DUEL_SPEEDS)[number], IconName> = { normal: 'play', fast: 'onward', instant: 'bolt' }
@@ -126,6 +126,13 @@ export function Settings({ progress, onShowGuidance, onBack }: Props) {
       <div className="choices row">
         {FIGHT_LEVELS.map((l) => (
           <button key={l} className={`choice${settings.fightDifficulty === l ? ' on' : ''}`} aria-pressed={settings.fightDifficulty === l} onClick={() => change({ fightDifficulty: l })}><strong><Icon name={FIGHT_ICONS[l]} />{t(`settings.fight.${l}`)}</strong></button>
+        ))}
+      </div>
+      <h3>{t('settings.language')}</h3>
+      <p className="setup-hint">{t('settings.languageHint')}</p>
+      <div className="choices row">
+        {LOCALES.map((l) => (
+          <button key={l.code} lang={l.code} className={`choice${settings.language === l.code ? ' on' : ''}`} aria-pressed={settings.language === l.code} onClick={() => change({ language: l.code })}><strong>{l.name}</strong></button>
         ))}
       </div>
       <h3>{t('settings.guidance')}</h3>

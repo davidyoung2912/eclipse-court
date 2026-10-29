@@ -10,6 +10,7 @@ import { ResetButton } from './ResetButton'
 import { TipCard } from '../tips/TipCard'
 import { CampaignArt, OpponentAvatar } from './MenuArt'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   progress: Progress
@@ -38,7 +39,7 @@ function Kind({ icon, text, difficulty }: { icon: IconName; text: string; diffic
   return (
     <span className="kind">
       <Icon name={icon} />{text}
-      <span className="stars" aria-label={`Difficulty ${LEVEL[difficulty]} of 3`}>
+      <span className="stars" aria-label={t('campaign.difficulty', { n: LEVEL[difficulty] })}>
         {[1, 2, 3].map((n) => <i key={n} className={n <= LEVEL[difficulty] ? 'got' : undefined}>★</i>)}
       </span>
     </span>
@@ -50,10 +51,10 @@ function Completed({ bits, texts }: { bits: number; texts: readonly string[] }) 
   const earned = [STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].map((bit, i) => (bits & bit ? texts[i] : null)).filter(Boolean)
   return (
     <span className="completed">
-      <span className="stars" aria-label={`${starCount(bits)} of 3 stars`}>
+      <span className="stars" aria-label={t('campaign.starsOf', { n: starCount(bits) })}>
         {[STAR_WIN, STAR_FLAWLESS, STAR_SWIFT].map((bit) => <i key={bit} className={bits & bit ? 'got' : undefined}>★</i>)}
       </span>
-      Completed: {earned.join('; ')}
+      {t('campaign.completed', { earned: earned.join('; ') })}
     </span>
   )
 }
@@ -68,18 +69,18 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
   return (
     <main className="app menu campaign-menu">
       <CampaignArt />
-      <h2>Campaign</h2>
+      <h2>{t('campaign.title')}</h2>
       <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'battles'} className={tab === 'battles' ? 'on' : ''} onClick={() => onTab?.('battles')}>Battles</button>
-        <button role="tab" aria-selected={tab === 'scenarios'} className={tab === 'scenarios' ? 'on' : ''} onClick={() => onTab?.('scenarios')}>Scenarios</button>
-        <button role="tab" aria-selected={tab === 'coop'} className={tab === 'coop' ? 'on' : ''} onClick={() => onTab?.('coop')}>Co-op</button>
+        <button role="tab" aria-selected={tab === 'battles'} className={tab === 'battles' ? 'on' : ''} onClick={() => onTab?.('battles')}>{t('campaign.tab.battles')}</button>
+        <button role="tab" aria-selected={tab === 'scenarios'} className={tab === 'scenarios' ? 'on' : ''} onClick={() => onTab?.('scenarios')}>{t('campaign.tab.scenarios')}</button>
+        <button role="tab" aria-selected={tab === 'coop'} className={tab === 'coop' ? 'on' : ''} onClick={() => onTab?.('coop')}>{t('campaign.tab.coop')}</button>
       </div>
       {tab === 'coop' ? (
-        <p className="tagline">{coopStars(progress)} of {COOP_SCENARIOS.length * 3} stars. Two people share the Solari court on one device against the AI, taking its turns in turn: the first player on odd rounds, the second on even ones.</p>
+        <p className="tagline">{t('campaign.coopTagline', { stars: coopStars(progress), total: COOP_SCENARIOS.length * 3 })}</p>
       ) : tab === 'scenarios' ? (
-        <p className="tagline">{scenarioStars(progress)} of {SCENARIOS.length * 3} stars. Hand-built situations, each with its own goal. Stars: win; win without losing a piece; and a bonus of its own.</p>
+        <p className="tagline">{t('campaign.scenariosTagline', { stars: scenarioStars(progress), total: SCENARIOS.length * 3 })}</p>
       ) : (
-        <p className="tagline">{totalStars(progress)} of {CAMPAIGN.length * 3} stars. {STAR_TEXT.map((s) => s.text).join('; ')}.</p>
+        <p className="tagline">{t('campaign.battlesTagline', { stars: totalStars(progress), total: CAMPAIGN.length * 3, rules: STAR_TEXT.map((s) => s.text).join('; ') })}</p>
       )}
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
@@ -92,9 +93,9 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
               <li key={x.id}>
                 <button className={`choice${bits & STAR_WIN ? ' won' : ''}`} onClick={() => onPlayCoop(n)}>
                   <strong>{n + 1}. {x.name}</strong>
-                  <Kind icon="target" text={`Co-op: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
+                  <Kind icon="target" text={t('campaign.kind.coop', { kind: t(`campaign.objective.${x.objective.kind}`) })} difficulty={x.difficulty} />
                   <span>{x.blurb}</span>
-                  <span className="boss">Goal: {objectiveGoal(x.objective)}. Bonus star: {x.bonus.text}.</span>
+                  <span className="boss">{t('campaign.goal', { goal: objectiveGoal(x.objective), bonus: x.bonus.text })}</span>
                   {bits & STAR_WIN ? <Completed bits={bits} texts={[STAR_TEXT[0].text.replace('battle', 'scenario'), STAR_TEXT[1].text, x.bonus.text]} /> : null}
                 </button>
               </li>
@@ -118,9 +119,9 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
                       <strong>
                         {n + 1}. {x.name}
                       </strong>
-                      <Kind icon="target" text={`Scenario: ${x.objective.kind === 'survive' ? 'Survive' : x.objective.kind === 'escort' ? 'Escort' : 'Hold'}`} difficulty={x.difficulty} />
+                      <Kind icon="target" text={t('campaign.kind.scenario', { kind: t(`campaign.objective.${x.objective.kind}`) })} difficulty={x.difficulty} />
                       <span>{x.blurb}</span>
-                      <span className="boss">Goal: {objectiveGoal(x.objective)}. Bonus star: {x.bonus.text}.</span>
+                      <span className="boss">{t('campaign.goal', { goal: objectiveGoal(x.objective), bonus: x.bonus.text })}</span>
                       {bits & STAR_WIN ? <Completed bits={bits} texts={[STAR_TEXT[0].text.replace('battle', 'scenario'), STAR_TEXT[1].text, x.bonus.text]} /> : null}
                     </button>
                   </li>
@@ -132,10 +133,10 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
       }) : (
       <>
       <label className="recharge">
-        <input type="checkbox" checked={series} onChange={() => setSeries((s) => !s)} /> Tournament: best of three against one opponent (no stars; {progress.tournaments} won)
+        <input type="checkbox" checked={series} onChange={() => setSeries((s) => !s)} /> {t('campaign.series', { won: progress.tournaments })}
       </label>
       {[...CAMPAIGN_TIERS.map(({ name, blurb, difficulty }) => ({ key: difficulty as string, name, blurb, list: battlesIn(difficulty), note: '' })),
-        { key: 'grand', name: GRAND_TIER.name, blurb: GRAND_TIER.blurb, list: grandBattles(), note: totalStars(progress) < GRAND_STARS ? `Earn ${GRAND_STARS} campaign stars to open the Grand Court.` : '' }].map(({ key, name, blurb, list, note }) => {
+        { key: 'grand', name: GRAND_TIER.name, blurb: GRAND_TIER.blurb, list: grandBattles(), note: totalStars(progress) < GRAND_STARS ? t('campaign.grandLocked', { stars: GRAND_STARS }) : '' }].map(({ key, name, blurb, list, note }) => {
         if (list.length === 0) return null
         const won = list.filter((o) => (progress.battles[o.id] ?? 0) & STAR_WIN).length
         return (
@@ -154,10 +155,10 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
                       <strong>
                         {n + 1}. {o.name}
                       </strong>
-                      <Kind icon="swords" text={o.size === 9 ? 'Battle · 9x9' : 'Battle'} difficulty={o.difficulty} />
+                      <Kind icon="swords" text={t(o.size === 9 ? 'campaign.kind.battle9' : 'campaign.kind.battle')} difficulty={o.difficulty} />
                       <span>{o.blurb}</span>
-                      {o.boss && <span className="boss">Boss rule: {o.boss}</span>}
-                      {bits & STAR_WIN ? <Completed bits={bits} texts={STAR_TEXT.map((t) => t.text)} /> : null}
+                      {o.boss && <span className="boss">{t('campaign.bossRule', { rule: o.boss })}</span>}
+                      {bits & STAR_WIN ? <Completed bits={bits} texts={STAR_TEXT.map((star) => star.text)} /> : null}
                     </button>
                   </li>
                 )
@@ -170,10 +171,10 @@ export function Campaign({ progress, report, onPlay, onPlayScenario, onPlayCoop,
       )}
       <div className="menu-buttons stacked">
         {tab === 'coop'
-          ? <ResetButton label="Reset Co-op" disabled={coopStars(progress) === 0} warning="Clear every co-op star so you can retry them all?" onReset={() => onReset('coop')} />
+          ? <ResetButton label={t('campaign.resetCoop')} disabled={coopStars(progress) === 0} warning={t('campaign.resetCoopWarning')} onReset={() => onReset('coop')} />
           : tab === 'scenarios'
-          ? <ResetButton label="Reset Scenarios" disabled={scenarioStars(progress) === 0} warning="Clear every scenario star so you can retry them all?" onReset={() => onReset('scenarios')} />
-          : <ResetButton label="Reset Campaign" disabled={cleared === 0 && totalStars(progress) === 0} warning="Clear every battle and star? Boards, presets and themes unlocked by stars will lock again." onReset={() => onReset('battles')} />}
+          ? <ResetButton label={t('campaign.resetScenarios')} disabled={scenarioStars(progress) === 0} warning={t('campaign.resetScenariosWarning')} onReset={() => onReset('scenarios')} />
+          : <ResetButton label={t('campaign.resetCampaign')} disabled={cleared === 0 && totalStars(progress) === 0} warning={t('campaign.resetCampaignWarning')} onReset={() => onReset('battles')} />}
         <BackButton onClick={onBack} />
       </div>
       <TipCard page={tab === 'coop' ? 'campaign-coop' : tab === 'scenarios' ? 'campaign-scenarios' : 'campaign-battles'} />

@@ -1,3 +1,5 @@
+import { LOCALES, getLocale, setLocale } from './i18n'
+
 const SETTINGS_KEY = 'eclipse-court:settings'
 
 /** A palette for the board and pieces; cosmetic only. Themes open as campaign stars are earned. */
@@ -114,6 +116,8 @@ export interface Settings {
   fightDifficulty: FightLevel
   /** How much named opponents talk: Full, Quiet (results and the Eclipse only) or Off. */
   banter: BanterLevel
+  /** The language of the text moved behind `t`; a code from `LOCALES`. */
+  language: string
 }
 
 export type HintLimit = 'unlimited' | 'three' | 'off'
@@ -140,7 +144,7 @@ export const DUEL_SPEEDS: readonly DuelSpeed[] = ['normal', 'fast', 'instant']
 /** The share of full speed a live duel plays at for each setting. */
 export const DUEL_PACE: Record<DuelSpeed, number> = { normal: 0.55, fast: 1, instant: 1 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, reduceFlashes: false, buttonSheen: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full' }
+export const DEFAULT_SETTINGS: Settings = { theme: 'twilight', reduceMotion: false, reduceFlashes: false, buttonSheen: false, marks: false, largeUi: false, aids: false, aiWhy: false, lastMove: false, forecast: false, eclipseChip: false, blunderCheck: false, oddsDetail: false, reminders: false, duelAssist: false, hints: 'unlimited', takeBacks: 'always', duelSpeed: 'normal', haptics: true, fightDifficulty: 'normal', banter: 'full', language: 'en' }
 
 /** Flashes are toned down when asked for, and whenever motion is reduced. */
 export const flashesReduced = (s: Pick<Settings, 'reduceMotion' | 'reduceFlashes'> = getSettings()) => s.reduceMotion || s.reduceFlashes
@@ -173,6 +177,7 @@ export function parseSettings(raw: unknown): Settings {
     haptics: o.haptics !== false,
     fightDifficulty: FIGHT_LEVELS.includes(o.fightDifficulty as FightLevel) ? (o.fightDifficulty as FightLevel) : DEFAULT_SETTINGS.fightDifficulty,
     banter: BANTER_LEVELS.includes(o.banter as BanterLevel) ? (o.banter as BanterLevel) : DEFAULT_SETTINGS.banter,
+    language: typeof o.language === 'string' && LOCALES.some((l) => l.code === o.language) ? o.language : DEFAULT_SETTINGS.language,
   }
 }
 
@@ -191,6 +196,7 @@ export function getSettings(): Settings {
 
 /** Applies the settings to the page: theme variables and the reduced-motion switch. */
 export function applySettings(s: Settings = getSettings()) {
+  setLocale(s.language)
   if (typeof document === 'undefined') return
   const root = document.documentElement
   for (const t of THEMES) for (const k of Object.keys(t.vars)) root.style.removeProperty(k)
@@ -198,6 +204,7 @@ export function applySettings(s: Settings = getSettings()) {
   root.dataset.motion = s.reduceMotion ? 'reduced' : 'full'
   root.dataset.flashes = flashesReduced(s) ? 'reduced' : 'full'
   root.dataset.size = s.largeUi ? 'large' : 'normal'
+  root.lang = getLocale()
 }
 
 export function updateSettings(patch: Partial<Settings>): Settings {

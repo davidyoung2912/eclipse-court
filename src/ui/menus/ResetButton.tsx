@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from './icons'
+import { t } from '../../i18n'
 
 interface Props {
   label: string
@@ -17,8 +18,8 @@ export function ResetButton({ label, warning, onReset, disabled }: Props) {
   return (
     <>
       <p className="tagline" role="alert">{warning}</p>
-      <button className="reset" onClick={() => { setArmed(false); onReset() }}><Icon name="check" />Yes, Reset</button>
-      <button onClick={() => setArmed(false)}><Icon name="close" />Cancel</button>
+      <button className="reset" onClick={() => { setArmed(false); onReset() }}><Icon name="check" />{t('common.yesReset')}</button>
+      <button onClick={() => setArmed(false)}><Icon name="close" />{t('common.cancel')}</button>
     </>
   )
 }

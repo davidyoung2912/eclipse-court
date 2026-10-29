@@ -10,6 +10,7 @@ import { Icon } from './icons'
 import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
+import { t } from '../../i18n'
 
 interface Props {
   /** The host brings the match to offer; the guest takes whatever the host sends. */
@@ -74,7 +75,7 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
   const fail = (e: unknown) => {
     if (gone.current) return
     pending.current?.cancel()
-    setStep({ name: 'failed', text: `${e instanceof Error ? e.message : 'The connection failed.'} ${NAT_HELP}` })
+    setStep({ name: 'failed', text: `${e instanceof Error ? e.message : t('lobby.failed')} ${NAT_HELP}` })
   }
 
   // The host makes its offer on arrival.
@@ -107,18 +108,18 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
 
   const connect = async () => {
     const code = text.trim()
-    if (!decodeSignal(code)) return setNote(host ? 'That does not look like an answer code.' : 'That does not look like a join code.')
+    if (!decodeSignal(code)) return setNote(t(host ? 'lobby.badAnswer' : 'lobby.badJoin'))
     setNote(null)
     try {
       if (host) {
         const o = pending.current as HostOffer
         setStep({ name: 'connecting' })
-        begin(await withTimeout(o.accept(code), CONNECT_MS, 'The connection timed out.', o.cancel))
+        begin(await withTimeout(o.accept(code), CONNECT_MS, t('lobby.timedOut'), o.cancel))
       } else {
         const g = await guestAnswer(code)
         pending.current = g
         setStep({ name: 'answer', code: g.code })
-        begin(await withTimeout(g.connected, CONNECT_MS * 2, 'The host did not connect in time.', g.cancel))
+        begin(await withTimeout(g.connected, CONNECT_MS * 2, t('lobby.hostSlow'), g.cancel))
       }
     } catch (e) {
       fail(e)
@@ -131,45 +132,45 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
   return (
     <main className="app menu battle-menu">
       <PageArt icon="chain" />
-      <h2>{resume ? 'Reconnect' : host ? 'Host a Game' : 'Join a Game'}</h2>
-      {step.name === 'making' && <p className="tagline">Making your connection code…</p>}
+      <h2>{t(resume ? 'lobby.reconnect' : host ? 'lobby.host' : 'lobby.join')}</h2>
+      {step.name === 'making' && <p className="tagline">{t('lobby.making')}</p>}
       {step.name === 'offer' && <>
-        <p className="tagline">Send your friend the link or code. They will send back an answer code; paste it here.</p>
-        <textarea className="code-box" rows={4} readOnly value={step.code} aria-label="Your join code" onFocus={(e) => e.target.select()} />
+        <p className="tagline">{t('lobby.offerText')}</p>
+        <textarea className="code-box" rows={4} readOnly value={step.code} aria-label={t('lobby.yourJoinCode')} onFocus={(e) => e.target.select()} />
         <div className="menu-buttons">
-          <button onClick={async () => { await copy(step.code); setNote('Code copied.') }}><Icon name="chain" />Copy Code</button>
-          <ShareButton title="Eclipse Court online game" label="Share Link" link={() => joinUrl(step.code)} />
+          <button onClick={async () => { await copy(step.code); setNote(t('lobby.copied')) }}><Icon name="chain" />{t('lobby.copyCode')}</button>
+          <ShareButton title={t('lobby.shareTitle')} label={t('lobby.shareLink')} link={() => joinUrl(step.code)} />
         </div>
-        <h3>Their answer</h3>
-        <textarea className="code-box" rows={4} value={text} spellCheck={false} aria-label="Answer code" onChange={(e) => { setText(e.target.value); setNote(null) }} />
+        <h3>{t('lobby.theirAnswer')}</h3>
+        <textarea className="code-box" rows={4} value={text} spellCheck={false} aria-label={t('lobby.answerCode')} onChange={(e) => { setText(e.target.value); setNote(null) }} />
       </>}
       {step.name === 'paste' && <>
-        <p className="tagline">Paste the link or code your friend sent you.</p>
-        <textarea className="code-box" rows={5} value={text} spellCheck={false} aria-label="Join link or code" onChange={(e) => { setText(e.target.value); setNote(null) }} />
+        <p className="tagline">{t('lobby.pasteText')}</p>
+        <textarea className="code-box" rows={5} value={text} spellCheck={false} aria-label={t('lobby.joinLinkOrCode')} onChange={(e) => { setText(e.target.value); setNote(null) }} />
       </>}
       {step.name === 'answer' && <>
-        <p className="tagline">Send this answer code back to your friend. Keep this page open while they paste it.</p>
-        <textarea className="code-box" rows={4} readOnly value={step.code} aria-label="Your answer code" onFocus={(e) => e.target.select()} />
+        <p className="tagline">{t('lobby.answerText')}</p>
+        <textarea className="code-box" rows={4} readOnly value={step.code} aria-label={t('lobby.yourAnswerCode')} onFocus={(e) => e.target.select()} />
         <div className="menu-buttons">
-          <button onClick={async () => { await copy(step.code); setNote('Code copied.') }}><Icon name="chain" />Copy Code</button>
+          <button onClick={async () => { await copy(step.code); setNote(t('lobby.copied')) }}><Icon name="chain" />{t('lobby.copyCode')}</button>
         </div>
-        <p className="tagline">Waiting for the host…</p>
+        <p className="tagline">{t('lobby.waitingHost')}</p>
       </>}
-      {step.name === 'connecting' && <p className="tagline">Connecting…</p>}
+      {step.name === 'connecting' && <p className="tagline">{t('lobby.connecting')}</p>}
       {shown && view && <>
-        <p className="tagline">{view.status === 'playing' ? 'Connected.' : 'Connected. Waiting for the match…'}{view.me && ` You play the ${view.me === 'solari' ? 'Solari' : 'Umbral'}.`}</p>
+        <p className="tagline">{t(view.status === 'playing' ? 'lobby.connected' : 'lobby.connectedWaiting')}{view.me && t('lobby.youPlay', { court: t(view.me === 'solari' ? 'lobby.solari' : 'lobby.umbral') })}</p>
         <ul className="setup-card">{describeConfig(shown).map((line) => <li key={line}>{line}</li>)}</ul>
       </>}
-      {step.name === 'connected' && !shown && <p className="tagline">Connected. Waiting for the host to choose the match…</p>}
+      {step.name === 'connected' && !shown && <p className="tagline">{t('lobby.connectedChoosing')}</p>}
       {step.name === 'failed' && <p role="alert">{step.text}</p>}
       {note && <p role="status">{note}</p>}
       <div className="menu-buttons stacked">
         {(step.name === 'offer' || step.name === 'paste') && (
-          <button className="primary" disabled={!text.trim()} onClick={connect}><Icon name="play" />{host ? 'Connect' : 'Join'}</button>
+          <button className="primary" disabled={!text.trim()} onClick={connect}><Icon name="play" />{t(host ? 'lobby.connect' : 'lobby.joinButton')}</button>
         )}
-        <BackButton onClick={onBack} label={step.name === 'connected' ? 'Leave' : 'Back'} />
+        <BackButton onClick={onBack} label={t(step.name === 'connected' ? 'common.leave' : 'common.back')} />
       </div>
-      <p className="tagline">Connecting shares your network address with your friend and with public STUN servers.</p>
+      <p className="tagline">{t('lobby.stunNote')}</p>
       <TipCard page="online" />
     </main>
   )
@@ -178,10 +179,10 @@ export function Lobby({ challenge, offer, onStart, resume, onResumed, onBack }: 
 /** A line for a session that ended before the game could begin. */
 function failure(view: SessionView): string {
   switch (view.reason) {
-    case 'version': return 'Your friend is running a different version of the game. Both of you should reload the page.'
-    case 'opponent-left': return 'Your friend left the game.'
-    case 'desync': case 'illegal': return 'The two games no longer agree, so the match cannot go on.'
-    case 'closed': return `The connection closed. ${NAT_HELP}`
-    default: return 'The connection ended unexpectedly.'
+    case 'version': return t('lobby.versionMismatch')
+    case 'opponent-left': return t('lobby.opponentLeft')
+    case 'desync': case 'illegal': return t('lobby.desync')
+    case 'closed': return t('lobby.closed', { help: NAT_HELP })
+    default: return t('lobby.ended')
   }
 }
