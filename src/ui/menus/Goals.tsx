@@ -10,6 +10,7 @@ import { Bar } from './Bar'
 import { BackButton } from './BackButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
+import { Quests } from './Quests'
 
 interface Props {
   progress: Progress
@@ -27,6 +28,7 @@ export function Goals({ progress, onGo, onBack }: Props) {
       <PageArt icon="star" />
       <h2>{t('goals.title')}</h2>
       <p className="lede">{t('goals.intro')}</p>
+      <Quests />
       {goals.length === 0 && <p className="status">{t('goals.empty')}</p>}
       <ul className="mastery-tracks">
         {goals.map((g) => (

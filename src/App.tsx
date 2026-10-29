@@ -44,6 +44,7 @@ import { clearFight, clearPuzzle, loadFight, loadPuzzle, saveFight, savePuzzle }
 import { settleGame } from './settleGame'
 import { claimFlight, shardsIn } from './rewardFx'
 import { consumeFreeze, payReroll, sinksSnapshot } from './sinks'
+import { recordQuestEvent } from './quests'
 import { earnShards, SHARDS_DAILY_PUZZLE, SHARDS_GAUNTLET_STAGE, SHARDS_GAUNTLET_WIN, SHARDS_PUZZLE } from './shop'
 import { recordRoleDuels } from './roleGoals'
 import { rememberCourt, masterySnapshot } from './mastery'
@@ -644,6 +645,7 @@ export default function App() {
     const current = puzzle && (puzzle.endless?.puzzle ?? PUZZLES[puzzle.index])
     const finishPuzzle = (winner: GameState['winner']) => {
       const solved = winner === human
+      if (solved) recordQuestEvent({ kind: 'puzzle' })
       if (puzzle!.endless) {
         const before = loadEndless()
         const after = { ...applyResult(before, puzzle!.endless.rating, solved), n: puzzle!.endless.number }
@@ -686,6 +688,7 @@ export default function App() {
       if (settled.froze) consumeFreeze()
       if (settled.summary) rememberCourt(human)
       if (settled.summary && stats) {
+        recordQuestEvent({ kind: 'game', summary: settled.summary })
         recordGameResult(settled.summary)
         recordRoleDuels(finished, human)
       }
@@ -745,6 +748,7 @@ export default function App() {
         return
       }
       const next = applyVictory(run, final)
+      recordQuestEvent({ kind: 'stage' })
       if (runWon(next)) {
         const result = recordRun(progress, next.stage, true)
         setProgress(result.progress)

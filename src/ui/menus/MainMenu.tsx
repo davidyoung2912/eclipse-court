@@ -1,3 +1,4 @@
+import { Quests } from './Quests'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isMuted, setMuted } from '../../audio/synth'
 import { SoundPrompt } from './SoundPrompt'
@@ -269,6 +270,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
           <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />{t('menu.dailyPuzzle')}</button>
           <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />{t('menu.weekly')}</button>
         </div>
+        <Quests />
       </section>
       <div className="mode-cards">
         {cards.map((c) => (

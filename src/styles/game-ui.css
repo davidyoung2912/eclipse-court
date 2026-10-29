@@ -214,3 +214,7 @@ svg.board:focus-visible .board-frame { stroke: #fff6c0; stroke-width: 0.2; filte
 
 .role-goals { margin-bottom: 10px; }
 
+.quests h3, .quests h4 { margin: 4px 0; }
+.quests h4 { font-size: 0.9rem; opacity: 0.8; }
+.quest-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.quest.claimed { opacity: 0.6; }
