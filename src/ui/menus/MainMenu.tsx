@@ -15,7 +15,7 @@ import { storySnapshot, subscribeStory } from '../../story'
 import { t } from '../../i18n'
 import { getSettings } from '../../settings'
 import { PersonaFace } from '../../art/PersonaFace'
-import { menuLine, personaOfTheDay } from '../../personaMenu'
+import { personaOfTheDay, recordLine } from '../../personaMenu'
 import { heroReaction, nextRun, type HeroTarget } from './heroTouch'
 import { sfx } from '../../audio/synth'
 
@@ -260,7 +260,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
                 </ul>
               </>
             )}
-            {slot === 'greeting' && <p><b>{greeter.name}</b>{menuLine(greeter.id, 'greet', String(seed))}</p>}
+            {slot === 'greeting' && <p><b>{greeter.name}</b>{recordLine(greeter.id, 'greet', String(seed))}</p>}
           </div>
         </aside>
       )}

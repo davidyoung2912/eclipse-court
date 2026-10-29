@@ -24,6 +24,11 @@ describe('backup', () => {
     importSave(exportSave(fake({ 'eclipse-court:sinks': '{"freezes":1}' })), dst)
     expect(dst.m.get('eclipse-court:sinks')).toBe('{"freezes":1}')
   })
+  it('carries the persona record', () => {
+    const dst = fake({})
+    importSave(exportSave(fake({ 'eclipse-court:persona-record': '{"pym":{"w":1,"d":0,"l":0,"last":"w"}}' })), dst)
+    expect(dst.m.get('eclipse-court:persona-record')).toBe('{"pym":{"w":1,"d":0,"l":0,"last":"w"}}')
+  })
   it('rejects text that is not a backup', () => {
     expect(importSave('nope', fake({}))).toBeNull()
     expect(importSave('{"format":"x","data":{}}', fake({}))).toBeNull()

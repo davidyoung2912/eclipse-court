@@ -1,4 +1,4 @@
-/** When a persona speaks; see docs/personas-plan.md for the full table. */
+/** When a persona speaks; `meet`, `ahead`, `behind` and `grudge` stand in for greet and briefing by the head-to-head record; see docs/personas-plan.md for the full table. */
 export const LINE_CATEGORIES = [
   'greet',
   'picked',
@@ -19,6 +19,10 @@ export const LINE_CATEGORIES = [
   'lose',
   'draw',
   'rematch',
+  'meet',
+  'ahead',
+  'behind',
+  'grudge',
 ] as const
 
 export type LineCategory = (typeof LINE_CATEGORIES)[number]

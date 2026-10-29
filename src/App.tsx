@@ -37,6 +37,7 @@ import { decodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
 import { personaById, type PersonaId } from './engine/data/personas'
+import { recordPersonaGame } from './personaRecord'
 import { ladderVoice, resolvePersona, rivalLine, type PersonaChoice } from './personaMenu'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
@@ -709,6 +710,7 @@ export default function App() {
       }
       let extra: ReturnType<typeof recordWeekly> | null = null
       if (weekly && stats && settled.summary) extra = recordWeekly(weeklyToday.week, weeklyScore(settled.summary), settled.summary.won)
+      if (screen.persona && !hotSeat && stats && settled.summary) recordPersonaGame(screen.persona, settled.summary.won ? 'w' : settled.summary.draw ? 'd' : 'l')
       const foe = ladder ? foeById(ladder) : undefined
       if (foe && stats && settled.summary) {
         const rated = recordLadder(foe, settled.summary.won ? 'win' : settled.summary.draw ? 'draw' : 'loss')

@@ -49,7 +49,7 @@ import { lineAllowed, newBanter, speak, triggerFor, type BanterState } from './b
 import { personaById } from './engine/data/personas'
 import type { LineCategory } from './engine/data/personaLines'
 import { PersonaBubble } from './ui/tray/PersonaBubble'
-import { farewellLine, menuLine } from './personaMenu'
+import { farewellLine, recordLine } from './personaMenu'
 import type { PuzzleHelp } from './hooks/useHint'
 import { useAiTurn } from './hooks/useAiTurn'
 import { useHint } from './hooks/useHint'
@@ -179,7 +179,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
     const named = [controllers.solari, controllers.umbral].find((c) => typeof c === 'object' && c.persona)
     const id = typeof named === 'object' ? named.persona : undefined
     if (!id || !personaById(id) || record.actions.length > 0 || !lineAllowed(getSettings().banter, 'briefing')) return null
-    return opening ?? menuLine(id, 'briefing', String(record.initial.config.seed))
+    return opening ?? recordLine(id, 'briefing', String(record.initial.config.seed))
   })
   const banter = useRef<BanterState>(newBanter(record.initial.config.seed))
   const [aiWhy, setAiWhy] = useState<{ at: number; text: string } | null>(null)
