@@ -1,4 +1,4 @@
-import { GAUNTLET_STAGES, MAX_ASCENSION, MAX_REROLLS, RELICS, RUN_VERSION, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
+import { EVENTS, GAUNTLET_STAGES, MIN_BONUS, MAX_ASCENSION, MAX_REROLLS, RELICS, RUN_VERSION, type EventId, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
 import { DRAFT_ROLES, MAX_DRAFTED } from './engine/data/draft'
 import { ALL_SPELLS } from './engine/rules/spells'
 import type { Court, Perk, Role, Spell } from './engine/rules/types'
@@ -12,7 +12,7 @@ const isInt = (v: unknown, max = 1e9): v is number => typeof v === 'number' && N
 
 export function piece(v: unknown): RunPiece | null {
   const o = v as Partial<RunPiece> | null
-  if (!o || !ROLES.includes(o.role as Role) || !isInt(o.wins, 99) || !isInt(o.bonus, 9)) return null
+  if (!o || !ROLES.includes(o.role as Role) || !isInt(o.wins, 99) || typeof o.bonus !== 'number' || !Number.isInteger(o.bonus) || o.bonus < MIN_BONUS || o.bonus > 9) return null
   return { role: o.role!, wins: o.wins, bonus: o.bonus, ...(PERKS.includes(o.perk as Perk) ? { perk: o.perk } : {}) }
 }
 
@@ -30,6 +30,7 @@ function reward(v: unknown): Reward | null {
     case 'perk': return isInt(o.target, MAX_DRAFTED) && PERKS.includes(o.perk as Perk) ? (o as unknown as Reward) : null
     case 'spell': return (ALL_SPELLS as string[]).includes(o.spell as string) ? (o as unknown as Reward) : null
     case 'relic': return o.relic as string in RELICS ? (o as unknown as Reward) : null
+    case 'event': return o.event as string in EVENTS ? (o as unknown as Reward) : null
     case 'revive': return isInt(o.target, MAX_DRAFTED) ? (o as unknown as Reward) : null
     default: return null
   }
@@ -56,7 +57,7 @@ export function readRun(raw: unknown): Run | null {
   }
   return {
     v: RUN_VERSION, seed: o.seed, court: o.court as Court, stage: o.stage, leader, army, fallen,
-    loadout: o.loadout as Spell[], relics: o.relics as RelicId[], offers,
+    loadout: o.loadout as Spell[], relics: o.relics as RelicId[], offers, event: o.event && (o.event as string) in EVENTS ? (o.event as EventId) : null,
     ascension: isInt(o.ascension, MAX_ASCENSION) ? o.ascension : 0, daily: isInt(o.daily, 99991231) ? o.daily : 0,
     rerolls: isInt(o.rerolls, MAX_REROLLS) ? o.rerolls : 0,
   }

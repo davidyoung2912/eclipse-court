@@ -4,7 +4,7 @@ import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'
 import {
-  applyReward, applyVictory, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
+  applyReward, applyVictory, altarRelic, eventAvailable, eventChoices, MIN_BONUS, pactSpell, RELICS, resolveEvent, shrineBoon, EVENTS, relicUnlocked, type RelicId, type EventId, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
 } from './gauntlet'
 import { ROLE_STATS } from './roster'
 import { validConfig } from '../serialize'
@@ -235,6 +235,7 @@ describe('gauntlet soak', () => {
         if (r.state.winner !== court) break
         run = applyVictory(run, r.state)
         if (run.offers) run = applyReward(run, run.offers[0])
+        if (run.event) run = resolveEvent(run, 0).run
         expect(foeCourt).not.toBe(court)
       }
       expect(run.stage).toBeGreaterThan(1)
@@ -247,9 +248,155 @@ describe('starting relics', () => {
     expect(startingRelics(0)).toEqual([])
     expect(startingRelics(1)).toEqual(['moonwell'])
     expect(startingRelics(6)).toHaveLength(6)
+    expect(startingRelics(11)).toHaveLength(11)
+    expect(startingRelics(0, 5)).toHaveLength(9)
+    expect(startingRelics(11, 5)).toHaveLength(Object.keys(RELICS).length)
+    expect(relicUnlocked('seal', 99, 3)).toBe(false)
+    expect(relicUnlocked('seal', 0, 4)).toBe(true)
     const run = startRun('solari', CLASSIC_ROLES, 7, { relic: 'banner' })
     expect(run.relics).toEqual(['banner'])
     expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
     expect(startRun('solari', CLASSIC_ROLES, 7).relics).toEqual([])
+  })
+})
+
+describe('new relics', () => {
+  it('has twenty relics, each with a way to open it', () => {
+    expect(Object.keys(RELICS)).toHaveLength(20)
+    expect(startingRelics(99, 5)).toHaveLength(20)
+  })
+
+  it('switch on match settings, with Seal favouring only the player', () => {
+    const all = Object.keys(RELICS) as RelicId[]
+    expect(relicRules(['glass', 'deathbell', 'ashring', 'seal'], 'umbral')).toMatchObject({ reverse: true, suddenDeath: 14, showdown: true, freeCast: 'umbral' })
+    expect(relicRules(['seal']).freeCast).toBeUndefined()
+    expect(relicRules(['harbinger', 'cutpurse', 'wilddie']).mayhem).toEqual(['spawns', 'thefts', 'swaps'])
+    expect(relicRules(['swiftsun']).day).toHaveLength(6)
+    expect(relicRules(['swiftsun', 'hourglass']).day).toBeUndefined()
+    const run = { ...newRun('umbral'), relics: all }
+    const state = stageGame(run)
+    expect(validConfig(state.config)).toBe(true)
+  })
+
+  it('Ironheart adds fight-only HP that is not kept', () => {
+    const run = { ...newRun(), relics: ['ironheart' as const] }
+    const start = stageGame(run)
+    const plain = stageGame(newRun())
+    const mine = (s: GameState) => s.pieces.find((p) => p.id === 'solari-run-0')!
+    expect(mine(start).maxHp).toBe(mine(plain).maxHp + 1)
+    const next = applyVictory(run, afterWin(run))
+    expect(next.leader.bonus).toBe(0)
+    expect(next.army.every((p) => p.bonus === 0)).toBe(true)
+  })
+
+  it('Lens offers four, Waystone camps every stage, Ember keeps the best loss', () => {
+    const run = { ...newRun(), relics: ['lens' as const] }
+    for (let i = 0; i < 10; i++) expect(runReward(run, i)).toHaveLength(4)
+    expect(restStages(2, ['waystone'])).toHaveLength(GAUNTLET_STAGES - 1)
+    expect(restStages(0)).toEqual(REST_STAGES)
+    const ember = { ...newRun(), relics: ['ember' as const] }
+    const next = applyVictory(ember, afterWin(ember, [2, 3]))
+    expect(next.army).toHaveLength(ember.army.length - 1)
+    expect(next.fallen).toHaveLength(1)
+    const plain = applyVictory(newRun(), afterWin(newRun(), [2, 3]))
+    expect(plain.fallen).toHaveLength(2)
+  })
+
+  it('Chalice grows the Leader after a cast and Lamp pays pieces on beacons', () => {
+    const chalice = { ...newRun(), relics: ['chalice' as const] }
+    const quiet = afterWin(chalice)
+    expect(applyVictory(chalice, quiet).leader.bonus).toBe(0)
+    const cast = applyVictory(chalice, { ...quiet, lastCast: { ...quiet.lastCast, solari: 'blink' } })
+    expect(cast.leader.bonus).toBe(1)
+    const lamp = { ...newRun(), relics: ['lamp' as const] }
+    const won = afterWin(lamp)
+    const b = won.config.beacons[0]
+    const moved = { ...won, pieces: won.pieces.map((p) => (p.id === 'solari-run-1' ? { ...p, pos: b } : p)) }
+    const next = applyVictory(lamp, moved)
+    expect(next.army[0].wins).toBe(1)
+    expect(next.army[1].wins).toBe(0)
+    expect(applyVictory(newRun(), moved).army[0].wins).toBe(0)
+  })
+})
+
+describe('events', () => {
+  const faced = (event: EventId, run: Run = newRun()): Run => ({ ...run, stage: 3, event })
+
+  it('are offered only when they could do something, and open on pick', () => {
+    const run: Run = { ...newRun(), stage: 3 }
+    expect((['altar', 'pact', 'shrine'] as EventId[]).every((e) => eventAvailable(run, e))).toBe(true)
+    expect(eventAvailable({ ...run, army: [] }, 'altar')).toBe(false)
+    expect(eventAvailable({ ...run, leader: { ...run.leader, bonus: MIN_BONUS } }, 'pact')).toBe(false)
+    expect(eventAvailable({ ...run, relics: Object.keys(RELICS) as RelicId[] }, 'altar')).toBe(false)
+    const opened = applyReward({ ...run, offers: [{ kind: 'event', event: 'shrine' }] }, { kind: 'event', event: 'shrine' })
+    expect(opened.event).toBe('shrine')
+    expect(opened.offers).toBeNull()
+    const seen = new Set<string>()
+    for (let i = 0; i < 60; i++) for (const r of runReward(run, i)) if (r.kind === 'event') seen.add(r.event)
+    expect(seen.size).toBe(3)
+    expect(EVENTS.altar.name).toBeTruthy()
+  })
+
+  it('altar: a sacrificed piece buys the relic, walking away changes nothing', () => {
+    const run = faced('altar')
+    const relic = altarRelic(run)!
+    const { run: after } = resolveEvent(run, 1)
+    expect(after.event).toBeNull()
+    expect(after.army).toHaveLength(run.army.length - 1)
+    expect(after.army[0]).toEqual(run.army[0])
+    expect(after.relics).toEqual([relic])
+    expect(eventChoices(run, 'altar')).toHaveLength(run.army.length + 1)
+    const left = resolveEvent(run, run.army.length).run
+    expect(left).toEqual({ ...run, event: null })
+  })
+
+  it('pact: max HP for a spell, never below the floor', () => {
+    const run = faced('pact')
+    const spell = pactSpell(run)!
+    const signed = resolveEvent(run, 0).run
+    expect(signed.leader.bonus).toBe(-1)
+    expect(signed.loadout).toContain(spell)
+    const twice = resolveEvent({ ...signed, event: 'pact' }, 0).run
+    expect(twice.leader.bonus).toBe(MIN_BONUS)
+    const refused = resolveEvent({ ...twice, event: 'pact' }, 0).run
+    expect(refused.leader.bonus).toBe(MIN_BONUS)
+    expect(resolveEvent(run, 1).run.loadout).toEqual(run.loadout)
+    const fight = stageGame(signed)
+    expect(fight.pieces.find((p) => p.id === 'solari-run-0')!.maxHp).toBe(ROLE_STATS.leader.hp - 1)
+  })
+
+  it('shrine: the same run always meets the same coin, blessing or curse', () => {
+    let boon = 0
+    let curse = 0
+    for (let seed = 1; seed <= 40; seed++) {
+      const run = faced('shrine', newRun('solari', seed))
+      const { run: after, text } = resolveEvent(run, 0)
+      expect(resolveEvent(run, 0)).toEqual({ run: after, text })
+      expect(after.event).toBeNull()
+      if (shrineBoon(run)) {
+        boon++
+        expect(roster(after).filter((p) => p.perk)).toHaveLength(1)
+        expect(roster(after).find((p) => p.perk)!.wins).toBeGreaterThanOrEqual(4)
+        expect(after.army).toHaveLength(run.army.length)
+      } else {
+        curse++
+        expect(after.army).toHaveLength(run.army.length - 1)
+        expect(after.fallen).toHaveLength(1)
+      }
+    }
+    expect(boon).toBeGreaterThan(5)
+    expect(curse).toBeGreaterThan(5)
+    const run = faced('shrine')
+    expect(resolveEvent(run, 1).run).toEqual({ ...run, event: null })
+  })
+
+  it('save and load, and a damaged event is dropped', () => {
+    const run = faced('pact', { ...newRun(), leader: { role: 'leader', wins: 0, bonus: -2 } })
+    expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
+    expect(readRun({ ...run, event: 'nope' })?.event).toBeNull()
+    expect(readRun({ ...run, leader: { ...run.leader, bonus: -3 } })).toBeNull()
+    expect(readRun({ ...run, offers: [{ kind: 'event', event: 'nope' }] })).toBeNull()
+    const { event: _gone, ...old } = run
+    expect(readRun(old)?.event).toBeNull()
   })
 })

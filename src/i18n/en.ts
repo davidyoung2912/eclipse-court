@@ -216,6 +216,8 @@ export const en = {
   'sinks.prestigeNext': '{tier} · {cost} Shards',
   'sinks.prestigeMax': 'Mythic',
   'sinks.prestigeOf': 'Prestige {name}',
+  'gauntlet.event': 'Event: {name}',
+  'gauntlet.eventTagline': 'Choose once. There is no going back.',
   'gauntlet.reroll': 'Reroll the offers · {cost} Shards ({left} left)',
   'daily.freezes': 'Streak freezes held: {count}',
   'puzzle.seer': 'The whole line',

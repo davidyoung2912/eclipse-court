@@ -58,7 +58,7 @@ import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
-import { applyReward, applyVictory, canReroll, rerollOffers, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { applyReward, applyVictory, canReroll, rerollOffers, resolveEvent, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { recordAscension } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
 import { saveLegacy } from './legacy'
@@ -584,6 +584,7 @@ export default function App() {
         onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
+        onEvent={(choice: number) => { if (run?.event) { const done = resolveEvent(run, choice); setReport([done.text]); update(done.run) } }}
         onReroll={() => { if (run && canReroll(run) && payReroll()) update(rerollOffers(run)) }}
         onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
         onFight={() => {

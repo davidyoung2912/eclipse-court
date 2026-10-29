@@ -3,15 +3,15 @@ import { PERSONALITIES, type PersonalityId } from './personality'
 import { DIFFICULTY_LIST, type Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import { rngNext } from '../rng'
-import { otherCourt } from '../rules/board'
+import { otherCourt, samePos } from '../rules/board'
 import { ELITE_WINS, perkChoices, VETERAN_WINS } from '../rules/growth'
 import { DAYS } from '../rules/luminance'
 import { LOADOUT_SIZE, spellPool } from '../rules/spells'
-import type { Court, GameState, MatchConfig, Perk, Piece, Role, Spell } from '../rules/types'
+import type { Court, GameState, MatchConfig, Mayhem, Perk, Piece, Role, Spell } from '../rules/types'
 import { BOARDS, boardById } from './boards'
 import { arrange, DRAFT_ROLES, MAX_DRAFTED, ROLE_MAX } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
-import { ROLE_STATS } from './roster'
+import { ROLE_NAMES, ROLE_STATS } from './roster'
 
 /** Beat this many stages in a row to win the run; the last is a boss. */
 export const GAUNTLET_STAGES = 8
@@ -21,6 +21,8 @@ export const REST_STAGES: readonly number[] = [3, 6]
 export const MAX_SPELLS = 7
 /** The most extra HP rewards can add to one piece (before veterancy). */
 export const MAX_BONUS = 4
+/** The least a bargain can take from a piece: a bonus may fall this far below zero. */
+export const MIN_BONUS = -2
 const MAX_FALLEN = 6
 
 export const RUN_VERSION = 1
@@ -47,12 +49,19 @@ export const ASCENSIONS: readonly { name: string; text: string }[] = [
   { name: 'Early Dusk', text: 'The boss brings the Eclipse at round 14.' },
 ]
 
-/** The stages after which a rest stop appears at this ascension. */
-export const restStages = (ascension: number): readonly number[] => (ascension >= 2 ? [] : REST_STAGES)
+/** The stages after which a rest stop appears at this ascension; a Waystone brings a camp after every stage but the boss. */
+export const restStages = (ascension: number, relics: readonly RelicId[] = []): readonly number[] =>
+  relics.includes('waystone') ? Array.from({ length: GAUNTLET_STAGES - 1 }, (_, i) => i + 1) : ascension >= 2 ? [] : REST_STAGES
 
-export type RelicId = 'moonwell' | 'hourglass' | 'dawnstone' | 'banner' | 'sundial' | 'omen'
+export type RelicId =
+  | 'moonwell' | 'hourglass' | 'dawnstone' | 'banner' | 'sundial' | 'omen'
+  | 'swiftsun' | 'glass' | 'wilddie' | 'cutpurse' | 'harbinger'
+  | 'ironheart' | 'lens' | 'waystone' | 'ember' | 'chalice' | 'lamp' | 'seal' | 'deathbell' | 'ashring'
 
-/** Relics only switch on existing match settings, so they bend the rules for both courts. */
+/**
+ * Most relics switch on existing match settings, so they bend the rules for both courts. Ironheart, Lens,
+ * Waystone, Ember, Chalice and Lamp work on the run between fights instead, and Seal favours only the player.
+ */
 export const RELICS: Record<RelicId, { name: string; text: string }> = {
   moonwell: { name: 'Moonwell', text: 'Cast spells return after 8 rounds.' },
   hourglass: { name: 'Hourglass', text: 'The light runs a long, 10-round day.' },
@@ -60,13 +69,46 @@ export const RELICS: Record<RelicId, { name: string; text: string }> = {
   banner: { name: 'Banner of the March', text: 'Footsoldiers that cross the board are promoted.' },
   sundial: { name: 'Sundial', text: 'Court passives are in play: Solari fliers reach further in light, Umbral regenerate in the dark.' },
   omen: { name: 'Omen', text: 'A day event strikes at the start of each day.' },
+  swiftsun: { name: 'Swift Sun', text: 'The light runs a short, 6-round day (it cancels an Hourglass).' },
+  glass: { name: 'Looking Glass', text: 'The light starts out running the other way round.' },
+  wilddie: { name: 'Wild Die', text: 'Every 4 rounds two pieces of one role, one from each court, trade places.' },
+  cutpurse: { name: 'Cutpurse’s Charm', text: 'Every 5 rounds a spell leaps from one Leader to the other.' },
+  harbinger: { name: 'Harbinger', text: 'Every 3 rounds a pair of mirrored cells appears on empty squares.' },
+  ironheart: { name: 'Ironheart', text: 'Your pieces have 1 extra HP in every fight.' },
+  lens: { name: 'Scholar’s Lens', text: 'Every spoils screen offers four rewards instead of three.' },
+  waystone: { name: 'Waystone', text: 'A camp follows every stage but the boss, even at high ascension.' },
+  ember: { name: 'Ember', text: 'The best piece you lose in a won fight is carried back into the army.' },
+  chalice: { name: 'Echoing Chalice', text: 'Cast a spell in a won fight and your Leader gains 1 max HP (to the usual cap).' },
+  lamp: { name: 'Beacon Lamp', text: 'Each of your pieces standing on a beacon when a fight is won earns an extra win.' },
+  seal: { name: 'Conjurer’s Seal', text: 'Your Leader may cast once a turn without ending it. Only you gain this.' },
+  deathbell: { name: 'Deathbell', text: 'From round 14 the first duel that kills a piece wins the game for the survivor.' },
+  ashring: { name: 'Ashen Ring', text: 'The outer squares turn deadly from the Eclipse on, closing in on the centre.' },
 }
 
-/** Gauntlet runs won before a relic can be chosen as a starting relic. */
-export const RELIC_UNLOCK_WINS: Record<RelicId, number> = { moonwell: 1, hourglass: 2, dawnstone: 3, banner: 4, sundial: 5, omen: 6 }
+/** How a relic opens as a starting relic: by gauntlet runs won, or by reaching an ascension level. */
+export type RelicUnlock = { wins: number } | { ascension: number }
 
-/** The relics that can open a run once `won` runs have been won. */
-export const startingRelics = (won: number): RelicId[] => (Object.keys(RELICS) as RelicId[]).filter((r) => won >= RELIC_UNLOCK_WINS[r])
+export const RELIC_UNLOCK: Record<RelicId, RelicUnlock> = {
+  moonwell: { wins: 1 }, hourglass: { wins: 2 }, dawnstone: { wins: 3 }, banner: { wins: 4 }, sundial: { wins: 5 }, omen: { wins: 6 },
+  swiftsun: { wins: 7 }, glass: { wins: 8 }, wilddie: { wins: 9 }, cutpurse: { wins: 10 }, harbinger: { wins: 11 },
+  ironheart: { ascension: 1 }, lens: { ascension: 1 }, waystone: { ascension: 2 }, ember: { ascension: 2 },
+  chalice: { ascension: 3 }, lamp: { ascension: 3 }, seal: { ascension: 4 }, deathbell: { ascension: 4 }, ashring: { ascension: 5 },
+}
+
+/** `ascension` is the highest level the player has opened (`unlocked` in the ascension record). */
+export const relicUnlocked = (relic: RelicId, won: number, ascension = 0) => {
+  const u = RELIC_UNLOCK[relic]
+  return 'wins' in u ? won >= u.wins : ascension >= u.ascension
+}
+
+/** What it takes to open a relic, in words. */
+export const relicUnlockText = (relic: RelicId): string => {
+  const u = RELIC_UNLOCK[relic]
+  return 'wins' in u ? `Win ${u.wins} gauntlet run${u.wins === 1 ? '' : 's'}` : `Open ascension ${u.ascension}`
+}
+
+/** The relics that can open a run once `won` runs have been won and ascension `ascension` is open. */
+export const startingRelics = (won: number, ascension = 0): RelicId[] => (Object.keys(RELICS) as RelicId[]).filter((r) => relicUnlocked(r, won, ascension))
 
 const RELIC_IDS = Object.keys(RELICS) as RelicId[]
 
@@ -76,6 +118,8 @@ export type Reward =
   | { kind: 'perk'; target: number; perk: Perk }
   | { kind: 'spell'; spell: Spell }
   | { kind: 'relic'; relic: RelicId }
+  /** Opens an event screen (see `EVENTS`) instead of giving anything outright. */
+  | { kind: 'event'; event: EventId }
   /** A rest stop: index into `fallen`. */
   | { kind: 'revive'; target: number }
 
@@ -94,6 +138,8 @@ export interface Run {
   relics: RelicId[]
   /** The rewards on offer after a win, until one is picked. */
   offers: Reward[] | null
+  /** The event being faced, after it was picked from the offers and until a choice is made. */
+  event: EventId | null
   /** Ascension level, 0 to MAX_ASCENSION. */
   ascension: number
   /** The `dailySeed` of the day this is the seeded daily run for, or 0. */
@@ -116,7 +162,7 @@ export function startRun(court: Court, roles: readonly Role[], seed: number, opt
   return {
     ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
-    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, rerolls: 0,
+    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, event: null, rerolls: 0,
   }
 }
 
@@ -215,20 +261,32 @@ export function stageFoe(seed: number, stage: number, ascension = 0): StageFoe {
   }
 }
 
-/** The match settings relics switch on. */
-export function relicRules(relics: readonly RelicId[]): Partial<MatchConfig> {
+/** The match settings relics switch on; `court` is the player's, for the relics that favour only them. */
+export function relicRules(relics: readonly RelicId[], court?: Court): Partial<MatchConfig> {
   const out: Partial<MatchConfig> = {}
   if (relics.includes('moonwell')) out.recharge = 8
-  if (relics.includes('hourglass')) out.day = DAYS.long
+  if (relics.includes('hourglass') !== relics.includes('swiftsun')) out.day = relics.includes('hourglass') ? DAYS.long : DAYS.swift
   if (relics.includes('banner')) out.promotion = true
   if (relics.includes('sundial')) out.passives = true
   if (relics.includes('omen')) out.events = true
+  if (relics.includes('glass')) out.reverse = true
+  if (relics.includes('deathbell')) out.suddenDeath = 14
+  if (relics.includes('ashring')) out.showdown = true
+  if (relics.includes('seal') && court) out.freeCast = court
+  const mayhem: Mayhem[] = []
+  if (relics.includes('harbinger')) mayhem.push('spawns')
+  if (relics.includes('cutpurse')) mayhem.push('thefts')
+  if (relics.includes('wilddie')) mayhem.push('swaps')
+  if (mayhem.length) out.mayhem = mayhem
   return out
 }
 
 // ---- building a fight ----
 
-const maxHpOf = (p: RunPiece) => ROLE_STATS[p.role].hp + p.bonus + (p.wins >= VETERAN_WINS ? 1 : 0)
+/** Extra HP every piece has in a fight from relics; it is not kept when the fight ends. */
+const relicHp = (relics: readonly RelicId[]) => (relics.includes('ironheart') ? 1 : 0)
+
+const maxHpOf = (p: RunPiece, relics: readonly RelicId[]) => ROLE_STATS[p.role].hp + p.bonus + (p.wins >= VETERAN_WINS ? 1 : 0) + relicHp(relics)
 
 /** The opening position of the run's next fight: the persistent army against the stage's opponent. */
 export function stageGame(run: Run): GameState {
@@ -238,7 +296,7 @@ export function stageGame(run: Run): GameState {
   const board = boardById(foe.board)
   const mine = arrange(run.army.map((p) => p.role))
   const theirs = arrange(foe.army)
-  const rules = { ...foe.rules, ...relicRules(run.relics) }
+  const rules = { ...foe.rules, ...relicRules(run.relics, run.court) }
   const config: MatchConfig = {
     ...DEFAULT_CONFIG, ...rules, seed, beacons: board.beacons, blocked: board.blocked, cells: board.cells, board: board.id, setup: 'gauntlet', growth: true,
     layout: run.court === 'solari' ? mine : theirs,
@@ -264,7 +322,7 @@ export function stageGame(run: Run): GameState {
       if (p.court === run.court) {
         const i = slotFor(p.role)
         const r = slots[i]
-        const maxHp = maxHpOf(r)
+        const maxHp = maxHpOf(r, run.relics)
         return { ...p, id: pieceId(run.court, i), hp: maxHp, maxHp, wins: r.wins, ...(r.perk ? { perk: r.perk } : {}) }
       }
       if (!foe.hpBonus) return p
@@ -276,9 +334,9 @@ export function stageGame(run: Run): GameState {
 // ---- after a fight ----
 
 /** What a surviving piece has become: its role (it may have been promoted), record and perk. */
-function carried(piece: Piece, before: RunPiece): RunPiece {
+function carried(piece: Piece, before: RunPiece, relics: readonly RelicId[]): RunPiece {
   const wins = piece.wins ?? before.wins
-  const bonus = Math.min(MAX_BONUS, Math.max(0, piece.maxHp - ROLE_STATS[piece.role].hp - (wins >= VETERAN_WINS ? 1 : 0)))
+  const bonus = Math.min(MAX_BONUS, Math.max(MIN_BONUS, piece.maxHp - ROLE_STATS[piece.role].hp - (wins >= VETERAN_WINS ? 1 : 0) - relicHp(relics)))
   return { role: piece.role, wins, bonus, ...(piece.perk ? { perk: piece.perk } : {}) }
 }
 
@@ -294,17 +352,23 @@ export function applyVictory(run: Run, final: GameState): Run {
     const m = new RegExp(`^${run.court}-run-(\\d+)$`).exec(p.id)
     if (m && slots[Number(m[1])]) alive.set(Number(m[1]), p)
   }
+  const lamp = (c: RunPiece, p: Piece): RunPiece =>
+    run.relics.includes('lamp') && final.config.beacons.some((b) => samePos(b, p.pos)) ? { ...c, wins: Math.min(99, c.wins + 1) } : c
   // A Leader who fell in a won fight is replaced by a fresh one that keeps its HP rewards.
-  const leader = alive.has(0) ? carried(alive.get(0)!, run.leader) : { ...fresh('leader'), bonus: run.leader.bonus }
+  const held = alive.get(0)
+  let leader = held ? lamp(carried(held, run.leader, run.relics), held) : { ...fresh('leader'), bonus: run.leader.bonus }
+  if (run.relics.includes('chalice') && final.lastCast[run.court]) leader = { ...leader, bonus: Math.min(MAX_BONUS, leader.bonus + 1) }
   const army: RunPiece[] = []
   const lost: RunPiece[] = []
   run.army.forEach((r, k) => {
     const p = alive.get(k + 1)
-    if (p) army.push(carried(p, r))
+    if (p) army.push(lamp(carried(p, r, run.relics), p))
     else lost.push(r)
   })
+  lost.sort((a, b) => b.wins - a.wins)
+  if (run.relics.includes('ember') && lost.length) army.push(lost.shift()!)
   const fallen = [...run.fallen, ...lost].sort((a, b) => b.wins - a.wins).slice(0, MAX_FALLEN)
-  const next: Run = { ...run, leader, army, fallen, stage: run.stage + 1, offers: null }
+  const next: Run = { ...run, leader, army, fallen, stage: run.stage + 1, offers: null, event: null }
   return runWon(next) ? next : { ...next, offers: runReward(next, stageSeed(run.seed, run.stage) ^ 0x5bd1e995) }
 }
 
@@ -313,7 +377,7 @@ export function applyVictory(run: Run, final: GameState): Run {
 export const canAddPiece = (run: Run, role: Role) =>
   run.army.length < MAX_DRAFTED && run.army.filter((p) => p.role === role).length < ROLE_MAX[role]
 
-/** Three rewards to pick from (fewer if little is left to give); a rest stop always offers a fallen piece when there is one. */
+/** Three rewards to pick from (four with a Lens; fewer if little is left to give); a rest stop always offers a fallen piece when there is one. */
 export function runReward(run: Run, rng: number): Reward[] {
   const roll = stream(rng)
   const pick = <T,>(items: readonly T[]) => items[Math.floor(roll() * items.length)]
@@ -341,12 +405,17 @@ export function runReward(run: Run, rng: number): Reward[] {
       const open = RELIC_IDS.filter((r) => !run.relics.includes(r))
       return open.length ? { kind: 'relic', relic: pick(open) } : null
     },
+    () => {
+      const open = EVENT_IDS.filter((e) => eventAvailable(run, e))
+      return open.length ? { kind: 'event', event: pick(open) } : null
+    },
   ]
   const offers: Reward[] = []
-  if (restStages(run.ascension).includes(run.stage - 1) && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
+  const width = run.relics.includes('lens') ? 4 : 3
+  if (restStages(run.ascension, run.relics).includes(run.stage - 1) && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
   const order = kinds.map((k, i) => ({ k, key: roll(), i })).sort((a, b) => a.key - b.key)
   for (const { k } of order) {
-    if (offers.length >= 3) break
+    if (offers.length >= width) break
     const reward = k()
     if (reward) offers.push(reward)
   }
@@ -376,6 +445,8 @@ export function applyReward(run: Run, reward: Reward): Run {
       return run.loadout.length < MAX_SPELLS && !run.loadout.includes(reward.spell) ? { ...next, loadout: [...run.loadout, reward.spell] } : next
     case 'relic':
       return run.relics.includes(reward.relic) ? next : { ...next, relics: [...run.relics, reward.relic] }
+    case 'event':
+      return eventAvailable(run, reward.event) ? { ...next, event: reward.event } : next
     case 'revive': {
       const back = run.fallen[reward.target]
       if (!back || run.army.length >= MAX_DRAFTED) return next
@@ -388,6 +459,116 @@ function withPiece(run: Run, target: number, f: (p: RunPiece) => RunPiece): Run 
   if (target === 0) return { ...run, leader: f(run.leader) }
   if (!run.army[target - 1]) return run
   return { ...run, army: run.army.map((p, i) => (i === target - 1 ? f(p) : p)) }
+}
+
+// ---- events ----
+
+export type EventId = 'altar' | 'pact' | 'shrine'
+
+/** Event screens: a choice with a risk, reached by picking an event as the reward. */
+export const EVENTS: Record<EventId, { name: string; text: string }> = {
+  altar: { name: 'The Bone Altar', text: 'Give up a piece for good and take a relic.' },
+  pact: { name: 'The Moon Pact', text: 'Trade your Leader’s max HP for a spell.' },
+  shrine: { name: 'The Wayside Shrine', text: 'Pray: a coin decides between a blessing and a loss.' },
+}
+
+const EVENT_IDS = Object.keys(EVENTS) as EventId[]
+
+/** One seeded stream per stage and event, so the same run meets the same outcomes. */
+const eventStream = (run: Run, salt: number) => stream(stageSeed(run.seed, run.stage - 1) ^ salt)
+
+/** The relic the altar would give. */
+export function altarRelic(run: Run): RelicId | null {
+  const open = RELIC_IDS.filter((r) => !run.relics.includes(r))
+  return open.length ? open[Math.floor(eventStream(run, 0xa17a2)() * open.length)] : null
+}
+
+/** The spell the pact would give. */
+export function pactSpell(run: Run): Spell | null {
+  const open = spellPool(run.court).filter((s) => !run.loadout.includes(s))
+  return run.loadout.length < MAX_SPELLS && open.length ? open[Math.floor(eventStream(run, 0x9ac7)() * open.length)] : null
+}
+
+/** What the shrine's coin decides: a perk for the strongest piece without one, or the strongest non-Leader piece lost. */
+export function shrineBoon(run: Run): boolean {
+  return eventStream(run, 0x5121e)() < 0.5
+}
+
+const shrinePerk = (run: Run) => {
+  const open = roster(run).map((p, i) => ({ p, i })).filter(({ p }) => !p.perk)
+  return open.sort((a, b) => b.p.wins - a.p.wins || a.i - b.i)[0] ?? null
+}
+
+/** An event is offered only when it could do something. */
+export function eventAvailable(run: Run, event: EventId): boolean {
+  switch (event) {
+    case 'altar': return run.army.length > 0 && altarRelic(run) !== null
+    case 'pact': return pactSpell(run) !== null && run.leader.bonus > MIN_BONUS
+    case 'shrine': return run.army.length > 0 && shrinePerk(run) !== null
+  }
+}
+
+export interface EventChoice {
+  title: string
+  text: string
+}
+
+/** The buttons of an event screen; the last is always to walk away. */
+export function eventChoices(run: Run, event: EventId): EventChoice[] {
+  const names = ROLE_NAMES[run.court]
+  const leave: EventChoice = { title: 'Walk away', text: 'Nothing changes.' }
+  switch (event) {
+    case 'altar': {
+      const relic = altarRelic(run)
+      return [
+        ...run.army.map((p): EventChoice => ({ title: `Give up the ${names[p.role]}`, text: `${p.wins} win${p.wins === 1 ? '' : 's'}; it is gone for good. You gain ${relic ? RELICS[relic].name : 'nothing'}.` })),
+        leave,
+      ]
+    }
+    case 'pact': {
+      const spell = pactSpell(run)
+      return [{ title: `Sign: ${spell ?? 'a spell'}`, text: 'Your Leader loses 1 max HP for the rest of the run (at most 2 can be lost this way) and learns the spell.' }, leave]
+    }
+    case 'shrine':
+      return [{ title: 'Pray', text: 'Even odds: your strongest piece without a perk becomes an Elite with one, or your strongest piece besides the Leader is lost for good.' }, leave]
+  }
+}
+
+/** The run after choice `choice` of the event it faces, and a line saying what happened. */
+export function resolveEvent(run: Run, choice: number): { run: Run; text: string } {
+  const event = run.event
+  const done: Run = { ...run, event: null }
+  if (!event || choice < 0 || choice >= eventChoices(run, event).length) return { run: done, text: 'You walk on.' }
+  const names = ROLE_NAMES[run.court]
+  switch (event) {
+    case 'altar': {
+      const relic = altarRelic(run)
+      const gone = run.army[choice]
+      if (!gone || !relic) return { run: done, text: 'You walk on.' }
+      return { run: { ...done, army: run.army.filter((_, i) => i !== choice), relics: [...run.relics, relic] }, text: `The ${names[gone.role]} is gone; you take ${RELICS[relic].name}.` }
+    }
+    case 'pact': {
+      const spell = pactSpell(run)
+      if (choice !== 0 || !spell || run.leader.bonus <= MIN_BONUS) return { run: done, text: 'You walk on.' }
+      return { run: { ...done, leader: { ...run.leader, bonus: run.leader.bonus - 1 }, loadout: [...run.loadout, spell] }, text: `Your Leader gives up 1 max HP and learns ${spell}.` }
+    }
+    case 'shrine': {
+      if (choice !== 0) return { run: done, text: 'You walk on.' }
+      if (shrineBoon(run)) {
+        const pick = shrinePerk(run)
+        if (!pick) return { run: done, text: 'The shrine is quiet.' }
+        const perk = perkChoices(pick.p.role)[0]
+        const applied = withPiece(done, pick.i, (p) => ({ ...p, wins: Math.max(p.wins, ELITE_WINS), perk }))
+        return { run: applied, text: `Blessed: the ${names[pick.p.role]} becomes an Elite with ${perk}.` }
+      }
+      const victim = run.army.map((p, i) => ({ p, i })).sort((a, b) => b.p.wins - a.p.wins || a.i - b.i)[0]
+      if (!victim) return { run: done, text: 'The shrine is quiet.' }
+      return {
+        run: { ...done, army: run.army.filter((_, i) => i !== victim.i), fallen: [...run.fallen, victim.p].sort((a, b) => b.wins - a.wins).slice(0, MAX_FALLEN) },
+        text: `Cursed: the ${names[victim.p.role]} is lost.`,
+      }
+    }
+  }
 }
 
 // ---- run codes and summaries ----

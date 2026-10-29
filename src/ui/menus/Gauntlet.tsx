@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, RELIC_UNLOCK_WINS, RELICS, MAX_REROLLS, canReroll, restStages, startingRelics, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, EVENTS, MIN_BONUS, RELICS, eventChoices, relicUnlockText, MAX_REROLLS, canReroll, restStages, relicUnlocked, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
 import { SPELL_INFO } from '../../engine/rules/spells'
@@ -36,6 +36,8 @@ interface Props {
   onReward: (reward: Reward) => void
   /** Pays for and draws a fresh set of offers. */
   onReroll: () => void
+  /** Takes choice `i` of the event being faced. */
+  onEvent: (choice: number) => void
   onAbandon: () => void
   onBack: () => void
 }
@@ -60,6 +62,7 @@ function describe(run: Run, reward: Reward): { title: string; text: string } {
     case 'perk': return { title: `${names[slots[reward.target].role]}: ${PERK_INFO[reward.perk].name}`, text: `Becomes Elite. ${PERK_INFO[reward.perk].text}` }
     case 'spell': return { title: `Learn ${SPELL_INFO[reward.spell].name}`, text: SPELL_INFO[reward.spell].text }
     case 'relic': return { title: `Relic: ${RELICS[reward.relic].name}`, text: `${RELICS[reward.relic].text} It applies to both courts.` }
+    case 'event': return { title: t('gauntlet.event', { name: EVENTS[reward.event].name }), text: EVENTS[reward.event].text }
     case 'revive': return { title: `Rest: restore a ${names[run.fallen[reward.target].role]}`, text: `${rank(run.fallen[reward.target])}; it rejoins the army.` }
   }
 }
@@ -71,7 +74,7 @@ function Army({ run }: { run: Run }) {
       {roster(run).map((p, i) => (
         <li key={i}>
           <svg className="avatar" viewBox="-0.45 -0.45 0.9 0.9" aria-hidden="true" width="22" height="22"><PieceArt role={p.role} court={run.court} /></svg>
-          {' '}<strong>{names[p.role]}</strong> {rank(p)}{p.perk ? `, ${PERK_INFO[p.perk].name}` : ''}{p.bonus ? `, +${p.bonus} HP` : ''}
+          {' '}<strong>{names[p.role]}</strong> {rank(p)}{p.perk ? `, ${PERK_INFO[p.perk].name}` : ''}{p.bonus ? `, ${p.bonus > 0 ? '+' : ''}${p.bonus} HP` : ''}
         </li>
       ))}
       {run.relics.length > 0 && <li>Relics: {run.relics.map((r) => RELICS[r].name).join(', ')}</li>}
@@ -81,7 +84,7 @@ function Army({ run }: { run: Run }) {
 }
 
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onEvent, onAbandon, onBack }: Props) {
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
@@ -140,11 +143,11 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
             <strong>None</strong><span>Begin with no relic.</span>
           </button>
           {(Object.keys(RELICS) as RelicId[]).map((r) => {
-            const open = startingRelics(g.won).includes(r)
+            const open = relicUnlocked(r, g.won, asc.unlocked)
             return (
               <button key={r} className={`choice${relic === r ? ' on' : ''}`} aria-pressed={relic === r} disabled={!open} onClick={() => setRelic(r)}>
                 <strong>{RELICS[r].name}</strong>
-                <span>{open ? `${RELICS[r].text} It applies to both courts.` : `Win ${RELIC_UNLOCK_WINS[r]} gauntlet run${RELIC_UNLOCK_WINS[r] === 1 ? '' : 's'} to unlock (${g.won} so far).`}</span>
+                <span>{open ? `${RELICS[r].text} It applies to both courts.` : `${relicUnlockText(r)} to unlock (${g.won} won, ascension ${asc.unlocked} open).`}</span>
               </button>
             )
           })}
@@ -156,10 +159,31 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
           {code.trim() !== '' && !parsed && <div role="alert">That code is not valid.</div>}
         </label>
         <div className="menu-buttons stacked">
-          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed, relic: relic && startingRelics(g.won).includes(relic) ? relic : undefined })}><Icon name="play" />Begin the Run</button>
+          <button className="primary" disabled={!!draftProblem(roles) || (code.trim() !== '' && !parsed)} onClick={() => onStart(court, roles, { ascension: level, seed: parsed?.seed, relic: relic && relicUnlocked(relic, g.won, asc.unlocked) ? relic : undefined })}><Icon name="play" />Begin the Run</button>
           {back}
         </div>
         <TipCard page="gauntlet" />
+      </main>
+    )
+
+  if (run.event)
+    return (
+      <main className="app menu gauntlet-menu">
+        <PageArt icon="flame" />
+        <h2>{EVENTS[run.event].name}</h2>
+        <p className="tagline">{t('gauntlet.eventTagline')}</p>
+        <p className="tagline">{EVENTS[run.event].text}</p>
+        <div className="choices">
+          {eventChoices(run, run.event).map((c, i) => (
+            <button key={i} className="choice" disabled={run.event === 'pact' && i === 0 && run.leader.bonus <= MIN_BONUS} onClick={() => onEvent(i)}>
+              <strong><Icon name="sparkle" />{c.title}</strong>
+              <span>{c.text}</span>
+            </button>
+          ))}
+        </div>
+        <Army run={run} />
+        <div className="menu-buttons stacked">{back}</div>
+        <TipCard page="gauntlet-run" />
       </main>
     )
 
@@ -168,7 +192,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
       <main className="app menu gauntlet-menu">
         <PageArt icon="flame" />
         <h2>Spoils of stage {run.stage - 1}</h2>
-        <p className="tagline">Take one reward. {restStages(run.ascension).includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
+        <p className="tagline">Take one reward. {restStages(run.ascension, run.relics).includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
         {lines}
         <div className="choices">
           {run.offers.map((reward, i) => {
@@ -207,7 +231,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
       </div>
       <h3>Your army ({run.army.length + 1} pieces)</h3>
       <Army run={run} />
-      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.ascension).find((s) => s >= run.stage) ? `a camp after stage ${restStages(run.ascension).find((s) => s >= run.stage)} may restore one.` : 'there is no camp left to restore them.'}</p>}
+      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.ascension, run.relics).find((s) => s >= run.stage) ? `a camp after stage ${restStages(run.ascension, run.relics).find((s) => s >= run.stage)} may restore one.` : 'there is no camp left to restore them.'}</p>}
       <div className="menu-buttons stacked">
         <button className="primary" onClick={onFight}><Icon name="swords" />{resuming ? 'Resume Fight' : 'Fight'}</button>
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
