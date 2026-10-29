@@ -3,6 +3,7 @@ import { PieceArt } from '../../art/PieceArt'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import type { DuelOutcome, Piece } from '../../engine/rules/types'
 import { Icon } from '../menus/icons'
+import { useDialog } from '../../hooks/useDialog'
 import { t } from '../../i18n'
 
 interface Props {
@@ -24,6 +25,7 @@ function verdictOf({ attackerHp, defenderHp }: DuelOutcome): Verdict {
 
 /** A modal summary of a settled duel: who won, and each fighter's HP before and after. */
 export function DuelResult({ attacker, defender, outcome, onContinue }: Props) {
+  const box = useDialog<HTMLDivElement>(onContinue)
   useEffect(() => {
     const timer = setTimeout(onContinue, SHOWN_MS)
     return () => clearTimeout(timer)
@@ -41,7 +43,7 @@ export function DuelResult({ attacker, defender, outcome, onContinue }: Props) {
   ]
   return (
     <div className="modal-backdrop">
-      <div className="modal duel-result" role="dialog" aria-modal="true" aria-label={t('tray.combatResult')}>
+      <div ref={box} className="modal duel-result" role="dialog" aria-modal="true" aria-label={t('tray.combatResult')}>
         <p className="modal-kicker">{t('tray.combatResult')}</p>
         <h2>{headline}</h2>
         {winner && (

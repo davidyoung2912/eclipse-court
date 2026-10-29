@@ -3,11 +3,16 @@ import { markSoundAsked, setMuted, sfx, soundAsked, unlockAudio } from '../../au
 import { haptic } from '../../haptics'
 import { t } from '../../i18n'
 import { Icon } from './icons'
+import { useDialog } from '../../hooks/useDialog'
 
 /** Asked once on first launch, since sound is off until the player turns it on. */
 export function SoundPrompt({ onAnswer }: { onAnswer?: (on: boolean) => void }) {
   const [open, setOpen] = useState(() => !soundAsked())
   if (!open) return null
+  return <Prompt setOpen={setOpen} onAnswer={onAnswer} />
+}
+
+function Prompt({ setOpen, onAnswer }: { setOpen: (open: boolean) => void; onAnswer?: (on: boolean) => void }) {
   const answer = (on: boolean) => {
     markSoundAsked()
     setOpen(false)
@@ -19,9 +24,10 @@ export function SoundPrompt({ onAnswer }: { onAnswer?: (on: boolean) => void }) 
     haptic('confirm')
     onAnswer?.(on)
   }
+  const box = useDialog<HTMLDivElement>(() => answer(false))
   return (
     <div className="modal-backdrop">
-      <div className="modal sound-prompt" role="dialog" aria-modal="true" aria-label={t('soundPrompt.title')}>
+      <div ref={box} className="modal sound-prompt" role="dialog" aria-modal="true" aria-label={t('soundPrompt.title')}>
         <h2>{t('soundPrompt.title')}</h2>
         <p>{t('soundPrompt.body')}</p>
         <div className="buttons">

@@ -4,6 +4,7 @@ import { Icon } from '../menus/icons'
 import type { CellEffect, Piece } from '../../engine/rules/types'
 import { CELL_INFO } from '../../engine/rules/cells'
 import { adviceFor } from './attackAdvice'
+import { useDialog } from '../../hooks/useDialog'
 import { t } from '../../i18n'
 
 interface Props {
@@ -24,9 +25,10 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
 
 export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, detail, onConfirm, onCancel }: Props) {
   const advice = adviceFor(odds, defender)
+  const box = useDialog<HTMLDivElement>(onCancel)
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
-    <div className="confirm" role="dialog" aria-label={t('tray.confirmAttack')}>
+    <div ref={box} className="confirm" role="dialog" aria-label={t('tray.confirmAttack')}>
       <p className="confirm-title">{t('tray.attacks', { attacker: name(attacker), defender: name(defender) })}</p>
       <div className="odds" aria-label={t('tray.winOdds')}>
         <span className={`odds-a ${attacker.court}`} style={{ flexGrow: odds.attacker }} />

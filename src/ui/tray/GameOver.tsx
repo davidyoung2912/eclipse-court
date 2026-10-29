@@ -10,6 +10,7 @@ import { Confetti } from './Confetti'
 import { ResultBanner, type ResultStat, type ResultTone } from './ResultBanner'
 import { RewardLines } from './RewardLines'
 import { WinBurst } from './WinBurst'
+import { useDialog } from '../../hooks/useDialog'
 
 interface Props {
   hotSeat: boolean
@@ -46,8 +47,9 @@ interface Props {
 export function GameOver(p: Props) {
   const { winner, human, hotSeat, online } = p
   const next = winner ?? p.foe
+  const box = useDialog<HTMLDivElement>()
   return (
-    <div className="confirm result" role="dialog" aria-label={t('game.over')}>
+    <div ref={box} className="confirm result" role="dialog" aria-label={t('game.over')}>
       {(hotSeat ? winner !== 'draw' : winner === human) && <WinBurst />}
       {winner === human && !hotSeat && !online && <Confetti count={confettiCount(p.firstWin, flashesReduced())} />}
       <ResultBanner title={p.result} tone={p.tone} stats={p.stats} />

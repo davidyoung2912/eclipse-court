@@ -63,6 +63,7 @@ import { SpellBar } from './ui/tray/SpellBar'
 import { DuelResult } from './ui/tray/DuelResult'
 import { GrowthPrompt, type Prompt } from './ui/tray/GrowthPrompt'
 import { GameOver } from './ui/tray/GameOver'
+import { PuzzleIntro } from './ui/tray/PuzzleIntro'
 import type { ResultStat, ResultTone } from './ui/tray/ResultBanner'
 
 import type { GameProps as Props, Pending, DuelMode } from './gameTypes'
@@ -821,17 +822,7 @@ export function Game({ controllers, opening, record, session, context, coach, fi
             onConfirm={() => beginDuel(pending)} onCancel={() => setPending(null)} />
         )}
       </footer>
-      {briefing && puzzle && (
-        <div className="puzzle-intro-backdrop">
-          <section className="puzzle-intro" role="dialog" aria-label={t('game.puzzleLabel', { name: puzzle.name })}>
-            <div className="puzzle-intro-icon"><Icon name="puzzle" /></div>
-            <h2>{puzzle.name}</h2>
-            <span className="pill">{t('game.winIn', { count: puzzleLimit ?? 0 })}</span>
-            <p>{puzzle.text}</p>
-            <div className="puzzle-intro-foot"><button onClick={() => setBriefing(false)}><Icon name="check" />{t('tip.gotIt')}</button></div>
-          </section>
-        </div>
-      )}
+      {briefing && puzzle && <PuzzleIntro name={puzzle.name} text={puzzle.text} turns={puzzleLimit ?? 0} onClose={() => setBriefing(false)} />}
       <CoachMarks hidden={briefing || !!banner || !!pending || !!settled || !!asking || ended} onActive={setCoaching} />
       <TipCard float hidden={coaching || briefing || !!banner || !!pending || !!settled || !!asking || ended}
         page={[

@@ -1,6 +1,7 @@
 import { markTipSeen } from '../../tips'
 import { Icon } from '../menus/icons'
 import { useQueue, type Pages } from './useTipQueue'
+import { useDialog } from '../../hooks/useDialog'
 import { t } from '../../i18n'
 
 interface Props {
@@ -19,18 +20,23 @@ export function TipCard({ page, float = false, hidden = false, modal = false }: 
   const { tips, left } = useQueue(page)
   const tip = left[0]
   if (!tip || hidden) return null
+  return <TipView key={tip.id} tip={tip} tips={tips} left={left} float={float} modal={modal} />
+}
+
+type View = Pick<ReturnType<typeof useQueue>, 'tips' | 'left'> & { tip: ReturnType<typeof useQueue>['left'][number]; float: boolean; modal: boolean }
+
+function TipView({ tip, tips, left, float, modal }: View) {
   const number = tips.length - left.length + 1
+  const box = useDialog<HTMLElement>(modal ? () => markTipSeen(tip.id) : undefined)
   const card = (
-    <aside key={tip.id} className={`tip-card${float ? ' float' : ''}${modal ? ' modal' : ''}`} role={modal ? 'dialog' : 'note'} aria-modal={modal || undefined} aria-label={t('tip.label', { title: tip.title })}>
+    <aside ref={modal ? box : undefined} key={tip.id} className={`tip-card${float ? ' float' : ''}${modal ? ' modal' : ''}`} role={modal ? 'dialog' : 'note'} aria-modal={modal || undefined} aria-label={t('tip.label', { title: tip.title })}>
       <div className="tip-icon"><Icon name={tip.icon} /></div>
       <div className="tip-body">
         <h4>{tip.title}</h4>
         <p>{tip.text}</p>
         <div className="tip-foot">
           {tips.length > 1 && <small>{t('tip.count', { n: number, total: tips.length })}</small>}
-          {/* A modal tip takes focus; a shared dialog hook replaces this in accessibility phase 2. */}
-          {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
-          <button className="primary" autoFocus={modal} onClick={() => markTipSeen(tip.id)}><Icon name="check" />{t('tip.gotIt')}</button>
+          <button className="primary" onClick={() => markTipSeen(tip.id)}><Icon name="check" />{t('tip.gotIt')}</button>
         </div>
       </div>
     </aside>

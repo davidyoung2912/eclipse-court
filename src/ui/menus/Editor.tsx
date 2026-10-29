@@ -30,6 +30,9 @@ interface Props {
   onBack: () => void
 }
 
+/** Arrow keys as steps across the drawn board: x runs right and y runs down. */
+const ARROWS: Record<string, readonly [number, number]> = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
+
 const same = (a: Tool, b: Tool) => JSON.stringify(a) === JSON.stringify(b)
 
 const TOOLS: { tool: Tool; label: 'wall' | 'beacon' | 'target' | 'erase' }[] = [
@@ -60,6 +63,19 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
   const [packName, setPackName] = useState('')
   const [kept, setKept] = useState(false)
   const name = cleanPackName(packName)
+  // Keyboard: arrows move a cursor over the board once it has focus, Enter or Space paints its square.
+  const [cursor, setCursor] = useState<Pos | null>(null)
+  const onBoardKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (cursor) { e.preventDefault(); onChange(applyTool(design, tool, cursor)) }
+      return
+    }
+    const d = ARROWS[e.key]
+    if (!d) return
+    e.preventDefault()
+    const from = cursor ?? { x: Math.floor(size / 2), y: Math.floor(size / 2) }
+    setCursor({ x: Math.min(size - 1, Math.max(0, from.x + d[0])), y: Math.min(size - 1, Math.max(0, from.y + d[1])) })
+  }
   const edit = (change: () => void) => { change(); setDraft(packSnapshot().draft); setKept(false) }
 
   return (
@@ -100,7 +116,7 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
         </div>
       ))}
 
-      <svg className="board ed-board" viewBox={`0 0 ${size} ${size}`} role="grid" aria-label={t('editor.boardLabel')}>
+      <svg className="board ed-board" viewBox={`0 0 ${size} ${size}`} role="grid" tabIndex={0} aria-label={t('editor.boardLabel')} onKeyDown={onBoardKey} onBlur={() => setCursor(null)}>
         {Array.from({ length: size * size }, (_, i) => {
           const p: Pos = { x: Math.floor(i / size), y: i % size }
           const effect = cellAt(design, p)
@@ -119,6 +135,12 @@ export function Editor({ design, onChange, onTest, onBack }: Props) {
             </g>
           )
         })}
+        {cursor && (
+          <g aria-hidden="true">
+            <rect x={cursor.x + 0.04} y={cursor.y + 0.04} width={0.92} height={0.92} className="kb-cursor-halo" />
+            <rect x={cursor.x + 0.04} y={cursor.y + 0.04} width={0.92} height={0.92} className="kb-cursor" />
+          </g>
+        )}
         {solari.map((pc) => (
           <g key={`s${pc.x}-${pc.y}`} transform={`translate(${pc.x + 0.5} ${pc.y + 0.5})`} className="ed-piece" pointerEvents="none"><PieceArt role={pc.role} court="solari" /></g>
         ))}
