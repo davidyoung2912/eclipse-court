@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
+import { daysLeftInMonth } from '../../engine/data/featured'
 import { daysLeftInWeek, WEEKLY_COURT, type WeeklyMatch } from '../../engine/data/weekly'
 import { forWeek, SHARDS_WEEKLY_BEST, SHARDS_WEEKLY_WIN, subscribeWeekly, weeklySnapshot } from '../../weekly'
 import { ghostGameFor } from '../../ghosts'
@@ -38,6 +39,7 @@ export function Weekly({ match, report, onPlay, onBack }: Props) {
       )}
       <ul className="setup-card">
         <li><strong>{match.modifier.name}</strong>: {match.modifier.text}</li>
+        <li>{t('featured.line')}<strong>{match.theme.name}</strong>. {match.theme.text} {t('featured.left', { days: t('common.day', { count: daysLeftInMonth() }) })}</li>
         {match.event && <li>{t('weekly.event')}<strong>{match.event.name}</strong>. {match.event.text} {t('weekly.eventTail')}</li>}
         <li>{t('weekly.opponent', { name: PERSONALITIES[match.personality].name, difficulty: match.difficulty })}</li>
         <li>{t('weekly.court', { days: t('common.day', { count: left }) })}</li>

@@ -7,6 +7,7 @@ import type { CycleId } from '../rules/luminance'
 import type { Court, GameState, MatchConfig, MatchMode } from '../rules/types'
 import { boardById } from './boards'
 import { seasonalEvent, withEvent } from './events'
+import { featuredRuleset, type FeaturedRuleset } from './featured'
 import { dailySeed, skirmishConfig, type SetupChoice } from './setups'
 
 /** The court of the daily run (the gauntlet); the daily match alternates by day, but everyone plays the same side that day. */
@@ -20,6 +21,8 @@ export interface DailyMatch {
   config: MatchConfig
   difficulty: Difficulty
   personality: PersonalityId
+  /** The month's featured ruleset, already applied to the match. */
+  theme: FeaturedRuleset
   /** The rules in play, for display. */
   tags: string[]
   /** One line for the menu, such as "Hill · Fog · Reverse light". */
@@ -56,11 +59,19 @@ export function dailyMatch(date = new Date()): DailyMatch {
   const seed = dailySeed(date)
   // A different stream from the board and army, which skirmishConfig draws from the seed itself.
   const roll = stream(seed * 31 + 7)
-  const win = pick(roll, WIN_MODES)
-  const cycle = pick(roll, CYCLE_CHOICES)
-  const events = roll() < 0.5
-  const showdown = roll() < 0.4
-  const reverse = roll() < 0.4
+  // The rolls are all drawn so the rest of the day stays the same, then the month's featured rules replace the ones they name.
+  const theme = featuredRuleset(date)
+  const featured = theme.rules
+  const rolledWin = pick(roll, WIN_MODES)
+  const rolledCycle = pick(roll, CYCLE_CHOICES)
+  const win = WIN_MODES.find((w) => w.mode === featured.winMode) ?? rolledWin
+  const cycle = CYCLE_CHOICES.find((c) => c.cycle === featured.cycle) ?? rolledCycle
+  const rolledEvents = roll() < 0.5
+  const rolledShowdown = roll() < 0.4
+  const rolledReverse = roll() < 0.4
+  const events = !!featured.events || rolledEvents
+  const showdown = !!featured.showdown || rolledShowdown
+  const reverse = !!featured.reverse || rolledReverse
   const difficulty = pick(roll, DIFFICULTY_LIST.filter((d) => d !== 'easy'))
   const personality = pick(roll, PERSONALITY_IDS)
   const court: Court = roll() < 0.5 ? 'solari' : 'umbral'
@@ -76,7 +87,7 @@ export function dailyMatch(date = new Date()): DailyMatch {
     ...(reverse ? ['Reverse light'] : []),
     ...(event ? [event.name] : []),
   ]
-  return { date: seed, court, config, difficulty, personality, tags, blurb: tags.join(' · ') }
+  return { date: seed, court, config, difficulty, personality, theme, tags, blurb: tags.join(' · ') }
 }
 
 export const dailyGame = (match: DailyMatch): GameState => newGame(match.config)

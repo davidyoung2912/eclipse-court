@@ -1,5 +1,5 @@
 import { boardById, BOARDS, grandBoardById } from './boards'
-import { arrange, randomDraft } from './draft'
+import { arrange, randomDraft, shuffleLayout } from './draft'
 import { DEFAULT_CONFIG, grandConfig } from './matchConfig'
 import { rngNext } from '../rng'
 import { otherCourt } from '../rules/board'
@@ -65,6 +65,8 @@ export interface SetupChoice {
   passives?: boolean
   /** Both Leaders carry exactly these spells, whatever `loadout` says. */
   spells?: readonly Spell[]
+  /** The army is dealt to new squares of the home columns, by the match seed; ignored on the Grand board and for the daily game. */
+  shuffle?: boolean
 }
 
 /** The rule choices of a setup: everything a preset can fill in. */
@@ -208,11 +210,22 @@ export function skirmishConfig(choice: SetupChoice, human: Court, seed: number, 
   if (choice.headStart) base.edge = { court: otherCourt(human), hp: choice.headStart }
   if (choice.mayhem?.length) base.mayhem = choice.mayhem
   if (choice.passives === false) base.passives = false
-  if (mode === 'classic') return base
+  if (mode === 'classic') return shuffled(base, choice, grand, seeded)
   if (mode === 'draft' || legacy) {
     const mine = arrange(legacy ? legacyRoles(legacy) : choice.roles ?? [])
     const theirs = arrange(foeRoles)
-    return { ...base, layout: human === 'solari' ? mine : theirs, umbralLayout: human === 'solari' ? theirs : mine }
+    return shuffled({ ...base, layout: human === 'solari' ? mine : theirs, umbralLayout: human === 'solari' ? theirs : mine }, choice, false, seeded)
   }
-  return { ...base, layout: arrange(randomDraft(seeded)) }
+  return shuffled({ ...base, layout: arrange(randomDraft(seeded)) }, choice, mode === 'daily', seeded)
+}
+
+/** `config` with its armies dealt to new home squares when the setup asks for it; each court's own layout gets its own deal. */
+function shuffled(config: MatchConfig, choice: SetupChoice, skip: boolean, seed: number): MatchConfig {
+  if (!choice.shuffle || skip) return config
+  const salt = (seed >>> 0) * 7 + 13
+  return {
+    ...config,
+    layout: shuffleLayout(config.layout, salt),
+    ...(config.umbralLayout ? { umbralLayout: shuffleLayout(config.umbralLayout, salt + 1) } : {}),
+  }
 }

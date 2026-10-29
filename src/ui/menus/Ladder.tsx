@@ -14,6 +14,8 @@ import { PersonaFace } from '../../art/PersonaFace'
 import { bossPortrait } from '../../art/portraits'
 import { BackButton } from './BackButton'
 import { TipCard } from '../tips/TipCard'
+import { daysLeftInMonth, featuredRuleset } from '../../engine/data/featured'
+import { t } from '../../i18n'
 
 interface Props {
   /** Lines about the game just played. */
@@ -38,6 +40,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
   const foe = foeById(chosen ?? suggested.id) ?? suggested
   const voice = ladderVoice(foe.personality)
   const voiced = voice ? personaById(voice) : undefined
+  const theme = featuredRuleset()
   const next = RANKS.find((r) => r.from > store.rating)
   /** Opponents grouped under the rank their rating sits in, weakest first. */
   const groups = LADDER_FOES.reduce<{ rank: string; foes: (typeof LADDER_FOES)[number][] }[]>((out, f) => {
@@ -54,6 +57,7 @@ export function Ladder({ report, onPlay, onBack }: Props) {
       <PageArt icon="trophy" />
       <h2>Ranked Ladder</h2>
       <p className="tagline">Win to climb. Beating a stronger foe earns more, and the suggested opponent keeps matches close.</p>
+      <p className="setup-hint">{t('featured.line')}<strong>{theme.name}</strong>. {theme.text} {t('featured.left', { days: t('common.day', { count: daysLeftInMonth() }) })}</p>
       {report && report.length > 0 && (
         <div className="setup-card" role="status">{report.map((line) => <div key={line}>{line}</div>)}</div>
       )}

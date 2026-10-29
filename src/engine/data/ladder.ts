@@ -2,6 +2,7 @@ import { PERSONALITIES, type PersonalityId } from './personality'
 import type { AiLevel, Difficulty } from './difficulty'
 import { newGame } from '../reducer'
 import type { GameState, MatchConfig } from '../rules/types'
+import { featuredRuleset } from './featured'
 import { skirmishConfig } from './setups'
 import { BOSSES, type Boss } from './bosses'
 
@@ -91,9 +92,9 @@ export function suggestFoe(rating: number): LadderFoe {
   })
 }
 
-/** The match for a ladder game: a seeded random army on the classic board, with a boss's signature rule added. */
-export function ladderConfig(seed: number, foe?: LadderFoe): MatchConfig {
-  return { ...skirmishConfig({ mode: 'random', board: 'classic' }, LADDER_COURT, seed), setup: 'ladder', ...foe?.boss?.rules }
+/** The match for a ladder game: a seeded random army on the classic board under the month's featured ruleset, with a boss's signature rule added. */
+export function ladderConfig(seed: number, foe?: LadderFoe, date = new Date()): MatchConfig {
+  return { ...skirmishConfig({ mode: 'random', board: 'classic', ...featuredRuleset(date).rules }, LADDER_COURT, seed), setup: 'ladder', ...foe?.boss?.rules }
 }
 
-export const ladderGame = (seed: number, foe?: LadderFoe): GameState => newGame(ladderConfig(seed, foe))
+export const ladderGame = (seed: number, foe?: LadderFoe, date = new Date()): GameState => newGame(ladderConfig(seed, foe, date))

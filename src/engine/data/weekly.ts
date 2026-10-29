@@ -4,6 +4,7 @@ import { newGame } from '../reducer'
 import { rngNext } from '../rng'
 import { isBlocked } from '../rules/board'
 import type { CellEffect, CellSquare, GameState, MatchConfig } from '../rules/types'
+import { featuredRuleset, type FeaturedRuleset } from './featured'
 import { seasonalEvent, withEvent, type SeasonalEvent } from './events'
 import { dayIndex, skirmishConfig, dailySeed, type SetupChoice } from './setups'
 
@@ -38,6 +39,8 @@ export interface WeeklyMatch {
   /** The Monday of the week as a `dailySeed`; identifies the week. */
   week: number
   modifier: WeeklyModifier
+  /** The month's featured ruleset (of the week's Monday), under the modifier's own rules. */
+  theme: FeaturedRuleset
   config: MatchConfig
   difficulty: Difficulty
   personality: PersonalityId
@@ -82,14 +85,15 @@ export function weeklyMatch(date = new Date()): WeeklyMatch {
   const personality = ids[Math.floor(r1 * ids.length)]
   const pool = DIFFICULTY_LIST.filter((d) => d !== 'easy')
   const difficulty = pool[Math.floor(r2 * pool.length)]
-  const choice: SetupChoice = { mode: 'random', board: 'classic', ...modifier.rules }
+  const monday = new Date(Math.floor(week / 10000), Math.floor((week % 10000) / 100) - 1, week % 100)
+  const theme = featuredRuleset(monday)
+  const choice: SetupChoice = { mode: 'random', board: 'classic', ...theme.rules, ...modifier.rules }
   const base = skirmishConfig(choice, WEEKLY_COURT, week)
   // The event of the week's Monday holds all week, so the match stays the same for everyone.
-  const monday = new Date(Math.floor(week / 10000), Math.floor((week % 10000) / 100) - 1, week % 100)
   const config: MatchConfig = withEvent({ ...base, setup: 'weekly' }, monday)
   if (modifier.eclipseRound) config.eclipseRound = modifier.eclipseRound
   if (modifier.band) config.cells = [...(base.cells ?? []), ...bandCells(base, modifier.band)]
-  return { week, modifier, config, difficulty, personality, blurb: `${modifier.name}: ${modifier.text}`, event: seasonalEvent(monday)?.event }
+  return { week, modifier, theme, config, difficulty, personality, blurb: `${modifier.name}: ${modifier.text}`, event: seasonalEvent(monday)?.event }
 }
 
 export const weeklyGame = (match: WeeklyMatch): GameState => newGame(match.config)

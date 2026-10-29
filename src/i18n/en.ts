@@ -133,6 +133,8 @@ export const en = {
 
   'daily.title': 'Daily Match',
   'daily.tagline': '{date}. The same game for everyone today; your first finished attempt is the one that counts.',
+  'featured.line': 'Featured ruleset: ',
+  'featured.left': '{days} left this month.',
   'daily.event': 'Seasonal event: ',
   'daily.eventLeft': '{days} left; adds to the Shard multiplier.',
   'daily.opponent': 'Opponent: {name}, {difficulty}',

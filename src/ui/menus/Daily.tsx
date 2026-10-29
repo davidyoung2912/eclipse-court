@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { sinksSnapshot, subscribeSinks } from '../../sinks'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { seasonalEvent } from '../../engine/data/events'
+import { daysLeftInMonth } from '../../engine/data/featured'
 import { dailyShareText, type DailyMatch } from '../../engine/data/daily'
 import { dailyResult, liveStreak, type Progress } from '../../progress'
 import { ghostGameFor } from '../../ghosts'
@@ -44,6 +45,7 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
       )}
       <ul className="setup-card">
         <li>{match.blurb}</li>
+        <li>{t('featured.line')}<strong>{match.theme.name}</strong>. {match.theme.text} {t('featured.left', { days: t('common.day', { count: daysLeftInMonth() }) })}</li>
         {event && <li>{t('daily.event')}<strong>{event.event.name}</strong>. {event.event.text} {t('daily.eventLeft', { days: t('common.day', { count: event.daysLeft }) })}</li>}
         <li>{t('daily.opponent', { name: PERSONALITIES[match.personality].name, difficulty: match.difficulty })}</li>
         <li>{t('daily.court', { court: match.court === 'solari' ? 'Solari' : 'Umbral' })}</li>

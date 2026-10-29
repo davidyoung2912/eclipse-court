@@ -114,6 +114,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   const [fog, setFog] = useState(() => bool(saved.fog, false))
   const [suddenDeath, setSuddenDeath] = useState(() => oneOf<number>(saved.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
   const [headStart, setHeadStart] = useState(() => oneOf<number>(saved.headStart, [0, ...HEAD_START_LEVELS], 0))
+  const [shuffle, setShuffle] = useState(() => bool(saved.shuffle, false))
   const [mayhem, setMayhem] = useState<Mayhem[]>(() => MAYHEMS.filter((m) => Array.isArray(saved.mayhem) && saved.mayhem.includes(m)))
   const toggleMayhem = (m: Mayhem) => setMayhem((l) => (l.includes(m) ? l.filter((x) => x !== m) : [...l, m]))
   const [presetId, setPresetId] = useState<string | null>(() => (startPreset && presetUnlocked(progress, startPreset) ? startPreset.id : null))
@@ -141,10 +142,11 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     clock: clockSeconds ? { seconds: clockSeconds, ...(extraTime ? { bank: BANK_SECONDS } : {}) } : undefined,
     ...(fog ? { fog } : {}), ...(suddenDeath ? { suddenDeath } : {}), ...(headStart ? { headStart } : {}),
     ...(mayhem.length ? { mayhem } : {}),
+    ...(shuffle && open('army') && !grand && mode !== 'daily' ? { shuffle } : {}),
   })
   const remember = () => saveChoices('skirmish', {
     court, difficulty, persona, twoPlayers, mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
-    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, presetId, rulesId,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, shuffle, presetId, rulesId,
   })
   const [mine, setMine] = useState<SavedPreset[]>(loadPresets)
   const [mineName, setMineName] = useState('')
@@ -152,7 +154,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
   /** What a named preset keeps: the match's rules, army, board and twists, not who plays or which court. */
   const presetChoices = () => ({
     mode, boardId, grand, roles, spellMode, loadout, recharge, winMode, events, showdown, cycle, reverse,
-    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, rulesId,
+    clockSeconds, extraTime, growth, promotion, fog, suddenDeath, headStart, mayhem, shuffle, rulesId,
   })
   const applyMine = (p: SavedPreset) => {
     const c = p.choices
@@ -182,6 +184,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     setSuddenDeath(oneOf<number>(c.suddenDeath, [0, ...SUDDEN_DEATH_ROUNDS], 0))
     setHeadStart(oneOf<number>(c.headStart, [0, ...HEAD_START_LEVELS], 0))
     setMayhem(MAYHEMS.filter((m) => Array.isArray(c.mayhem) && c.mayhem.includes(m)))
+    setShuffle(bool(c.shuffle, false))
     setRulesId(oneOf(c.rulesId, RULESETS.map((t) => t.id), 'standard'))
     setPresetId(null)
     setMineId(p.id)
@@ -248,7 +251,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
     open('promotion') && promotion && 'Promotion',
   ].filter(Boolean)
   const summaries: Record<SectionId, string> = {
-    army: `${open('army') && !grand ? `${SETUP_INFO[mode].name} army · ` : ''}${!grand && mode === 'daily' ? 'Daily board' : `${board.name} board`}`,
+    army: `${open('army') && !grand ? `${SETUP_INFO[mode].name} army${shuffle && mode !== 'daily' ? ' (shuffled)' : ''} · ` : ''}${!grand && mode === 'daily' ? 'Daily board' : `${board.name} board`}`,
     spells: [spellMode === 'loadout' ? `Loadout ${loadout.length}/${LOADOUT_SIZE}` : 'Classic spells', recharge && open('recharge') && 'recharging'].filter(Boolean).join(' · '),
     win: [open('win') && MODE_INFO[winMode].name, open('cycle') && `${CYCLES.find((c) => c.id === cycle)?.name} day`, open('reverse') && reverse && 'reversed'].filter(Boolean).join(' · '),
     hazards: hazards.length ? hazards.join(' · ') : 'None',
@@ -369,6 +372,7 @@ export function SkirmishSetup({ progress, initialTier = 'standard', onStart, onH
           note={grandOpen ? undefined : `Grand 9x9: earn ${GRAND_STARS} campaign stars to unlock.`} />
         {open('army') && !grand && <Segmented label="Army" options={armies} value={mode} onChange={(m) => { setMode(m); if (m === 'draft') reveal('army') }}
           note={hotSeat ? `${SETUP_INFO[mode].text} Draft and Legacy aren't available with two players.` : !legacy ? `${SETUP_INFO[mode].text} Legacy opens once a Gauntlet run leaves a veteran.` : undefined} />}
+        {open('army') && !grand && mode !== 'daily' && <ToggleRow label="Shuffle layout" text="Deal the army to new squares of the home columns, the same for both courts. The Leader keeps the home beacon." checked={shuffle} onChange={() => setShuffle((v) => !v)} />}
         {!grand && mode === 'draft' && open('army') && <DraftPicker court={court} roles={roles} onChange={setRoles} stars={totalStars(progress)} />}
         <Segmented label="Board" options={boards} value={boardId} onChange={setBoardId} note={boardNote} />
       </Section>

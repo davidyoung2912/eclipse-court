@@ -76,3 +76,22 @@ export function randomDraft(seed: number): Role[] {
     roles.push(open[Math.floor(roll * open.length)])
   }
 }
+
+/**
+ * The same army with its pieces dealt to new squares of the two home columns. The Leader keeps the home beacon,
+ * and the Umbral army mirrors whatever is dealt here, so both courts start from the same shuffled shape.
+ */
+export function shuffleLayout(layout: readonly Placement[], seed: number): Placement[] {
+  const leader = layout.find((p) => p.role === 'leader')
+  const others = layout.filter((p) => p !== leader)
+  const squares: { x: number; y: number }[] = []
+  for (let x = 0; x < 2; x++) for (let y = 0; y < 7; y++) if (!(x === 0 && y === 3)) squares.push({ x, y })
+  let rng = seed >>> 0
+  for (let i = squares.length - 1; i > 0; i--) {
+    const [roll, next] = rngNext(rng)
+    rng = next
+    const j = Math.floor(roll * (i + 1))
+    ;[squares[i], squares[j]] = [squares[j], squares[i]]
+  }
+  return [...(leader ? [{ ...leader }] : []), ...others.map((p, i) => ({ role: p.role, ...squares[i] }))]
+}
