@@ -2,6 +2,7 @@ import { canAdd, countRole, DRAFT_BUDGET, DRAFT_ROLES, draftCost, draftProblem, 
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { nextRoleStars, roleLimit } from '../../engine/data/unlocks'
 import type { Court, Role } from '../../engine/rules/types'
+import { t } from '../../i18n'
 
 interface Props {
   court: Court
@@ -18,8 +19,8 @@ export function DraftPicker({ court, roles, onChange, stars }: Props) {
   return (
     <div className="draft">
       <div className="draft-head">
-        <span>{roles.length + 1} pieces with your Leader</span>
-        <span className={spent > DRAFT_BUDGET ? 'over' : ''}>{spent} / {DRAFT_BUDGET} points</span>
+        <span>{t('setup.piecesWithLeader', { n: roles.length + 1 })}</span>
+        <span className={spent > DRAFT_BUDGET ? 'over' : ''}>{t('setup.points', { spent, budget: DRAFT_BUDGET })}</span>
       </div>
       {DRAFT_ROLES.map((role) => {
         const n = countRole(roles, role)
@@ -28,10 +29,10 @@ export function DraftPicker({ court, roles, onChange, stars }: Props) {
         return (
           <div key={role} className="draft-row">
             <span className="name">{ROLE_NAMES[court][role]}</span>
-            <span className="cost">{ROLE_COST[role]} pts · max {limit}{next !== null && ` (${next} ★ for more)`}</span>
-            <button aria-label={`Fewer ${role}`} disabled={n === 0} onClick={() => onChange(removeOne(roles, role))}>−</button>
-            <span className="count" role="status" aria-label={`${ROLE_NAMES[court][role]} count`}>{n}</span>
-            <button aria-label={`More ${role}`} disabled={!canAdd(roles, role) || n >= limit} onClick={() => onChange([...roles, role])}>+</button>
+            <span className="cost">{t('setup.roleCost', { cost: ROLE_COST[role], limit })}{next !== null && t('setup.moreStars', { n: next })}</span>
+            <button aria-label={t('setup.fewer', { role })} disabled={n === 0} onClick={() => onChange(removeOne(roles, role))}>−</button>
+            <span className="count" role="status" aria-label={t('setup.roleCount', { name: ROLE_NAMES[court][role] })}>{n}</span>
+            <button aria-label={t('setup.more', { role })} disabled={!canAdd(roles, role) || n >= limit} onClick={() => onChange([...roles, role])}>+</button>
           </div>
         )
       })}

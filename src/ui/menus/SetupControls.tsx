@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from './icons'
+import { t } from '../../i18n'
 
 export interface SegOption<T extends string | number> {
   value: T
@@ -73,7 +74,7 @@ export function Section({ title, summary, changed, open, onToggle, children }: S
   return (
     <details className="setup-section" open={open} onToggle={(e) => onToggle(e.currentTarget.open)}>
       <summary>
-        <span className="setup-section-title">{title}{changed && <i className="setup-changed" title="Changed from the defaults" aria-label="Changed from the defaults" />}</span>
+        <span className="setup-section-title">{title}{changed && <i className="setup-changed" title={t('setup.changed')} aria-label={t('setup.changed')} />}</span>
         <span className="setup-section-value">{summary}</span>
       </summary>
       <div className="setup-section-body">{children}</div>

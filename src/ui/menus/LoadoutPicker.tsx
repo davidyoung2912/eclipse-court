@@ -1,6 +1,7 @@
 import { LOADOUT_SIZE, SPELL_INFO, spellPool } from '../../engine/rules/spells'
 import { spellStars, spellUnlocked } from '../../engine/data/unlocks'
 import type { Court, Spell } from '../../engine/rules/types'
+import { t } from '../../i18n'
 
 interface Props {
   court: Court
@@ -16,7 +17,7 @@ export function LoadoutPicker({ court, spells, onChange, stars }: Props) {
   return (
     <div className="draft">
       <div className="draft-head">
-        <span>Choose {LOADOUT_SIZE} spells</span>
+        <span>{t('setup.chooseSpells', { n: LOADOUT_SIZE })}</span>
         <span>{spells.length} / {LOADOUT_SIZE}</span>
       </div>
       {spellPool(court).map((sp) => {
@@ -25,7 +26,7 @@ export function LoadoutPicker({ court, spells, onChange, stars }: Props) {
         const open = spellUnlocked(stars, sp)
         return (
           <div key={sp} className="draft-row">
-            <span className="name">{SPELL_INFO[sp].name}{own ? ' ★' : ''}<small>{open ? SPELL_INFO[sp].text : `Earn ${spellStars(sp)} campaign stars to unlock.`}</small></span>
+            <span className="name">{SPELL_INFO[sp].name}{own ? ' ★' : ''}<small>{open ? SPELL_INFO[sp].text : t('setup.earnStars', { stars: spellStars(sp) })}</small></span>
             <button aria-pressed={on} disabled={!open || (!on && full)}
               onClick={() => onChange(on ? spells.filter((s) => s !== sp) : [...spells, sp])}>
               {on ? '✓' : '+'}
