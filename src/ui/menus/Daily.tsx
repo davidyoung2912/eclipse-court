@@ -4,7 +4,9 @@ import { PERSONALITIES } from '../../engine/data/personality'
 import { seasonalEvent } from '../../engine/data/events'
 import { dailyShareText, type DailyMatch } from '../../engine/data/daily'
 import { dailyResult, liveStreak, type Progress } from '../../progress'
-import { challengeLink } from '../../share'
+import { ghostGameFor } from '../../ghosts'
+import { ghostScore } from '../../engine/ghost'
+import { challengeLink, ghostLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -66,6 +68,11 @@ export function Daily({ match, progress, report, onPlay, onBack }: Props) {
         {result && (
           <ShareButton title={t('daily.shareTitle')} label={t('daily.shareLabel')} text={dailyShareText(match, dateLabel(match.date), result.won, result.turns, result.lost)}
             link={() => challengeLink({ config: match.config, side: match.court })} />
+        )}
+        {result && (
+          <ShareButton title={t('ghost.shareTitle')} label={t('ghost.share')}
+            text={t('ghost.shareText', { kind: t('ghost.daily'), date: dateLabel(match.date), points: ghostScore({ ...result, draw: false }) })}
+            link={() => ghostLink({ kind: 'daily', id: match.date, won: result.won, draw: false, turns: result.turns, lost: result.lost, record: ghostGameFor('daily', match.date)?.code })} />
         )}
         <BackButton onClick={onBack} />
       </div>

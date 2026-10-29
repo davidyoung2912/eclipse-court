@@ -6,6 +6,7 @@ import { newGame } from './engine/reducer'
 import { decodeRecord, encodeRecord, toBase64Url } from './engine/serialize'
 import { skirmishConfig } from './engine/data/setups'
 import { blankDesign, designChallenge } from './engine/data/editor'
+import { encodeGhost } from './engine/ghost'
 import { describeConfig, parseShared } from './share'
 
 const challenge = { config: matchConfig({ seed: 77, mode: 'hill', events: true }), side: 'umbral' } as const
@@ -102,5 +103,16 @@ describe('turn links', () => {
     const c = encodeRecord(record)
     expect(parseShared(`#w=${c}`)?.kind).toBe('watch')
     expect(parseShared(`w=${encodeChallenge(challenge)}`)).toBeNull()
+  })
+})
+
+describe('ghost links', () => {
+  const ghost = { kind: 'daily', id: 20261028, won: true, draw: false, turns: 30, lost: 3 } as const
+  it('open from a link, a pair or a bare code', () => {
+    const code = encodeGhost(ghost)
+    expect(parseShared(`https://x.test/#x=${code}`)).toEqual({ kind: 'ghost', ghost })
+    expect(parseShared(`x=${code}`)).toEqual({ kind: 'ghost', ghost })
+    expect(parseShared(code)).toEqual({ kind: 'ghost', ghost })
+    expect(parseShared(`c=${code}`)).toBeNull()
   })
 })

@@ -2,6 +2,8 @@ import { lazy, useEffect, useRef, useState, type ComponentProps } from 'react'
 import { installTapFx } from './tapFx'
 import { markTransitions, withTransition } from './viewTransition'
 import { challengeLink, parseShared, type Shared } from './share'
+import { compareGhost, ghostMatch, ghostScore, type Ghost as GhostResult } from './engine/ghost'
+import { recordGhostGame } from './ghosts'
 import type { Challenge as ChallengeCode } from './engine/challenge'
 import { Challenge } from './ui/menus/Challenge'
 import { PasteCode } from './ui/menus/PasteCode'
@@ -33,7 +35,7 @@ import { adviceFor, isFirstBattle, onboardingSnapshot, recordAiGame } from './on
 import { Ladder } from './ui/menus/Ladder'
 import type { GameRecord } from './engine/log'
 import { newGame } from './engine/reducer'
-import { decodeRecord } from './engine/serialize'
+import { decodeRecord, encodeRecord } from './engine/serialize'
 import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
 import { personaById, type PersonaId } from './engine/data/personas'
@@ -61,6 +63,8 @@ import { SCENARIOS, scenarioGame } from './engine/data/scenarios'
 import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
+import { Ghost } from './ui/menus/Ghost'
+import { t } from './i18n'
 import { Gauntlet } from './ui/menus/Gauntlet'
 import { applyReward, applyVictory, canReroll, endlessDepth, enterEndless, enterNode, heatShards, rerollOffers, resolveEvent, runFoe, runSummary, runWon, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { recordAscension, recordEndless } from './ascension'
@@ -114,6 +118,8 @@ type Screen =
   | { name: 'afterword'; id: string; ending: EndingId }
   | { name: 'daily' }
   | { name: 'weekly' }
+  /** A friend's daily or weekly result, with its match to play. */
+  | { name: 'ghost'; ghost: GhostResult }
   | { name: 'ladder' }
   | { name: 'arcs' }
   | { name: 'gauntlet' }
@@ -167,6 +173,8 @@ type Screen =
     tryout?: boolean
     /** A game played by link: its id in the saved list. The other court is not here, and each move ends the visit. */
     mail?: string
+    /** The match of a friend's ghost result, played unscored; the ghost it is measured against. */
+    ghost?: GhostResult
     /** A skirmish started from the setup screen: what it takes to deal the same match again with a new seed. */
     again?: { setup: SetupChoice; voice: PersonaChoice }
   }
@@ -221,6 +229,7 @@ function setClassicNext(on: boolean) {
 /** The screen a shared link or code opens. */
 const sharedScreen = (shared: Shared): Screen =>
   shared.kind === 'challenge' ? { name: 'challenge', challenge: shared.challenge }
+    : shared.kind === 'ghost' ? { name: 'ghost', ghost: shared.ghost }
     : shared.kind === 'turn' ? { name: 'mail', incoming: shared.record }
     : shared.kind === 'watch' ? { name: 'replay', record: shared.record, from: 'menu', watch: true }
     : { name: 'replay', record: shared.record, from: 'menu' }
@@ -471,6 +480,21 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'ghost') {
+    const { ghost } = screen
+    const match = ghostMatch(ghost)
+    if (!match) return null
+    return (
+      <Ghost ghost={ghost} progress={progress} report={report} onBack={() => setScreen({ name: 'menu' })}
+        onWatch={() => ghost.record && setScreen({ name: 'replay', record: decodeRecord(ghost.record)!, from: 'menu', watch: true })}
+        onPlayScored={() => { setReport([]); setScreen({ name: ghost.kind }) }}
+        onPlay={() => {
+          setReport([])
+          setScreen({ name: 'game', human: match.court, difficulty: match.difficulty, record: { initial: newGame(match.config), actions: [] }, campaignIndex: null, ghost })
+        }} />
+    )
+  }
+
   if (screen.name === 'ladder')
     return (
       <Ladder report={report} onBack={() => setScreen({ name: 'battle' })}
@@ -673,18 +697,18 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc, ghost } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
-    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === today.court
+    const daily = !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === today.court && !ghost
       && difficulty === today.difficulty && isDailyMatch(record.initial.config)
     const weeklyToday = weeklyMatch()
-    const weekly = !daily && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === WEEKLY_COURT
+    const weekly = !daily && !ghost && !hotSeat && !online && !puzzle && !series && !gauntlet && !story && scenario === undefined && coop === undefined && campaignIndex === null && human === WEEKLY_COURT
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
     const custom = !!editor || !!tryout || isCustom(record.initial.config)
-    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story || !!arc
+    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story || !!arc || !!ghost
 
     const current = puzzle && (puzzle.endless?.puzzle ?? PUZZLES[puzzle.index])
     const finishPuzzle = (winner: GameState['winner']) => {
@@ -737,6 +761,15 @@ export default function App() {
         recordRoleDuels(finished, human)
       }
       let extra: ReturnType<typeof recordWeekly> | null = null
+      if (settled.summary && stats && (daily || weekly)) {
+        const mine = { won: settled.summary.won, draw: settled.summary.draw, turns: settled.summary.turns, lost: settled.summary.lost }
+        if (daily && !dailyResult(progress, today.date)) recordGhostGame('daily', today.date, ghostScore(mine), mine, encodeRecord(finished))
+        if (weekly) recordGhostGame('weekly', weeklyToday.week, ghostScore(mine), mine, encodeRecord(finished))
+      }
+      if (ghost && stats && settled.summary) {
+        const c = compareGhost(ghost, { won: settled.summary.won, draw: settled.summary.draw, turns: settled.summary.turns, lost: settled.summary.lost })
+        settled.lines.push(t(`ghost.${c.verdict}`, { mine: c.mine, theirs: c.theirs }))
+      }
       if (weekly && stats && settled.summary) extra = recordWeekly(weeklyToday.week, weeklyScore(settled.summary), settled.summary.won)
       if (screen.persona && !hotSeat && stats && settled.summary) recordPersonaGame(screen.persona, settled.summary.won ? 'w' : settled.summary.draw ? 'd' : 'l')
       const foe = ladder ? foeById(ladder) : undefined
@@ -746,7 +779,7 @@ export default function App() {
         return { ...settled, lines: [...rated.lines, ...settled.lines] }
       }
       // Side goals pay only in plain skirmishes against an AI that is not the easiest.
-      const bounties = stats && settled.summary && scenario === undefined && coop === undefined && campaignIndex === null && !daily && !weekly && !custom && !arc && difficulty !== 'easy'
+      const bounties = stats && settled.summary && scenario === undefined && coop === undefined && campaignIndex === null && !daily && !weekly && !ghost && !custom && !arc && difficulty !== 'easy'
         ? claimBounties(settled.summary) : []
       const bountyShards = bounties.reduce((n, b) => n + b.shards, 0)
       earnShards(settled.shards + (extra?.shards ?? 0) + bountyShards)
@@ -872,7 +905,7 @@ export default function App() {
         controllers={hotSeat ? HOT_SEAT
           : online || mail ? versusOnline(human)
           : foe ? versusAi(human, foe.difficulty, foe.personality)
-          : versusAi(human, ladder ? foeById(ladder)?.level ?? difficulty : difficulty, ladder ? foeById(ladder)?.personality : screen.persona ? personaById(screen.persona)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId), screen.persona)}
+          : versusAi(human, ladder ? foeById(ladder)?.level ?? difficulty : difficulty, ladder ? foeById(ladder)?.personality : screen.persona ? personaById(screen.persona)?.personality : ghost ? ghostMatch(ghost)?.personality : daily ? today.personality : weekly ? weeklyToday.personality : campaignIndex === null ? undefined : (CAMPAIGN[campaignIndex].personality satisfies PersonalityId), screen.persona)}
         opening={ladder && screen.persona ? rivalLine(screen.persona, ladder, ladderSnapshot().rivals[ladder]) : undefined}
         record={record}
         session={online}
@@ -952,7 +985,7 @@ export default function App() {
           }
           const lines = [...done.lines]
           // Only games where the player picked the difficulty say whether it is too hard.
-          if (done.summary && !ladder && !daily && !weekly && !arc) {
+          if (done.summary && !ladder && !daily && !weekly && !arc && !ghost) {
             recordAiGame(difficulty, done.summary.won ? 'win' : done.summary.draw ? 'draw' : 'loss')
             const advice = adviceFor(onboardingSnapshot())
             if (advice) lines.push(advice.text)
@@ -966,7 +999,7 @@ export default function App() {
             const foe = foeById(ladder)
             if (foe) return setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007, foe), actions: [] }, campaignIndex: null, ladder, persona: screen.persona })
           }
-          setScreen(arc ? { name: 'arcs' } : ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
+          setScreen(ghost ? { name: 'ghost', ghost } : arc ? { name: 'arcs' } : ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
       </>

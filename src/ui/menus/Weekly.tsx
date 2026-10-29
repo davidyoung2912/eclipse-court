@@ -2,7 +2,8 @@ import { useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { daysLeftInWeek, WEEKLY_COURT, type WeeklyMatch } from '../../engine/data/weekly'
 import { forWeek, SHARDS_WEEKLY_BEST, SHARDS_WEEKLY_WIN, subscribeWeekly, weeklySnapshot } from '../../weekly'
-import { challengeLink } from '../../share'
+import { ghostGameFor } from '../../ghosts'
+import { challengeLink, ghostLink } from '../../share'
 import { ShareButton } from '../ShareButton'
 import { Icon } from './icons'
 import { PageArt } from './MenuArt'
@@ -56,6 +57,14 @@ export function Weekly({ match, report, onPlay, onBack }: Props) {
           <ShareButton title={t('weekly.shareTitle')} label={t('weekly.shareLabel')}
             text={t('weekly.shareText', { date: dateLabel(match.week), name: match.modifier.name, best: week.best })}
             link={() => challengeLink({ config: match.config, side: WEEKLY_COURT })} />
+        )}
+        {ghostGameFor('weekly', match.week) && (
+          <ShareButton title={t('ghost.shareTitle')} label={t('ghost.share')}
+            text={t('ghost.shareText', { kind: t('ghost.weekly'), date: dateLabel(match.week), points: week.best })}
+            link={() => {
+              const g = ghostGameFor('weekly', match.week)!
+              return ghostLink({ kind: 'weekly', ...g.result, id: match.week, record: g.code })
+            }} />
         )}
         <BackButton onClick={onBack} />
       </div>

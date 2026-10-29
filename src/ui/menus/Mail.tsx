@@ -107,7 +107,7 @@ export function Mail({ incoming: arrived, onNew, onPlay, onSend, onReplay, onBac
       <div className="menu-buttons stacked">
         <button disabled={!text.trim()} onClick={() => {
           const shared = parseShared(text)
-          if (shared && shared.kind !== 'challenge') { setIncoming(shared.record); setText('') }
+          if (shared && shared.kind !== 'challenge' && shared.kind !== 'ghost') { setIncoming(shared.record); setText('') }
           else setError(true)
         }}><Icon name="chain" />{t('mail.openMove')}</button>
         <BackButton onClick={onBack} />
