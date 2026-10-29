@@ -9,14 +9,14 @@ import { DAYS } from '../rules/luminance'
 import { LOADOUT_SIZE, spellPool } from '../rules/spells'
 import type { Court, GameState, MatchConfig, Mayhem, Perk, Piece, Role, Spell } from '../rules/types'
 import { BOARDS, boardById } from './boards'
+import { BOSSES, type Boss } from './bosses'
+import { buildMap, type MapNode } from './gauntletMap'
 import { arrange, DRAFT_ROLES, MAX_DRAFTED, ROLE_MAX } from './draft'
 import { DEFAULT_CONFIG } from './matchConfig'
 import { ROLE_NAMES, ROLE_STATS } from './roster'
 
 /** Beat this many stages in a row to win the run; the last is a boss. */
 export const GAUNTLET_STAGES = 8
-/** Stages after which a rest stop offers to bring a fallen piece back. */
-export const REST_STAGES: readonly number[] = [3, 6]
 /** A Leader's spell book can grow to this many spells. */
 export const MAX_SPELLS = 7
 /** The most extra HP rewards can add to one piece (before veterancy). */
@@ -25,7 +25,7 @@ export const MAX_BONUS = 4
 export const MIN_BONUS = -2
 const MAX_FALLEN = 6
 
-export const RUN_VERSION = 1
+export const RUN_VERSION = 2
 
 /** A piece of the persistent army: its role and what it has earned, rebuilt at full health for each fight. */
 export interface RunPiece {
@@ -49,9 +49,9 @@ export const ASCENSIONS: readonly { name: string; text: string }[] = [
   { name: 'Early Dusk', text: 'The boss brings the Eclipse at round 14.' },
 ]
 
-/** The stages after which a rest stop appears at this ascension; a Waystone brings a camp after every stage but the boss. */
-export const restStages = (ascension: number, relics: readonly RelicId[] = []): readonly number[] =>
-  relics.includes('waystone') ? Array.from({ length: GAUNTLET_STAGES - 1 }, (_, i) => i + 1) : ascension >= 2 ? [] : REST_STAGES
+/** The stages after which a won fight is followed by a camp's offer to bring a fallen piece back: only with a Waystone, since camps are otherwise nodes on the map. */
+export const restStages = (relics: readonly RelicId[] = []): readonly number[] =>
+  relics.includes('waystone') ? Array.from({ length: GAUNTLET_STAGES - 1 }, (_, i) => i + 1) : []
 
 export type RelicId =
   | 'moonwell' | 'hourglass' | 'dawnstone' | 'banner' | 'sundial' | 'omen'
@@ -146,6 +146,8 @@ export interface Run {
   daily: number
   /** Reroll tokens used so far this run, up to MAX_REROLLS. */
   rerolls: number
+  /** The node taken in each layer of the map so far, as an index into that layer. */
+  path: number[]
 }
 
 /** Reroll tokens a run may spend. */
@@ -162,7 +164,7 @@ export function startRun(court: Court, roles: readonly Role[], seed: number, opt
   return {
     ascension: Math.min(Math.max(opts.ascension ?? 0, 0), MAX_ASCENSION), daily: opts.daily ?? 0,
     v: RUN_VERSION, seed: seed >>> 0, court, stage: 1, leader: fresh('leader'), army: roles.map(fresh),
-    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, event: null, rerolls: 0,
+    fallen: [], loadout: STARTER_SPELLS.slice(0, LOADOUT_SIZE).filter((s) => spellPool(court).includes(s)), relics: opts.relic ? [opts.relic] : [], offers: null, event: null, rerolls: 0, path: [],
   }
 }
 
@@ -186,11 +188,13 @@ export interface StageFoe {
   /** Names of the rules in play, for display. */
   tags: string[]
   boss: boolean
+  /** An elite: harder than a plain fight, with a longer list of rewards and double Shards. */
+  elite: boolean
 }
 
 const FOE_NAMES = [
   'The Lantern Keeper', 'The Ash Warden', 'The Hollow Duke', 'The Gravel Choir',
-  'The Pale Regent', 'The Veil Sisters', 'The Long Night', 'The Eclipse Tyrant',
+  'The Pale Regent', 'The Veil Sisters', 'The Long Night',
 ]
 const DIFFICULTIES: readonly Difficulty[] = ['easy', 'easy', 'normal', 'normal', 'normal', 'hard', 'hard', 'hard']
 const PERSONALITY_IDS = Object.keys(PERSONALITIES) as PersonalityId[]
@@ -227,15 +231,44 @@ const harder = (d: Difficulty): Difficulty => DIFFICULTY_LIST[Math.min(DIFFICULT
 
 const stageSeed = (seed: number, stage: number) => (seed + stage * 7919) >>> 0
 
-/** The opponent of a stage: harder each time, with its personality, board and rules drawn from the run's seed. */
-export function stageFoe(seed: number, stage: number, ascension = 0): StageFoe {
+/** The seed of one node of a layer; the first node keeps the stage's own seed. */
+const nodeSeed = (seed: number, stage: number, slot: number) => (stageSeed(seed, stage) + slot * 104729) >>> 0
+
+/** A node of the map as a fight sees it: its kind and its place in the layer. */
+export interface NodeRef {
+  kind: MapNode['kind']
+  slot: number
+}
+
+/** The ladder boss that closes a run. */
+export const runBoss = (seed: number): Boss => BOSSES[Math.floor(stream(stageSeed(seed, GAUNTLET_STAGES) ^ 0xb055)() * BOSSES.length)]
+
+/** A boss's own rules for the court it plays here; the board it names is chosen through the foe's `board`. */
+function bossRules(boss: Boss, foeCourt: Court): Partial<MatchConfig> {
+  const { board: _board, beacons: _beacons, blocked: _blocked, cells: _cells, ...rest } = boss.rules
+  return {
+    ...rest,
+    ...(rest.freeCast ? { freeCast: foeCourt } : {}),
+    ...(rest.edge ? { edge: { ...rest.edge, court: foeCourt } } : {}),
+  }
+}
+
+/**
+ * The opponent of a stage: harder each time, with its personality, board and rules drawn from the run's seed. `node` picks
+ * which node of the layer it is (the default is the first, a plain fight); the last stage is a ladder boss playing `foeCourt`.
+ */
+export function stageFoe(seed: number, stage: number, ascension = 0, node: NodeRef | null = null, foeCourt: Court = 'umbral'): StageFoe {
   const s = Math.min(Math.max(stage, 1), GAUNTLET_STAGES)
-  const roll = stream(stageSeed(seed, s))
+  const slot = node?.slot ?? 0
+  const roll = stream(nodeSeed(seed, s, slot))
   const boss = s === GAUNTLET_STAGES
-  const difficulty = ascension >= 3 ? harder(DIFFICULTIES[s - 1]) : DIFFICULTIES[s - 1]
-  const personality = boss ? 'caster' : PERSONALITY_IDS[Math.floor(roll() * PERSONALITY_IDS.length)]
-  const board = BOARDS[Math.floor(roll() * BOARDS.length)].id
-  const wanted = (boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0) + (ascension >= 4 ? 1 : 0)
+  const elite = !boss && node?.kind === 'elite'
+  const ladderBoss = boss ? runBoss(seed) : null
+  const base = ascension >= 3 ? harder(DIFFICULTIES[s - 1]) : DIFFICULTIES[s - 1]
+  const difficulty = elite ? harder(base) : base
+  const personality = ladderBoss ? ladderBoss.personality : PERSONALITY_IDS[Math.floor(roll() * PERSONALITY_IDS.length)]
+  const board = (ladderBoss?.rules.board ?? BOARDS[Math.floor(roll() * BOARDS.length)].id) as string
+  const wanted = (boss ? 2 : s >= 5 ? 2 : s >= 2 ? 1 : 0) + (ascension >= 4 ? 1 : 0) + (elite ? 1 : 0)
   const pool = [...MODIFIERS]
   const chosen: Modifier[] = []
   while (chosen.length < wanted) {
@@ -245,20 +278,58 @@ export function stageFoe(seed: number, stage: number, ascension = 0): StageFoe {
   }
   let rules: Partial<MatchConfig> = Object.assign({}, ...chosen.map((m) => m.rules))
   const tags = chosen.map((m) => m.label)
-  if (boss) {
+  if (ladderBoss) {
     const eclipseRound = ascension >= 5 ? 14 : 20
-    rules = { ...rules, eclipseRound, showdown: true }
+    rules = { ...rules, ...bossRules(ladderBoss, foeCourt), eclipseRound, showdown: true }
     tags.push('Early Eclipse')
   }
-  const drafted = aiDraft(stageSeed(seed, s) + 1, difficulty)
+  const drafted = aiDraft(nodeSeed(seed, s, slot) + 1, difficulty)
+  const name = ladderBoss ? ladderBoss.name : `${elite ? 'Elite: ' : ''}${FOE_NAMES[(s - 1 + slot * 3) % FOE_NAMES.length]}`
   return {
-    name: FOE_NAMES[s - 1],
-    blurb: `${PERSONALITIES[personality].name} on the ${boardById(board).name} board.`,
+    name,
+    blurb: ladderBoss ? ladderBoss.rule : `${PERSONALITIES[personality].name} on the ${boardById(board).name} board.`,
     difficulty, personality, board, rules,
-    army: drafted.slice(0, Math.min(MAX_DRAFTED, 6 + s)),
-    hpBonus: Math.floor((s - 1) / 3) + (ascension >= 1 ? 1 : 0),
-    tags, boss,
+    army: drafted.slice(0, Math.min(MAX_DRAFTED, 6 + s + (elite ? 1 : 0))),
+    hpBonus: Math.floor((s - 1) / 3) + (ascension >= 1 ? 1 : 0) + (elite ? 1 : 0),
+    tags, boss, elite,
   }
+}
+
+// ---- the map ----
+
+/** The layered map of the run: layer `i` holds the nodes to choose from before stage `i + 1`. */
+export const runMap = (run: Pick<Run, 'seed' | 'ascension'>): MapNode[][] => buildMap(run.seed, run.ascension, GAUNTLET_STAGES)
+
+/** The node taken in a layer (1-based), if the run has taken one there. */
+function nodeTaken(run: Run, layer: number): NodeRef | null {
+  const slot = run.path[layer - 1]
+  const node = slot === undefined ? undefined : runMap(run)[layer - 1]?.[slot]
+  return node ? { kind: node.kind, slot } : null
+}
+
+/** The nodes on offer for the run's current stage. */
+export const layerNodes = (run: Run): MapNode[] => runMap(run)[Math.min(run.stage, GAUNTLET_STAGES) - 1] ?? []
+
+/** Whether the run is waiting for a node to be chosen: nothing is pending and the layer has no node taken yet. */
+export const needsPick = (run: Run) => !runWon(run) && !run.offers && !run.event && run.path.length < run.stage
+
+/** The opponent of the run's current stage, from the node taken for it (a plain fight if none is taken yet). */
+export const runFoe = (run: Run): StageFoe => stageFoe(run.seed, run.stage, run.ascension, nodeTaken(run, run.stage), otherCourt(run.court))
+
+/**
+ * The run after taking node `slot` of the current layer. A fight, elite or boss waits to be fought; an event opens its
+ * screen and a camp deals its offers at once, both moving on to the next stage.
+ */
+export function enterNode(run: Run, slot: number): Run {
+  const node = needsPick(run) ? layerNodes(run)[slot] : undefined
+  if (!node) return run
+  const taken: Run = { ...run, path: [...run.path, slot] }
+  if (node.kind !== 'event' && node.kind !== 'rest') return taken
+  const next: Run = { ...taken, stage: run.stage + 1 }
+  if (node.kind === 'rest') return { ...next, offers: runReward(next, stageSeed(run.seed, run.stage) ^ 0x5bd1e995) }
+  const open = EVENT_IDS.filter((e) => eventAvailable(next, e))
+  if (open.length) return { ...next, event: open[Math.floor(stream(stageSeed(run.seed, run.stage) ^ 0xe7e47)() * open.length)] }
+  return { ...next, offers: runReward(next, stageSeed(run.seed, run.stage) ^ 0x5bd1e995) }
 }
 
 /** The match settings relics switch on; `court` is the player's, for the relics that favour only them. */
@@ -290,7 +361,7 @@ const maxHpOf = (p: RunPiece, relics: readonly RelicId[]) => ROLE_STATS[p.role].
 
 /** The opening position of the run's next fight: the persistent army against the stage's opponent. */
 export function stageGame(run: Run): GameState {
-  const foe = stageFoe(run.seed, run.stage, run.ascension)
+  const foe = runFoe(run)
   const foeCourt = otherCourt(run.court)
   const seed = stageSeed(run.seed, run.stage)
   const board = boardById(foe.board)
@@ -377,7 +448,10 @@ export function applyVictory(run: Run, final: GameState): Run {
 export const canAddPiece = (run: Run, role: Role) =>
   run.army.length < MAX_DRAFTED && run.army.filter((p) => p.role === role).length < ROLE_MAX[role]
 
-/** Three rewards to pick from (four with a Lens; fewer if little is left to give); a rest stop always offers a fallen piece when there is one. */
+/**
+ * Three rewards to pick from (four with a Lens or after an elite; fewer if little is left to give). A camp node, or a won fight
+ * with a Waystone, always offers a fallen piece when there is one.
+ */
 export function runReward(run: Run, rng: number): Reward[] {
   const roll = stream(rng)
   const pick = <T,>(items: readonly T[]) => items[Math.floor(roll() * items.length)]
@@ -411,8 +485,10 @@ export function runReward(run: Run, rng: number): Reward[] {
     },
   ]
   const offers: Reward[] = []
-  const width = run.relics.includes('lens') ? 4 : 3
-  if (restStages(run.ascension, run.relics).includes(run.stage - 1) && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
+  const done = nodeTaken(run, run.stage - 1)
+  const width = (run.relics.includes('lens') ? 4 : 3) + (done?.kind === 'elite' ? 1 : 0)
+  const camp = done?.kind === 'rest' || (done?.kind !== 'event' && restStages(run.relics).includes(run.stage - 1))
+  if (camp && run.fallen.length && run.army.length < MAX_DRAFTED) offers.push({ kind: 'revive', target: 0 })
   const order = kinds.map((k, i) => ({ k, key: roll(), i })).sort((a, b) => a.key - b.key)
   for (const { k } of order) {
     if (offers.length >= width) break

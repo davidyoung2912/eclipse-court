@@ -84,7 +84,7 @@ describe('streak freeze', () => {
 
 describe('gauntlet reroll', () => {
   const base = startRun('solari', CLASSIC_ROLES, 12345)
-  const run: Run = { ...base, stage: 2, offers: runReward({ ...base, stage: 2 }, 7) }
+  const run: Run = { ...base, stage: 2, path: [0], offers: runReward({ ...base, stage: 2 }, 7) }
 
   it('draws new offers up to the limit and then stops', () => {
     let r = run

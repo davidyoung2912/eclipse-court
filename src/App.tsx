@@ -58,7 +58,7 @@ import { COOP_SCENARIOS, coopGame } from './engine/data/coop'
 import { Daily } from './ui/menus/Daily'
 import { Weekly } from './ui/menus/Weekly'
 import { Gauntlet } from './ui/menus/Gauntlet'
-import { applyReward, applyVictory, canReroll, rerollOffers, resolveEvent, runSummary, runWon, stageFoe, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
+import { applyReward, applyVictory, canReroll, enterNode, rerollOffers, resolveEvent, runFoe, runSummary, runWon, stageGame, startRun, type Reward, type Run } from './engine/data/gauntlet'
 import { recordAscension } from './ascension'
 import { clearRun, loadRun, saveRun } from './run'
 import { saveLegacy } from './legacy'
@@ -583,13 +583,14 @@ export default function App() {
         summary={runText}
         onStart={(court, roles, opts) => { setReport([]); setRunText(null); update(startRun(court, roles, opts.seed ?? Date.now(), { ascension: opts.ascension, relic: opts.relic })) }}
         onDaily={() => { setReport([]); setRunText(null); update(startRun(DAILY_COURT, CLASSIC_ROLES, dailySeed(), { daily: dailySeed() })) }}
+        onPick={(slot: number) => { if (run) { setReport([]); update(enterNode(run, slot)) } }}
         onReward={(reward: Reward) => { if (run) update(applyReward(run, reward)) }}
         onEvent={(choice: number) => { if (run?.event) { const done = resolveEvent(run, choice); setReport([done.text]); update(done.run) } }}
         onReroll={() => { if (run && canReroll(run) && payReroll()) update(rerollOffers(run)) }}
         onAbandon={() => { if (run) endRun(run, run.stage, false, [`Run abandoned at stage ${run.stage}.`]) }}
         onFight={() => {
           if (!run) return
-          const foe = stageFoe(run.seed, run.stage, run.ascension)
+          const foe = runFoe(run)
           setReport([])
           setScreen({ name: 'game', human: run.court, difficulty: foe.difficulty, record: left?.record ?? { initial: stageGame(run), actions: [] }, campaignIndex: null, gauntlet: true })
         }}
@@ -752,21 +753,23 @@ export default function App() {
         return
       }
       const next = applyVictory(run, final)
+      const foe = runFoe(run)
+      const stageShards = SHARDS_GAUNTLET_STAGE * (foe.elite ? 2 : 1)
       recordQuestEvent({ kind: 'stage' })
       if (runWon(next)) {
         const result = recordRun(progress, next.stage, true)
         setProgress(result.progress)
         saveProgress(result.progress)
         const extra = closeRun(run, next.stage, true)
-        const shards = SHARDS_GAUNTLET_STAGE + SHARDS_GAUNTLET_WIN + result.earned.length * 10
+        const shards = stageShards + SHARDS_GAUNTLET_WIN + result.earned.length * 10
         earnShards(shards)
-        setReport(['The Eclipse Tyrant falls. The run is won!', `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`), ...extra])
+        setReport([`${foe.name} falls. The run is won!`, `Shards: +${shards}.`, ...result.earned.map((a) => `Achievement: ${a.name}`), ...extra])
         setRun(null)
         clearRun()
         return
       }
-      earnShards(SHARDS_GAUNTLET_STAGE)
-      setReport([`Stage ${run.stage} cleared.`, `Shards: +${SHARDS_GAUNTLET_STAGE}.`])
+      earnShards(stageShards)
+      setReport([`Stage ${run.stage} cleared.`, `Shards: +${stageShards}.`])
       setRun(next)
       saveRun(next)
     }
@@ -792,7 +795,7 @@ export default function App() {
       : weekly ? { label: 'Weekly challenge', kind: 'daily', flavour: 'weekly' }
       : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish', scored: true, flavour: 'ladder' }
       : { label: 'Skirmish', kind: 'skirmish' }
-    const foe = gauntlet && run ? stageFoe(run.seed, run.stage, run.ascension) : null
+    const foe = gauntlet && run ? runFoe(run) : null
     const gameKey = `${record.initial.rng}${human}`
     /** Plain games are paid when the result opens; every other kind settles on Continue. */
     const plain = !mail && !online && !(custom && !hotSeat) && !gauntlet && !story && !puzzle && !series && !hotSeat

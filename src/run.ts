@@ -1,4 +1,4 @@
-import { EVENTS, GAUNTLET_STAGES, MIN_BONUS, MAX_ASCENSION, MAX_REROLLS, RELICS, RUN_VERSION, type EventId, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
+import { EVENTS, GAUNTLET_STAGES, MIN_BONUS, MAX_ASCENSION, MAX_REROLLS, RELICS, RUN_VERSION, runMap, type EventId, type RelicId, type Reward, type Run, type RunPiece } from './engine/data/gauntlet'
 import { DRAFT_ROLES, MAX_DRAFTED } from './engine/data/draft'
 import { ALL_SPELLS } from './engine/rules/spells'
 import type { Court, Perk, Role, Spell } from './engine/rules/types'
@@ -48,6 +48,9 @@ export function readRun(raw: unknown): Run | null {
   if (o.court !== 'solari' && o.court !== 'umbral') return null
   if (!Array.isArray(o.loadout) || o.loadout.length > 20 || !o.loadout.every((s) => (ALL_SPELLS as string[]).includes(s))) return null
   if (!Array.isArray(o.relics) || !o.relics.every((r) => r in RELICS)) return null
+  if (!Array.isArray(o.path) || (o.path.length !== o.stage && o.path.length !== o.stage - 1)) return null
+  const map = runMap({ seed: o.seed, ascension: isInt(o.ascension, MAX_ASCENSION) ? o.ascension : 0 })
+  if (!o.path.every((slot, i) => isInt(slot, 2) && slot < (map[i]?.length ?? 0))) return null
   let offers: Reward[] | null = null
   if (o.offers != null) {
     if (!Array.isArray(o.offers) || o.offers.length > 5) return null
@@ -59,7 +62,7 @@ export function readRun(raw: unknown): Run | null {
     v: RUN_VERSION, seed: o.seed, court: o.court as Court, stage: o.stage, leader, army, fallen,
     loadout: o.loadout as Spell[], relics: o.relics as RelicId[], offers, event: o.event && (o.event as string) in EVENTS ? (o.event as EventId) : null,
     ascension: isInt(o.ascension, MAX_ASCENSION) ? o.ascension : 0, daily: isInt(o.daily, 99991231) ? o.daily : 0,
-    rerolls: isInt(o.rerolls, MAX_REROLLS) ? o.rerolls : 0,
+    rerolls: isInt(o.rerolls, MAX_REROLLS) ? o.rerolls : 0, path: o.path as number[],
   }
 }
 

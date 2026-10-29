@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { DIFFICULTY_LIST } from './difficulty'
+import { BOSSES } from './bosses'
+import { buildMap, ELITE_FROM, type NodeKind } from './gauntletMap'
 import { playFrom, checkInvariants } from '../../sim/game'
 import { readRun } from '../../run'
 import { CLASSIC_ROLES, MAX_DRAFTED } from './draft'
 import {
-  applyReward, applyVictory, altarRelic, eventAvailable, eventChoices, MIN_BONUS, pactSpell, RELICS, resolveEvent, shrineBoon, EVENTS, relicUnlocked, type RelicId, type EventId, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, REST_STAGES, roster, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
+  applyReward, applyVictory, altarRelic, eventAvailable, eventChoices, MIN_BONUS, pactSpell, RELICS, resolveEvent, shrineBoon, EVENTS, relicUnlocked, type RelicId, type EventId, GAUNTLET_STAGES, MAX_ASCENSION, MAX_BONUS, parseRunCode, relicRules, restStages, runCode, runSummary, roster, runFoe, runMap, layerNodes, needsPick, enterNode, runBoss, runReward, runWon, stageFoe, stageGame, startRun, startingRelics, type Run,
 } from './gauntlet'
 import { ROLE_STATS } from './roster'
 import { validConfig } from '../serialize'
 import { VETERAN_WINS } from '../rules/growth'
 import { otherCourt } from '../rules/board'
 import type { GameState } from '../rules/types'
+
+/** A run just past a node of `kind` taken in `layer`, found by searching seeds. */
+function runAfter(kind: NodeKind, layer: number, ascension = 0): Run {
+  for (let seed = 1; seed < 500; seed++) {
+    const slot = buildMap(seed, ascension, GAUNTLET_STAGES)[layer - 1].findIndex((n) => n.kind === kind)
+    if (slot >= 0) return { ...startRun('solari', CLASSIC_ROLES, seed, { ascension }), stage: layer + 1, path: [...Array<number>(layer - 1).fill(0), slot] }
+  }
+  throw new Error(`no ${kind} in layer ${layer}`)
+}
 
 const newRun = (court: 'solari' | 'umbral' = 'solari', seed = 7) => startRun(court, CLASSIC_ROLES, seed)
 
@@ -124,13 +135,13 @@ describe('rewards', () => {
     expect(kinds.size).toBeGreaterThan(3)
   })
 
-  it('offers a fallen piece at a rest stop', () => {
-    const base: Run = { ...newRun(), stage: REST_STAGES[0] + 1, fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
+  it('offers a fallen piece at a camp node', () => {
+    const base: Run = { ...runAfter('rest', 3), fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
     for (let i = 0; i < 10; i++) expect(runReward(base, i)[0]).toEqual({ kind: 'revive', target: 0 })
     const camp = applyReward(base, { kind: 'revive', target: 0 })
     expect(camp.army.at(-1)).toMatchObject({ role: 'bruiser', wins: 3 })
     expect(camp.fallen).toEqual([])
-    expect(runReward({ ...base, stage: 3 }, 1).some((r) => r.kind === 'revive')).toBe(false)
+    expect(runReward({ ...base, stage: 3, path: [] }, 1).some((r) => r.kind === 'revive')).toBe(false)
   })
 
   it('apply, clear the offers and respect the caps', () => {
@@ -151,7 +162,8 @@ describe('rewards', () => {
 
 describe('saving a run', () => {
   it('round-trips and refuses damaged data', () => {
-    const run = applyVictory(newRun(), afterWin(newRun(), [3], 1))
+    const start = enterNode(newRun(), 0)
+    const run = applyVictory(start, afterWin(start, [3], 1))
     expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
     expect(readRun(null)).toBeNull()
     expect(readRun({ ...run, v: 99 })).toBeNull()
@@ -176,8 +188,7 @@ describe('ascension', () => {
     expect(stageFoe(5, GAUNTLET_STAGES, 3).difficulty).toBe('hard')
     expect(stageFoe(5, GAUNTLET_STAGES, 4).tags.length).toBe(stageFoe(5, GAUNTLET_STAGES, 0).tags.length + 1)
     expect(stageFoe(5, GAUNTLET_STAGES, 5).rules.eclipseRound).toBe(14)
-    expect(restStages(1)).toEqual(REST_STAGES)
-    expect(restStages(2)).toEqual([])
+    expect(restStages()).toEqual([])
   })
 
   it('never draws two win conditions, even with an extra rule', () => {
@@ -196,7 +207,7 @@ describe('ascension', () => {
     expect(state.config.passives).toBe(true)
     expect(state.config.events).toBe(true)
     expect(relicRules(['sundial', 'omen'])).toEqual({ passives: true, events: true })
-    const camp: Run = { ...run, stage: REST_STAGES[0] + 1, fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
+    const camp: Run = { ...run, stage: 4, fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
     for (let i = 0; i < 10; i++) expect(runReward(camp, i).some((r) => r.kind === 'revive')).toBe(false)
   })
 
@@ -227,7 +238,9 @@ describe('gauntlet soak', () => {
       const foeCourt = otherCourt(court)
       for (let guard = 0; guard < GAUNTLET_STAGES && !runWon(run); guard++) {
         const start = stageGame(run)
-        const stage = stageFoe(run.seed, run.stage)
+        const at = layerNodes(run).findIndex((n) => n.kind !== 'event' && n.kind !== 'rest')
+        run = enterNode(run, at)
+        const stage = runFoe(run)
         const [solari, umbral] = court === 'solari' ? (['hard', stage.difficulty] as const) : ([stage.difficulty, 'hard'] as const)
         const r = playFrom(start, seed + guard, solari, umbral, 600)
         expect(r.problems).toEqual([])
@@ -292,8 +305,8 @@ describe('new relics', () => {
   it('Lens offers four, Waystone camps every stage, Ember keeps the best loss', () => {
     const run = { ...newRun(), relics: ['lens' as const] }
     for (let i = 0; i < 10; i++) expect(runReward(run, i)).toHaveLength(4)
-    expect(restStages(2, ['waystone'])).toHaveLength(GAUNTLET_STAGES - 1)
-    expect(restStages(0)).toEqual(REST_STAGES)
+    expect(restStages(['waystone'])).toHaveLength(GAUNTLET_STAGES - 1)
+    expect(restStages([])).toEqual([])
     const ember = { ...newRun(), relics: ['ember' as const] }
     const next = applyVictory(ember, afterWin(ember, [2, 3]))
     expect(next.army).toHaveLength(ember.army.length - 1)
@@ -320,7 +333,7 @@ describe('new relics', () => {
 })
 
 describe('events', () => {
-  const faced = (event: EventId, run: Run = newRun()): Run => ({ ...run, stage: 3, event })
+  const faced = (event: EventId, run: Run = newRun()): Run => ({ ...run, stage: 3, path: [0, 0], event })
 
   it('are offered only when they could do something, and open on pick', () => {
     const run: Run = { ...newRun(), stage: 3 }
@@ -398,5 +411,108 @@ describe('events', () => {
     expect(readRun({ ...run, offers: [{ kind: 'event', event: 'nope' }] })).toBeNull()
     const { event: _gone, ...old } = run
     expect(readRun(old)?.event).toBeNull()
+  })
+})
+
+describe('the map', () => {
+  const maps = Array.from({ length: 80 }, (_, i) => ({ seed: i + 1, ascension: i % (MAX_ASCENSION + 1) }))
+
+  it('is the same for the same seed and shaped by the rules', () => {
+    for (const { seed, ascension } of maps) {
+      const map = buildMap(seed, ascension, GAUNTLET_STAGES)
+      expect(buildMap(seed, ascension, GAUNTLET_STAGES)).toEqual(map)
+      expect(map).toHaveLength(GAUNTLET_STAGES)
+      map.forEach((layer, i) => {
+        const kinds = layer.map((n) => n.kind)
+        if (i === GAUNTLET_STAGES - 1) return expect(kinds).toEqual(['boss'])
+        expect(layer.length).toBeGreaterThanOrEqual(2)
+        expect(layer.length).toBeLessThanOrEqual(3)
+        expect(kinds.some((k) => k === 'fight' || k === 'elite')).toBe(true)
+        expect(kinds).not.toContain('boss')
+        if (i === 0) expect(kinds.every((k) => k === 'fight')).toBe(true)
+        if (i + 1 < ELITE_FROM) expect(kinds).not.toContain('elite')
+        if (ascension >= 2) expect(kinds).not.toContain('rest')
+      })
+      if (ascension < 2) expect(map[GAUNTLET_STAGES - 2].map((n) => n.kind)).toContain('rest')
+    }
+    const kinds = new Set(maps.flatMap(({ seed }) => buildMap(seed, 0, GAUNTLET_STAGES).flat().map((n) => n.kind)))
+    expect([...kinds].sort()).toEqual(['boss', 'elite', 'event', 'fight', 'rest'])
+  })
+
+  it('waits for a pick, and a fight node waits to be fought', () => {
+    const run = newRun()
+    expect(needsPick(run)).toBe(true)
+    expect(enterNode(run, 9)).toBe(run)
+    const fight = enterNode(run, 0)
+    expect(fight.path).toEqual([0])
+    expect(fight.stage).toBe(1)
+    expect(needsPick(fight)).toBe(false)
+    expect(enterNode(fight, 0)).toBe(fight)
+    expect(runFoe(fight)).toEqual(stageFoe(run.seed, 1, 0, { kind: 'fight', slot: 0 }, 'umbral'))
+    const won = applyVictory(fight, afterWin(fight))
+    expect(won.stage).toBe(2)
+    expect(won.path).toEqual([0])
+    expect(won.offers).not.toBeNull()
+    expect(needsPick(applyReward(won, won.offers![0]))).toBe(true)
+  })
+
+  it('moves a camp and an event straight on to the next stage', () => {
+    const before = runAfter('rest', 4)
+    const run: Run = { ...before, stage: 4, path: before.path.slice(0, 3), fallen: [{ role: 'bruiser', wins: 3, bonus: 0 }] }
+    const camp = enterNode(run, before.path[3])
+    expect(camp.stage).toBe(5)
+    expect(camp.offers![0]).toEqual({ kind: 'revive', target: 0 })
+    expect(needsPick(camp)).toBe(false)
+    const e = runAfter('event', 4)
+    const ev = enterNode({ ...e, stage: 4, path: e.path.slice(0, 3) }, e.path[3])
+    expect(ev.stage).toBe(5)
+    expect(ev.event ?? ev.offers).toBeTruthy()
+    const chosen = ev.event ? resolveEvent(ev, ev.army.length ? 0 : 99).run : ev
+    expect(chosen.event).toBeNull()
+  })
+
+  it('makes an elite harder, with a longer reward list', () => {
+    for (let s = ELITE_FROM; s < GAUNTLET_STAGES; s++) {
+      const plain = stageFoe(5, s, 0, { kind: 'fight', slot: 1 })
+      const elite = stageFoe(5, s, 0, { kind: 'elite', slot: 1 })
+      expect(elite.elite).toBe(true)
+      expect(plain.elite).toBe(false)
+      expect(elite.hpBonus).toBe(plain.hpBonus + 1)
+      expect(elite.tags.length).toBe(plain.tags.length + 1)
+      expect(DIFFICULTY_LIST.indexOf(elite.difficulty)).toBeGreaterThanOrEqual(DIFFICULTY_LIST.indexOf(plain.difficulty))
+    }
+    const run = runAfter('elite', 4)
+    expect(runReward(run, 3)).toHaveLength(4)
+    expect(runReward({ ...run, path: [...run.path.slice(0, -1), 0] }, 3).length).toBeLessThanOrEqual(4)
+  })
+
+  it('ends on a ladder boss on the foe’s court, with a valid fight', () => {
+    for (let seed = 1; seed < 30; seed++) {
+      expect(BOSSES).toContain(runBoss(seed))
+      for (const court of ['solari', 'umbral'] as const) {
+        const run: Run = { ...startRun(court, CLASSIC_ROLES, seed), stage: GAUNTLET_STAGES, path: Array<number>(GAUNTLET_STAGES - 1).fill(0) }
+        const entered = enterNode(run, 0)
+        const foe = runFoe(entered)
+        expect(foe.boss).toBe(true)
+        expect(foe.name).toBe(runBoss(seed).name)
+        expect(foe.rules.eclipseRound).toBe(20)
+        const state = stageGame(entered)
+        expect(validConfig(state.config)).toBe(true)
+        expect(checkInvariants(state)).toEqual([])
+        if (foe.rules.freeCast) expect(foe.rules.freeCast).toBe(otherCourt(court))
+        if (foe.rules.edge) expect(foe.rules.edge.court).toBe(otherCourt(court))
+      }
+    }
+  })
+
+  it('is saved with the run and rejects a path that does not fit the map', () => {
+    const run = enterNode(newRun(), 0)
+    expect(readRun(JSON.parse(JSON.stringify(run)))).toEqual(run)
+    expect(readRun({ ...run, v: 1 })).toBeNull()
+    expect(readRun({ ...run, path: undefined })).toBeNull()
+    expect(readRun({ ...run, path: [5] })).toBeNull()
+    expect(readRun({ ...run, path: [0, 0, 0] })).toBeNull()
+    expect(readRun({ ...run, stage: 3, path: [0] })).toBeNull()
+    expect(runMap(run)[0].length).toBeGreaterThan(0)
   })
 })

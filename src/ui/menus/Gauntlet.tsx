@@ -1,10 +1,12 @@
 import { useState, useSyncExternalStore } from 'react'
 import { PERSONALITIES } from '../../engine/data/personality'
 import { CLASSIC_ROLES, draftProblem } from '../../engine/data/draft'
-import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, EVENTS, MIN_BONUS, RELICS, eventChoices, relicUnlockText, MAX_REROLLS, canReroll, restStages, relicUnlocked, roster, stageFoe, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { ASCENSIONS, GAUNTLET_STAGES, MAX_ASCENSION, parseRunCode, EVENTS, MIN_BONUS, RELICS, eventChoices, relicUnlockText, MAX_REROLLS, canReroll, restStages, relicUnlocked, roster, stageFoe, runFoe, runMap, layerNodes, needsPick, type RelicId, type Reward, type Run, type RunPiece } from '../../engine/data/gauntlet'
+import { NODE_NAMES, type NodeKind } from '../../engine/data/gauntletMap'
 import { ROLE_NAMES } from '../../engine/data/roster'
 import { PERK_INFO, VETERAN_WINS, ELITE_WINS } from '../../engine/rules/growth'
 import { SPELL_INFO } from '../../engine/rules/spells'
+import { otherCourt } from '../../engine/rules/board'
 import type { Court, Role } from '../../engine/rules/types'
 import { totalStars, type Progress } from '../../progress'
 import { ascensionSnapshot, forDay, liveStreak, SHARDS_ASCENSION_WIN, SHARDS_DAILY_RUN, subscribeAscension } from '../../ascension'
@@ -36,6 +38,8 @@ interface Props {
   onReward: (reward: Reward) => void
   /** Pays for and draws a fresh set of offers. */
   onReroll: () => void
+  /** Takes node `i` of the layer being chosen. */
+  onPick: (slot: number) => void
   /** Takes choice `i` of the event being faced. */
   onEvent: (choice: number) => void
   onAbandon: () => void
@@ -83,8 +87,28 @@ function Army({ run }: { run: Run }) {
   )
 }
 
+const NODE_ICONS: Record<NodeKind, 'swords' | 'bolt' | 'sparkle' | 'moon' | 'flame'> = { fight: 'swords', elite: 'bolt', event: 'sparkle', rest: 'moon', boss: 'flame' }
+
+/** The whole map as a list of layers: what was taken, what is being chosen, and what lies ahead. */
+function Route({ run }: { run: Run }) {
+  return (
+    <ol className="route" aria-label={t('gauntlet.route')}>
+      {runMap(run).map((nodes, i) => {
+        const taken = run.path[i]
+        const now = i + 1 === run.stage && run.path.length < run.stage
+        return (
+          <li key={i} className={taken !== undefined ? 'done' : now ? 'now' : undefined} aria-current={now ? 'step' : undefined}>
+            <strong>{i + 1}</strong>{' '}
+            {taken !== undefined ? NODE_NAMES[nodes[taken].kind] : nodes.map((n) => NODE_NAMES[n.kind]).join(' · ')}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 /** The roguelike run: pick an army, fight eight opponents in a row, and take a reward after each win. */
-export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onEvent, onAbandon, onBack }: Props) {
+export function Gauntlet({ progress, run, resuming, report, summary, onStart, onDaily, onFight, onReward, onReroll, onPick, onEvent, onAbandon, onBack }: Props) {
   const shop = useSyncExternalStore(subscribeShop, shopSnapshot)
   const [court, setCourt] = useState<Court>('solari')
   const [roles, setRoles] = useState<Role[]>(() => [...CLASSIC_ROLES])
@@ -192,7 +216,7 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
       <main className="app menu gauntlet-menu">
         <PageArt icon="flame" />
         <h2>Spoils of stage {run.stage - 1}</h2>
-        <p className="tagline">Take one reward. {restStages(run.ascension, run.relics).includes(run.stage - 1) ? 'A quiet camp: the fallen may rise again.' : ''}</p>
+        <p className="tagline">Take one reward. {run.offers.some((r) => r.kind === 'revive') ? 'A quiet camp: the fallen may rise again.' : ''}</p>
         {lines}
         <div className="choices">
           {run.offers.map((reward, i) => {
@@ -215,23 +239,61 @@ export function Gauntlet({ progress, run, resuming, report, summary, onStart, on
       </main>
     )
 
-  const foe = stageFoe(run.seed, run.stage, run.ascension)
+  if (needsPick(run))
+    return (
+      <main className="app menu gauntlet-menu">
+        <PageArt icon="flame" />
+        <h2>{t('gauntlet.pick', { stage: run.stage, of: GAUNTLET_STAGES })}</h2>
+        <p className="tagline">{t('gauntlet.pickTagline')}</p>
+        {lines}
+        <div className="choices">
+          {layerNodes(run).map((node, i) => {
+            const foe = node.kind === 'fight' || node.kind === 'elite' || node.kind === 'boss'
+              ? stageFoe(run.seed, run.stage, run.ascension, { kind: node.kind, slot: i }, otherCourt(run.court))
+              : null
+            return (
+              <button key={i} className="choice" onClick={() => onPick(i)}>
+                <strong><Icon name={NODE_ICONS[node.kind]} />{foe ? foe.name : node.kind === 'event' ? t('gauntlet.node.event') : t('gauntlet.node.rest')}</strong>
+                <span>
+                  {foe
+                    ? `${node.kind === 'elite' ? `${t('gauntlet.node.elite')} ` : ''}${foe.difficulty}, ${PERSONALITIES[foe.personality].name}. ${foe.tags.length ? `Rules: ${foe.tags.join(', ')}.` : 'No special rules.'}`
+                    : node.kind === 'event' ? t('gauntlet.node.eventText') : t('gauntlet.node.restText')}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <h3>{t('gauntlet.route')}</h3>
+        <Route run={run} />
+        <Army run={run} />
+        <div className="menu-buttons stacked">
+          <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>
+          {back}
+        </div>
+        <TipCard page="gauntlet-run" />
+      </main>
+    )
+
+  const foe = runFoe(run)
   const personality = PERSONALITIES[foe.personality]
   return (
     <main className="app menu gauntlet-menu">
       <PageArt icon="flame" />
       <h2>Stage {run.stage} of {GAUNTLET_STAGES}</h2>
+      {foe.elite && <p className="tagline">{t('gauntlet.node.eliteText')}</p>}
       {(run.ascension > 0 || run.daily > 0) && <p className="tagline">{run.daily > 0 ? 'Daily run. ' : ''}{run.ascension > 0 ? `Ascension ${run.ascension}: ${ASCENSIONS[run.ascension - 1].name}.` : ''}</p>}
       <p className="tagline">{foe.name}: {foe.difficulty}, {personality.name}.</p>
       {lines}
       <div className="setup-card">
         {foe.blurb} {foe.hpBonus > 0 && `Every piece has ${foe.hpBonus} extra HP. `}
         {foe.tags.length > 0 ? `Rules: ${foe.tags.join(', ')}.` : 'No special rules.'}
-        {foe.boss && <div className="boss">Boss: the Eclipse falls at round 20.</div>}
+        {foe.boss && <div className="boss">Boss: the Eclipse falls at round {run.ascension >= 5 ? 14 : 20}.</div>}
       </div>
       <h3>Your army ({run.army.length + 1} pieces)</h3>
       <Army run={run} />
-      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.ascension, run.relics).find((s) => s >= run.stage) ? `a camp after stage ${restStages(run.ascension, run.relics).find((s) => s >= run.stage)} may restore one.` : 'there is no camp left to restore them.'}</p>}
+      {run.fallen.length > 0 && <p className="tagline">{run.fallen.length} fallen; {restStages(run.relics).some((s) => s >= run.stage) ? 'a camp after this fight may restore one.' : 'a camp on the map may restore one.'}</p>}
+      <h3>{t('gauntlet.route')}</h3>
+      <Route run={run} />
       <div className="menu-buttons stacked">
         <button className="primary" onClick={onFight}><Icon name="swords" />{resuming ? 'Resume Fight' : 'Fight'}</button>
         <button onClick={onAbandon}><Icon name="exit" />Abandon the Run</button>

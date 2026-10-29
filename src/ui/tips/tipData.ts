@@ -145,6 +145,8 @@ const DATA = {
       text: 'The Daily run gives everyone the same foes today, with the classic army from the Solari court, and a first win pays a Shard bonus. A run code lets you enter a friend\'s code to fight the same sequence of foes they did. A finished run offers a summary you can copy and share.' },
   ],
   'gauntlet-run': [
+    { id: 'gauntlet-map', icon: 'flame', title: 'The Road',
+      text: 'Before each stage you choose one of two or three nodes: a fight, an elite (harder, with one more reward and double Shards), an event, or a quiet camp that brings a fallen piece back. The whole road is listed below, and the last stage is always a boss. A run code gives the same road.' },
     { id: 'gauntlet-stage', icon: 'swords', title: 'Stage by Stage',
       text: 'Between fights you see the next foe, its difficulty and personality, and any special rules or extra hit points. Check your army list to see ranks, perks, relics and spells. The last stage is a boss, and the Eclipse falls at round 20 in its match. Abandon the Run ends it, so only use it if you mean to.' },
     { id: 'gauntlet-rewards', icon: 'sparkle', title: 'Choosing a Reward',
