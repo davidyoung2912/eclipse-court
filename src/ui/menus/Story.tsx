@@ -8,6 +8,7 @@ import { PageArt } from './MenuArt'
 import { TipCard } from '../tips/TipCard'
 import { BackButton } from './BackButton'
 import { ResetButton } from './ResetButton'
+import { t } from '../../i18n'
 
 interface Props {
   onOpen: (id: string) => void
@@ -35,7 +36,7 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
     return (
       <button key={c.id} className={`choice${done ? ' won' : ''}`} disabled={!open} onClick={() => onOpen(c.id)}>
         <strong><Icon name={done ? 'check' : open ? 'book' : 'lock'} />{c.act === 'prologue' ? `${actLabel(c.act)} · ` : ''}{c.title}</strong>
-        <span>{open ? c.blurb : 'Read the chapter before this one to open it.'}</span>
+        <span>{open ? c.blurb : t('story.locked')}</span>
       </button>
     )
   }
@@ -48,8 +49,8 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
   return (
     <main className="app menu story-menu">
       <PageArt icon="book" />
-      <h2>Story</h2>
-      <p className="tagline">How the Hour stopped, and the courts that came of it.</p>
+      <h2>{t('story.title')}</h2>
+      <p className="tagline">{t('story.tagline')}</p>
       {prologue.length > 0 && <div className="choices">{prologue.map(chapterButton)}</div>}
       {([1, 2, 3] as const).map((act) => {
         const list = CHAPTERS.map((c, i) => ({ c, i })).filter(({ c }) => c.act === act)
@@ -65,13 +66,13 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
       {ending && read.has(ending.id) && (
         <div className="menu-buttons stacked">
           <button className="primary" onClick={() => onEnding?.(ending.id)}>
-            <Icon name="book" />{story.ending ? `Ending: ${ending.ending!.options.find((o) => o.id === story.ending)?.label}` : 'Choose who keeps the Hour'}
+            <Icon name="book" />{story.ending ? t('story.ending', { label: ending.ending!.options.find((o) => o.id === story.ending)?.label ?? '' }) : t('story.chooseEnding')}
           </button>
         </div>
       )}
       {afterwords.length > 0 && (
-        <section className="story-cast" aria-label="Epilogues">
-          <h3>Epilogues</h3>
+        <section className="story-cast" aria-label={t('story.epilogues')}>
+          <h3>{t('story.epilogues')}</h3>
           {afterwords.map(({ chapterId, option }) => (
             <button key={option.id} className={`choice${epilogueRead(story, option.id) ? ' won' : ''}`} onClick={() => onAfterword?.(chapterId, option.id)}>
               <strong><Icon name={epilogueRead(story, option.id) ? 'check' : 'book'} />{option.epilogue.title}</strong>
@@ -80,10 +81,10 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
           ))}
         </section>
       )}
-      {!ending && <p className="tagline">More chapters are still to be told.</p>}
+      {!ending && <p className="tagline">{t('story.more')}</p>}
       {company.length > 0 && (
-        <section className="story-cast" aria-label="Company">
-          <h3>Company</h3>
+        <section className="story-cast" aria-label={t('story.company')}>
+          <h3>{t('story.company')}</h3>
           {company.map((id) => {
             const c = CHARACTERS[id]
             const state = characterState(story, id)
@@ -98,18 +99,18 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
         </section>
       )}
       {bonds.length > 0 && (
-        <section className="story-cast" aria-label="Bonds">
-          <h3>Bonds</h3>
+        <section className="story-cast" aria-label={t('story.bonds')}>
+          <h3>{t('story.bonds')}</h3>
           {bonds.map((b) => (
             <button key={b.id} className={`choice${bondRead(story, b.id) ? ' won' : ''}`} onClick={() => onBond?.(b.id)}>
               <strong><Icon name={bondRead(story, b.id) ? 'check' : 'book'} />{b.title}</strong>
-              <span>{CHARACTERS[b.between[0]].name} and {CHARACTERS[b.between[1]].name}</span>
+              <span>{t('story.bondPair', { a: CHARACTERS[b.between[0]].name, b: CHARACTERS[b.between[1]].name })}</span>
             </button>
           ))}
         </section>
       )}
-      <section className="story-cast" aria-label="Achievements">
-        <h3>Achievements · {medals.filter((m) => m.earned).length} of {medals.length}</h3>
+      <section className="story-cast" aria-label={t('story.achievements')}>
+        <h3>{t('story.achievementsCount', { earned: medals.filter((m) => m.earned).length, total: medals.length })}</h3>
         {ACHIEVEMENT_GROUPS.map((group) => {
           const list = medals.filter((m) => m.group === group)
           return (
@@ -118,7 +119,7 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
               {list.map((m) => (
                 <div key={m.id} className={`story-member${m.earned ? '' : ' fallen'}`}>
                   <span><strong>{m.title}</strong><small>{m.text}</small></span>
-                  <em>{m.earned ? 'earned' : 'locked'}</em>
+                  <em>{t(m.earned ? 'story.earned' : 'story.lockedBadge')}</em>
                 </div>
               ))}
             </details>
@@ -126,7 +127,7 @@ export function Story({ onOpen, onEnding, onBond, onAfterword, onBack }: Props) 
         })}
       </section>
       <div className="menu-buttons stacked">
-        <ResetButton label="Reset Story" disabled={untouched} warning="Forget every chapter read, bond scene, ending and story achievement, and bring every character back? Campaign, puzzle and scenario progress is kept." onReset={resetStory} />
+        <ResetButton label={t('story.reset')} disabled={untouched} warning={t('story.resetWarning')} onReset={resetStory} />
         <BackButton onClick={onBack} />
       </div>
       <TipCard page={['story', 'story-acts']} />
