@@ -8,7 +8,7 @@ const win: Earning = { won: true, draw: false, difficulty: 'normal', firstClear:
 describe('cosmetics catalog', () => {
   it('has unique ids per kind and a free default for each', () => {
     expect(new Set(COSMETICS.map(cosmeticKey)).size).toBe(COSMETICS.length)
-    for (const kind of KINDS.filter((k) => k !== 'theme')) expect(cosmeticsOf(kind).filter((c) => c.cost === 0 && !c.goals)).toHaveLength(1)
+    for (const kind of KINDS.filter((k) => k !== 'theme')) expect(cosmeticsOf(kind).filter((c) => c.cost === 0 && !c.goals && !c.arc)).toHaveLength(1)
     expect(defaultOf('sound')).toBe('classic')
   })
 

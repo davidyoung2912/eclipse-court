@@ -1,4 +1,6 @@
 /** What Shards buy. Cosmetics only: they change colours, art, sound and animation, never a rule. */
+import type { PersonaId } from './personas'
+
 export type CosmeticKind = 'theme' | 'pieces' | 'capture' | 'board' | 'sound' | 'codex'
 
 export interface Cosmetic {
@@ -10,6 +12,8 @@ export interface Cosmetic {
   cost: number
   /** Piece mastery goals to complete to earn it; it is never sold. */
   goals?: number
+  /** The persona whose arc awards it when the arc's last fight is won; it is never sold. */
+  arc?: PersonaId
 }
 
 export const KIND_TITLES: Record<CosmeticKind, string> = {
@@ -44,6 +48,15 @@ export const COSMETICS: readonly Cosmetic[] = [
   { kind: 'capture', id: 'comet', name: 'Comet', text: 'A long trail of pale fire.', cost: 0, goals: 6 },
   { kind: 'capture', id: 'supernova', name: 'Supernova', text: 'A wide golden bloom. Earned by mastering every piece.', cost: 0, goals: 28 },
 
+  { kind: 'capture', id: 'dawnfire', name: 'Dawnfire', text: 'A gold-pink flare. Earned in Cassia\'s arc.', cost: 0, arc: 'cassia' },
+  { kind: 'capture', id: 'inkbloom', name: 'Ink Bloom', text: 'Ink-blue petals that spread slowly. Earned in Pym\'s arc.', cost: 0, arc: 'pym' },
+  { kind: 'capture', id: 'doorlight', name: 'Doorlight', text: 'A tight ring of warm light. Earned in Bea\'s arc.', cost: 0, arc: 'bea' },
+  { kind: 'capture', id: 'miregleam', name: 'Mire Gleam', text: 'Green motes that drift up. Earned in Mudge\'s arc.', cost: 0, arc: 'mudge' },
+  { kind: 'capture', id: 'ravenwing', name: 'Ravenwing', text: 'Dark feathers that scatter wide. Earned in Lowen\'s arc.', cost: 0, arc: 'lowen' },
+  { kind: 'capture', id: 'ghoulglow', name: 'Ghoulglow', text: 'A sickly lime burst. Earned in Digby\'s arc.', cost: 0, arc: 'digby' },
+  { kind: 'capture', id: 'ironcoin', name: 'Iron Coin', text: 'Cold grey sparks. Earned in Quill\'s arc.', cost: 0, arc: 'quill' },
+  { kind: 'capture', id: 'paleecho', name: 'Pale Echo', text: 'A slow, silver ripple. Earned in the Regent\'s arc.', cost: 0, arc: 'regent' },
+
   { kind: 'board', id: 'still', name: 'Still Board', text: 'The squares as they are.', cost: 0 },
   { kind: 'board', id: 'starlit', name: 'Starlit', text: 'Squares twinkle one after another. Animated.', cost: 240 },
   { kind: 'board', id: 'tidal', name: 'Tidal', text: 'A slow swell rolls across the board. Animated.', cost: 300 },
@@ -65,7 +78,7 @@ export const cosmeticsOf = (kind: CosmeticKind) => COSMETICS.filter((c) => c.kin
 export const cosmeticKey = (c: Pick<Cosmetic, 'kind' | 'id'>) => `${c.kind}:${c.id}`
 export const findCosmetic = (kind: CosmeticKind, id: string) => COSMETICS.find((c) => c.kind === kind && c.id === id)
 /** What each kind starts equipped with: its free first entry. */
-export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0 && !c.goals)?.id ?? ''
+export const defaultOf = (kind: CosmeticKind) => cosmeticsOf(kind).find((c) => c.cost === 0 && !c.goals && !c.arc)?.id ?? ''
 
 /** A sound pack: a pitch ratio and, optionally, a wave that replaces the plain tones'. */
 export interface Voice {
@@ -94,6 +107,14 @@ export const CAPTURE_FX: Record<string, CaptureFx> = {
   stardust: { parts: 12, colour: '#fff3b8', reach: 0.9 },
   comet: { parts: 7, colour: '#d6ecff', reach: 1.1 },
   supernova: { parts: 16, colour: '#ffd36b', reach: 1.2 },
+  dawnfire: { parts: 10, colour: '#ffb98a', reach: 1 },
+  inkbloom: { parts: 9, colour: '#8fa8ff', reach: 1.1 },
+  doorlight: { parts: 8, colour: '#ffe3a0', reach: 0.6 },
+  miregleam: { parts: 7, colour: '#9be08a', reach: 0.8 },
+  ravenwing: { parts: 11, colour: '#9a8fb8', reach: 1.1 },
+  ghoulglow: { parts: 9, colour: '#c8ff6b', reach: 0.9 },
+  ironcoin: { parts: 8, colour: '#b9c0c9', reach: 0.8 },
+  paleecho: { parts: 6, colour: '#e6eefc', reach: 1.3 },
 }
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legend'
@@ -101,8 +122,8 @@ export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legend'
 export const RARITY_LABELS: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legend: 'Legend' }
 
 /** How rare a cosmetic is: earned ones are Legend, sold ones rank by price. */
-export function rarityOf(c: Pick<Cosmetic, 'cost' | 'goals'>): Rarity {
-  if (c.goals) return 'legend'
+export function rarityOf(c: Pick<Cosmetic, 'cost' | 'goals' | 'arc'>): Rarity {
+  if (c.goals || c.arc) return 'legend'
   if (c.cost >= 280) return 'epic'
   if (c.cost >= 110) return 'rare'
   if (c.cost > 0) return 'uncommon'

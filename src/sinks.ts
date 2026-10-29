@@ -70,7 +70,7 @@ export function subscribeSinks(l: Listener) {
 export const prestigeOf = (c: Cosmetic, s: SinksState = state) => s.prestige[cosmeticKey(c)] ?? 0
 
 /** Cosmetics given free at the start have nothing to prestige; the rest start from their price (or 100 if earned by goals). */
-export const canPrestige = (c: Cosmetic) => c.cost > 0 || !!c.goals
+export const canPrestige = (c: Cosmetic) => c.cost > 0 || !!c.goals || !!c.arc
 
 /** Shards for the next prestige tier of `c`: its price (100 if earned) times the tier, so three tiers cost 6x. */
 export const prestigeCost = (c: Cosmetic, tier: number) => (c.cost || 100) * tier

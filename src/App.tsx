@@ -38,6 +38,9 @@ import { replay } from './engine/log'
 import type { PersonalityId } from './engine/data/personality'
 import { personaById, type PersonaId } from './engine/data/personas'
 import { recordPersonaGame } from './personaRecord'
+import { markGrudge, recordArcWin, settleGrudge } from './personaArcs'
+import { arcFight, arcGame } from './engine/data/personaArcs'
+import { Arcs } from './ui/menus/Arcs'
 import { ladderVoice, resolvePersona, rivalLine, type PersonaChoice } from './personaMenu'
 import { addPlaytime, dailyResult, loadProgress, recordPractice, recordPuzzle, recordReview, recordRun, recordTournament, recordVersus, resetCampaign, resetCoop, resetPuzzles, resetScenarios, resetStats, saveProgress } from './progress'
 import { clearSaved, loadSaved, saveGame } from './saved'
@@ -111,6 +114,7 @@ type Screen =
   | { name: 'daily' }
   | { name: 'weekly' }
   | { name: 'ladder' }
+  | { name: 'arcs' }
   | { name: 'gauntlet' }
   | { name: 'tutorial' }
   | { name: 'stats' }
@@ -154,6 +158,8 @@ type Screen =
     ladder?: string
     /** A named opponent whose voice speaks in the fight. */
     persona?: PersonaId
+    /** A fight of a persona's arc (`step` from 0); not resumable. */
+    arc?: { persona: PersonaId; step: number }
     /** A try-out from the board editor: nothing is recorded and Back returns to the editor. */
     editor?: boolean
     /** A try-out from a position in a reviewed game: nothing is recorded and Back returns to the menu. */
@@ -465,8 +471,19 @@ export default function App() {
         }} />
     )
 
+  if (screen.name === 'arcs')
+    return (
+      <Arcs report={report} onBack={() => setScreen({ name: 'battle' })}
+        onPlay={(persona, step) => {
+          const fight = arcFight(persona, step)
+          if (!fight) return
+          setReport([])
+          setScreen({ name: 'game', human: 'solari', difficulty: fight.difficulty, record: { initial: arcGame(fight, seedNow()), actions: [] }, campaignIndex: null, persona, arc: { persona, step } })
+        }} />
+    )
+
   if (screen.name === 'battle')
-    return <Battle onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} onMail={() => setScreen({ name: 'mail' })} />
+    return <Battle onArcs={() => { setReport([]); setScreen({ name: 'arcs' }) }} onLadder={() => { setReport([]); setScreen({ name: 'ladder' }) }} onBack={() => setScreen({ name: 'menu' })} onSkirmish={() => setScreen({ name: 'skirmish' })} onPractice={() => setScreen({ name: 'practice' })} onPaste={() => setScreen({ name: 'paste' })} onEditor={() => setScreen({ name: 'editor' })} onOnline={() => setScreen({ name: 'online' })} onMail={() => setScreen({ name: 'mail' })} />
 
   if (screen.name === 'online')
     return <Online onBack={() => setScreen({ name: 'battle' })} onHost={() => setScreen({ name: 'skirmish', online: true })} onJoin={() => setScreen({ name: 'lobby' })} />
@@ -645,7 +662,7 @@ export default function App() {
     )
 
   if (screen.name === 'game') {
-    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again } = screen
+    const { human, difficulty, record, campaignIndex, puzzle, series, hotSeat, online, gauntlet, scenario, coop, story, ladder, editor, tryout, mail, again, arc } = screen
     /** Puzzles and tournament games are not resumable, so they never touch the saved game. */
     /** Today's match as set for everyone, against the AI it names; only this one is scored for the day. */
     const today = dailyMatch()
@@ -656,7 +673,7 @@ export default function App() {
       && difficulty === weeklyToday.difficulty && isWeeklyMatch(record.initial.config)
     /** Boards from the editor can be rigged, so they count for nothing and cannot be resumed. */
     const custom = !!editor || !!tryout || isCustom(record.initial.config)
-    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story
+    const transient = custom || !!ladder || !!online || !!mail || !!puzzle || !!series || !!gauntlet || scenario !== undefined || coop !== undefined || !!story || !!arc
 
     const current = puzzle && (puzzle.endless?.puzzle ?? PUZZLES[puzzle.index])
     const finishPuzzle = (winner: GameState['winner']) => {
@@ -699,7 +716,7 @@ export default function App() {
     }
 
     /** Records a finished game and returns the lines to show about it. */
-    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
+    const settleAll = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
       const settled = settleGame(progress, { winner, finished, human, difficulty, campaignIndex, scenario, coop, daily, today, stats, freezes: sinksSnapshot().freezes })
       if (settled.froze) consumeFreeze()
       if (settled.summary) rememberCourt(human)
@@ -718,12 +735,25 @@ export default function App() {
         return { ...settled, lines: [...rated.lines, ...settled.lines] }
       }
       // Side goals pay only in plain skirmishes against an AI that is not the easiest.
-      const bounties = stats && settled.summary && scenario === undefined && coop === undefined && campaignIndex === null && !daily && !weekly && !custom && difficulty !== 'easy'
+      const bounties = stats && settled.summary && scenario === undefined && coop === undefined && campaignIndex === null && !daily && !weekly && !custom && !arc && difficulty !== 'easy'
         ? claimBounties(settled.summary) : []
       const bountyShards = bounties.reduce((n, b) => n + b.shards, 0)
       earnShards(settled.shards + (extra?.shards ?? 0) + bountyShards)
       if (bounties.length > 0) return { ...settled, lines: [...bounties.map((b) => `Bounty: ${b.text}. +${b.shards} Shards.`), ...settled.lines] }
       return extra ? { ...settled, lines: [...extra.lines, ...settled.lines] } : settled
+    }
+
+    /** Records a finished game, then what it means for the persona's arc and grudge. */
+    const finishGame = (winner: GameState['winner'], finished: GameRecord, stats: boolean) => {
+      const done = settleAll(winner, finished, stats)
+      const id = screen.persona
+      if (!id || hotSeat || !stats || !done.summary) return done
+      const extra = done.summary.won
+        ? [settleGrudge(id), ...(arc ? [recordArcWin(arc.persona, arc.step)] : [])]
+        : done.summary.draw ? [] : (markGrudge(id), [])
+      const shards = extra.reduce((n, o) => n + o.shards, 0)
+      if (shards > 0) earnShards(shards)
+      return extra.length > 0 ? { ...done, lines: [...extra.flatMap((o) => o.lines), ...done.lines] } : done
     }
 
     const finishSeries = (winner: GameState['winner'], finished: GameRecord) => {
@@ -816,6 +846,7 @@ export default function App() {
       : campaignIndex !== null ? { label: `${series ? 'Tournament' : 'Battle'} vs ${CAMPAIGN[campaignIndex].name}`, kind: series ? 'series' : 'campaign' }
       : daily ? { label: 'Daily match', kind: 'daily' }
       : weekly ? { label: 'Weekly challenge', kind: 'daily', flavour: 'weekly' }
+      : arc ? { label: `${arcFight(arc.persona, arc.step)?.name ?? 'Arc'}`, kind: 'skirmish' }
       : ladder ? { label: `Ladder vs ${foeById(ladder)?.name ?? 'opponent'}`, kind: 'skirmish', scored: true, flavour: 'ladder' }
       : { label: 'Skirmish', kind: 'skirmish' }
     const foe = gauntlet && run ? runFoe(run) : null
@@ -859,12 +890,18 @@ export default function App() {
           if (done.lines.some((line) => shardsIn(line) > 0)) claimFlight()
           return done.lines
         } : undefined}
-        canPlayAgain={!!again && !daily && !weekly && !custom}
+        canPlayAgain={(!!again || !!arc) && !daily && !weekly && !custom}
+        canSwap={!arc}
+        canGrudge={!hotSeat && !!screen.persona && !custom && !!(ladder || again)}
         onExit={(winner, finished, review, repeat) => {
           /** Deals the same setup again with a new seed, on the other court when swapping. */
-          const playAgain = (kind: 'same' | 'swap') => {
+          const playAgain = (kind: 'same' | 'swap' | 'grudge') => {
             const seed = Date.now()
             const side = kind === 'swap' ? otherCourt(human) : human
+            if (arc) {
+              const fight = arcFight(arc.persona, arc.step)!
+              return setScreen({ name: 'game', human, difficulty, persona: arc.persona, arc, record: { initial: arcGame(fight, seed), actions: [] }, campaignIndex: null })
+            }
             setReport([])
             setScreen({ name: 'game', human: side, difficulty, hotSeat, persona: hotSeat ? undefined : resolvePersona(again!.voice, seed), record: skirmishRecord(again!.setup, side, difficulty, !!hotSeat, seed), campaignIndex: null, again })
           }
@@ -904,7 +941,7 @@ export default function App() {
           }
           const lines = [...done.lines]
           // Only games where the player picked the difficulty say whether it is too hard.
-          if (done.summary && !ladder && !daily && !weekly) {
+          if (done.summary && !ladder && !daily && !weekly && !arc) {
             recordAiGame(difficulty, done.summary.won ? 'win' : done.summary.draw ? 'draw' : 'loss')
             const advice = adviceFor(onboardingSnapshot())
             if (advice) lines.push(advice.text)
@@ -913,8 +950,12 @@ export default function App() {
           if (scenario !== undefined) { setCampaignTab('scenarios'); saveChoices('campaign', { tab: 'scenarios' }) }
           if (coop !== undefined) { setCampaignTab('coop'); saveChoices('campaign', { tab: 'coop' }) }
           if (review) return setScreen({ name: 'replay', record: finished, own: true })
-          if (repeat && again) return playAgain(repeat)
-          setScreen(ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
+          if (repeat && (again || arc)) return playAgain(repeat)
+          if (repeat === 'grudge' && ladder) {
+            const foe = foeById(ladder)
+            if (foe) return setScreen({ name: 'game', human: LADDER_COURT, difficulty: foe.difficulty, record: { initial: ladderGame(Date.now() % 1000000007, foe), actions: [] }, campaignIndex: null, ladder, persona: screen.persona })
+          }
+          setScreen(arc ? { name: 'arcs' } : ladder ? { name: 'ladder' } : daily ? { name: 'daily' } : weekly ? { name: 'weekly' } : scenario !== undefined || coop !== undefined ? { name: 'campaign' } : campaignIndex === null ? { name: 'menu' } : { name: 'campaign' })
         }}
       />
       </>

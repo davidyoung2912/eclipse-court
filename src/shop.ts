@@ -24,7 +24,7 @@ const count = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x
 export function parseShop(raw: unknown): ShopState {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof ShopState, unknown>>
   const owned = Array.isArray(o.owned)
-    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => (c.cost > 0 || c.goals) && cosmeticKey(c) === k)))]
+    ? [...new Set(o.owned.filter((k): k is string => typeof k === 'string' && COSMETICS.some((c) => (c.cost > 0 || c.goals || c.arc) && cosmeticKey(c) === k)))]
     : []
   const equipped: Partial<Record<CosmeticKind, string>> = {}
   if (o.equipped && typeof o.equipped === 'object')
@@ -64,7 +64,7 @@ export function subscribeShop(l: Listener) {
   return () => { listeners.delete(l) }
 }
 
-export const owns = (c: Cosmetic, s: Pick<ShopState, 'owned'> = state) => (c.cost === 0 && !c.goals) || s.owned.includes(cosmeticKey(c))
+export const owns = (c: Cosmetic, s: Pick<ShopState, 'owned'> = state) => (c.cost === 0 && !c.goals && !c.arc) || s.owned.includes(cosmeticKey(c))
 export const equippedId = (kind: CosmeticKind, s: ShopState = state) => s.equipped[kind] ?? defaultOf(kind)
 
 export function earnShards(n: number) {
@@ -81,7 +81,7 @@ export function spend(n: number): boolean {
 
 /** Spends Shards on a cosmetic; false if it is already owned or too dear. */
 export function buy(c: Cosmetic): boolean {
-  if (c.goals || owns(c) || state.shards < c.cost) return false
+  if (c.goals || c.arc || owns(c) || state.shards < c.cost) return false
   commit({ ...state, shards: state.shards - c.cost, owned: [...state.owned, cosmeticKey(c)] })
   return true
 }
