@@ -218,3 +218,10 @@ svg.board:focus-visible .board-frame { stroke: #fff6c0; stroke-width: 0.2; filte
 .quests h4 { font-size: 0.9rem; opacity: 0.8; }
 .quest-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .quest.claimed { opacity: 0.6; }
+
+.season-tiers { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.season-tiers li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.season-tiers li.taken { opacity: 0.6; }
+.season-tiers li.locked { opacity: 0.8; }
+.season-tiers .tier-text { flex: 1 1 10rem; display: flex; flex-direction: column; }
+.season-tiers .tier-text small { opacity: 0.7; }

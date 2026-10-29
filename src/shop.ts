@@ -126,6 +126,13 @@ export const SHARDS_DAILY_PUZZLE = 10
 export const SHARDS_GAUNTLET_STAGE = 10
 export const SHARDS_GAUNTLET_WIN = 60
 
+/** Gives a cosmetic that is not owned yet, whatever its price; false if it is already owned. */
+export function award(c: Cosmetic): boolean {
+  if (owns(c)) return false
+  commit({ ...state, owned: [...state.owned, cosmeticKey(c)] })
+  return true
+}
+
 /** Gives an earned cosmetic (one set by `goals`); false if it is not one or already owned. */
 export function grant(c: Cosmetic): boolean {
   if (!c.goals || owns(c)) return false

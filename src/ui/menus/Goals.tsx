@@ -15,10 +15,11 @@ import { Quests } from './Quests'
 interface Props {
   progress: Progress
   onGo: (target: GoalTarget) => void
+  onSeason?: () => void
   onBack: () => void
 }
 
-export function Goals({ progress, onGo, onBack }: Props) {
+export function Goals({ progress, onGo, onSeason, onBack }: Props) {
   const mastery = useSyncExternalStore(subscribeMastery, masterySnapshot)
   const roles = useSyncExternalStore(subscribeRoleGoals, roleGoalsSnapshot)
   const day = dailySeed()
@@ -41,7 +42,10 @@ export function Goals({ progress, onGo, onBack }: Props) {
           </li>
         ))}
       </ul>
-      <div className="menu-buttons stacked"><BackButton onClick={onBack} /></div>
+      <div className="menu-buttons stacked">
+        {onSeason && <button onClick={onSeason}><Icon name="star" />{t('menu.season')}</button>}
+        <BackButton onClick={onBack} />
+      </div>
     </main>
   )
 }

@@ -2,6 +2,7 @@ import { QUESTS, QUESTS_PER_PERIOD, questById, type Quest, type QuestEvent, type
 import { dailySeed } from './engine/data/setups'
 import { weekStart } from './engine/data/weekly'
 import { rngNext } from './engine/rng'
+import { recordQuestXp, recordSeasonEvent } from './season'
 import { earnShards } from './shop'
 
 /** Three daily and three weekly quests, seeded by date so they match offline; progress and claims are kept here. */
@@ -133,6 +134,7 @@ export function refreshQuests() {
 /** Counts something the player did towards the open quests. */
 export function recordQuestEvent(e: QuestEvent) {
   commit(applyEvent(current(), e))
+  recordSeasonEvent(e)
 }
 
 /** Pays a finished quest; returns its Shards, or 0 if it is open, claimed or unknown. */
@@ -145,6 +147,7 @@ export function claimQuest(period: QuestPeriod, index: number): number {
   const marked = slots.map((x, i) => (i === index ? { ...x, claimed: true } : x))
   commit({ ...s, ...(period === 'daily' ? { daily: marked } : { weekly: marked }) })
   earnShards(q.shards)
+  recordQuestXp(period)
   return q.shards
 }
 

@@ -74,6 +74,7 @@ import { Settings } from './ui/menus/Settings'
 import { MainMenu } from './ui/menus/MainMenu'
 import { Stats } from './ui/menus/Stats'
 import { Goals } from './ui/menus/Goals'
+import { Season } from './ui/menus/Season'
 import type { GoalTarget } from './goals'
 import { PlayTimer } from './ui/PlayTimer'
 import { Online } from './ui/menus/Online'
@@ -113,6 +114,7 @@ type Screen =
   | { name: 'tutorial' }
   | { name: 'stats' }
   | { name: 'goals' }
+  | { name: 'season' }
   | { name: 'puzzles' }
   | { name: 'endless' }
   | { name: 'practice' }
@@ -313,7 +315,8 @@ export default function App() {
     setScreen({ name: target })
   }
 
-  if (screen.name === 'goals') return <Goals progress={progress} onGo={goTo} onBack={() => setScreen({ name: 'menu' })} />
+  if (screen.name === 'season') return <Season onBack={() => setScreen({ name: 'menu' })} />
+  if (screen.name === 'goals') return <Goals progress={progress} onGo={goTo} onSeason={() => setScreen({ name: 'season' })} onBack={() => setScreen({ name: 'menu' })} />
 
   if (screen.name === 'stats')
     return (
@@ -894,7 +897,7 @@ export default function App() {
   return (
     <MainMenu firstRun={!seen} progress={progress} onBattle={() => setScreen({ name: 'battle' })}
       onResume={saved ? () => setScreen({ name: 'game', ...saved }) : undefined} onSkirmish={() => setScreen({ name: 'skirmish' })}
-      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onGoals={() => setScreen({ name: 'goals' })} onTutorial={() => setScreen({ name: 'tutorial' })}
+      onCampaign={() => { setReport([]); setScreen({ name: 'campaign' }) }} onStory={() => setScreen({ name: 'story' })} onGauntlet={() => { setReport([]); setScreen({ name: 'gauntlet' }) }} onStats={() => setScreen({ name: 'stats' })} onGoals={() => setScreen({ name: 'goals' })} onSeason={() => setScreen({ name: 'season' })} onTutorial={() => setScreen({ name: 'tutorial' })}
       onDaily={() => { setReport([]); setScreen({ name: 'daily' }) }} onWeekly={() => { setReport([]); setScreen({ name: 'weekly' }) }}
       dailyDone={{ weekly: forWeek(weeklySnapshot(), weeklyMatch().week).paid, match: !!dailyResult(progress, dailySeed()), puzzle: progress.puzzles.includes(PUZZLES[dailyPuzzleIndex()].id) }}
       onDailyPuzzle={() => {

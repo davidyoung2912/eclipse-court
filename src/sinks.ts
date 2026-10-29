@@ -111,3 +111,16 @@ export function consumePackHint(): boolean {
 
 /** Buys a Gauntlet reroll token's worth of Shards; the run itself counts the tokens used. */
 export const payReroll = () => spend(PRICE_REROLL)
+
+/** Adds a freeze or a hint pack as a reward; false if the shelf is already full. */
+export function grantFreeze(): boolean {
+  if (state.freezes >= MAX_FREEZES) return false
+  commit({ ...state, freezes: state.freezes + 1 })
+  return true
+}
+
+export function grantHints(): boolean {
+  if (state.hints >= MAX_PACK_HINTS) return false
+  commit({ ...state, hints: Math.min(MAX_PACK_HINTS, state.hints + HINT_PACK) })
+  return true
+}

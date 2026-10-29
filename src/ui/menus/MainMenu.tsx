@@ -29,6 +29,7 @@ interface Props {
   onTutorial: () => void
   onStats: () => void
   onGoals: () => void
+  onSeason: () => void
   onPuzzles: () => void
   onSettings: () => void
   onCollection: () => void
@@ -181,7 +182,7 @@ interface Card {
   wide?: boolean
 }
 
-export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onGoals, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
+export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, onGauntlet, onTutorial, onStats, onGoals, onSeason, onPuzzles, onSettings, onCollection, onDaily, onWeekly, onDailyPuzzle, dailyDone, onResume, firstRun }: Props) {
   const [intro, setIntro] = useState<Intro>(() => (introPlayed || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'done' : 'centred'))
   const menuRef = useRef<HTMLElement>(null)
   const brandRef = useRef<HTMLDivElement>(null)
@@ -269,6 +270,7 @@ export function MainMenu({ progress, onSkirmish, onBattle, onCampaign, onStory, 
           <button onClick={onDaily}><Icon name={dailyDone.match ? 'check' : 'sun'} />{t('menu.dailyMatch')}</button>
           <button onClick={onDailyPuzzle}><Icon name={dailyDone.puzzle ? 'check' : 'puzzle'} />{t('menu.dailyPuzzle')}</button>
           <button onClick={onWeekly}><Icon name={dailyDone.weekly ? 'check' : 'cycle'} />{t('menu.weekly')}</button>
+          <button onClick={onSeason}><Icon name="star" />{t('menu.season')}</button>
         </div>
         <Quests />
       </section>
