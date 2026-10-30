@@ -1,5 +1,6 @@
 import { ROLE_NAMES } from '../../engine/data/roster'
 import type { Odds } from '../../engine/reducer'
+import { useEffect } from 'react'
 import { Icon } from '../menus/icons'
 import type { CellEffect, Piece } from '../../engine/rules/types'
 import { CELL_INFO } from '../../engine/rules/cells'
@@ -26,6 +27,8 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
 export function AttackConfirm({ attacker, defender, luminance, odds, live, cells, detail, onConfirm, onCancel }: Props) {
   const advice = adviceFor(odds, defender)
   const box = useDialog<HTMLDivElement>(onCancel)
+  // On a phone the page can be scrolled so the tray's lower edge is off screen; bring the whole summary, buttons included, into view.
+  useEffect(() => { box.current?.scrollIntoView({ block: 'nearest' }) }, [box])
   const name = (p: Piece) => `${ROLE_NAMES[p.court][p.role]} ${p.hp}/${p.maxHp}`
   return (
     <div ref={box} className="confirm" role="dialog" aria-label={t('tray.confirmAttack')}>

@@ -239,9 +239,9 @@ body:has(.duel) .play-timer { display: none; }
 .confirm-advice.even { color: var(--solari-gold); }
 .confirm-advice.stop { color: #ff8088; }
 
-/* The attack summary sits in the tray, centred between the info card above and the screen bottom; the tray keeps its size underneath. */
+/* The attack summary sits in the tray with its bottom edge on the tray's, growing upward over the info card, so its buttons are never pushed below the screen; the tray keeps its size underneath. */
 .tray.confirming > :not(.confirm) { visibility: hidden; }
-.tray > .confirm { position: absolute; top: calc(50% + var(--bottom-gap) / 2); bottom: auto; transform: translateY(-50%); }
+.tray > .confirm { position: absolute; top: auto; bottom: var(--bottom-gap); }
 
 /* A bound piece keeps a crisp chain badge even though its art is dimmed */
 .bound-badge circle { fill: #120d2a; stroke: #fff; stroke-width: 0.025; }
