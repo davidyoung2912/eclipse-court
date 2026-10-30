@@ -75,19 +75,24 @@ button:disabled { box-shadow: none !important; animation: none !important; }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
 }
 .duel-pad {
-  display: flex; align-items: stretch; gap: 12px; height: 128px; padding: 8px; border-radius: 14px;
+  display: flex; align-items: stretch; gap: 12px; height: 136px; padding: 8px; border-radius: 14px;
   background: rgba(29, 23, 69, 0.8); border: 1px solid rgba(154, 124, 240, 0.35);
 }
 .duel-pad.mirror { flex-direction: row-reverse; }
-.stick-zone {
-  position: relative; flex: 1; overflow: hidden; border-radius: 10px; touch-action: none;
-  background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2);
-  display: grid; place-items: center;
+.stick-zone { position: relative; flex: 1; display: grid; place-items: center; }
+.joystick {
+  position: relative; width: 120px; height: 120px; border-radius: 50%; touch-action: none; cursor: grab;
+  background: radial-gradient(circle at 50% 40%, rgba(154, 124, 240, 0.28), rgba(29, 23, 69, 0.85) 70%);
+  border: 2px solid rgba(244, 238, 252, 0.4); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.5), var(--shadow-1);
 }
-.stick-idle { font-size: var(--fs-xs); opacity: 0.5; pointer-events: none; }
-.stick-base, .stick-knob { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-.stick-base { width: 96px; height: 96px; border: 2px solid rgba(255, 255, 255, 0.35); }
-.stick-knob { width: 46px; height: 46px; background: rgba(255, 255, 255, 0.45); }
+.joystick::before { content: ''; position: absolute; inset: 22px; border-radius: 50%; border: 1px dashed rgba(244, 238, 252, 0.2); pointer-events: none; }
+.joystick.active { border-color: var(--solari-gold); }
+.stick-knob {
+  position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, #fff3b8, var(--solari-gold) 60%, #a77a1f);
+  border: 2px solid var(--solari-cream); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55), inset 0 -3px 6px rgba(0, 0, 0, 0.25);
+}
+.joystick.active .stick-knob { box-shadow: 0 0 14px rgba(232, 182, 74, 0.8), inset 0 -3px 6px rgba(0, 0, 0, 0.25); }
 .attack-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   flex: 0 0 112px; border-radius: 14px; border: 2px solid var(--solari-cream); background: rgba(232, 182, 74, 0.35);

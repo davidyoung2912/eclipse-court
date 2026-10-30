@@ -1008,7 +1008,6 @@ export const en = {
   'duel.mouseHoldText': 'to attack.',
   'duel.mouseEsc': 'Esc',
   'duel.mouseEscText': 'frees the mouse.',
-  'duel.drag': 'Drag to move',
   'duel.attack': 'Attack',
   'game.solved': 'Solved',
   'game.notSolved': 'Not solved',

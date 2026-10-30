@@ -50,7 +50,7 @@ interface Props {
   onDone: (outcome: DuelOutcome) => void
 }
 
-const STICK_RADIUS = 56
+const STICK_RADIUS = 36
 /** The AI's walking speed grows by this share of its base per second, so stalling gets harder (about +36% by the time limit). */
 const FOE_SPEED_RAMP = 0.018
 /** The mouse's virtual stick: pixels of travel for full speed, and the share of raw movement that counts. */
@@ -75,12 +75,11 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   const input = useRef<DuelInput>({ ...NO_INPUT })
   const optionsRef = useRef(options)
   const lookRef = useRef({ boardId, cellEffects })
-  const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null)
+  const [stick, setStick] = useState<{ x: number; y: number } | null>(null)
   const [held, setHeld] = useState(false)
   const [time, setTime] = useState(DUEL_SECONDS)
   const [banner, setBanner] = useState('')
   const stickPointer = useRef<number | null>(null)
-  const stickOrigin = useRef({ ox: 0, oy: 0 })
   const doneRef = useRef(onDone)
   const stage = useRef<HTMLDivElement>(null)
   /** Mouse steering: the virtual stick offset in pixels, active while the pointer is locked to the stage. */
@@ -302,28 +301,30 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     }
   }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, assist, seed, waiting])
 
+  /** The joystick is fixed: its centre is the origin, and the knob follows the finger, clamped to the ring. */
+  const stickVector = (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect()
+    const dx = e.clientX - (box.left + box.width / 2)
+    const dy = e.clientY - (box.top + box.height / 2)
+    const len = Math.hypot(dx, dy)
+    const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1
+    return { x: dx * k, y: dy * k }
+  }
+  // Everything is read from the event here, not inside a state updater: React may run an updater after the
+  // event is over, when `currentTarget` is already null (which crashed touch screens).
+  const steer = (e: React.PointerEvent<HTMLDivElement>) => {
+    const v = stickVector(e)
+    input.current = { ...input.current, mx: v.x / STICK_RADIUS, my: v.y / STICK_RADIUS }
+    setStick(v)
+  }
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (stickPointer.current !== null) return
     stickPointer.current = e.pointerId
     e.currentTarget.setPointerCapture(e.pointerId)
-    const box = e.currentTarget.getBoundingClientRect()
-    const ox = e.clientX - box.left
-    const oy = e.clientY - box.top
-    stickOrigin.current = { ox, oy }
-    setStick({ ox, oy, x: ox, y: oy })
+    steer(e)
   }
-  // Everything is read from the event here, not inside a state updater: React may run an updater after the
-  // event is over, when `currentTarget` is already null (which crashed touch screens).
   const onStickMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerId !== stickPointer.current) return
-    const { ox, oy } = stickOrigin.current
-    const box = e.currentTarget.getBoundingClientRect()
-    const dx = e.clientX - box.left - ox
-    const dy = e.clientY - box.top - oy
-    const len = Math.hypot(dx, dy)
-    const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1
-    input.current = { ...input.current, mx: (dx * k) / STICK_RADIUS, my: (dy * k) / STICK_RADIUS }
-    setStick({ ox, oy, x: ox + dx * k, y: oy + dy * k })
+    if (e.pointerId === stickPointer.current) steer(e)
   }
   const onStickUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== stickPointer.current) return
@@ -391,15 +392,11 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         ) : (
         <div className="duel-controls">
           <div className={`duel-pad${options.mirror ? ' mirror' : ''}`}>
-            <div className="stick-zone" onPointerDown={onStickDown} onPointerMove={onStickMove}
-              onPointerUp={onStickUp} onPointerCancel={onStickUp}>
-              {!stick && <span className="stick-idle">{t('duel.drag')}</span>}
-              {stick && (
-                <>
-                  <div className="stick-base" style={{ left: stick.ox, top: stick.oy }} />
-                  <div className="stick-knob" style={{ left: stick.x, top: stick.y }} />
-                </>
-              )}
+            <div className="stick-zone">
+              <div className={`joystick${stick ? ' active' : ''}`} role="presentation" onPointerDown={onStickDown} onPointerMove={onStickMove}
+                onPointerUp={onStickUp} onPointerCancel={onStickUp}>
+                <div className="stick-knob" style={{ transform: `translate(calc(-50% + ${stick?.x ?? 0}px), calc(-50% + ${stick?.y ?? 0}px))` }} />
+              </div>
             </div>
             <button
               className={`attack-btn${held ? ' held' : ''}`}
