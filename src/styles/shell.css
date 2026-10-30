@@ -73,7 +73,7 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 .today h3 { margin: 0; justify-content: space-between; }
 .today h3::after { display: none; }
 .streak { display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.04em; text-transform: none; color: var(--solari-gold); }
-.today-row { display: flex; gap: 8px; }
+.today-row { display: flex; gap: 6px; }
 .today-row button, .mode-card, .utility button {
   border-radius: 14px; border: 1px solid rgba(154, 124, 240, 0.6); color: var(--fg);
   background: linear-gradient(180deg, rgba(74, 58, 150, 0.88), rgba(43, 36, 104, 0.88));
@@ -82,10 +82,11 @@ body:has(.puzzles-menu) { --tone-a: #0b3a45; --tone-b: #04151a; }
 }
 .today-row button:active, .mode-card:active, .utility button:active { transform: scale(0.97); }
 .today-row button {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 44px; padding: 8px; font-size: var(--fs-md);
+  flex: 1 1 0; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 52px; padding: 6px 2px; font-size: var(--fs-xs); line-height: 1.15; text-align: center; overflow-wrap: anywhere;
   background: linear-gradient(100deg, rgba(232, 182, 74, 0.36), rgba(43, 36, 104, 0.88) 70%);
 }
+.today-row button .btn-icon { width: 1.4em; height: 1.4em; }
 .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .mode-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; min-height: 112px; padding: 12px; text-align: left; font-size: var(--fs-md); }
 /* Each main page card wears the colours of the page it opens. */
