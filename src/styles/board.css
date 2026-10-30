@@ -124,9 +124,9 @@
 
 .tray { position: relative; margin-top: auto; }
 .status { margin: 0 0 8px; text-align: center; min-height: 1.4em; }
-.buttons { display: flex; gap: 8px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .buttons button {
-  flex: 1; padding: 14px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
+  flex: 1 1 auto; padding: 14px 8px; border-radius: 10px; border: 1px solid var(--umbral-violet);
   background: var(--umbral-indigo); color: var(--fg); font-size: var(--fs-md);
 }
 .buttons button:disabled { opacity: 0.4; }
