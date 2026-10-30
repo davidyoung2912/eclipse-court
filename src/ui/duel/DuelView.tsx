@@ -91,6 +91,9 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   /** The guidance cards show over the arena before the fight; nothing starts (countdown, clock, music, mouse capture) until they are read. */
   const tipPages = ['duel', desktop ? 'duel-mouse' : 'duel-touch', playerSide === 1 && 'duel-defend', (!!cells || !!cellEffects?.some(Boolean)) && 'duel-cells'] as const
   const waiting = useTipsPending(tipPages)
+  /** The arena is built and drawn behind the guidance cards; the sound waits for them to be read. */
+  const waitingRef = useRef(waiting)
+  useEffect(() => { waitingRef.current = waiting }, [waiting])
   /** The simulation holds still until the countdown has run out. */
   const started = useRef(false)
   /** Set by Skip: the rest of the fight is played out at once with the duel AI at the player's controls. */
@@ -165,7 +168,6 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
   }, [desktop, waiting])
 
   useEffect(() => {
-    if (waiting) return
     const foeSide = (1 - playerSide) as 0 | 1
     const pace = DUEL_PACE[getSettings().duelSpeed]
     const myAi = createDuelAi(profileForSkill(AUTO_DUEL_SKILL, 1), seed + 1)
@@ -188,8 +190,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       luminance, boardId: lookRef.current.boardId, cells: lookRef.current.cellEffects ?? [null, null], reduceMotion: getSettings().reduceMotion, reduceFlashes: flashesReduced(),
       courts: [attacker.court, defender.court], mineSide: playerSide, assistSide: assist ? playerSide : undefined,
     })
-    const drums = startDuelDrums()
-    sfx.duelStart()
+    let drums: ReturnType<typeof startDuelDrums> | null = null
     const el = canvas.current!
     const ctx = el.getContext('2d')!
 
@@ -266,7 +267,7 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
         setBanner(mineHp > 0 && foeHp <= 0 ? 'Victory' : mineHp <= 0 && foeHp > 0 ? 'Defeat' : mineHp <= 0 ? 'Both fall' : 'Draw')
         if (mineHp > 0 && foeHp <= 0) sfx.win()
         else if (mineHp <= 0) sfx.lose()
-        drums.stop()
+        drums?.stop()
         endTimer = fx.ko ? KO_END_DELAY : END_DELAY
       }
       if (endTimer >= 0) {
@@ -280,7 +281,8 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
       // Sound goes dull while the fight is frozen on a heavy blow.
       const dull = freeze > 0.08
       if (dull !== muffled) { muffled = dull; setMuffled(dull) }
-      drums.setIntensity(state.t / DUEL_SECONDS)
+      if (!drums && !waitingRef.current) { drums = startDuelDrums(); sfx.duelStart() }
+      drums?.setIntensity(state.t / DUEL_SECONDS)
       shake = Math.max(0, shake - dt * 40)
       if (started.current) fx.call += dt
       // Once a fighter falls the effects play out in slow motion for a moment.
@@ -297,9 +299,9 @@ export function DuelView({ attacker, defender, luminance, cells, boardId, cellEf
     return () => {
       cancelAnimationFrame(raf)
       setMuffled(false)
-      drums.stop()
+      drums?.stop()
     }
-  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, assist, seed, waiting])
+  }, [attacker, defender, luminance, cells, playerSide, opponentSkill, opponentAggression, foeRamp, assist, seed])
 
   /** The joystick is fixed: its centre is the origin, and the knob follows the finger, clamped to the ring. */
   const stickVector = (e: React.PointerEvent<HTMLDivElement>) => {
